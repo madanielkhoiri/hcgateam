@@ -1,0 +1,568 @@
+.page {
+  min-height: 100%;
+  padding: 24px;
+  background: #eef5ff;
+  color: #0b315c;
+}
+
+.hero,
+.filterCard,
+.tableCard {
+  border: 1px solid #d6e1ef;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(42, 73, 112, 0.08);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 21px;
+  background: linear-gradient(100deg, #ffffff, #e8fff0);
+}
+
+.heroIcon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 13px;
+  background: #0aa35a;
+  color: white;
+  box-shadow: 0 9px 18px rgba(10, 163, 90, 0.22);
+}
+
+.heroText {
+  flex: 1;
+}
+
+.hero h1,
+.tableHeading h2,
+.modalHeader h2 {
+  margin: 0;
+  color: #0a3565;
+}
+
+.hero p,
+.modalHeader p {
+  margin: 4px 0 0;
+  color: #72849b;
+  font-size: 13px;
+}
+
+.primaryButton,
+.saveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: #079a54;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(7, 154, 84, 0.2);
+}
+
+.primaryButton {
+  padding: 12px 18px;
+}
+
+.error {
+  margin-top: 15px;
+  padding: 12px 14px;
+  border: 1px solid #f2a5aa;
+  border-radius: 12px;
+  background: #fff0f1;
+  color: #a4101c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filterCard {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 160px 150px auto;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 13px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid #cad8e8;
+  border-radius: 10px;
+  background: #f9fcff;
+}
+
+.searchBox input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.filterCard select,
+.resetButton,
+.formGrid input,
+.formGrid select {
+  min-height: 42px;
+  border: 1px solid #cad8e8;
+  border-radius: 10px;
+  background: white;
+  color: #173f69;
+  outline: 0;
+}
+
+.filterCard select {
+  padding: 0 12px;
+}
+
+.resetButton {
+  padding: 0 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tableCard {
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.tableHeading {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 19px 13px;
+}
+
+.tableHeading span {
+  display: block;
+  margin-top: 4px;
+  color: #71839a;
+  font-size: 12px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 1320px;
+  border-collapse: collapse;
+}
+
+.tableWrap th {
+  padding: 13px 10px;
+  background: #eef4fb;
+  color: #19466f;
+  font-size: 11px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tableWrap td {
+  padding: 12px 10px;
+  border-top: 1px solid #e1e9f2;
+  color: #335776;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.workName {
+  min-width: 220px;
+  color: #0b3b6c !important;
+  font-weight: 700;
+}
+
+.progressBadge {
+  display: inline-flex;
+  min-width: 48px;
+  justify-content: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e5f8ed;
+  color: #078a4b;
+  font-weight: 800;
+}
+
+.weatherText {
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.photoStack {
+  display: flex;
+  align-items: center;
+}
+
+.photoButton {
+  width: 40px;
+  height: 40px;
+  margin-right: -8px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #dfe8f3;
+  cursor: pointer;
+}
+
+.photoButton img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.morePhotos {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #e9f1fa;
+  color: #29577d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 112px;
+}
+
+.actionButton {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.actionButton:hover {
+  transform: translateY(-1px);
+}
+
+.actionButton:active {
+  transform: translateY(0);
+}
+
+.pdfButton {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1670b7;
+}
+
+.pdfButton:hover {
+  border-color: #60a5fa;
+  background: #dbeafe;
+  color: #075b9c;
+}
+
+.editButton {
+  border-color: #f3cf8b;
+  background: #fff8e8;
+  color: #c37600;
+}
+
+.editButton:hover {
+  border-color: #e6aa3c;
+  background: #ffefc7;
+  color: #9a5b00;
+}
+
+.deleteButton {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #e03642;
+}
+
+.deleteButton:hover {
+  border-color: #f87171;
+  background: #ffe1e4;
+  color: #bd1e29;
+}
+.emptyCell {
+  height: 150px;
+  text-align: center;
+  color: #8191a6 !important;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-top: 1px solid #e1e9f2;
+  color: #60778f;
+  font-size: 12px;
+}
+
+.pagination div {
+  display: flex;
+  gap: 8px;
+}
+
+.pagination button {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid #d4e0ec;
+  border-radius: 9px;
+  background: white;
+  color: #39617e;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.modalOverlay,
+.imageOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 29, 51, 0.62);
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 22px;
+  border-bottom: 1px solid #e0e8f1;
+}
+
+.modalHeader > button,
+.imageOverlay > button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.modal form {
+  padding: 20px 22px 22px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.formGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #294f70;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formGrid label > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.formGrid input,
+.formGrid select {
+  width: 100%;
+  padding: 0 12px;
+  font: inherit;
+}
+
+.fullField {
+  grid-column: span 2;
+}
+
+.uploadArea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 17px;
+  border: 1px dashed #9bb3ca;
+  border-radius: 13px;
+  background: #f7fbff;
+}
+
+.uploadArea > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 9px;
+  color: #285578;
+}
+
+.uploadArea span {
+  grid-column: 2;
+  margin-top: 3px;
+  color: #7890a5;
+  font-size: 11px;
+}
+
+.uploadButton {
+  padding: 10px 15px;
+  border-radius: 9px;
+  background: #0b8c52;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.uploadButton input {
+  display: none;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.previewGrid article {
+  position: relative;
+  height: 110px;
+  overflow: hidden;
+  border: 1px solid #d2deea;
+  border-radius: 11px;
+}
+
+.previewGrid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.previewGrid button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(208, 27, 41, 0.9);
+  color: white;
+  cursor: pointer;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+  padding-top: 17px;
+  border-top: 1px solid #e1e8f0;
+}
+
+.cancelButton,
+.saveButton {
+  min-width: 125px;
+  min-height: 40px;
+}
+
+.cancelButton {
+  border: 1px solid #cdd9e6;
+  border-radius: 10px;
+  background: white;
+  color: #49677f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.imageOverlay {
+  z-index: 11000;
+}
+
+.imageOverlay > button {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+}
+
+.imageOverlay img {
+  max-width: min(1100px, 95vw);
+  max-height: 90vh;
+  border-radius: 14px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding: 14px;
+  }
+
+  .hero {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .primaryButton {
+    width: 100%;
+  }
+
+  .filterCard {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullField {
+    grid-column: auto;
+  }
+
+  .uploadArea {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .uploadButton {
+    text-align: center;
+  }
+}

@@ -1,0 +1,429 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model coordinator_signatures {
+  id         Int      @id @default(autoincrement())
+  name       String
+  file_path  String
+  created_at DateTime @default(now())
+  updated_at DateTime
+
+  @@index([name])
+}
+
+model daily_activities {
+  id                        Int                         @id @default(autoincrement())
+  activity_type             DailyActivityType           @default(DAILY_ACTIVITY)
+  start_date                DateTime                    @db.Date
+  last_progress_date        DateTime?                   @db.Date
+  work_name                 String
+  location                  String
+  description               String?
+  profile_photo_path        String
+  pre_activity_photo_paths  String[]                    @default([])
+  current_progress          Int                         @default(0)
+  last_pic                  String?
+  status                    DailyActivityStatus         @default(OPEN)
+  approval_status           DailyApprovalStatus         @default(NONE)
+  close_requested_at        DateTime?
+  closed_at                 DateTime?
+  created_by                Int
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime
+  users                     users                       @relation(fields: [created_by], references: [id])
+  daily_activity_approvals  daily_activity_approvals[]
+  daily_activity_progresses daily_activity_progresses[]
+
+  @@index([activity_type])
+  @@index([approval_status])
+  @@index([created_by])
+  @@index([last_progress_date])
+  @@index([start_date])
+  @@index([status])
+}
+
+model daily_activity_approvals {
+  id               Int                   @id @default(autoincrement())
+  activity_id      Int
+  decision         DailyApprovalDecision
+  comment          String?
+  acted_by         Int
+  acted_at         DateTime              @default(now())
+  created_at       DateTime              @default(now())
+  users            users                 @relation(fields: [acted_by], references: [id])
+  daily_activities daily_activities      @relation(fields: [activity_id], references: [id], onDelete: Cascade)
+
+  @@index([acted_at])
+  @@index([acted_by])
+  @@index([activity_id])
+}
+
+model daily_activity_progresses {
+  id                       Int              @id @default(autoincrement())
+  activity_id              Int
+  progress_date            DateTime         @db.Date
+  previous_progress        Int
+  added_progress           Int
+  current_progress         Int
+  pic                      String
+  notes                    String?
+  photo_paths              String[]         @default([])
+  request_close            Boolean          @default(false)
+  created_by               Int
+  created_at               DateTime         @default(now())
+  updated_at               DateTime
+  pre_activity_photo_paths String[]         @default([])
+  daily_activities         daily_activities @relation(fields: [activity_id], references: [id], onDelete: Cascade)
+  users                    users            @relation(fields: [created_by], references: [id])
+
+  @@index([activity_id])
+  @@index([created_by])
+  @@index([progress_date])
+}
+
+model handovers {
+  id                  Int         @id @default(autoincrement())
+  stp_number          String      @unique
+  sequence_number     Int         @unique
+  work_order_id       Int         @unique
+  handover_date       DateTime    @db.Date
+  receiver_name       String?
+  receiver_position   String?
+  receiver_department String?
+  location            String?
+  handover_note       String?
+  documentation_paths String[]    @default([])
+  auto_created        Boolean     @default(false)
+  created_by          Int
+  created_at          DateTime    @default(now())
+  updated_at          DateTime
+  users               users       @relation(fields: [created_by], references: [id])
+  work_orders         work_orders @relation(fields: [work_order_id], references: [id], onDelete: Cascade)
+
+  @@index([handover_date])
+  @@index([receiver_department])
+}
+
+model inventory_stocks {
+  id         Int      @id @default(autoincrement())
+  item_id    Int      @unique
+  quantity   Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime
+  items      items    @relation(fields: [item_id], references: [id], onDelete: Cascade)
+}
+
+model items {
+  id               Int               @id @default(autoincrement())
+  code             String
+  name             String
+  category         ItemCategory
+  unit             ItemUnit          @default(PC)
+  is_active        Boolean           @default(true)
+  created_at       DateTime          @default(now())
+  updated_at       DateTime
+  inventory_scope  InventoryScope    @default(GENERAL)
+  inventory_stocks inventory_stocks?
+  stock_ins        stock_ins[]
+  stock_outs       stock_outs[]
+
+  @@unique([inventory_scope, code])
+  @@index([category])
+  @@index([inventory_scope, category])
+  @@index([inventory_scope])
+  @@index([name])
+}
+
+model post_activities {
+  id                Int      @id @default(autoincrement())
+  activity_date     DateTime @db.Date
+  start_time        String
+  end_time          String
+  work_name         String
+  progress_percent  Int
+  morning_weather   String
+  afternoon_weather String
+  evening_weather   String
+  photo_paths       String[] @default([])
+  created_by        Int
+  created_at        DateTime @default(now())
+  updated_at        DateTime
+  coordinator_count Int      @default(1)
+  carpenter_count   Int      @default(1)
+  helper_count      Int      @default(1)
+  approver_name     String   @default("ARIEF RAHIM")
+  users             users    @relation(fields: [created_by], references: [id])
+
+  @@index([activity_date])
+  @@index([created_by])
+}
+
+model pre_activities {
+  id                        Int      @id @default(autoincrement())
+  job_name                  String
+  activity_date             DateTime @db.Date
+  work_location_text        String?
+  heavy_equipment_name_text String?
+  unit_number_text          String?
+  executor_team_text        String?
+  hazard_potential_text     String?
+  control_step_text         String?
+  apd_check                 Boolean  @default(false)
+  tool_condition_check      Boolean  @default(false)
+  work_area_check           Boolean  @default(false)
+  tool_complete_check       Boolean  @default(false)
+  work_permit_check         Boolean  @default(false)
+  sop_check                 Boolean  @default(false)
+  jsa_check                 Boolean  @default(false)
+  lifting_plan_check        Boolean  @default(false)
+  jsa_image                 String?
+  checklist_image           String?
+  height_permit_image       String?
+  health_check              String?
+  health_check_status       String?
+  socialization_photo       String?
+  pic                       String
+  executor_signature        String?
+  supervisor_name           String?
+  supervisor_signature      String?
+  created_by                Int
+  created_at                DateTime @default(now())
+  updated_at                DateTime
+  users                     users    @relation(fields: [created_by], references: [id])
+
+  @@index([activity_date])
+  @@index([created_by])
+}
+
+model pre_activity_checks {
+  id                        Int      @id @default(autoincrement())
+  job_name                  String
+  activity_date             DateTime @db.Date
+  work_location_text        String?
+  heavy_equipment_name_text String?
+  unit_number_text          String?
+  executor_team_text        String?
+  hazard_potential_text     String?
+  control_step_text         String?
+  apd_check                 Boolean  @default(false)
+  tool_condition_check      Boolean  @default(false)
+  work_area_check           Boolean  @default(false)
+  tool_complete_check       Boolean  @default(false)
+  work_permit_check         Boolean  @default(false)
+  sop_check                 Boolean  @default(false)
+  jsa_check                 Boolean  @default(false)
+  lifting_plan_check        Boolean  @default(false)
+  jsa_image                 String?
+  checklist_image           String?
+  height_permit_image       String?
+  health_check              String?
+  health_check_status       String?
+  socialization_photo       String?
+  pic                       String
+  executor_signature        String?
+  supervisor_name           String?
+  supervisor_signature      String?
+  created_by                Int
+  created_at                DateTime @default(now())
+  updated_at                DateTime
+  users                     users    @relation(fields: [created_by], references: [id])
+
+  @@index([activity_date])
+  @@index([created_by])
+}
+
+model safety_meetings {
+  id                  Int      @id @default(autoincrement())
+  meeting_date        DateTime @db.Date
+  location            String?
+  speaker             String?
+  participants        String?
+  material            String
+  supervisors         Json     @default("[]")
+  documentation_paths Json     @default("[]")
+  created_by          Int
+  created_at          DateTime @default(now())
+  updated_at          DateTime
+  users               users    @relation(fields: [created_by], references: [id])
+
+  @@index([created_by])
+  @@index([meeting_date])
+}
+
+model stock_ins {
+  id         Int          @id @default(autoincrement())
+  date       DateTime     @db.Date
+  item_id    Int
+  category   ItemCategory
+  quantity   Int
+  unit       ItemUnit
+  created_at DateTime     @default(now())
+  updated_at DateTime
+  items      items        @relation(fields: [item_id], references: [id])
+
+  @@index([date])
+  @@index([item_id])
+}
+
+model stock_outs {
+  id          Int          @id @default(autoincrement())
+  date        DateTime     @db.Date
+  item_id     Int
+  category    ItemCategory
+  quantity    Int
+  unit        ItemUnit
+  taker       String
+  department  String?
+  created_at  DateTime     @default(now())
+  updated_at  DateTime
+  description String?
+  photo_path  String?
+  items       items        @relation(fields: [item_id], references: [id])
+
+  @@index([date])
+  @@index([department])
+  @@index([item_id])
+}
+
+model users {
+  id                        Int                         @id @default(autoincrement())
+  name                      String
+  username                  String                      @unique
+  password_hash             String
+  role                      UserRole                    @default(ADMIN)
+  is_active                 Boolean                     @default(true)
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime
+  daily_activities          daily_activities[]
+  daily_activity_approvals  daily_activity_approvals[]
+  daily_activity_progresses daily_activity_progresses[]
+  handovers                 handovers[]
+  post_activities           post_activities[]
+  pre_activities            pre_activities[]
+  pre_activity_checks       pre_activity_checks[]
+  safety_meetings           safety_meetings[]
+  work_orders               work_orders[]
+}
+
+model work_orders {
+  id                   Int               @id @default(autoincrement())
+  work_order_number    String            @unique
+  sequence_number      Int               @unique
+  work_order_name      String
+  department           String
+  position             String?
+  pic                  WorkOrderPic      @default(GA_INFRAS)
+  job_type             String
+  user_department_name String
+  description          String
+  location             String?
+  requested_at         DateTime          @db.Date
+  status               WorkOrderStatus   @default(OPEN)
+  priority             WorkOrderPriority @default(P2)
+  closed_at            DateTime?
+  closed_duration_days Int?
+  image_paths          String[]          @default([])
+  created_by           Int
+  created_at           DateTime          @default(now())
+  updated_at           DateTime
+  handovers            handovers?
+  users                users             @relation(fields: [created_by], references: [id])
+
+  @@index([department])
+  @@index([pic])
+  @@index([requested_at])
+  @@index([status])
+}
+
+enum DailyActivityStatus {
+  OPEN
+  ON_PROGRESS
+  WAITING_APPROVAL
+  CLOSE
+}
+
+enum DailyActivityType {
+  DAILY_ACTIVITY
+  GRASS_CUTTING
+}
+
+enum DailyApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+enum DailyApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InventoryScope {
+  GENERAL
+  MESS
+  ELECTRIC
+}
+
+enum ItemCategory {
+  ATK
+  HOUSEKEEPING
+  BAJU
+}
+
+enum ItemUnit {
+  BATANG
+  BOTOL
+  BUAH
+  CM
+  DERIJEN
+  DUS
+  KARUNG
+  KG
+  KOLI
+  KOTAK
+  LEMBAR
+  LITER
+  LUSI
+  M2
+  M3
+  METER
+  MM
+  PAC
+  PC
+  RET
+  RIM
+  ROLL
+  SAK
+  SET
+  TABUNG
+  TUBE
+  UNIT
+}
+
+enum UserRole {
+  SECTION_HEAD
+  GRUP_LEADER
+  ADMIN
+}
+
+enum WorkOrderPic {
+  GA_INFRAS
+  GA_ELECTRIC
+}
+
+enum WorkOrderPriority {
+  P1
+  P2
+}
+
+enum WorkOrderStatus {
+  OPEN
+  ON_PROGRESS
+  CLOSE
+}

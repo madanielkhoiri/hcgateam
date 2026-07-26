@@ -1,0 +1,787 @@
+.page {
+  min-height: 100%;
+  padding: 24px;
+  color: #0b3762;
+}
+
+.hero,
+.filterCard,
+.tableCard {
+  border: 1px solid #d4e1ee;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  background: linear-gradient(110deg, #ffffff, #edfff3);
+}
+
+.heroTitle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.heroIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 11px;
+  background: #04a15d;
+  color: white;
+}
+
+.hero h1,
+.tableHeader h2,
+.modalHeader h2,
+.confirmModal h2 {
+  margin: 0;
+}
+
+.hero p,
+.tableHeader p,
+.modalHeader p,
+.uploadHeader p {
+  margin: 4px 0 0;
+  color: #70849b;
+  font-size: 12px;
+}
+
+.success,
+.error {
+  margin-top: 14px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.success {
+  border: 1px solid #a7e3bf;
+  background: #effdf4;
+  color: #067a40;
+}
+
+.error {
+  border: 1px solid #ffb6bd;
+  background: #fff1f2;
+  color: #c52536;
+}
+
+.filterCard {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 145px 135px auto;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid #cbdbea;
+  border-radius: 9px;
+}
+
+.searchBox input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+}
+
+.filterCard select,
+.formGrid input,
+.formGrid select,
+.formGrid textarea {
+  width: 100%;
+  border: 1px solid #cbdbea;
+  border-radius: 9px;
+  background: white;
+  color: #183f64;
+  outline: none;
+}
+
+.filterCard select {
+  min-height: 39px;
+  padding: 0 10px;
+}
+
+.tableCard {
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.tableHeader {
+  padding: 16px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+.tableWrap th {
+  padding: 12px 10px;
+  background: #edf4fb;
+  color: #234f78;
+  font-size: 11px;
+  text-align: left;
+}
+
+.tableWrap td {
+  padding: 12px 10px;
+  border-top: 1px solid #e2ebf3;
+  color: #183f64;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions button,
+.closeButton,
+.previewClose {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.actions button {
+  width: 30px;
+  height: 30px;
+}
+
+.viewButton {
+  border: 1px solid #add2f3;
+  background: #eef7ff;
+  color: #1680d0;
+}
+
+.editButton {
+  border: 1px solid #f4cc87;
+  background: #fff7e7;
+  color: #de8c00;
+}
+
+.deleteButton {
+  border: 1px solid #ffc1c7;
+  background: #fff0f2;
+  color: #ef4354;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.uploadButton {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9px;
+  padding: 0 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid #009957;
+  background: #009957;
+  color: white;
+  box-shadow: 0 7px 17px rgb(0 153 87 / 19%);
+}
+
+.secondaryButton {
+  border: 1px solid #ccdbea;
+  background: white;
+  color: #315779;
+}
+
+.dangerButton {
+  border: 1px solid #e53c4d;
+  background: #e53c4d;
+  color: white;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 15px;
+  border-top: 1px solid #e2ebf3;
+  color: #6e849a;
+  font-size: 12px;
+}
+
+.pagination div {
+  display: flex;
+  gap: 8px;
+}
+
+.emptyState {
+  display: flex;
+  min-height: 135px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #7890a8;
+}
+
+.modalBackdrop,
+.previewBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(20 43 66 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+.formModal {
+  width: min(820px, 96vw);
+  max-height: 88vh;
+  overflow: hidden;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 24px 70px rgb(3 24 45 / 28%);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #dce6ef;
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d2e0ec;
+  background: #f8fbfd;
+  color: #55718c;
+}
+
+.formModal form {
+  display: flex;
+  max-height: calc(88vh - 73px);
+  flex-direction: column;
+}
+
+.modalBody {
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+}
+
+.formGrid label {
+  display: grid;
+  gap: 6px;
+}
+
+.formGrid label > span {
+  color: #274f74;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formGrid input,
+.formGrid select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+.formGrid textarea {
+  resize: vertical;
+  padding: 10px 11px;
+}
+
+.fullField {
+  grid-column: 1 / -1;
+}
+
+.uploadHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.uploadHeader h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.uploadButton {
+  border: 1px dashed #50bd83;
+  background: #f3fff8;
+  color: #07854a;
+}
+
+.uploadButton input {
+  display: none;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.imageCard {
+  position: relative;
+  overflow: hidden;
+  min-height: 105px;
+  border: 1px solid #d4e2ee;
+  border-radius: 10px;
+  background: #f5f9fc;
+}
+
+.imageCard img {
+  width: 100%;
+  height: 105px;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
+.imageCard button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: #e83849;
+  color: white;
+  cursor: pointer;
+}
+
+.noImage {
+  grid-column: 1 / -1;
+  display: flex;
+  min-height: 95px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #c6d8e7;
+  border-radius: 10px;
+  color: #8095aa;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid #dce6ef;
+  background: white;
+}
+
+.confirmModal {
+  width: min(420px, 94vw);
+  border-radius: 16px;
+  background: white;
+  padding: 25px;
+  text-align: center;
+}
+
+.confirmModal p {
+  color: #657c92;
+}
+
+.deleteIcon {
+  display: grid;
+  width: 53px;
+  height: 53px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff0f2;
+  color: #e23c4d;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.previewBackdrop {
+  z-index: 11000;
+}
+
+.previewBackdrop img {
+  max-width: min(1100px, 90vw);
+  max-height: 86vh;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 22px 60px rgb(0 0 0 / 40%);
+}
+
+.previewClose {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(0 0 0 / 45%);
+  color: white;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 850px) {
+  .page {
+    padding: 14px;
+  }
+
+  .hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filterCard {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .searchBox {
+    grid-column: 1 / -1;
+    min-height: 40px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullField {
+    grid-column: auto;
+  }
+
+  .imageGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .filterCard {
+    grid-template-columns: 1fr;
+  }
+
+  .searchBox {
+    grid-column: auto;
+  }
+
+  .imageGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   FINAL P5M FORM LAYOUT
+   ========================================================= */
+
+.formModal {
+  width: min(1120px, 96vw) !important;
+  max-height: 92vh !important;
+}
+
+.formModal form {
+  max-height: calc(92vh - 73px) !important;
+}
+
+.modalBody {
+  padding: 18px !important;
+}
+
+.formGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: start !important;
+  gap: 14px !important;
+}
+
+.fullField {
+  grid-column: 1 / -1 !important;
+}
+
+.formGrid label {
+  min-width: 0;
+}
+
+.formGrid label > span,
+.fieldTitle,
+.inputCaption {
+  display: block;
+  margin-bottom: 6px;
+  color: #234c70;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.formGrid input,
+.formGrid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid #cbdbea;
+  border-radius: 9px;
+  padding: 0 11px;
+  background: #ffffff;
+  color: #173f64;
+  outline: none;
+}
+
+.formGrid textarea {
+  width: 100%;
+  min-height: 94px;
+  border: 1px solid #cbdbea;
+  border-radius: 9px;
+  padding: 10px 11px;
+  background: #ffffff;
+  color: #173f64;
+  resize: vertical;
+  outline: none;
+}
+
+.formGrid input:focus,
+.formGrid select:focus,
+.formGrid textarea:focus {
+  border-color: #139c5d;
+  box-shadow: 0 0 0 3px rgb(19 156 93 / 10%);
+}
+
+.supervisorSection {
+  grid-column: 1 / -1 !important;
+  margin-top: 2px;
+  border: 1px solid #d5e2ed;
+  border-radius: 14px;
+  padding: 15px;
+  background: #ffffff;
+}
+
+.supervisorHeading {
+  margin-bottom: 12px;
+}
+
+.supervisorHeading h3 {
+  margin: 0;
+  color: #143d63;
+  font-size: 15px;
+}
+
+.supervisorHeading p {
+  margin: 4px 0 0;
+  color: #71869a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.supervisorInputGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: end;
+  gap: 14px;
+}
+
+.supervisorInputGroup {
+  min-width: 0;
+}
+
+.inlineInput {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.inlineInput input,
+.inlineInput select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid #cbdbea;
+  border-radius: 9px;
+  padding: 0 11px;
+  background: #ffffff;
+  color: #173f64;
+}
+
+.addSupervisorButton {
+  min-width: 106px;
+  min-height: 42px;
+  border: 1px solid #079a59;
+  border-radius: 9px;
+  padding: 0 15px;
+  background: #079a59;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.addSupervisorButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.selectedSupervisorLabel {
+  margin-top: 15px;
+  margin-bottom: 7px;
+  color: #234c70;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.selectedSupervisors {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px;
+  min-height: 65px;
+  border: 1px dashed #c5d7e6;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f9fcfe;
+}
+
+.supervisorChip {
+  display: flex;
+  min-width: 0;
+  min-height: 39px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #c7e6d7;
+  border-radius: 9px;
+  padding: 0 10px;
+  background: #eefaf4;
+  color: #17613f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.supervisorChip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supervisorChip button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: #fff0f2;
+  color: #e33e4f;
+  cursor: pointer;
+}
+
+.emptySupervisor {
+  grid-column: 1 / -1;
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  color: #7c91a5;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.uploadHeader {
+  margin-top: 17px;
+}
+
+@media (max-width: 950px) {
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .supervisorInputGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .formModal {
+    width: 96vw !important;
+    max-height: 94vh !important;
+  }
+
+  .formModal form {
+    max-height: calc(94vh - 73px) !important;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fullField,
+  .supervisorSection {
+    grid-column: auto !important;
+  }
+
+  .inlineInput {
+    grid-template-columns: 1fr !important;
+  }
+
+  .addSupervisorButton {
+    width: 100%;
+  }
+
+  .selectedSupervisors {
+    grid-template-columns: 1fr !important;
+  }
+}

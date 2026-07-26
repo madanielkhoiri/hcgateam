@@ -1,0 +1,142 @@
+﻿:root {
+  color-scheme: light;
+
+  --page-bg: #edf4fd;
+  --page-gradient-start: #f8fbff;
+  --page-gradient-end: #eaf2fd;
+
+  --surface: #ffffff;
+  --surface-header: rgba(255, 255, 255, 0.98);
+
+  --text-main: #10244a;
+  --text-secondary: #6f819d;
+  --text-placeholder: #8c9bb2;
+
+  --border: #cfdeef;
+  --card-border: #abcdfb;
+
+  --input-bg: #f8fbff;
+  --input-border: #bdd5f4;
+
+  --primary: #0868f6;
+  --primary-hover: #075bdd;
+  --primary-soft: #eaf2ff;
+
+  --browser-bg: #e8f2ff;
+  --browser-header: #a8caf5;
+  --browser-line: rgba(90, 137, 196, 0.22);
+  --browser-side: rgba(90, 137, 196, 0.16);
+
+  --decoration-circle: rgba(96, 165, 250, 0.12);
+  --decoration-dot: rgba(59, 130, 246, 0.45);
+
+  --orbit-color: rgba(59, 130, 246, 0.45);
+  --orbit-dot: #6fa9ff;
+
+  --hc-soft: #eaf2ff;
+  --ga-soft: #e8f8ef;
+  --sipil-soft: #fff0e4;
+
+  --shadow-card:
+    0 22px 55px rgba(43, 83, 137, 0.14);
+
+  --shadow-small:
+    0 14px 32px rgba(43, 83, 137, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  color-scheme: light !important;
+}
+
+html {
+  background: var(--page-bg);
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text-main);
+  background: var(--page-bg);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color-scheme: light;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Paksa tetap terang meskipun Windows atau browser memakai dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: light;
+
+    --page-bg: #edf4fd;
+    --page-gradient-start: #f8fbff;
+    --page-gradient-end: #eaf2fd;
+
+    --surface: #ffffff;
+    --surface-header: rgba(255, 255, 255, 0.98);
+
+    --text-main: #10244a;
+    --text-secondary: #6f819d;
+    --text-placeholder: #8c9bb2;
+
+    --border: #cfdeef;
+    --card-border: #abcdfb;
+
+    --input-bg: #f8fbff;
+    --input-border: #bdd5f4;
+
+    --primary: #0868f6;
+    --primary-hover: #075bdd;
+    --primary-soft: #eaf2ff;
+
+    --browser-bg: #e8f2ff;
+    --browser-header: #a8caf5;
+    --browser-line: rgba(90, 137, 196, 0.22);
+    --browser-side: rgba(90, 137, 196, 0.16);
+
+    --decoration-circle: rgba(96, 165, 250, 0.12);
+    --decoration-dot: rgba(59, 130, 246, 0.45);
+
+    --orbit-color: rgba(59, 130, 246, 0.45);
+    --orbit-dot: #6fa9ff;
+
+    --hc-soft: #eaf2ff;
+    --ga-soft: #e8f8ef;
+    --sipil-soft: #fff0e4;
+
+    --shadow-card:
+      0 22px 55px rgba(43, 83, 137, 0.14);
+
+    --shadow-small:
+      0 14px 32px rgba(43, 83, 137, 0.12);
+  }
+
+  html,
+  body {
+    color: var(--text-main);
+    background: var(--page-bg);
+  }
+}

@@ -1,0 +1,516 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SECTION_HEAD
+  GRUP_LEADER
+  ADMIN
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(ADMIN)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workOrders WorkOrder[]
+  handovers  Handover[]
+
+  dailyActivities   DailyActivity[]         @relation("DailyActivityCreator")
+  dailyProgresses   DailyActivityProgress[] @relation("DailyProgressCreator")
+  dailyApprovals    DailyActivityApproval[] @relation("DailyApprovalActor")
+  preActivityChecks PreActivityCheck[]      @relation("PreActivityCheckCreator")
+  postActivities    PostActivity[]          @relation("PostActivityCreator")
+
+  p5mMeetings    P5mMeeting[]    @relation("P5mMeetingCreator")
+  preActivities  PreActivity[]   @relation("PreActivityCreator")
+  safetyMeetings SafetyMeeting[]
+
+  @@map("users")
+}
+
+// ==================================================
+// KATEGORI BARANG
+// ==================================================
+
+enum InventoryScope {
+  GENERAL
+  MESS
+  ELECTRIC
+}
+
+enum ItemCategory {
+  ATK
+  HOUSEKEEPING
+  BAJU
+}
+
+// ==================================================
+// SATUAN BARANG
+// ==================================================
+
+enum ItemUnit {
+  BATANG
+  BOTOL
+  BUAH
+  CM
+  DERIJEN
+  DUS
+  KARUNG
+  KG
+  KOLI
+  KOTAK
+  LEMBAR
+  LITER
+  LUSI
+  M2
+  M3
+  METER
+  MM
+  PAC
+  PC
+  RET
+  RIM
+  ROLL
+  SAK
+  SET
+  TABUNG
+  TUBE
+  UNIT
+}
+
+// ==================================================
+// MASTER BARANG
+// ==================================================
+
+model Item {
+  id             Int            @id @default(autoincrement())
+  code           String
+  name           String
+  inventoryScope InventoryScope @default(GENERAL) @map("inventory_scope")
+  category       ItemCategory
+  unit           ItemUnit       @default(PC)
+  isActive       Boolean        @default(true) @map("is_active")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  stock     InventoryStock?
+  stockIns  StockIn[]
+  stockOuts StockOut[]
+
+  @@unique([inventoryScope, code])
+  @@index([inventoryScope])
+  @@index([inventoryScope, category])
+  @@index([category])
+  @@index([name])
+  @@map("items")
+}
+
+// ==================================================
+// STOK BARANG
+// Satu master barang hanya memiliki satu baris stok
+// ==================================================
+
+model InventoryStock {
+  id        Int      @id @default(autoincrement())
+  itemId    Int      @unique @map("item_id")
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_stocks")
+}
+
+// ==================================================
+// BARANG MASUK
+// ==================================================
+
+model StockIn {
+  id        Int          @id @default(autoincrement())
+  date      DateTime     @db.Date
+  itemId    Int          @map("item_id")
+  category  ItemCategory
+  quantity  Int
+  unit      ItemUnit
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@index([date])
+  @@index([itemId])
+  @@map("stock_ins")
+}
+
+// ==================================================
+// BARANG KELUAR
+// ==================================================
+
+model StockOut {
+  id          Int          @id @default(autoincrement())
+  date        DateTime     @db.Date
+  itemId      Int          @map("item_id")
+  category    ItemCategory
+  quantity    Int
+  unit        ItemUnit
+  taker       String
+  department  String?
+  description String?      @db.Text
+  photoPath   String?      @map("photo_path")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@index([date])
+  @@index([itemId])
+  @@index([department])
+  @@map("stock_outs")
+}
+
+enum WorkOrderStatus {
+  OPEN
+  ON_PROGRESS
+  CLOSE
+}
+
+enum WorkOrderPriority {
+  P1
+  P2
+}
+
+enum WorkOrderPic {
+  GA_INFRAS
+  GA_ELECTRIC
+}
+
+model WorkOrder {
+  id                 Int               @id @default(autoincrement())
+  workOrderNumber    String            @unique @map("work_order_number")
+  sequenceNumber     Int               @unique @map("sequence_number")
+  workOrderName      String            @map("work_order_name")
+  department         String
+  position           String?
+  pic                WorkOrderPic      @default(GA_INFRAS)
+  jobType            String            @map("job_type")
+  userDepartmentName String            @map("user_department_name")
+  description        String            @db.Text
+  location           String?
+  requestedAt        DateTime          @map("requested_at") @db.Date
+  status             WorkOrderStatus   @default(OPEN)
+  priority           WorkOrderPriority @default(P2)
+  closedAt           DateTime?         @map("closed_at")
+  closedDurationDays Int?              @map("closed_duration_days")
+  imagePaths         String[]          @default([]) @map("image_paths")
+  createdBy          Int               @map("created_by")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  creator  User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  handover Handover?
+
+  @@index([status])
+  @@index([requestedAt])
+  @@index([department])
+  @@index([pic])
+  @@map("work_orders")
+}
+
+model Handover {
+  id                 Int      @id @default(autoincrement())
+  stpNumber          String   @unique @map("stp_number")
+  sequenceNumber     Int      @unique @map("sequence_number")
+  workOrderId        Int      @unique @map("work_order_id")
+  handoverDate       DateTime @map("handover_date") @db.Date
+  receiverName       String?  @map("receiver_name")
+  receiverPosition   String?  @map("receiver_position")
+  receiverDepartment String?  @map("receiver_department")
+  location           String?
+  handoverNote       String?  @map("handover_note") @db.Text
+  documentationPaths String[] @default([]) @map("documentation_paths")
+  autoCreated        Boolean  @default(false) @map("auto_created")
+  createdBy          Int      @map("created_by")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  creator   User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([handoverDate])
+  @@index([receiverDepartment])
+  @@map("handovers")
+}
+
+// ==================================================
+// DAILY ACTIVITY DAN POTONG RUMPUT
+// ==================================================
+
+enum DailyActivityType {
+  DAILY_ACTIVITY
+  GRASS_CUTTING
+}
+
+enum DailyActivityStatus {
+  OPEN
+  ON_PROGRESS
+  WAITING_APPROVAL
+  CLOSE
+}
+
+enum DailyApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DailyApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+model DailyActivity {
+  id                    Int                 @id @default(autoincrement())
+  activityType          DailyActivityType   @default(DAILY_ACTIVITY) @map("activity_type")
+  startDate             DateTime            @map("start_date") @db.Date
+  lastProgressDate      DateTime?           @map("last_progress_date") @db.Date
+  workName              String              @map("work_name")
+  location              String
+  description           String?             @db.Text
+  profilePhotoPath      String              @map("profile_photo_path")
+  preActivityPhotoPaths String[]            @default([]) @map("pre_activity_photo_paths")
+  currentProgress       Int                 @default(0) @map("current_progress")
+  lastPic               String?             @map("last_pic")
+  status                DailyActivityStatus @default(OPEN)
+  approvalStatus        DailyApprovalStatus @default(NONE) @map("approval_status")
+  closeRequestedAt      DateTime?           @map("close_requested_at")
+  closedAt              DateTime?           @map("closed_at")
+  createdBy             Int                 @map("created_by")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+
+  creator           User                    @relation("DailyActivityCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  progressHistories DailyActivityProgress[]
+  approvals         DailyActivityApproval[]
+
+  @@index([activityType])
+  @@index([startDate])
+  @@index([lastProgressDate])
+  @@index([status])
+  @@index([approvalStatus])
+  @@index([createdBy])
+  @@map("daily_activities")
+}
+
+model DailyActivityProgress {
+  id                    Int      @id @default(autoincrement())
+  activityId            Int      @map("activity_id")
+  progressDate          DateTime @map("progress_date") @db.Date
+  previousProgress      Int      @map("previous_progress")
+  addedProgress         Int      @map("added_progress")
+  currentProgress       Int      @map("current_progress")
+  pic                   String
+  notes                 String?  @db.Text
+  preActivityPhotoPaths String[] @default([]) @map("pre_activity_photo_paths")
+  photoPaths            String[] @default([]) @map("photo_paths")
+  requestClose          Boolean  @default(false) @map("request_close")
+  createdBy             Int      @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  activity DailyActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  creator  User          @relation("DailyProgressCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([activityId])
+  @@index([progressDate])
+  @@index([createdBy])
+  @@map("daily_activity_progresses")
+}
+
+model DailyActivityApproval {
+  id         Int                   @id @default(autoincrement())
+  activityId Int                   @map("activity_id")
+  decision   DailyApprovalDecision
+  comment    String?               @db.Text
+  actedBy    Int                   @map("acted_by")
+  actedAt    DateTime              @default(now()) @map("acted_at")
+  createdAt  DateTime              @default(now()) @map("created_at")
+
+  activity DailyActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  actor    User          @relation("DailyApprovalActor", fields: [actedBy], references: [id], onDelete: Restrict)
+
+  @@index([activityId])
+  @@index([actedBy])
+  @@index([actedAt])
+  @@map("daily_activity_approvals")
+}
+
+model PreActivityCheck {
+  id                        Int      @id @default(autoincrement())
+  job_name                  String
+  activityDate              DateTime @map("activity_date") @db.Date
+  work_location_text        String?
+  heavy_equipment_name_text String?
+  unit_number_text          String?
+  executor_team_text        String?
+  hazard_potential_text     String?
+  control_step_text         String?
+  apd_check                 Boolean  @default(false)
+  tool_condition_check      Boolean  @default(false)
+  work_area_check           Boolean  @default(false)
+  tool_complete_check       Boolean  @default(false)
+  work_permit_check         Boolean  @default(false)
+  sop_check                 Boolean  @default(false)
+  jsa_check                 Boolean  @default(false)
+  lifting_plan_check        Boolean  @default(false)
+  jsa_image                 String?
+  checklist_image           String?
+  height_permit_image       String?
+  health_check              String?
+  health_check_status       String?
+  socialization_photo       String?
+  pic                       String
+  executor_signature        String?
+  supervisorName            String?  @map("supervisor_name")
+  supervisor_signature      String?
+  createdBy                 Int      @map("created_by")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  creator                   User     @relation("PreActivityCheckCreator", fields: [createdBy], references: [id])
+
+  @@index([activityDate])
+  @@index([createdBy])
+  @@map("pre_activity_checks")
+}
+
+model PostActivity {
+  id               Int      @id @default(autoincrement())
+  activityDate     DateTime @map("activity_date") @db.Date
+  startTime        String   @map("start_time")
+  endTime          String   @map("end_time")
+  workName         String   @map("work_name")
+  progressPercent  Int      @map("progress_percent")
+  morningWeather   String   @map("morning_weather")
+  afternoonWeather String   @map("afternoon_weather")
+  eveningWeather   String   @map("evening_weather")
+  coordinatorCount Int      @default(1) @map("coordinator_count")
+  carpenterCount   Int      @default(1) @map("carpenter_count")
+  helperCount      Int      @default(1) @map("helper_count")
+  approverName     String   @default("ARIEF RAHIM") @map("approver_name")
+  photoPaths       String[] @default([]) @map("photo_paths")
+  createdBy        Int      @map("created_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  creator          User     @relation("PostActivityCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([activityDate])
+  @@index([createdBy])
+  @@map("post_activities")
+}
+
+model P5mMeeting {
+  id                 Int      @id @default(autoincrement())
+  activityDate       DateTime @map("activity_date") @db.Date
+  startTime          String   @default("00:00") @map("start_time")
+  endTime            String?  @map("end_time")
+  location           String
+  topic              String   @db.Text
+  speaker            String?
+  participants       String?  @db.Text
+  supervisors        Json     @default("[]")
+  supervisorName     String   @default("") @map("supervisor_name")
+  supervisorSignPath String?  @map("supervisor_sign_path")
+  participantNames   String[] @default([]) @map("participant_names")
+  documentationPaths String[] @default([]) @map("documentation_paths")
+  notes              String?  @db.Text
+  createdBy          Int      @map("created_by")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  creator User @relation("P5mMeetingCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([activityDate])
+  @@index([supervisorName])
+  @@index([createdBy])
+  @@map("p5m_meetings")
+}
+
+model PreActivity {
+  id                        Int      @id @default(autoincrement())
+  job_name                  String
+  activityDate              DateTime @map("activity_date") @db.Date
+  work_location_text        String?
+  heavy_equipment_name_text String?
+  unit_number_text          String?
+  executor_team_text        String?
+  hazard_potential_text     String?
+  control_step_text         String?
+  apd_check                 Boolean  @default(false)
+  tool_condition_check      Boolean  @default(false)
+  work_area_check           Boolean  @default(false)
+  tool_complete_check       Boolean  @default(false)
+  work_permit_check         Boolean  @default(false)
+  sop_check                 Boolean  @default(false)
+  jsa_check                 Boolean  @default(false)
+  lifting_plan_check        Boolean  @default(false)
+  jsa_image                 String?
+  checklist_image           String?
+  height_permit_image       String?
+  health_check              String?
+  health_check_status       String?
+  socialization_photo       String?
+  pic                       String
+  executor_signature        String?
+  supervisorName            String?  @map("supervisor_name")
+  supervisor_signature      String?
+  createdBy                 Int      @map("created_by")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  creator                   User     @relation("PreActivityCreator", fields: [createdBy], references: [id])
+
+  @@index([activityDate])
+  @@index([createdBy])
+  @@map("pre_activities")
+}
+
+model CoordinatorSignature {
+  id        Int      @id @default(autoincrement())
+  name      String
+  filePath  String   @map("file_path")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@map("coordinator_signatures")
+}
+
+model SafetyMeeting {
+  id                 Int      @id @default(autoincrement())
+  meetingDate        DateTime @map("meeting_date") @db.Date
+  location           String?
+  speaker            String?
+  participants       String?
+  material           String
+  supervisors        Json     @default("[]")
+  documentationPaths Json     @default("[]") @map("documentation_paths")
+  createdBy          Int      @map("created_by")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([createdBy])
+  @@index([meetingDate])
+  @@map("safety_meetings")
+}

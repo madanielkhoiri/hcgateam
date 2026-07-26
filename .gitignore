@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+out/
+coverage/
+*.tsbuildinfo
+
+# Environment dan rahasia
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Upload runtime backend
+backend/uploads/daily-activities/
+backend/uploads/grass-cutting/
+backend/uploads/handovers/
+backend/uploads/inventory-electric/
+backend/uploads/p5m/
+backend/uploads/post-activities/
+backend/uploads/pre-activity-checks/
+backend/uploads/work-orders/
+
+# Tanda tangan buatan user
+backend/uploads/signatures/coordinators/
+
+# Upload lain
+frontend/uploads/
+uploads/
+
+# Cache dan log
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor dan Windows
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# File pemeriksaan dan backup
+*.bak
+*.before-*
+*.backup.*
+*.txt
