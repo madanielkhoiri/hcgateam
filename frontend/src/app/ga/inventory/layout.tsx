@@ -36,8 +36,11 @@ type MenuItem = {
   icon: React.ElementType;
 };
 
+type SectionId = "inventory" | "pekerjaan" | "aktivitas" | "project" | "safety";
+
 type MenuGroup = {
   id: string;
+  section: SectionId;
   label: string;
   icon: React.ElementType;
   items: MenuItem[];
@@ -46,6 +49,7 @@ type MenuGroup = {
 const menuGroups: MenuGroup[] = [
   {
     id: "dashboard",
+    section: "inventory",
     label: "Dashboard",
     icon: BarChart3,
     items: [
@@ -54,15 +58,11 @@ const menuGroups: MenuGroup[] = [
         href: "/ga/inventory/dashboard-inventory",
         icon: BarChart3,
       },
-      {
-        label: "Dashboard Work Order",
-        href: "/ga/inventory/dashboard-work-order",
-        icon: ClipboardList,
-      },
     ],
   },
   {
     id: "inventory",
+    section: "inventory",
     label: "Inventory Infras",
     icon: Boxes,
     items: [
@@ -90,6 +90,7 @@ const menuGroups: MenuGroup[] = [
   },
   {
     id: "inventory-mess",
+    section: "inventory",
     label: "Inventory Mess",
     icon: Warehouse,
     items: [
@@ -117,6 +118,7 @@ const menuGroups: MenuGroup[] = [
   },
   {
     id: "inventory-electric",
+    section: "inventory",
     label: "Inventory Electric",
     icon: ToolCase,
     items: [
@@ -144,9 +146,15 @@ const menuGroups: MenuGroup[] = [
   },
   {
     id: "pekerjaan",
+    section: "pekerjaan",
     label: "Pekerjaan",
     icon: ClipboardList,
     items: [
+      {
+        label: "Dashboard Work Order",
+        href: "/ga/inventory/dashboard-work-order",
+        icon: BarChart3,
+      },
       {
         label: "Work Order",
         href: "/ga/inventory/work-order",
@@ -161,6 +169,7 @@ const menuGroups: MenuGroup[] = [
   },
   {
     id: "aktivitas",
+    section: "aktivitas",
     label: "Aktivitas Harian",
     icon: FileText,
     items: [
@@ -178,6 +187,7 @@ const menuGroups: MenuGroup[] = [
   },
   {
     id: "project",
+    section: "project",
     label: "Project",
     icon: HardHat,
     items: [
@@ -195,6 +205,7 @@ const menuGroups: MenuGroup[] = [
   },
   {
     id: "safety",
+    section: "safety",
     label: "Safety Meeting",
     icon: ShieldCheck,
     items: [
@@ -214,20 +225,42 @@ type InventoryLayoutProps = {
 export default function InventoryLayout({ children }: InventoryLayoutProps) {
   const pathname = usePathname();
 
-  const inventoryTitle = pathname.startsWith("/ga/inventory/mess")
-    ? "Inventory Mess"
-    : pathname.startsWith("/ga/inventory/electric")
-      ? "Inventory Electric"
-      : "Inventory Infras";
+  const activeSection: SectionId = pathname.includes("/pre-activity-check") ||
+    pathname.includes("/post-activity")
+    ? "project"
+    : pathname.includes("/p5m")
+      ? "safety"
+      : pathname.includes("/daily-report") ||
+          pathname.includes("/potong-rumput")
+        ? "aktivitas"
+        : pathname.includes("/work-order") ||
+            pathname.includes("/work-orders") ||
+            pathname.includes("/dashboard-work-order") ||
+            pathname.includes("/serah-terima-pekerjaan") ||
+            pathname.includes("/handovers")
+          ? "pekerjaan"
+          : "inventory";
+
+  const sectionTitle = {
+    inventory: "Inventory",
+    pekerjaan: "Pekerjaan",
+    aktivitas: "Aktivitas Harian",
+    project: "Project",
+    safety: "Safety Meeting",
+  }[activeSection];
+
+  const visibleMenuGroups = menuGroups.filter(
+    (group) => group.section === activeSection,
+  );
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const [openGroups, setOpenGroups] = useState<string[]>(["inventory"]);
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   useEffect(() => {
-    const activeGroup = menuGroups.find((group) =>
+    const activeGroup = visibleMenuGroups.find((group) =>
       group.items.some((item) => pathname === item.href),
     );
 
@@ -238,7 +271,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     setOpenGroups((current) =>
       current.includes(activeGroup.id) ? current : [...current, activeGroup.id],
     );
-  }, [pathname]);
+  }, [pathname, activeSection]);
 
   useEffect(() => {
     setMobileSidebarOpen(false);
@@ -302,10 +335,10 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
           </Link>
 
           {!sidebarCollapsed && (
-            <div className={styles.navigationLabel}>MENU INVENTORY</div>
+            <div className={styles.navigationLabel}>MENU {sectionTitle.toUpperCase()}</div>
           )}
 
-          {menuGroups.map((group) => {
+          {visibleMenuGroups.map((group) => {
             const GroupIcon = group.icon;
             const isOpen = openGroups.includes(group.id);
 
@@ -418,7 +451,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
 
             <div>
               <span>GA</span>
-              <strong>{inventoryTitle}</strong>
+              <strong>{sectionTitle}</strong>
             </div>
           </div>
 

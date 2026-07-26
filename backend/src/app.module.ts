@@ -24,6 +24,7 @@ import { PostActivitiesModule } from './post-activities/post-activities.module';
 import { SignatureLibraryModule } from './signature-library/signature-library.module';
 
 import { P5mModule } from './p5m/p5m.module';
+import { TransportModule } from './transport/transport.module';
 @Module({
   imports: [
     InventoryModule,
@@ -40,6 +41,7 @@ import { P5mModule } from './p5m/p5m.module';
     PostActivitiesModule,
     SignatureLibraryModule,
     P5mModule,
+    TransportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -31,9 +31,10 @@ model User {
   preActivityChecks PreActivityCheck[]      @relation("PreActivityCheckCreator")
   postActivities    PostActivity[]          @relation("PostActivityCreator")
 
-  p5mMeetings    P5mMeeting[]    @relation("P5mMeetingCreator")
-  preActivities  PreActivity[]   @relation("PreActivityCreator")
-  safetyMeetings SafetyMeeting[]
+  p5mMeetings      P5mMeeting[]      @relation("P5mMeetingCreator")
+  preActivities    PreActivity[]     @relation("PreActivityCreator")
+  safetyMeetings   SafetyMeeting[]
+  transportRecords TransportRecord[] @relation("TransportRecordCreator")
 
   @@map("users")
 }
@@ -513,4 +514,34 @@ model SafetyMeeting {
   @@index([createdBy])
   @@index([meetingDate])
   @@map("safety_meetings")
+}
+
+model TransportRecord {
+  id           Int      @id @default(autoincrement())
+  unitNumber   String   @map("unit_number")
+  department   String
+  vehicleType  String   @default("LV") @map("vehicle_type")
+  fuelDate     DateTime @map("fuel_date") @db.Date
+  hmStart      Decimal  @map("hm_start") @db.Decimal(14, 2)
+  hmEnd        Decimal  @map("hm_end") @db.Decimal(14, 2)
+  totalHm      Decimal  @default(0) @map("total_hm") @db.Decimal(14, 2)
+  hmPerShift   Decimal  @default(0) @map("hm_per_shift") @db.Decimal(14, 2)
+  kmPerLiter   Decimal  @default(0) @map("km_per_liter") @db.Decimal(14, 2)
+  totalLiter   Decimal  @map("total_liter") @db.Decimal(14, 2)
+  lostTimeBd   Decimal  @default(0) @map("lost_time_bd") @db.Decimal(14, 2)
+  targetUa     Decimal  @default(0) @map("target_ua") @db.Decimal(14, 2)
+  actualUa     Decimal  @default(0) @map("actual_ua") @db.Decimal(14, 2)
+  uaPercentage Decimal  @default(0) @map("ua_percentage") @db.Decimal(8, 2)
+  unitStatus   String   @default("READY") @map("unit_status")
+  achievement  String   @default("TERCAPAI")
+  createdBy    Int      @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  creator      User     @relation("TransportRecordCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([fuelDate])
+  @@index([unitNumber])
+  @@index([department])
+  @@index([createdBy])
+  @@map("transport_records")
 }
