@@ -57,3 +57,5 @@ Desktop.ini
 *.before-*
 *.backup.*
 *.txt
+# Local code backups
+code-backups/
