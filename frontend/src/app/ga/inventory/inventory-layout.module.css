@@ -1,0 +1,777 @@
+﻿.shell {
+  --sidebar-width: 284px;
+  --sidebar-collapsed-width: 82px;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  color: #10244a;
+  background: #f3f7fc;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.shellCollapsed {
+  grid-template-columns:
+    var(--sidebar-collapsed-width)
+    minmax(0, 1fr);
+}
+
+/* ==================================================
+   SIDEBAR
+================================================== */
+
+.sidebar {
+  position: fixed;
+  z-index: 200;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  display: grid;
+  grid-template-rows: 76px minmax(0, 1fr) 68px;
+  background: #ffffff;
+  border-right: 1px solid #dce6f2;
+  box-shadow: 8px 0 30px rgba(32, 64, 102, 0.05);
+  transition:
+    width 0.22s ease,
+    transform 0.22s ease;
+}
+
+.sidebarCollapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid #e7edf5;
+}
+
+.brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #10244a;
+  text-decoration: none;
+}
+
+.brandLogo {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: #ef2929;
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(239, 41, 41, 0.22);
+}
+
+.brandText {
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.mobileCloseButton {
+  display: none;
+}
+
+/* ==================================================
+   NAVIGATION
+================================================== */
+
+.navigation {
+  min-height: 0;
+  padding: 16px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8d5e5 transparent;
+}
+
+.navigation::-webkit-scrollbar {
+  width: 5px;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  background: #c8d5e5;
+  border-radius: 999px;
+}
+
+.mainNavigationItem,
+.groupButton,
+.submenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  color: #526984;
+  text-decoration: none;
+}
+
+.mainNavigationItem {
+  min-height: 44px;
+  gap: 12px;
+  margin-bottom: 5px;
+  padding: 0 13px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.mainNavigationItem:hover {
+  color: #08794a;
+  background: #f0f9f4;
+}
+
+.mainNavigationActive {
+  color: #078648;
+  background: #e8f7ef;
+}
+
+.navigationLabel {
+  margin: 21px 13px 9px;
+  color: #98a6b9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+}
+
+.menuGroup {
+  margin-bottom: 4px;
+}
+
+.groupButton {
+  min-height: 44px;
+  gap: 12px;
+  padding: 0 13px;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupButton:hover,
+.groupButtonActive {
+  color: #078648;
+  background: #f0f9f4;
+}
+
+.groupButton > span {
+  flex: 1;
+}
+
+.groupChevron,
+.groupChevronOpen {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.groupChevronOpen {
+  transform: rotate(180deg);
+}
+
+.submenu {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 4px 0 7px 22px;
+  padding-left: 16px;
+}
+
+.submenu::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 1px;
+  background: #dfe8f1;
+}
+
+.submenuItem {
+  position: relative;
+  min-height: 38px;
+  gap: 10px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.submenuItem:hover {
+  color: #087a48;
+  background: #f2f9f5;
+}
+
+.submenuItemActive {
+  color: #078648;
+  background: #e7f7ee;
+  font-weight: 750;
+}
+
+.submenuItemActive::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: -17px;
+  width: 3px;
+  background: #0a9f59;
+  border-radius: 999px;
+}
+
+/* ==================================================
+   SIDEBAR COLLAPSED
+================================================== */
+
+.sidebarCollapsed .sidebarHeader {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebarCollapsed .navigation {
+  padding: 16px 10px;
+}
+
+.sidebarCollapsed .mainNavigationItem,
+.sidebarCollapsed .groupButton {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebarCollapsed .mainNavigationItem span,
+.sidebarCollapsed .groupButton span {
+  display: none;
+}
+
+.sidebarFooter {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid #e7edf5;
+}
+
+.collapseButton {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #63758d;
+  background: #f4f7fb;
+  border: 1px solid #e1e8f1;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.collapseButton:hover {
+  color: #08794a;
+  background: #edf8f2;
+}
+
+/* ==================================================
+   CONTENT AREA
+================================================== */
+
+.contentArea {
+  min-width: 0;
+  grid-column: 2;
+  display: grid;
+  grid-template-rows: 76px minmax(0, 1fr);
+}
+
+.topHeader {
+  position: sticky;
+  z-index: 100;
+  top: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 27px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #dce6f2;
+  backdrop-filter: blur(10px);
+}
+
+.topHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.topHeaderLeft > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.topHeaderLeft span {
+  color: #8392a8;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.topHeaderLeft strong {
+  color: #15335c;
+  font-size: 17px;
+}
+
+.mobileMenuButton {
+  display: none;
+}
+
+.headerProfile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profileAvatar {
+  width: 41px;
+  height: 41px;
+  display: grid;
+  place-items: center;
+  color: #0870e6;
+  background: #eaf2ff;
+  border-radius: 50%;
+}
+
+.headerProfile > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.headerProfile strong {
+  color: #18355e;
+  font-size: 12px;
+}
+
+.headerProfile div span {
+  color: #8190a5;
+  font-size: 10px;
+}
+
+.pageContent {
+  min-width: 0;
+  padding: 24px;
+}
+
+/* ==================================================
+   MOBILE
+================================================== */
+
+.mobileOverlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .shell,
+  .shellCollapsed {
+    display: block;
+  }
+
+  .sidebar,
+  .sidebarCollapsed {
+    width: min(88vw, 310px);
+    transform: translateX(-105%);
+  }
+
+  .sidebarMobileOpen {
+    transform: translateX(0);
+  }
+
+  .sidebarCollapsed .sidebarHeader {
+    justify-content: space-between;
+    padding: 0 18px;
+  }
+
+  .sidebarCollapsed .navigation {
+    padding: 16px 12px;
+  }
+
+  .sidebarCollapsed .mainNavigationItem,
+  .sidebarCollapsed .groupButton {
+    justify-content: flex-start;
+    padding: 0 13px;
+  }
+
+  .sidebarCollapsed .mainNavigationItem span,
+  .sidebarCollapsed .groupButton span {
+    display: inline;
+  }
+
+  .brandText {
+    display: inline;
+  }
+
+  .mobileCloseButton {
+    width: 37px;
+    height: 37px;
+    display: grid;
+    place-items: center;
+    color: #62758f;
+    background: #f3f6fa;
+    border: 0;
+    border-radius: 10px;
+  }
+
+  .sidebarFooter {
+    display: none;
+  }
+
+  .contentArea {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: 70px minmax(0, 1fr);
+  }
+
+  .topHeader {
+    padding: 0 16px;
+  }
+
+  .mobileMenuButton {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    color: #17385f;
+    background: #f1f5fa;
+    border: 1px solid #dce6f0;
+    border-radius: 10px;
+  }
+
+  .mobileOverlay {
+    position: fixed;
+    z-index: 190;
+    inset: 0;
+    display: block;
+    background: rgba(10, 29, 52, 0.48);
+    border: 0;
+  }
+
+  .pageContent {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .headerProfile > div {
+    display: none;
+  }
+
+  .topHeaderLeft strong {
+    font-size: 15px;
+  }
+
+  .pageContent {
+    padding: 12px;
+  }
+}
+
+.contentArea {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.pageContent {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 24px;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .pageContent {
+    width: 100%;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .pageContent {
+    padding: 12px;
+  }
+}
+
+.shell {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.sidebar {
+  box-sizing: border-box;
+}
+
+.topHeader {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 901px) {
+  .contentArea {
+    margin-left: 0;
+  }
+}
+
+/* FIX FINAL: AREA KONTEN TIDAK BOLEH MASUK KE BELAKANG SIDEBAR */
+
+.shell {
+  display: block !important;
+  width: 100% !important;
+  min-height: 100vh;
+  overflow-x: hidden !important;
+}
+
+.contentArea {
+  width: calc(100% - 284px) !important;
+  min-width: 0 !important;
+  margin-left: 284px !important;
+  grid-column: unset !important;
+  box-sizing: border-box !important;
+  transition:
+    width 0.22s ease,
+    margin-left 0.22s ease;
+}
+
+.shellCollapsed .contentArea {
+  width: calc(100% - 82px) !important;
+  margin-left: 82px !important;
+}
+
+.topHeader {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.pageContent {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 900px) {
+  .contentArea,
+  .shellCollapsed .contentArea {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .pageContent {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .pageContent {
+    padding: 12px !important;
+  }
+}
+
+/* ==================================================
+   FINAL ALIGNMENT INVENTORY
+================================================== */
+
+.contentArea {
+  background: #eef5ff !important;
+}
+
+/* Header putih dibuat penuh hingga menyentuh sidebar */
+.topHeader {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 76px !important;
+  margin: 0 !important;
+  padding: 0 24px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #dce6f2 !important;
+  box-sizing: border-box !important;
+}
+
+/* Hilangkan pembatas lebar pada elemen di dalam header */
+.topHeader > * {
+  max-width: none !important;
+}
+
+/* Isi halaman dibuat lebih dekat dan presisi terhadap sidebar */
+.pageContent {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* Desktop */
+@media (min-width: 901px) {
+  .contentArea {
+    width: calc(100% - 284px) !important;
+    margin-left: 284px !important;
+  }
+
+  .shellCollapsed .contentArea {
+    width: calc(100% - 82px) !important;
+    margin-left: 82px !important;
+  }
+}
+
+/* Tablet dan mobile */
+@media (max-width: 900px) {
+  .contentArea,
+  .shellCollapsed .contentArea {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .topHeader {
+    padding: 0 16px !important;
+  }
+
+  .pageContent {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .pageContent {
+    padding: 12px !important;
+  }
+}
+
+/* ==================================================
+   FIX PRESISI FINAL
+   Sidebar dan area konten memakai ukuran yang sama
+================================================== */
+
+.shell {
+  --inventory-sidebar-width: 236px;
+  --inventory-sidebar-collapsed-width: 82px;
+
+  display: block !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  overflow-x: hidden !important;
+}
+
+.sidebar {
+  width: var(--inventory-sidebar-width) !important;
+  min-width: var(--inventory-sidebar-width) !important;
+  max-width: var(--inventory-sidebar-width) !important;
+  box-sizing: border-box !important;
+}
+
+.sidebarCollapsed {
+  width: var(--inventory-sidebar-collapsed-width) !important;
+  min-width: var(--inventory-sidebar-collapsed-width) !important;
+  max-width: var(--inventory-sidebar-collapsed-width) !important;
+}
+
+/* Area kanan langsung dimulai setelah sidebar */
+.contentArea {
+  width: calc(100% - var(--inventory-sidebar-width)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 0 0 var(--inventory-sidebar-width) !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+.shellCollapsed .contentArea {
+  width: calc(
+    100% - var(--inventory-sidebar-collapsed-width)
+  ) !important;
+
+  margin-left:
+    var(--inventory-sidebar-collapsed-width) !important;
+}
+
+/* Header putih menempel tepat ke sisi sidebar */
+.topHeader {
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 76px !important;
+
+  margin: 0 !important;
+  padding: 0 22px !important;
+
+  background: #ffffff !important;
+  border-bottom: 1px solid #dce6f2 !important;
+  box-sizing: border-box !important;
+}
+
+/* Isi halaman dibuat sejajar */
+.pageContent {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  margin: 0 !important;
+  padding: 22px !important;
+
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+/* Mobile tidak menggunakan margin sidebar */
+@media (max-width: 900px) {
+  .sidebar,
+  .sidebarCollapsed {
+    width: min(88vw, 310px) !important;
+    min-width: min(88vw, 310px) !important;
+    max-width: min(88vw, 310px) !important;
+  }
+
+  .contentArea,
+  .shellCollapsed .contentArea {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .topHeader {
+    height: 70px !important;
+    padding: 0 16px !important;
+  }
+
+  .pageContent {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .pageContent {
+    padding: 12px !important;
+  }
+}

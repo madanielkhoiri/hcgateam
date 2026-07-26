@@ -1,0 +1,1275 @@
+﻿/* ==================================================
+   FILE: frontend/src/app/dashboard/dashboard.module.css
+   FUNGSI: Tampilan dashboard desktop dan mobile
+================================================== */
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: 58px;
+  overflow-x: hidden;
+  color: var(--text-main);
+  background: var(--page-bg);
+}
+
+.loadingPage {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #0868f6;
+  background: #f7faff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.header {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 max(32px, calc((100vw - 1440px) / 2));
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #e4edf7;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.brandLogo {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: #ef2828;
+  border-radius: 50%;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+.notificationButton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: #536986;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.notificationButton span {
+  position: absolute;
+  top: -8px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  color: white;
+  background: #ef2b2b;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.profileAvatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: #0868f6;
+  background: #eaf2ff;
+  border-radius: 50%;
+}
+
+.profile div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile strong {
+  font-size: 14px;
+}
+
+.profile span {
+  color: #72829c;
+  font-size: 12px;
+}
+
+.container {
+  width: min(1440px, calc(100% - 42px));
+  margin: 0 auto;
+  padding: 22px 0 30px;
+}
+
+/* ==================================================
+   HERO SLIDER
+================================================== */
+
+.hero {
+  position: relative;
+  height: 245px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: center;
+  padding: 36px 90px;
+  color: white;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 74, 174, 0.98),
+      rgba(0, 88, 207, 0.86) 51%,
+      rgba(16, 57, 105, 0.35)
+    ),
+    linear-gradient(135deg, #064aaf, #6ea8ec);
+  border-radius: 18px;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+}
+
+.heroLabel {
+  display: inline-flex;
+  padding: 8px 13px;
+  margin-bottom: 14px;
+  background: #169be4;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.heroContent h1,
+.heroContent h2 {
+  margin: 0;
+  font-size: clamp(25px, 2.1vw, 35px);
+  line-height: 1.18;
+}
+
+.heroContent p {
+  max-width: 550px;
+  margin: 13px 0 0;
+  line-height: 1.55;
+  font-size: 13px;
+}
+
+.heroVisual {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.screenMockup {
+  width: 330px;
+  min-height: 175px;
+  padding: 22px;
+  color: #0e2448;
+  background: white;
+  border: 10px solid #101827;
+  border-radius: 14px;
+  box-shadow: 0 25px 45px rgba(7, 30, 62, 0.32);
+  transform: rotate(3deg);
+}
+
+.screenMockup > strong {
+  display: block;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.screenMockup > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.screenMockup span {
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: #f7f9fc;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.visualHc {
+  color: #0868f6;
+}
+
+.visualGa {
+  color: #0ca650;
+}
+
+.visualSipil {
+  color: #ef7100;
+}
+
+.sliderButton {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: #1a355d;
+  background: rgba(255, 255, 255, 0.94);
+  border: 0;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.sliderLeft {
+  left: 20px;
+}
+
+.sliderRight {
+  right: 20px;
+}
+
+.sliderDots {
+  position: absolute;
+  z-index: 3;
+  bottom: 19px;
+  left: 50%;
+  display: flex;
+  gap: 9px;
+  transform: translateX(-50%);
+}
+
+.sliderDots button {
+  width: 22px;
+  height: 8px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.55);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sliderDots .activeDot {
+  background: white;
+}
+
+/* ==================================================
+   DEPARTEMEN UTAMA
+================================================== */
+
+.departmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.departmentCard {
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 19px;
+  padding: 19px 26px;
+  border-radius: 16px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.departmentCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 28px rgba(42, 77, 127, 0.11);
+}
+
+.departmentIcon {
+  width: 67px;
+  height: 67px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 8px 15px rgba(36, 66, 110, 0.08);
+}
+
+.departmentCard strong {
+  text-align: left;
+  font-size: 27px;
+}
+
+.hcCard {
+  color: #0868f6;
+  background: #f1f6ff;
+  border: 1px solid #cfe0ff;
+}
+
+.gaCard {
+  color: #0b9d4d;
+  background: #f1faf5;
+  border: 1px solid #d2eedc;
+}
+
+.sipilCard {
+  color: #ef7100;
+  background: #fff7ef;
+  border: 1px solid #ffdfc0;
+}
+
+/* ==================================================
+   DASHBOARD CONTENT
+================================================== */
+
+.dashboardContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.panel {
+  padding: 22px;
+  background: white;
+  border: 1px solid #dfe8f3;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(46, 78, 121, 0.05);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.panelHeader > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0868f6;
+}
+
+.panelHeader h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.panelHeader > button {
+  color: #0868f6;
+  background: transparent;
+  border: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.quickGrid button {
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 13px;
+  padding: 15px;
+  color: #132b52;
+  background: #ffffff;
+  border: 1px solid #dce6f2;
+  border-radius: 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.quickGrid button:hover {
+  background: #f5f9ff;
+  border-color: #9ec3ff;
+}
+
+.quickGrid button > svg:first-child {
+  color: #0868f6;
+}
+
+.quickGrid button > svg:last-child {
+  width: 17px;
+  color: #7284a0;
+}
+
+.quickGrid span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quickGrid strong {
+  font-size: 13px;
+}
+
+.quickGrid small {
+  overflow: hidden;
+  color: #7687a2;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+}
+
+.activityItem {
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  color: #11294f;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #e3ebf4;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.activityItem:last-child {
+  border-bottom: 0;
+}
+
+.activityIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.blue {
+  color: #0868f6;
+  background: #eaf2ff;
+}
+
+.green {
+  color: #0a9d4c;
+  background: #e8f8ef;
+}
+
+.orange {
+  color: #ef7100;
+  background: #fff0e3;
+}
+
+.purple {
+  color: #7b32e8;
+  background: #f2eaff;
+}
+
+.activityText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activityText strong {
+  font-size: 13px;
+}
+
+.activityText small {
+  color: #7585a0;
+  font-size: 11px;
+}
+
+.activityArrow {
+  width: 18px;
+  color: #7788a2;
+}
+
+/* ==================================================
+   FOOTER
+================================================== */
+
+.footer {
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 100%;
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  padding: 12px 24px;
+
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--border);
+
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.separator {
+  opacity: 0.45;
+}
+
+/* ==================================================
+   RESPONSIVE TABLET
+================================================== */
+
+@media (max-width: 980px) {
+  .hero {
+    height: 225px;
+    grid-template-columns: 1fr 0.75fr;
+    padding: 30px 65px;
+  }
+
+  .screenMockup {
+    width: 250px;
+  }
+
+  .departmentCard {
+    padding: 17px;
+  }
+
+  .dashboardContent {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================================================
+   RESPONSIVE MOBILE
+================================================== */
+
+@media (max-width: 700px) {
+  .header {
+    height: auto;
+    min-height: 78px;
+    padding: 14px 17px;
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 18px;
+  }
+
+  .brandLogo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .headerRight {
+    gap: 12px;
+  }
+
+  .notificationButton {
+    display: none;
+  }
+
+  .profile {
+    gap: 7px;
+  }
+
+  .profileAvatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .profile strong {
+    display: block;
+    max-width: 125px;
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile span {
+    font-size: 10px;
+  }
+
+  .container {
+    width: calc(100% - 24px);
+    padding: 14px 0 24px;
+  }
+
+  .hero {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    grid-template-columns: 1fr 0.75fr;
+    padding: 22px 38px;
+    border-radius: 15px;
+  }
+
+  .heroLabel {
+    padding: 5px 8px;
+    margin-bottom: 9px;
+    font-size: 8px;
+  }
+
+  .heroContent h1,
+  .heroContent h2 {
+    font-size: clamp(14px, 4.2vw, 20px);
+  }
+
+  .heroContent p {
+    display: none;
+  }
+
+  .screenMockup {
+    width: min(210px, 100%);
+    min-height: 95px;
+    padding: 10px;
+    border-width: 6px;
+  }
+
+  .screenMockup > strong {
+    margin-bottom: 9px;
+    font-size: 7px;
+  }
+
+  .screenMockup > div {
+    gap: 4px;
+  }
+
+  .screenMockup span {
+    min-height: 48px;
+    gap: 4px;
+    font-size: 7px;
+  }
+
+  .screenMockup span svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sliderButton {
+    width: 31px;
+    height: 31px;
+  }
+
+  .sliderButton svg {
+    width: 18px;
+  }
+
+  .sliderLeft {
+    left: 7px;
+  }
+
+  .sliderRight {
+    right: 7px;
+  }
+
+  .sliderDots {
+    bottom: 9px;
+    gap: 5px;
+  }
+
+  .sliderDots button {
+    width: 14px;
+    height: 5px;
+  }
+
+  .departmentGrid {
+    grid-template-columns: 1fr;
+    gap: 11px;
+    margin-top: 13px;
+  }
+
+  .departmentCard {
+    min-height: 81px;
+    padding: 11px 17px;
+    border-radius: 13px;
+  }
+
+  .departmentIcon {
+    width: 54px;
+    height: 54px;
+  }
+
+  .departmentIcon svg {
+    width: 27px;
+    height: 27px;
+  }
+
+  .departmentCard strong {
+    font-size: 24px;
+  }
+
+  .dashboardContent {
+    gap: 13px;
+    margin-top: 13px;
+  }
+
+  .panel {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .panelHeader {
+    margin-bottom: 14px;
+  }
+
+  .panelHeader h3 {
+    font-size: 17px;
+  }
+
+  .panelHeader > button {
+    font-size: 12px;
+  }
+
+  .quickGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .quickGrid button {
+    min-height: 74px;
+    grid-template-columns: auto 1fr;
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .quickGrid button > svg:last-child {
+    display: none;
+  }
+
+  .quickGrid strong {
+    font-size: 11px;
+  }
+
+  .quickGrid small {
+    display: none;
+  }
+
+  .activityItem {
+    min-height: 72px;
+    gap: 10px;
+  }
+
+  .activityIcon {
+    width: 39px;
+    height: 39px;
+  }
+
+  .activityText strong {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .activityText small {
+    font-size: 10px;
+  }
+
+  .footer {
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 100%;
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  padding: 12px 24px;
+
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--border);
+
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.separator {
+  opacity: 0.45;
+}
+}
+
+/* ==================================================
+   RESPONSIVE MOBILE KECIL
+================================================== */
+
+@media (max-width: 430px) {
+  .hero {
+    grid-template-columns: 1.15fr 0.85fr;
+    padding: 17px 32px;
+  }
+
+  .screenMockup {
+    width: 145px;
+  }
+
+  .quickGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==================================================
+   SELESAI: dashboard.module.css
+================================================== */
+
+/* ==================================================
+   RESPONSIVE DASHBOARD
+================================================== */
+
+@media (max-width: 820px) {
+  .page {
+    padding-bottom: 76px;
+  }
+
+  .footer {
+    min-height: 76px;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 10px 16px;
+    font-size: 9px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+/* ==================================================
+   PROFILE DROPDOWN
+================================================== */
+
+.profileWrapper {
+  position: relative;
+  z-index: 250;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 9px;
+  color: #10244a;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.profile:hover,
+.profile[aria-expanded="true"] {
+  background: #f1f6ff;
+}
+
+.profileIdentity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profileIdentity strong {
+  max-width: 180px;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileIdentity span {
+  color: #72829c;
+  font-size: 12px;
+}
+
+.profileArrow,
+.profileArrowOpen {
+  width: 17px;
+  color: #71839d;
+  transition: transform 0.2s ease;
+}
+
+.profileArrowOpen {
+  transform: rotate(90deg);
+}
+
+.menuBackdrop {
+  position: fixed;
+  z-index: 240;
+  inset: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.profileMenu {
+  position: absolute;
+  z-index: 260;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 290px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #dce7f3;
+  border-radius: 16px;
+  box-shadow: 0 22px 55px rgba(33, 64, 105, 0.18);
+}
+
+.profileMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px;
+}
+
+.profileMenuAvatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #0868f6;
+  background: #eaf2ff;
+  border-radius: 50%;
+}
+
+.profileMenuHeader > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileMenuHeader strong {
+  overflow: hidden;
+  color: #11294f;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileMenuHeader span {
+  color: #7585a0;
+  font-size: 11px;
+}
+
+.profileMenuDivider {
+  height: 1px;
+  margin: 8px 4px;
+  background: #e6edf5;
+}
+
+.profileMenu > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 11px;
+  padding: 11px;
+  color: #173157;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profileMenu > button:hover {
+  background: #f3f7fd;
+}
+
+.profileMenu > button > svg {
+  color: #0868f6;
+}
+
+.profileMenu > button > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profileMenu > button strong {
+  font-size: 13px;
+}
+
+.profileMenu > button small {
+  color: #7b8aa2;
+  font-size: 10px;
+}
+
+.profileMenu .logoutButton {
+  color: #c52d2d;
+}
+
+.profileMenu .logoutButton > svg {
+  color: #e13a3a;
+}
+
+.profileMenu .logoutButton:hover {
+  background: #fff2f2;
+}
+
+/* ==================================================
+   ACCOUNT MODAL
+================================================== */
+
+.modalOverlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 25, 48, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.accountModal {
+  width: min(100%, 500px);
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #d9e5f2;
+  border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(16, 42, 75, 0.28);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 21px 22px;
+  border-bottom: 1px solid #e4ebf4;
+}
+
+.modalHeader > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modalIcon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #0868f6;
+  background: #eaf2ff;
+  border-radius: 12px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: #10294f;
+  font-size: 19px;
+}
+
+.modalHeader p {
+  margin: 5px 0 0;
+  color: #73839c;
+  font-size: 12px;
+}
+
+.closeButton {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  color: #6e809b;
+  background: #f4f7fb;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: #18375f;
+  background: #eaf1fa;
+}
+
+.accountForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+}
+
+.accountForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #173157;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accountForm input {
+  width: 100%;
+  height: 45px;
+  padding: 0 13px;
+  color: #11294f;
+  background: #f9fbfe;
+  border: 1px solid #ccdbea;
+  border-radius: 9px;
+  outline: 0;
+  font: inherit;
+}
+
+.accountForm input:focus {
+  border-color: #0868f6;
+  box-shadow: 0 0 0 3px rgba(8, 104, 246, 0.11);
+}
+
+.accountForm input:disabled {
+  color: #72829a;
+  background: #eef2f7;
+  cursor: not-allowed;
+}
+
+.modalError,
+.modalSuccess {
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.modalError {
+  color: #b42318;
+  background: #fff1f0;
+  border: 1px solid #ffd2ce;
+}
+
+.modalSuccess {
+  color: #087a3d;
+  background: #eaf8ef;
+  border: 1px solid #bde8cb;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.cancelButton,
+.saveButton {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelButton {
+  color: #536985;
+  background: #ffffff;
+  border: 1px solid #ccd9e8;
+}
+
+.saveButton {
+  color: #ffffff;
+  background: #0868f6;
+  border: 1px solid #0868f6;
+  box-shadow: 0 8px 20px rgba(8, 104, 246, 0.2);
+}
+
+.saveButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+@media (max-width: 700px) {
+  .profileIdentity {
+    display: none;
+  }
+
+  .profileArrow,
+  .profileArrowOpen {
+    display: none;
+  }
+
+  .profile {
+    padding: 3px;
+  }
+
+  .profileMenu {
+    position: fixed;
+    top: 78px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .accountModal {
+    max-height: calc(100dvh - 28px);
+    overflow-y: auto;
+  }
+
+  .modalActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

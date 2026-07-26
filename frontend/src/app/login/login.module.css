@@ -1,0 +1,616 @@
+﻿.page {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: 78px 1fr;
+  padding-bottom: 56px;
+  overflow: hidden;
+  color: var(--text-main);
+  background: var(--page-bg);
+}
+
+/* ==================================================
+   HEADER
+================================================== */
+
+.header {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(24px, 4vw, 56px);
+  background: var(--surface-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-main);
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.brandLogo {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: #ef2929;
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(239, 41, 41, 0.25);
+}
+
+/* ==================================================
+   AREA UTAMA
+================================================== */
+
+.main {
+  position: relative;
+  min-height: calc(100vh - 78px - 56px);
+  min-height: calc(100dvh - 78px - 56px);
+  display: grid;
+  grid-template-columns: 440px 760px;
+  align-items: center;
+  justify-content: center;
+  gap: 88px;
+  padding: 22px 36px 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 90% 28%,
+      var(--decoration-circle) 0,
+      var(--decoration-circle) 21%,
+      transparent 21.2%
+    ),
+    linear-gradient(
+      135deg,
+      var(--page-gradient-start),
+      var(--page-gradient-end)
+    );
+}
+
+.backgroundDotsLeft {
+  position: absolute;
+  left: 0;
+  top: 43%;
+  width: 105px;
+  height: 145px;
+  background-image: radial-gradient(
+    circle,
+    var(--decoration-dot) 1.4px,
+    transparent 1.5px
+  );
+  background-size: 13px 13px;
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.backgroundCircle {
+  display: none;
+}
+
+/* ==================================================
+   LOGIN CARD
+================================================== */
+
+.loginCard {
+  position: relative;
+  z-index: 5;
+  width: 440px;
+  padding: 38px 36px 32px;
+  color: var(--text-main);
+  background: var(--surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.loginIcon {
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-radius: 50%;
+}
+
+.loginCard h1 {
+  margin: 0;
+  color: var(--text-main);
+  text-align: center;
+  font-size: 29px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 13px;
+}
+
+.titleLine {
+  width: 38px;
+  height: 3px;
+  margin: 16px auto 24px;
+  background: var(--primary);
+  border-radius: 999px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.field label {
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inputContainer {
+  height: 47px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  color: var(--text-secondary);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.inputContainer:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(8, 104, 246, 0.12);
+}
+
+.inputContainer input {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-main);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 14px;
+}
+
+.inputContainer input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.eyeButton {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.remember {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.loginButton {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0875ff, #075bdd);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 10px 22px rgba(8, 104, 246, 0.24);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.loginButton:hover {
+  filter: brightness(1.05);
+}
+
+.loginButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.restricted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-align: center;
+}
+
+.errorMessage {
+  padding: 9px 10px;
+  color: #b42318;
+  background: #fff1f0;
+  border: 1px solid #ffd4d0;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+/* ==================================================
+   ILUSTRASI KANAN
+================================================== */
+
+.illustration {
+  position: relative;
+  z-index: 4;
+  width: 760px;
+  height: 500px;
+}
+
+.browserWindow {
+  position: absolute;
+  z-index: 3;
+  top: 48px;
+  left: 50%;
+  width: 610px;
+  height: 340px;
+  overflow: hidden;
+  background: var(--browser-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-small);
+  transform: translateX(-50%);
+}
+
+.browserHeader {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 17px;
+  background: var(--browser-header);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.browserHeader span {
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.browserBody {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  gap: 18px;
+  padding: 27px;
+}
+
+.browserLines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.browserLines span {
+  height: 13px;
+  background: var(--browser-line);
+  border-radius: 999px;
+}
+
+.browserSide {
+  height: 150px;
+  background: var(--browser-side);
+  border-radius: 9px;
+}
+
+.departmentCards {
+  position: absolute;
+  z-index: 7;
+  top: 122px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  transform: translateX(-50%);
+}
+
+.departmentCards article {
+  width: 150px;
+  min-height: 196px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 13px 15px;
+  background: var(--surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-small);
+}
+
+.departmentIcon {
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+  border-radius: 50%;
+}
+
+.departmentCards strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.departmentLine {
+  width: 26px;
+  height: 2px;
+  margin: 11px 0;
+  border-radius: 999px;
+}
+
+.departmentCards span {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.hcCard {
+  color: #0868f6;
+}
+
+.hcCard .departmentIcon,
+.hcCard span {
+  background: var(--hc-soft);
+}
+
+.hcCard .departmentLine {
+  background: #88baff;
+}
+
+.gaCard {
+  color: #0ca650;
+}
+
+.gaCard .departmentIcon,
+.gaCard span {
+  background: var(--ga-soft);
+}
+
+.gaCard .departmentLine {
+  background: #75d7a0;
+}
+
+.sipilCard {
+  color: #ef7100;
+}
+
+.sipilCard .departmentIcon,
+.sipilCard span {
+  background: var(--sipil-soft);
+}
+
+.sipilCard .departmentLine {
+  background: #ffb979;
+}
+
+.orbit {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 6px;
+  width: 690px;
+  height: 190px;
+  border-bottom: 1.5px dashed var(--orbit-color);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.orbit span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--orbit-dot);
+  border-radius: 50%;
+}
+
+.orbitDotOne {
+  left: 43px;
+  bottom: 30px;
+}
+
+.orbitDotTwo {
+  left: 341px;
+  bottom: -5px;
+}
+
+.orbitDotThree {
+  right: 43px;
+  bottom: 30px;
+}
+
+.securityBadge {
+  position: absolute;
+  z-index: 8;
+  right: 24px;
+  bottom: 38px;
+  width: 74px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(145deg, #2395ff, #0068e8);
+  border: 5px solid var(--surface);
+  border-radius: 19px 19px 31px 31px;
+  box-shadow: 0 14px 28px rgba(0, 104, 232, 0.28);
+}
+
+/* ==================================================
+   FOOTER
+================================================== */
+
+.footer {
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 12px 22px;
+  color: var(--text-secondary);
+  background: var(--surface-header);
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.separator {
+  opacity: 0.45;
+}
+
+/* ==================================================
+   TABLET
+================================================== */
+
+@media (max-width: 1180px) {
+  .main {
+    grid-template-columns: 390px 560px;
+    gap: 42px;
+  }
+
+  .loginCard {
+    width: 390px;
+  }
+
+  .illustration {
+    width: 560px;
+  }
+
+  .browserWindow {
+    width: 500px;
+    height: 315px;
+  }
+
+  .departmentCards article {
+    width: 132px;
+    min-height: 182px;
+  }
+
+  .orbit {
+    width: 540px;
+  }
+}
+
+/* ==================================================
+   MOBILE
+================================================== */
+
+@media (max-width: 820px) {
+  .page {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    grid-template-rows: 72px 1fr auto;
+    overflow-y: auto;
+  }
+
+  .header {
+    padding: 0 18px;
+  }
+
+  .brand {
+    font-size: 19px;
+  }
+
+  .brandLogo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .main {
+    display: flex;
+    justify-content: center;
+    min-height: auto;
+    padding: 26px 14px 34px;
+  }
+
+  .loginCard {
+    width: min(100%, 410px);
+    padding: 31px 24px 27px;
+  }
+
+  .illustration,
+  .backgroundDotsLeft,
+  .backgroundCircle {
+    display: none;
+  }
+
+  .footer {
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 12px 22px;
+  color: var(--text-secondary);
+  background: var(--surface-header);
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+}
+}
+
