@@ -1,4 +1,4 @@
-﻿// ==================================================
+// ==================================================
 // FILE: backend/src/users/users.service.ts
 // FUNGSI: Pengelolaan data pengguna
 // ==================================================
@@ -19,10 +19,14 @@ export class UsersService {
   // CARI USER BERDASARKAN USERNAME
   // ==================================================
 
-  async findByUsername(username: string) {
-    return this.prisma.user.findUnique({
+  async findByIdentifier(identifier: string) {
+    return this.prisma.user.findFirst({
       where: {
-        username,
+        OR: [
+          { username: identifier },
+          { nrp: identifier },
+          { email: identifier },
+        ],
       },
     });
   }
