@@ -1,4 +1,4 @@
-﻿// ==================================================
+// ==================================================
 // FILE: backend/src/auth/auth.service.ts
 // FUNGSI: Login, profil, dan perubahan password
 // ==================================================
@@ -27,12 +27,12 @@ export class AuthService {
   // ==================================================
 
   async login(loginDto: LoginDto) {
-    const username = loginDto.username.trim();
+    const identifier = loginDto.username.trim();
 
-    const user = await this.usersService.findByUsername(username);
+    const user = await this.usersService.findByIdentifier(identifier);
 
     if (!user) {
-      throw new UnauthorizedException('Username atau password salah');
+      throw new UnauthorizedException('Username / NRP / Email atau password salah');
     }
 
     if (!user.isActive) {
@@ -45,7 +45,7 @@ export class AuthService {
     );
 
     if (!passwordValid) {
-      throw new UnauthorizedException('Username atau password salah');
+      throw new UnauthorizedException('Username / NRP / Email atau password salah');
     }
 
     const payload = {
