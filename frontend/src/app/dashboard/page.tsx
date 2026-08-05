@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ACCESS_KEYS, hasAccess, saveStoredUser } from '@/lib/access-control';
 import styles from './dashboard.module.css';
 
 // ==================================================
@@ -41,6 +42,7 @@ interface LoginUser {
   name: string;
   username: string;
   role: string;
+  accessKeys?: string[];
 }
 
 // ==================================================
@@ -144,7 +146,21 @@ export default function DashboardPage() {
     }
 
     try {
-      setUser(JSON.parse(savedUser) as LoginUser);
+      const parsedUser = JSON.parse(savedUser) as LoginUser;
+
+      setUser(parsedUser);
+
+      void fetch('http://localhost:3001/api/auth/profile', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const latestUser = (await response.json()) as LoginUser;
+          saveStoredUser(latestUser);
+          setUser(latestUser);
+        })
+        .catch(() => undefined);
     } catch {
       localStorage.removeItem('hcga_access_token');
       localStorage.removeItem('hcga_user');
@@ -474,6 +490,23 @@ export default function DashboardPage() {
                     </span>
                   </button>
 
+                  {user.role === 'ADMIN' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        router.push('/admin/manajemen-akun');
+                      }}
+                    >
+                      <UsersRound size={19} />
+
+                      <span>
+                        <strong>Manajemen Akun</strong>
+                        <small>Atur role dan akses menu akun</small>
+                      </span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={openPasswordModal}
@@ -590,42 +623,48 @@ export default function DashboardPage() {
         ================================================== */}
 
         <section className={styles.departmentGrid}>
-          <button
-            type="button"
-            className={`${styles.departmentCard} ${styles.hcCard}`}
-          >
-            <div className={styles.departmentIcon}>
-              <UsersRound size={34} />
-            </div>
+          {hasAccess(user, ACCESS_KEYS.HC) && (
+            <button
+              type="button"
+              className={`${styles.departmentCard} ${styles.hcCard}`}
+            >
+              <div className={styles.departmentIcon}>
+                <UsersRound size={34} />
+              </div>
 
-            <strong>HC</strong>
-            <ChevronRight />
-          </button>
+              <strong>HC</strong>
+              <ChevronRight />
+            </button>
+          )}
 
-          <button
-            type="button"
-            className={`${styles.departmentCard} ${styles.gaCard}`}
-            onClick={() => router.push('/ga')}
-          >
-            <div className={styles.departmentIcon}>
-              <Building2 size={34} />
-            </div>
+          {hasAccess(user, ACCESS_KEYS.GA) && (
+            <button
+              type="button"
+              className={`${styles.departmentCard} ${styles.gaCard}`}
+              onClick={() => router.push('/ga')}
+            >
+              <div className={styles.departmentIcon}>
+                <Building2 size={34} />
+              </div>
 
-            <strong>GA</strong>
-            <ChevronRight />
-          </button>
+              <strong>GA</strong>
+              <ChevronRight />
+            </button>
+          )}
 
-          <button
-            type="button"
-            className={`${styles.departmentCard} ${styles.sipilCard}`}
-          >
-            <div className={styles.departmentIcon}>
-              <HardHat size={34} />
-            </div>
+          {hasAccess(user, ACCESS_KEYS.SIPIL) && (
+            <button
+              type="button"
+              className={`${styles.departmentCard} ${styles.sipilCard}`}
+            >
+              <div className={styles.departmentIcon}>
+                <HardHat size={34} />
+              </div>
 
-            <strong>SIPIL</strong>
-            <ChevronRight />
-          </button>
+              <strong>SIPIL</strong>
+              <ChevronRight />
+            </button>
+          )}
         </section>
 
         {/* ==================================================
@@ -646,6 +685,20 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.quickGrid}>
+              {user.role === 'ADMIN' && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/admin/manajemen-akun')}
+                >
+                  <UserCog />
+                  <span>
+                    <strong>Manajemen Akun</strong>
+                    <small>Atur role dan akses menu pengguna</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
+
               <button type="button">
                 <FileText />
                 <span>
