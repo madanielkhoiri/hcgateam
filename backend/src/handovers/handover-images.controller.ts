@@ -10,6 +10,7 @@ import {
   Post,
   Res,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -17,6 +18,7 @@ import { existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 const uploadDirectory = join(process.cwd(), 'uploads', 'handovers');
@@ -37,6 +39,7 @@ function createFilename(originalName: string): string {
 }
 
 @Controller('handovers')
+@UseGuards(JwtAuthGuard)
 export class HandoverImagesController {
   constructor(private readonly prisma: PrismaService) {}
 

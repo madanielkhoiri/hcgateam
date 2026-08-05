@@ -25,6 +25,7 @@ import { SignatureLibraryModule } from './signature-library/signature-library.mo
 
 import { P5mModule } from './p5m/p5m.module';
 import { TransportModule } from './transport/transport.module';
+import { OrderPackMealModule } from './order-pack-meal/order-pack-meal.module';
 @Module({
   imports: [
     InventoryModule,
@@ -42,6 +43,7 @@ import { TransportModule } from './transport/transport.module';
     SignatureLibraryModule,
     P5mModule,
     TransportModule,
+    OrderPackMealModule,
   ],
   controllers: [AppController],
   providers: [AppService],
