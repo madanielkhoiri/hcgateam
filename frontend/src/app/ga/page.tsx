@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,16 +13,24 @@ import {
   HardHat,
   ShieldCheck,
   Truck,
+  UtensilsCrossed,
   UsersRound,
-} from "lucide-react";
-import styles from "./ga.module.css";
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ACCESS_KEYS,
+  clearSession,
+  formatRole,
+  getAccessToken,
+  getStoredUser,
+  hasAccess,
+  type PortalUser,
+  saveStoredUser,
+} from '@/lib/access-control';
+import styles from './ga.module.css';
 
-type LoginUser = {
-  id: number;
-  name: string;
-  username: string;
-  role: string;
-};
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 type GaMenu = {
   title: string;
@@ -30,110 +39,155 @@ type GaMenu = {
   href?: string;
   icon: React.ElementType;
   variant: string;
+  accessKey: string;
 };
 
 const gaMenus: GaMenu[] = [
   {
-    title: "Inventory",
+    title: 'Inventory',
     description:
-      "Pengelolaan master barang, barang masuk, barang keluar, dan stok Inventory Infras, Mess, serta Electric.",
-    status: "12 menu tersedia",
-    href: "/ga/inventory/dashboard-inventory",
+      'Pengelolaan master barang, barang masuk, barang keluar, dan stok Inventory Infras, Mess, serta Electric.',
+    status: '12 menu tersedia',
+    href: '/ga/inventory/dashboard-inventory',
     icon: Boxes,
-    variant: "inventoryCard",
+    variant: 'inventoryCard',
+    accessKey: ACCESS_KEYS.GA_INVENTORY,
   },
   {
-    title: "Pekerjaan",
+    title: 'Pekerjaan',
     description:
-      "Pengelolaan Work Order dan dokumen Serah Terima Pekerjaan.",
-    status: "2 menu tersedia",
-    href: "/ga/inventory/work-order",
+      'Pengelolaan Work Order dan dokumen Serah Terima Pekerjaan.',
+    status: '2 menu tersedia',
+    href: '/ga/inventory/work-order',
     icon: ClipboardList,
-    variant: "workCard",
+    variant: 'workCard',
+    accessKey: ACCESS_KEYS.GA_PEKERJAAN,
   },
   {
-    title: "Aktivitas Harian",
+    title: 'Aktivitas Harian',
     description:
-      "Pencatatan Daily Activity serta kegiatan pemotongan rumput.",
-    status: "2 menu tersedia",
-    href: "/ga/inventory/daily-report",
+      'Pencatatan Daily Activity serta kegiatan pemotongan rumput.',
+    status: '2 menu tersedia',
+    href: '/ga/inventory/daily-report',
     icon: FileText,
-    variant: "dailyCard",
+    variant: 'dailyCard',
+    accessKey: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
   },
   {
-    title: "Project",
+    title: 'Project',
     description:
-      "Dokumentasi Pre-Activity Check dan laporan Post Activity pekerjaan project.",
-    status: "2 menu tersedia",
-    href: "/ga/inventory/pre-activity-check",
+      'Dokumentasi Pre-Activity Check dan laporan Post Activity pekerjaan project.',
+    status: '2 menu tersedia',
+    href: '/ga/inventory/pre-activity-check',
     icon: HardHat,
-    variant: "projectCard",
+    variant: 'projectCard',
+    accessKey: ACCESS_KEYS.GA_PROJECT,
   },
   {
-    title: "Safety Meeting",
+    title: 'Safety Meeting',
     description:
-      "Pencatatan kegiatan P5M beserta materi, peserta, dan dokumentasi.",
-    status: "1 menu tersedia",
-    href: "/ga/inventory/p5m",
+      'Pencatatan kegiatan P5M beserta materi, peserta, dan dokumentasi.',
+    status: '1 menu tersedia',
+    href: '/ga/inventory/p5m',
     icon: ShieldCheck,
-    variant: "safetyCard",
+    variant: 'safetyCard',
+    accessKey: ACCESS_KEYS.GA_SAFETY_MEETING,
   },
   {
-    title: "Transport",
+    title: 'Transport',
     description:
-      "Pengelolaan data transportasi, bahan bakar, kilometer, dan laporan kendaraan.",
-    status: "2 menu tersedia",
-    href: "/ga/transport/dashboard",
+      'Pengelolaan data transportasi, bahan bakar, kilometer, dan laporan kendaraan.',
+    status: '2 menu tersedia',
+    href: '/ga/transport/dashboard',
     icon: Truck,
-    variant: "transportCard",
+    variant: 'transportCard',
+    accessKey: ACCESS_KEYS.GA_TRANSPORT,
   },
   {
-    title: "General Service",
+    title: 'Order Pack Meal',
     description:
-      "Layanan umum dan pengelolaan fasilitas untuk pengembangan berikutnya.",
-    status: "Belum tersedia",
+      'Pemesanan konsumsi tamu dengan nomor order otomatis, rincian jenis order, dan form approved.',
+    status: 'CRUD tersedia',
+    href: '/ga/order-pack-meal',
+    icon: UtensilsCrossed,
+    variant: 'orderMealCard',
+    accessKey: ACCESS_KEYS.GA_ORDER_PACK_MEAL,
+  },
+  {
+    title: 'General Service',
+    description:
+      'Layanan umum dan pengelolaan fasilitas untuk pengembangan berikutnya.',
+    status: 'Belum tersedia',
     icon: Construction,
-    variant: "generalCard",
+    variant: 'generalCard',
+    accessKey: ACCESS_KEYS.GA_GENERAL_SERVICE,
   },
 ];
 
-function getSavedUser(): LoginUser {
-  const defaultUser: LoginUser = {
-    id: 0,
-    name: "Administrator",
-    username: "admin",
-    role: "ADMIN",
-  };
-
-  if (typeof window === "undefined") {
-    return defaultUser;
-  }
-
-  const savedUser =
-    localStorage.getItem("hcga_user") ||
-    sessionStorage.getItem("hcga_user");
-
-  if (!savedUser) {
-    return defaultUser;
-  }
-
-  try {
-    return JSON.parse(savedUser) as LoginUser;
-  } catch {
-    return defaultUser;
-  }
-}
-
-function formatRole(role: string) {
-  return role
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 export default function GaPage() {
-  const user = getSavedUser();
+  const router = useRouter();
+  const [user, setUser] = useState<PortalUser | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadUser() {
+      const token = getAccessToken();
+      const stored = getStoredUser();
+
+      if (!token || !stored) {
+        clearSession();
+        router.replace('/login');
+        return;
+      }
+
+      let current = stored;
+
+      try {
+        const response = await fetch(`${API_URL}/auth/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+
+        if (response.status === 401) {
+          clearSession();
+          router.replace('/login');
+          return;
+        }
+
+        if (response.ok) {
+          current = (await response.json()) as PortalUser;
+          saveStoredUser(current);
+        }
+      } catch {
+        // Gunakan data login terakhir saat backend sementara tidak terjangkau.
+      }
+
+      if (!hasAccess(current, ACCESS_KEYS.GA)) {
+        router.replace('/dashboard');
+        return;
+      }
+
+      if (active) {
+        setUser(current);
+      }
+    }
+
+    void loadUser();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  const visibleMenus = useMemo(
+    () => gaMenus.filter((menu) => hasAccess(user, menu.accessKey)),
+    [user],
+  );
+
+  if (!user) {
+    return <main className={styles.page}>Memuat pilihan GA...</main>;
+  }
 
   return (
     <main className={styles.page}>
@@ -174,7 +228,7 @@ export default function GaPage() {
           </div>
 
           <div className={styles.categoryGrid}>
-            {gaMenus.map((menu) => {
+            {visibleMenus.map((menu) => {
               const Icon = menu.icon;
               const cardClass = `${styles.categoryCard} ${styles[menu.variant]}`;
               const content = (

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Boxes,
@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
+import { ACCESS_KEYS, clearSession, formatRole, getAccessToken, getStoredUser, hasAccess, type PortalUser } from "@/lib/access-control";
 import styles from "./inventory-layout.module.css";
 
 type MenuItem = {
@@ -224,6 +225,8 @@ type InventoryLayoutProps = {
 
 export default function InventoryLayout({ children }: InventoryLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<PortalUser | null>(null);
 
   const activeSection: SectionId = pathname.includes("/pre-activity-check") ||
     pathname.includes("/post-activity")
@@ -249,6 +252,14 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     safety: "Safety Meeting",
   }[activeSection];
 
+  const requiredAccessKey = {
+    inventory: ACCESS_KEYS.GA_INVENTORY,
+    pekerjaan: ACCESS_KEYS.GA_PEKERJAAN,
+    aktivitas: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
+    project: ACCESS_KEYS.GA_PROJECT,
+    safety: ACCESS_KEYS.GA_SAFETY_MEETING,
+  }[activeSection];
+
   const visibleMenuGroups = menuGroups.filter(
     (group) => group.section === activeSection,
   );
@@ -258,6 +269,24 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    const storedUser = getStoredUser();
+
+    if (!token || !storedUser) {
+      clearSession();
+      router.replace("/login");
+      return;
+    }
+
+    if (!hasAccess(storedUser, requiredAccessKey)) {
+      router.replace("/ga");
+      return;
+    }
+
+    setUser(storedUser);
+  }, [requiredAccessKey, router]);
 
   useEffect(() => {
     const activeGroup = visibleMenuGroups.find((group) =>
@@ -461,8 +490,8 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             </span>
 
             <div>
-              <strong>Administrator</strong>
-              <span>Admin</span>
+              <strong>{user?.name ?? "Pengguna"}</strong>
+              <span>{formatRole(user?.role)}</span>
             </div>
           </div>
         </header>
