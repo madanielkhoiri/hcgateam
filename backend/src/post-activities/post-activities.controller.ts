@@ -110,8 +110,13 @@ export class PostActivitiesController {
         storage: diskStorage({
           destination: (_request, _file, callback) => {
             const directory = process.cwd() + '/uploads/post-activities';
-
-            callback(null, directory);
+            
+            import('node:fs').then((fs) => {
+              if (!fs.existsSync(directory)) {
+                fs.mkdirSync(directory, { recursive: true });
+              }
+              callback(null, directory);
+            });
           },
           filename: (_request, file, callback) => {
             callback(null, safeFilename(file.originalname));
@@ -177,7 +182,14 @@ export class PostActivitiesController {
       {
         storage: diskStorage({
           destination: (_request, _file, callback) => {
-            callback(null, process.cwd() + '/uploads/post-activities');
+            const directory = process.cwd() + '/uploads/post-activities';
+            
+            import('node:fs').then((fs) => {
+              if (!fs.existsSync(directory)) {
+                fs.mkdirSync(directory, { recursive: true });
+              }
+              callback(null, directory);
+            });
           },
           filename: (_request, file, callback) => {
             callback(null, safeFilename(file.originalname));
