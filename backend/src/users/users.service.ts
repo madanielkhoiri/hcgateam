@@ -1,3 +1,8 @@
+// ==================================================
+// FILE: backend/src/users/users.service.ts
+// FUNGSI: Pengelolaan data pengguna
+// ==================================================
+
 import {
   BadRequestException,
   ForbiddenException,
@@ -37,8 +42,24 @@ const publicUserSelect = {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ==================================================
+  // CARI USER BERDASARKAN USERNAME / NRP / EMAIL
+  // ==================================================
+
+  async findByIdentifier(identifier: string) {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: identifier },
+          { nrp: identifier },
+          { email: identifier },
+        ],
+      },
+    });
+  }
+
   private assertAdmin(actor: AdminActor): void {
-    if (actor.role !== UserRole.ADMIN) {
+    if (actor.role !== UserRole.ADMIN && actor.role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Manajemen akun hanya dapat diakses Admin');
     }
   }
