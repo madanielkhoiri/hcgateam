@@ -7,22 +7,34 @@ datasource db {
 }
 
 enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  FA
   SECTION_HEAD
   GRUP_LEADER
-  ADMIN
+  KARYAWAN
+  VENDOR
   TAMU
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  role         UserRole @default(ADMIN)
-  isActive     Boolean  @default(true) @map("is_active")
-  accessKeys   String[] @default([]) @map("access_keys")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                 Int      @id @default(autoincrement())
+  name               String
+  username           String?  @unique
+  nrp                String?  @unique
+  email              String?  @unique
+  phoneNumber        String?  @map("phone_number")
+  passwordHash       String   @map("password_hash")
+  role               UserRole @default(KARYAWAN)
+  isActive           Boolean  @default(true) @map("is_active")
+  accessKeys         String[] @default([]) @map("access_keys")
+  signatureImage     String?  @map("signature_image")
+  twoFactorSecret    String?  @map("two_factor_secret")
+  isTwoFactorEnabled Boolean  @default(false) @map("is_two_factor_enabled")
+  vendorId           Int?     @map("vendor_id")
+  ticketCode         String?  @map("kode_tiket")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   workOrders WorkOrder[]
   handovers  Handover[]
