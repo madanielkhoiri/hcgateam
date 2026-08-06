@@ -64,6 +64,7 @@ export class AuthService {
         name: user.name,
         username: user.username,
         role: user.role,
+        accessKeys: user.accessKeys,
       },
     };
   }
@@ -108,6 +109,7 @@ export class AuthService {
         name: user.name,
         username: user.username,
         role: user.role,
+        accessKeys: user.accessKeys,
       },
     };
   }

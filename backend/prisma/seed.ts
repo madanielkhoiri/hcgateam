@@ -7,6 +7,7 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { ALL_ACCESS_KEYS, DEFAULT_GUEST_ACCESS_KEYS } from '../src/access/access.constants';
 
 // ==================================================
 // CEK DATABASE URL
@@ -41,17 +42,43 @@ async function main(): Promise<void> {
     where: {
       username: 'admin',
     },
-    update: {},
+    update: {
+      role: UserRole.ADMIN,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+    },
     create: {
       name: 'Administrator',
       username: 'admin',
       passwordHash,
       role: UserRole.ADMIN,
       isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
     },
   });
 
-  console.log('Akun admin berhasil dibuat');
+  const guestPasswordHash = await bcrypt.hash('Tamu123!', 12);
+
+  await prisma.user.upsert({
+    where: {
+      username: 'tamu',
+    },
+    update: {
+      role: UserRole.TAMU,
+      isActive: true,
+      accessKeys: DEFAULT_GUEST_ACCESS_KEYS,
+    },
+    create: {
+      name: 'Tamu Order Pack Meal',
+      username: 'tamu',
+      passwordHash: guestPasswordHash,
+      role: UserRole.TAMU,
+      isActive: true,
+      accessKeys: DEFAULT_GUEST_ACCESS_KEYS,
+    },
+  });
+
+  console.log('Akun admin dan akun TAMU berhasil dibuat');
 }
 
 // ==================================================

@@ -261,6 +261,11 @@ a.categoryCard:hover {
   --soft: #e5f7fb;
 }
 
+.orderMealCard {
+  --accent: #9a4fd1;
+  --soft: #f5eaff;
+}
+
 .generalCard {
   --accent: #e86600;
   --soft: #fff0e4;
