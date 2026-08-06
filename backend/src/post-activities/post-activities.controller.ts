@@ -21,8 +21,8 @@ import type { Request, Response } from 'express';
 import { CreatePostActivityDto } from './dto/create-post-activity.dto';
 import { UpdatePostActivityDto } from './dto/update-post-activity.dto';
 import { PostActivitiesService } from './post-activities.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PostActivityPdfService } from './post-activity-pdf.service';
-import { AuthGuard } from '@nestjs/passport';
 
 type UploadedPostActivityFiles = {
   photos?: Express.Multer.File[];
@@ -50,7 +50,7 @@ function safeFilename(originalName: string) {
   );
 }
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard)
 @Controller('post-activities')
 export class PostActivitiesController {
   constructor(

@@ -14,6 +14,7 @@ enum UserRole {
   GRUP_LEADER
   KARYAWAN
   VENDOR
+  TAMU
 }
 
 model User {
@@ -26,6 +27,7 @@ model User {
   passwordHash       String   @map("password_hash")
   role               UserRole @default(KARYAWAN)
   isActive           Boolean  @default(true) @map("is_active")
+  accessKeys         String[] @default([]) @map("access_keys")
   signatureImage     String?  @map("signature_image")
   twoFactorSecret    String?  @map("two_factor_secret")
   isTwoFactorEnabled Boolean  @default(false) @map("is_two_factor_enabled")
@@ -47,6 +49,7 @@ model User {
   preActivities    PreActivity[]     @relation("PreActivityCreator")
   safetyMeetings   SafetyMeeting[]
   transportRecords TransportRecord[] @relation("TransportRecordCreator")
+  packMealOrders   PackMealOrder[]   @relation("PackMealOrderCreator")
 
   @@map("users")
 }
@@ -556,4 +559,50 @@ model TransportRecord {
   @@index([department])
   @@index([createdBy])
   @@map("transport_records")
+}
+
+// ==================================================
+// ORDER PACK MEAL
+// ==================================================
+
+model PackMealOrder {
+  id               Int      @id @default(autoincrement())
+  orderNumber      String   @unique @map("order_number")
+  orderDate        DateTime @map("order_date") @db.Date
+  sequenceNumber   Int      @map("sequence_number")
+  neededDate       DateTime @map("needed_date") @db.Date
+  deliveryLocation String   @map("delivery_location")
+  department       String?
+  contactNumber    String?  @map("contact_number")
+  deliveryTime     String?  @map("delivery_time")
+  notes            String?  @db.Text
+  approvedFormPath String   @map("approved_form_path")
+  totalPacks       Int      @default(0) @map("total_packs")
+  createdBy        Int      @map("created_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  creator User                @relation("PackMealOrderCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  items   PackMealOrderItem[]
+
+  @@unique([orderDate, sequenceNumber])
+  @@index([orderDate])
+  @@index([neededDate])
+  @@index([createdBy])
+  @@map("pack_meal_orders")
+}
+
+model PackMealOrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @map("order_id")
+  orderType String   @map("order_type")
+  quantity  Int
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order PackMealOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("pack_meal_order_items")
 }
