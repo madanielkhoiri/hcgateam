@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
  ArrowRight,
@@ -16,7 +16,6 @@ import {
  TriangleAlert,
  Users,
  XCircle,
- Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
