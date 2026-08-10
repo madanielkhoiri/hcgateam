@@ -33,11 +33,10 @@ function normalisasiAngka(nilai: number | string | null | undefined) {
 }
 
 function formatRupiah(nilai: number | string | null | undefined) {
- return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
- minimumFractionDigits: 0,
- }).format(normalisasiAngka(nilai));
+  const formatAngka = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+  }).format(normalisasiAngka(nilai));
+  return `Rp${formatAngka}`;
 }
 
 function formatTanggal(nilai: string | null | undefined) {
@@ -264,7 +263,7 @@ async function ambilData() {
  <button
  type="button"
  onClick={cetakPdfDatabaseSettlement}
- className="inline-flex items-center gap-2 rounded-2xl bg-cyan-700 px-4 py-3 text-sm font-black text-white hover:bg-cyan-800"
+ className="inline-flex items-center gap-2 rounded-2xl bg-cyan-700 px-4 py-3 text-sm font-black !text-white hover:bg-cyan-800"
  >
  <Printer className="h-4 w-4" />
  Cetak PDF

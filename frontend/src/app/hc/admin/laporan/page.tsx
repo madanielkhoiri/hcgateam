@@ -193,12 +193,11 @@ function normalisasiAngka(nilai: unknown) {
 }
 
 function formatRupiah(nilai: unknown) {
- return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
- minimumFractionDigits: 0,
- maximumFractionDigits: 0,
- }).format(normalisasiAngka(nilai));
+  const formatAngka = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(normalisasiAngka(nilai));
+  return `Rp${formatAngka}`;
 }
 
 function formatRupiahPdf(nilai: unknown) {
@@ -390,9 +389,9 @@ export default function HalamanLaporanAdmin() {
  useEffect(() => {
  const token = (localStorage.getItem("hcga_access_token") || sessionStorage.getItem("hcga_access_token"));
 
- const dataPengguna = localStorage.getItem(
- "hcga_user",
- );
+ const dataPengguna =
+ localStorage.getItem("hcga_user") ||
+ sessionStorage.getItem("hcga_user");
 
  if (!token || !dataPengguna) {
  router.replace("/");
@@ -1798,7 +1797,7 @@ export default function HalamanLaporanAdmin() {
  type="button"
  onClick={ambilDataLaporan}
  disabled={sedangRefresh}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 px-5 py-3 text-sm font-bold !text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
  >
  <RefreshCw
  className={`h-4 w-4 ${
@@ -1814,7 +1813,7 @@ export default function HalamanLaporanAdmin() {
  type="button"
  onClick={unduhPdf}
  disabled={sedangMembuatPdf}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 px-5 py-3 text-sm font-bold !text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {sedangMembuatPdf ? (
  <RefreshCw className="h-4 w-4 animate-spin" />
