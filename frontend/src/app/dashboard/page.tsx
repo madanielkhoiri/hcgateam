@@ -627,6 +627,7 @@ export default function DashboardPage() {
             <button
               type="button"
               className={`${styles.departmentCard} ${styles.hcCard}`}
+              onClick={() => router.push('/hc')}
             >
               <div className={styles.departmentIcon}>
                 <UsersRound size={34} />
