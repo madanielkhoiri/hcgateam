@@ -143,17 +143,17 @@ export default function HalamanDetailDeklarasi() {
  const bolehSetujui =
  apakahAdminFa &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi.status);
+ ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi?.status);
 
  const bolehTolak =
  apakahAdminFa &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi.status);
+ ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi?.status);
 
  const bolehKoreksiNota =
  apakahAdminFa &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI", "DITOLAK"].includes(deklarasi.status);
+ ["DIAJUKAN", "DIVERIFIKASI", "DITOLAK"].includes(deklarasi?.status);
 
  const daftarNotaUrut = useMemo(() => {
  return [...daftarNota].sort((a, b) => {
@@ -181,7 +181,7 @@ export default function HalamanDetailDeklarasi() {
  : [
  {
  nomor: 1,
- tanggal: formatTanggalPdfDeklarasi(deklarasi.tanggal_kegiatan),
+ tanggal: formatTanggalPdfDeklarasi(deklarasi?.tanggal_kegiatan),
  namaBarang: "-",
  qty: 1,
  harga: 0,
@@ -199,7 +199,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan).getFullYear();
 
  return [
  "<tr>",
@@ -209,7 +209,7 @@ export default function HalamanDetailDeklarasi() {
  '<td class="center">' + escapeHtmlPdf(itemSettDb) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' +
- escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)) +
+ escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)) +
  "</td>",
  '<td class="center">' + escapeHtmlPdf(baris.tanggal) + "</td>",
  "<td>" + escapeHtmlPdf(baris.namaBarang) + "</td>",
@@ -219,7 +219,7 @@ export default function HalamanDetailDeklarasi() {
  "<td>" + escapeHtmlPdf(baris.keterangan) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' + escapeHtmlPdf(nomorRabPb) + "</td>",
- '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi.nama_pengguna || "-") + "</td>",
+ '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi?.nama_pengguna || "-") + "</td>",
  "</tr>",
  ].join("");
  })
@@ -335,7 +335,7 @@ export default function HalamanDetailDeklarasi() {
  : [
  {
  nomor: 1,
- tanggal: formatTanggalPdfDeklarasi(deklarasi.tanggal_kegiatan),
+ tanggal: formatTanggalPdfDeklarasi(deklarasi?.tanggal_kegiatan),
  namaBarang: "-",
  qty: 1,
  harga: 0,
@@ -349,7 +349,7 @@ export default function HalamanDetailDeklarasi() {
  const nomorSettlementDb = nomorSettlementDasarPdf || 1;
  const nomorItemDb = index + 1;
  const itemSettDb = nomorSettlementDb + "-" + nomorItemDb;
- const tahun = new Date(deklarasi.tanggal_kegiatan).getFullYear();
+ const tahun = new Date(deklarasi?.tanggal_kegiatan).getFullYear();
 
  const nomorRabPb =
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
@@ -365,7 +365,7 @@ export default function HalamanDetailDeklarasi() {
  '<td class="center">' + escapeHtmlPdf(itemSettDb) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' +
- escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)) +
+ escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)) +
  "</td>",
  '<td class="center">' + escapeHtmlPdf(baris.tanggal) + "</td>",
  "<td>" + escapeHtmlPdf(baris.namaBarang) + "</td>",
@@ -375,7 +375,7 @@ export default function HalamanDetailDeklarasi() {
  "<td>" + escapeHtmlPdf(baris.keterangan) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' + escapeHtmlPdf(nomorRabPb) + "</td>",
- '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi.nama_pengguna || "-") + "</td>",
+ '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi?.nama_pengguna || "-") + "</td>",
  "</tr>",
  ].join("");
  })
@@ -663,7 +663,7 @@ export default function HalamanDetailDeklarasi() {
  const response = await fetch(`${apiUrl}/saldo/${idSaldo}`);
 
  if (!response.ok) {
- throw new Error("Gagal mengambil data saldo deklarasi.");
+ throw new Error("Gagal mengambil data saldo deklarasi?.");
  }
 
  const dataSaldo = await response.json();
@@ -679,7 +679,7 @@ export default function HalamanDetailDeklarasi() {
  const responseDeklarasi = await fetch(`${apiUrl}/deklarasi/${idDeklarasi}`);
 
  if (!responseDeklarasi.ok) {
- throw new Error("Gagal mengambil ulang detail deklarasi.");
+ throw new Error("Gagal mengambil ulang detail deklarasi?.");
  }
 
  const hasilDeklarasi: DataDeklarasi = await responseDeklarasi.json();
@@ -836,7 +836,7 @@ export default function HalamanDetailDeklarasi() {
  : "Masukkan alasan penolakan.";
 
  const alasan = window.prompt(
- `Masukkan alasan penolakan deklarasi.\n${contohNomorNota}`
+ `Masukkan alasan penolakan deklarasi?.\n${contohNomorNota}`
  );
 
  if (!alasan || !alasan.trim()) {
@@ -863,7 +863,7 @@ export default function HalamanDetailDeklarasi() {
  setPesanSukses("");
 
  try {
- const response = await fetch(`${apiUrl}/deklarasi/${deklarasi.id}/status`, {
+ const response = await fetch(`${apiUrl}/deklarasi/${deklarasi?.id}/status`, {
  method: "PATCH",
  headers: {
  "Content-Type": "application/json",
@@ -878,7 +878,7 @@ export default function HalamanDetailDeklarasi() {
  const hasil = await response.json().catch(() => null);
 
  if (!response.ok) {
- throw new Error(hasil?.message || "Gagal mengubah status deklarasi.");
+ throw new Error(hasil?.message || "Gagal mengubah status deklarasi?.");
  }
 
  await ambilUlangDataDetail();
@@ -894,7 +894,7 @@ export default function HalamanDetailDeklarasi() {
  setPesanError(
  error instanceof Error
  ? error.message
- : "Terjadi kesalahan mengubah status deklarasi."
+ : "Terjadi kesalahan mengubah status deklarasi?."
  );
  } finally {
  setSedangUbahStatus(false);
@@ -1180,7 +1180,7 @@ export default function HalamanDetailDeklarasi() {
  : [
  {
  nomor: 1,
- tanggal: formatTanggalPdfDeklarasi(deklarasi.tanggal_kegiatan),
+ tanggal: formatTanggalPdfDeklarasi(deklarasi?.tanggal_kegiatan),
  namaBarang: "-",
  qty: 1,
  harga: 0,
@@ -1199,7 +1199,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan).getFullYear();
 
  return [
  "<tr>",
@@ -1209,7 +1209,7 @@ export default function HalamanDetailDeklarasi() {
  '<td class="center">' + escapeHtmlPdf(itemSettDb) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' +
- escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)) +
+ escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)) +
  "</td>",
  '<td class="center">' + escapeHtmlPdf(baris.tanggal) + "</td>",
  "<td>" + escapeHtmlPdf(baris.namaBarang) + "</td>",
@@ -1223,7 +1223,7 @@ export default function HalamanDetailDeklarasi() {
  "<td>" + escapeHtmlPdf(baris.keterangan) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' + escapeHtmlPdf(nomorRabPb) + "</td>",
- '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi.nama_pengguna || "-") + "</td>",
+ '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi?.nama_pengguna || "-") + "</td>",
  "</tr>",
  ].join("");
  })
@@ -1338,7 +1338,7 @@ export default function HalamanDetailDeklarasi() {
  : [
  {
  nomor: 1,
- tanggal: formatTanggalPdfDeklarasi(deklarasi.tanggal_kegiatan),
+ tanggal: formatTanggalPdfDeklarasi(deklarasi?.tanggal_kegiatan),
  namaBarang: "-",
  qty: 1,
  harga: 0,
@@ -1357,7 +1357,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan).getFullYear();
 
  return [
  "<tr>",
@@ -1367,7 +1367,7 @@ export default function HalamanDetailDeklarasi() {
  '<td class="center">' + escapeHtmlPdf(itemSettDb) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' +
- escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)) +
+ escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)) +
  "</td>",
  '<td class="center">' + escapeHtmlPdf(baris.tanggal) + "</td>",
  "<td>" + escapeHtmlPdf(baris.namaBarang) + "</td>",
@@ -1381,7 +1381,7 @@ export default function HalamanDetailDeklarasi() {
  "<td>" + escapeHtmlPdf(baris.keterangan) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' + escapeHtmlPdf(nomorRabPb) + "</td>",
- '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi.nama_pengguna || "-") + "</td>",
+ '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi?.nama_pengguna || "-") + "</td>",
  "</tr>",
  ].join("");
  })
@@ -1475,7 +1475,7 @@ export default function HalamanDetailDeklarasi() {
  return (
  <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
  <div className="rounded-2xl border border-red-100 bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
- Memuat detail deklarasi...
+ Memuat detail deklarasi?...
  </div>
  </main>
  );
@@ -1555,7 +1555,7 @@ export default function HalamanDetailDeklarasi() {
  };
 
  const jumlahUangMukaPdf = normalisasiAngka(
- saldoDeklarasi?.nominal_transfer ?? deklarasi.total_nominal
+ saldoDeklarasi?.nominal_transfer ?? deklarasi?.total_nominal
  );
 
  const totalDeklarasiPdf = daftarNotaUrut.reduce((total, nota) => {
@@ -1577,7 +1577,7 @@ export default function HalamanDetailDeklarasi() {
  const nomorSettlementUrutPdf = String(nomorSettlementDasarPdf).padStart(3, "0");
 
  const bulanRomawiPdf = (() => {
- const bulan = new Date(deklarasi.tanggal_kegiatan).getMonth() + 1;
+ const bulan = new Date(deklarasi?.tanggal_kegiatan).getMonth() + 1;
  const daftar = [
  "",
  "I",
@@ -1602,7 +1602,7 @@ export default function HalamanDetailDeklarasi() {
  "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan).getFullYear();
 
  const barisPdfDeklarasi = daftarNotaUrut.map((nota) => {
  const nominal = normalisasiAngka(nota.nominal_final);
@@ -1646,7 +1646,7 @@ export default function HalamanDetailDeklarasi() {
  const picSettlement =
  nota.pic_settlement && String(nota.pic_settlement).trim()
  ? String(nota.pic_settlement).trim()
- : deklarasi.nama_pengguna;
+ : deklarasi?.nama_pengguna;
 
  return {
  nomor: index + 1,
@@ -1697,7 +1697,7 @@ export default function HalamanDetailDeklarasi() {
  : [
  {
  nomor: 1,
- tanggal: formatTanggalPdfDeklarasi(deklarasi.tanggal_kegiatan),
+ tanggal: formatTanggalPdfDeklarasi(deklarasi?.tanggal_kegiatan),
  namaBarang: "-",
  qty: 1,
  harga: 0,
@@ -1716,7 +1716,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan).getFullYear();
 
  return [
  "<tr>",
@@ -1726,7 +1726,7 @@ export default function HalamanDetailDeklarasi() {
  '<td class="center">' + escapeHtmlPdf(itemSettDb) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' +
- escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)) +
+ escapeHtmlPdf(formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)) +
  "</td>",
  '<td class="center">' + escapeHtmlPdf(baris.tanggal) + "</td>",
  "<td>" + escapeHtmlPdf(baris.namaBarang) + "</td>",
@@ -1740,7 +1740,7 @@ export default function HalamanDetailDeklarasi() {
  "<td>" + escapeHtmlPdf(baris.keterangan) + "</td>",
  '<td class="center">HCGA</td>',
  '<td class="center">' + escapeHtmlPdf(nomorRabPb) + "</td>",
- '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi.nama_pengguna || "-") + "</td>",
+ '<td class="center">' + escapeHtmlPdf((baris as any).pic || deklarasi?.nama_pengguna || "-") + "</td>",
  "</tr>",
  ].join("");
  })
@@ -1858,11 +1858,11 @@ export default function HalamanDetailDeklarasi() {
  </div>
 
  <h1 className="text-3xl font-black md:text-4xl">
- {deklarasi.kode_deklarasi}
+ {deklarasi?.kode_deklarasi}
  </h1>
 
  <p className="mt-3 max-w-2xl text-sm leading-7 text-white/90">
- Detail deklarasi milik {deklarasi.nama_pengguna}. Admin / FA
+ Detail deklarasi milik {deklarasi?.nama_pengguna}. Admin / FA
  dapat memeriksa nomor nota, kategori, nominal, Upload Jam, dan
  melakukan koreksi OCR manual per nota.
  </p>
@@ -1871,10 +1871,10 @@ export default function HalamanDetailDeklarasi() {
  <div className="flex flex-col gap-3 md:items-end">
  <div
  className={`w-fit rounded-2xl px-4 py-3 text-sm font-black ${warnaStatus(
- deklarasi.status
+ deklarasi?.status
  )}`}
  >
- {deklarasi.status}
+ {deklarasi?.status}
  </div>
 
  <button
@@ -1889,9 +1889,9 @@ export default function HalamanDetailDeklarasi() {
  Refresh
  </button>
 
- {deklarasi.status === "DISETUJUI" && (
+ {deklarasi?.status === "DISETUJUI" && (
  <>
- {deklarasi.jenis_deklarasi === "UANG_OPERASIONAL" ? (
+ {deklarasi?.jenis_deklarasi === "UANG_OPERASIONAL" ? (
  <div className="flex flex-col gap-2 md:items-end">
  <button
  type="button"
@@ -2002,7 +2002,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  )}
 
- {deklarasi.status === "DIAJUKAN" && apakahAdminFa && (
+ {deklarasi?.status === "DIAJUKAN" && apakahAdminFa && (
  <div className="mt-5 rounded-[28px] border border-blue-100 bg-blue-50 px-5 py-4 shadow-[0_12px_40px_rgba(59,130,246,0.08)]">
  <div className="flex items-start gap-3">
  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-600">
@@ -2030,7 +2030,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  <div className="text-sm text-slate-500">Jenis Deklarasi</div>
  <div className="mt-2 text-lg font-black text-slate-900">
- {formatJenisDeklarasi(deklarasi.jenis_deklarasi)}
+ {formatJenisDeklarasi(deklarasi?.jenis_deklarasi)}
  </div>
  </div>
 
@@ -2040,7 +2040,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  <div className="text-sm text-slate-500">Tanggal Kegiatan</div>
  <div className="mt-2 text-lg font-black text-slate-900">
- {formatTanggal(deklarasi.tanggal_kegiatan)}
+ {formatTanggal(deklarasi?.tanggal_kegiatan)}
  </div>
  </div>
 
@@ -2050,7 +2050,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  <div className="text-sm text-slate-500">Total Penggunaan Nota</div>
  <div className="mt-2 text-lg font-black text-slate-900">
- {formatRupiah(deklarasi.total_nominal)}
+ {formatRupiah(deklarasi?.total_nominal)}
  </div>
  <div className="mt-1 text-xs text-slate-500">
  {jumlahNotaDisetujui} nota disetujui • {jumlahNotaDitolak} nota
@@ -2091,7 +2091,7 @@ export default function HalamanDetailDeklarasi() {
  Total Penggunaan
  </div>
  <div className="mt-2 text-lg font-black text-slate-900">
- {formatRupiah(deklarasi.total_nominal)}
+ {formatRupiah(deklarasi?.total_nominal)}
  </div>
  </div>
 
@@ -2135,7 +2135,7 @@ export default function HalamanDetailDeklarasi() {
  Informasi Kegiatan
  </div>
  <div className="text-sm text-slate-500">
- Lokasi dan keterangan deklarasi.
+ Lokasi dan keterangan deklarasi?.
  </div>
  </div>
  </div>
@@ -2144,7 +2144,7 @@ export default function HalamanDetailDeklarasi() {
  <div className="rounded-2xl bg-slate-50 px-4 py-3">
  <div className="text-xs font-semibold text-slate-500">Lokasi</div>
  <div className="mt-1 font-black text-slate-900">
- {deklarasi.lokasi}
+ {deklarasi?.lokasi}
  </div>
  </div>
 
@@ -2153,7 +2153,7 @@ export default function HalamanDetailDeklarasi() {
  Dibuat Oleh
  </div>
  <div className="mt-1 font-black text-slate-900">
- {deklarasi.nama_pengguna} / {deklarasi.nrp}
+ {deklarasi?.nama_pengguna} / {deklarasi?.nrp}
  </div>
  </div>
  </div>
@@ -2163,7 +2163,7 @@ export default function HalamanDetailDeklarasi() {
  Keterangan
  </div>
  <div className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-700">
- {deklarasi.keterangan}
+ {deklarasi?.keterangan}
  </div>
  </div>
  </div>
@@ -2569,7 +2569,7 @@ export default function HalamanDetailDeklarasi() {
  )}
  <section className="hidden print:block">
  <div className="pdf-template-shell">
- {deklarasi.jenis_deklarasi === "PERJALANAN_DINAS" ? (
+ {deklarasi?.jenis_deklarasi === "PERJALANAN_DINAS" ? (
  <div className="pdf-page">
  <table className="pdf-table pdf-header-top-table pdf-grid-7">
  <colgroup>
@@ -2620,25 +2620,25 @@ export default function HalamanDetailDeklarasi() {
  <tbody>
  <tr>
  <td>Nama</td>
- <td colSpan={2}>: {deklarasi.nama_pengguna}</td>
+ <td colSpan={2}>: {deklarasi?.nama_pengguna}</td>
  <td>Departemen</td>
  <td colSpan={2}>: HCGA</td>
  <td className="pdf-ket-heading">Keterangan Perjalanan :</td>
  </tr>
  <tr>
  <td>NRP</td>
- <td colSpan={2}>: {deklarasi.nrp}</td>
+ <td colSpan={2}>: {deklarasi?.nrp}</td>
  <td>Golongan</td>
  <td colSpan={2}>: TRAINING</td>
  <td className="pdf-ket-value" rowSpan={2}>
- {deklarasi.keterangan || "-"}
+ {deklarasi?.keterangan || "-"}
  </td>
  </tr>
  <tr>
  <td>Jabatan</td>
  <td colSpan={2}>:</td>
  <td>No. STD</td>
- <td colSpan={2}>: {deklarasi.nomor_std || deklarasi.kode_deklarasi}</td>
+ <td colSpan={2}>: {deklarasi?.nomor_std || deklarasi?.kode_deklarasi}</td>
  </tr>
  </tbody>
  </table>
@@ -2702,7 +2702,7 @@ export default function HalamanDetailDeklarasi() {
  <tbody>
  <tr>
  <td colSpan={3} rowSpan={3} className="pdf-note-cell">
- Note : {formatTanggal(deklarasi.tanggal_kegiatan)}
+ Note : {formatTanggal(deklarasi?.tanggal_kegiatan)}
  </td>
  <td colSpan={2} className="pdf-bold">Total pengeluaran</td>
  <td className="pdf-rp pdf-bold">{renderNominalPdf(totalDeklarasiPdf)}</td>
@@ -2759,7 +2759,7 @@ export default function HalamanDetailDeklarasi() {
  <div className="pdf-sign-row pdf-sign-row-deklarasi">
  <div>
  <p>Dibuat Oleh,</p>
- <strong>{deklarasi.nama_pengguna}</strong>
+ <strong>{deklarasi?.nama_pengguna}</strong>
  <span>Karyawan</span>
  </div>
  <div>
@@ -2815,15 +2815,15 @@ export default function HalamanDetailDeklarasi() {
  <tr>
  <td colSpan={2}>Department : HCGA</td>
  <td colSpan={2}>Tanggal</td>
- <td>: {formatTanggal(deklarasi.tanggal_kegiatan)}</td>
+ <td>: {formatTanggal(deklarasi?.tanggal_kegiatan)}</td>
  </tr>
  <tr>
- <td colSpan={2}>Site : {deklarasi.lokasi || "-"}</td>
+ <td colSpan={2}>Site : {deklarasi?.lokasi || "-"}</td>
  <td colSpan={2}>Halaman</td>
  <td>:</td>
  </tr>
  <tr>
- <td colSpan={5}>Nomer RAB/PB : {deklarasi.nomor_std || deklarasi.kode_deklarasi}</td>
+ <td colSpan={5}>Nomer RAB/PB : {deklarasi?.nomor_std || deklarasi?.kode_deklarasi}</td>
  </tr>
  </tbody>
  </table>
@@ -2929,7 +2929,7 @@ export default function HalamanDetailDeklarasi() {
  <div className="pdf-sign-row pdf-sign-row-settlement">
  <div>
  <p>Dibuat Oleh,</p>
- <strong>{deklarasi.nama_pengguna}</strong>
+ <strong>{deklarasi?.nama_pengguna}</strong>
  </div>
  <div>
  <p>Diperiksa Oleh,</p>
@@ -3000,7 +3000,7 @@ export default function HalamanDetailDeklarasi() {
  <td className="pdf-db-center">{itemSettDb}</td>
  <td className="pdf-db-center">HCGA</td>
  <td className="pdf-db-center">
- {formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)}
+ {formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)}
  </td>
  <td className="pdf-db-center">{baris.tanggal}</td>
  <td>{baris.namaBarang}</td>
@@ -3014,7 +3014,7 @@ export default function HalamanDetailDeklarasi() {
  <td>{baris.keterangan}</td>
  <td className="pdf-db-center">HCGA</td>
  <td className="pdf-db-center">
- {nomorSettlementDb + "/HCGA/PPA-ADRO/" + bulanRomawiPdf + "/" + new Date(deklarasi.tanggal_kegiatan).getFullYear()}
+ {nomorSettlementDb + "/HCGA/PPA-ADRO/" + bulanRomawiPdf + "/" + new Date(deklarasi?.tanggal_kegiatan).getFullYear()}
  </td>
  </tr>
  );
@@ -3027,7 +3027,7 @@ export default function HalamanDetailDeklarasi() {
  )}
 
  
- {deklarasi.jenis_deklarasi === "UANG_OPERASIONAL" && (
+ {deklarasi?.jenis_deklarasi === "UANG_OPERASIONAL" && (
  <div className="pdf-page pdf-database-settlement-page-v3">
  <div className="pdf-db-v3-title">DATABASE SETTLEMENT</div>
 
@@ -3076,7 +3076,7 @@ export default function HalamanDetailDeklarasi() {
  {
  nomor: 1,
  tanggal: formatTanggalPdfDeklarasi(
- deklarasi.tanggal_kegiatan
+ deklarasi?.tanggal_kegiatan
  ),
  namaBarang: "-",
  qty: 1,
@@ -3100,7 +3100,7 @@ export default function HalamanDetailDeklarasi() {
  <td className="pdf-db-v3-center">{itemSettDb}</td>
  <td className="pdf-db-v3-center">HCGA</td>
  <td className="pdf-db-v3-center">
- {formatTanggalPdfDeklarasi(deklarasi.dibuat_pada)}
+ {formatTanggalPdfDeklarasi(deklarasi?.dibuat_pada)}
  </td>
  <td className="pdf-db-v3-center">{baris.tanggal}</td>
  <td>{baris.namaBarang}</td>
@@ -3118,7 +3118,7 @@ export default function HalamanDetailDeklarasi() {
  bulanRomawiPdf +
  "/" +
  new Date(
- deklarasi.tanggal_kegiatan
+ deklarasi?.tanggal_kegiatan
  ).getFullYear()}
  </td>
  </tr>

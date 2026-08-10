@@ -407,7 +407,7 @@ function HalamanAdminDeklarasiKonten() {
  type="button"
  onClick={() => ambilData()}
  disabled={sedangRefresh}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-red-600 shadow-lg shadow-red-900/10 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 px-4 py-3 text-sm font-black !text-white shadow-lg transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
  >
  <RefreshCw
  className={`h-4 w-4 ${sedangRefresh ? "animate-spin" : ""}`}

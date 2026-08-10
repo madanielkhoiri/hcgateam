@@ -41,11 +41,10 @@ function normalisasiAngka(nilai: number | string | null | undefined) {
 }
 
 function formatRupiah(nilai: number | string | null | undefined) {
- return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
- minimumFractionDigits: 0,
- }).format(normalisasiAngka(nilai));
+  const formatAngka = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+  }).format(normalisasiAngka(nilai));
+  return `Rp${formatAngka}`;
 }
 
 function formatTanggal(nilai: string | null | undefined) {

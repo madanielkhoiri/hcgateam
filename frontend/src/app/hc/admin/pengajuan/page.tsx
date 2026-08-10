@@ -129,14 +129,14 @@ export default function HalamanPengajuanAdmin() {
  const [pengajuanDitolak, setPengajuanDitolak] =
  useState<DataPengajuan | null>(null);
 
- const [alasanPenolakan, setAlasanPenolakan] = "";
-
  const [sedangMemuat, setSedangMemuat] = useState(true);
  const [sedangRefresh, setSedangRefresh] = useState(false);
  const [sedangSimpan, setSedangSimpan] = useState(false);
  const [sedangUploadBukti, setSedangUploadBukti] = useState(false);
  const [sedangTolak, setSedangTolak] = useState(false);
  const [idProses, setIdProses] = useState<number | null>(null);
+ const [alasanPenolakan, setAlasanPenolakan] = useState("");
+ const [fileBuktiTransfer, setFileBuktiTransfer] = useState<File | null>(null);
 
  const [pesanError, setPesanError] = useState("");
  const [pesanSukses, setPesanSukses] = useState("");
@@ -179,7 +179,7 @@ export default function HalamanPengajuanAdmin() {
  };
  };
 
- const headerAuth = () => {
+ const headerAuth = (): Record<string, string> => {
  const token = ambilToken();
 
  if (!token) {
@@ -1048,7 +1048,7 @@ export default function HalamanPengajuanAdmin() {
  <button
  type="button"
  onClick={() => setTampilkanForm((nilai) => !nilai)}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-red-100 transition hover:bg-red-700"
  >
  <UploadCloud className="h-4 w-4" />
  {tampilkanForm ? "Sembunyikan Form" : "Tampilkan Form"}
@@ -1202,7 +1202,7 @@ export default function HalamanPengajuanAdmin() {
  <button
  type="submit"
  disabled={sedangSimpan}
- className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {sedangSimpan ? (
  <Loader2 className="h-4 w-4 animate-spin" />
