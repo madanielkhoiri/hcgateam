@@ -278,7 +278,7 @@ function HalamanAdminDeklarasiKonten() {
  }
 
  if (!apakahAdmin(penggunaTersimpan.role)) {
- router.replace("/hc");
+ router.replace("/hc/deklarasi-dinas");
  return;
  }
 

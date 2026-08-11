@@ -145,7 +145,7 @@ export default function DatabaseSettlementPage() {
  <div className="flex flex-wrap gap-2">
  <button
  type="button"
- onClick={() => router.push("/hc")}
+ onClick={() => router.push("/hc/deklarasi-dinas")}
  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
  >
  <ArrowLeft className="h-4 w-4" />

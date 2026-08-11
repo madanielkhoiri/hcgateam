@@ -236,7 +236,7 @@ export default function HalamanBuatDeklarasi() {
  <div>
  <button
  type="button"
- onClick={() => router.push("/hc")}
+ onClick={() => router.push("/hc/deklarasi-dinas")}
  className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
  >
  <ArrowLeft className="h-4 w-4" />
@@ -408,7 +408,7 @@ export default function HalamanBuatDeklarasi() {
  <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
  <button
  type="button"
- onClick={() => router.push("/hc")}
+ onClick={() => router.push("/hc/deklarasi-dinas")}
  className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
  >
  Batal
@@ -466,7 +466,7 @@ export default function HalamanBuatDeklarasi() {
 
  <AlertDialogFooter className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
  <AlertDialogAction
- onClick={() => router.push("/hc")}
+ onClick={() => router.push("/hc/deklarasi-dinas")}
  className="rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200"
  >
  Ke Dashboard
