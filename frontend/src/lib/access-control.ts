@@ -80,11 +80,12 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
-  if (user.role === 'ADMIN') {
+  if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
     return true;
   }
 
-  return (user.accessKeys ?? []).includes(accessKey);
+  const keys = user.accessKeys ?? [];
+  return keys.includes(accessKey) || keys.includes('ALL');
 }
 
 export function formatRole(role?: string): string {
