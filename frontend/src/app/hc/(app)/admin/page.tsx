@@ -1,6 +1,8 @@
 "use client";
+import Link from "next/link";
 
 import {
+ ArrowLeft,
  ArrowRight,
  BarChart3,
  Database,
@@ -712,6 +714,12 @@ export default function HalamanAdmin() {
  return (
  <main className="min-h-screen bg-[#f8fafc] px-4 py-5 text-slate-950 sm:px-6 lg:px-8">
  <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+ <div className="mb-0">
+    <Link href="/hc" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-red-600">
+      <ArrowLeft size={18} />
+      Kembali ke Menu HC
+    </Link>
+  </div>
  <section className="overflow-hidden rounded-[34px] bg-gradient-to-br from-red-700 via-red-600 to-rose-500 p-5 text-white shadow-xl shadow-red-100 sm:p-7">
  <div className="relative">
  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10" />
