@@ -131,7 +131,7 @@ export default function HalamanKelolaKaryawan() {
         }
 
         if (!apakahAdmin(penggunaTersimpan.role)) {
-            router.replace("/hc");
+            router.replace("/hc/deklarasi-dinas");
             return;
         }
 

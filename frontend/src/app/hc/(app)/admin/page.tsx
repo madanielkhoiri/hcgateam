@@ -403,7 +403,7 @@ export default function HalamanAdmin() {
  }
 
  if (!apakahAdmin(penggunaTersimpan.role)) {
- router.replace("/hc");
+ router.replace("/hc/deklarasi-dinas");
  return;
  }
 

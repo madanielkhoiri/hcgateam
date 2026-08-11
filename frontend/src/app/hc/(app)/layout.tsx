@@ -32,21 +32,21 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
  };
 
  const apakahAktif = (path: string) => {
- if (path === "/hc") {
- return pathname === "/hc";
- }
+  if (path === "/hc/deklarasi-dinas") {
+  return pathname === "/hc/deklarasi-dinas";
+  }
 
- return pathname.startsWith(path);
- };
+  return pathname.startsWith(path);
+  };
 
- const menuBawahKaryawan = [
- {
- judul: "Beranda",
- path: "/hc",
- icon: <Home className="h-5 w-5" />,
- aktif: apakahAktif("/hc"),
- aksi: () => router.push("/hc"),
- },
+  const menuBawahKaryawan = [
+  {
+  judul: "Beranda",
+  path: "/hc/deklarasi-dinas",
+  icon: <Home className="h-5 w-5" />,
+  aktif: apakahAktif("/hc/deklarasi-dinas"),
+  aksi: () => router.push("/hc/deklarasi-dinas"),
+  },
  {
  judul: "Buat",
  path: "/hc/deklarasi/buat",

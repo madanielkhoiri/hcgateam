@@ -697,7 +697,7 @@ export default function HalamanDetailDeklarasi() {
  Number(hasilDeklarasi.id_pengguna) === Number(penggunaTersimpan.id);
 
  if (!adminAtauFa && !pemilikDeklarasi) {
- router.replace("/hc");
+ router.replace("/hc/deklarasi-dinas");
  throw new Error("Kamu tidak memiliki akses ke deklarasi ini.");
  }
  }
