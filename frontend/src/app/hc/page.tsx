@@ -2014,7 +2014,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  type="button"
  disabled={!bisaUploadNota}
  onClick={() => bukaModalUploadNota(saldo)}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white !text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
  >
  <UploadCloud className="h-4 w-4" />
  {saldo.status_deklarasi_aktif === "DITOLAK"
@@ -2027,21 +2027,21 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </button>
  )}
  <button
- type="button"
- disabled={
- sedangSelesai === saldo.id ||
- !bisaAjukanDeklarasi
- }
- onClick={() => ajukanDeklarasi(saldo)}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
- >
- {sedangSelesai === saldo.id ? (
- <RefreshCw className="h-4 w-4 animate-spin" />
- ) : (
- <CheckCircle2 className="h-4 w-4" />
- )}
- {teksTombolAjukan}
- </button>
+    type="button"
+    disabled={
+      sedangSelesai === saldo.id ||
+      !bisaAjukanDeklarasi
+    }
+    onClick={() => ajukanDeklarasi(saldo)}
+    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white !text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {sedangSelesai === saldo.id ? (
+      <RefreshCw className="h-4 w-4 animate-spin text-white !text-white" />
+    ) : (
+      <CheckCircle2 className="h-4 w-4 text-white !text-white" />
+    )}
+    {teksTombolAjukan}
+  </button>
  </div>
  </div>
  </div>
