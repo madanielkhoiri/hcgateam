@@ -49,7 +49,7 @@ function fileUrl(apiUrl: string, path: string) {
     return path;
   }
 
-  return `${apiUrl.replace(/\/api\/?$/, "")}${path}`;
+  return `${apiUrl}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
 async function readError(response: Response) {
