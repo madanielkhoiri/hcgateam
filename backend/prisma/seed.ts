@@ -88,7 +88,7 @@ async function main(): Promise<void> {
     update: {
       role: UserRole.KARYAWAN,
       isActive: true,
-      accessKeys: ALL_ACCESS_KEYS,
+      accessKeys: ['HC'],
       passwordHash: universalPasswordHash,
       nrp: '12345678',
     },
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
       passwordHash: universalPasswordHash,
       role: UserRole.KARYAWAN,
       isActive: true,
-      accessKeys: ALL_ACCESS_KEYS,
+      accessKeys: ['HC'],
     },
   });
 
