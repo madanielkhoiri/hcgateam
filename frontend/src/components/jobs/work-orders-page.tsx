@@ -107,12 +107,10 @@ function statusLabel(status: WorkOrderStatus): string {
 }
 
 function photoUrl(filename: string): string {
-  const apiOrigin = API_URL.replace(/\/api\/?$/, "");
-
   const cleanFilename =
     filename.replace(/\\/g, "/").split("/").pop() ?? filename;
 
-  return `${apiOrigin}/uploads/work-orders/${encodeURIComponent(
+  return `${API_URL}/uploads/work-orders/${encodeURIComponent(
     cleanFilename,
   )}`;
 }

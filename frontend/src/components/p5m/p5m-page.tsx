@@ -148,7 +148,7 @@ function fileUrl(path: string) {
     return path;
   }
 
-  return `${API_URL.replace(/\/api\/?$/, "")}${path}`;
+  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
 async function readError(response: Response) {
