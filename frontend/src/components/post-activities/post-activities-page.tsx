@@ -106,7 +106,7 @@ function imageUrl(path: string) {
     return path;
   }
 
-  const backendRoot = API_URL.replace(/\/api\/?$/, "");
+  const backendRoot = API_URL;
 
   return `${backendRoot}${path.startsWith("/") ? "" : "/"}${path}`;
 }
