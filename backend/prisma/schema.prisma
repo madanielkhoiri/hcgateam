@@ -606,3 +606,193 @@ model PackMealOrderItem {
   @@index([orderId])
   @@map("pack_meal_order_items")
 }
+
+// ==================================================
+// DEKLARASI DINAS MODULE
+// ==================================================
+
+enum JenisDeklarasi {
+  PERJALANAN_DINAS
+  UANG_OPERASIONAL
+}
+
+enum StatusDeklarasi {
+  DRAFT
+  DIAJUKAN
+  DIVERIFIKASI
+  DISETUJUI
+  DITOLAK
+}
+
+model Deklarasi {
+  id              Int             @id @default(autoincrement())
+  kodeDeklarasi   String          @unique @map("kode_deklarasi") @db.VarChar(80)
+  idPengguna      Int             @map("id_pengguna")
+  idSaldo         Int?            @map("id_saldo")
+  nrp             String          @map("nrp") @db.VarChar(50)
+  namaPengguna    String          @map("nama_pengguna") @db.VarChar(120)
+  jenisDeklarasi  JenisDeklarasi  @map("jenis_deklarasi")
+  tanggalKegiatan DateTime        @map("tanggal_kegiatan") @db.Date
+  lokasi          String          @map("lokasi") @db.VarChar(150)
+  keterangan      String          @map("keterangan") @db.Text
+  nomorStd        String?         @map("nomor_std") @db.VarChar(120)
+  totalNominal    Decimal         @default(0) @map("total_nominal") @db.Decimal(15, 2)
+  status          StatusDeklarasi @default(DRAFT)
+  createdAt       DateTime        @default(now()) @map("dibuat_pada")
+  updatedAt       DateTime        @updatedAt @map("diperbarui_pada")
+
+  @@map("deklarasi")
+}
+
+enum KategoriNota {
+  MAKAN
+  AKOMODASI
+  TRANSPORTASI
+  LAUNDRY
+  DANA_OPERASIONAL_W1
+  DANA_OPERASIONAL_W2
+  DANA_OPERASIONAL_BOD
+  DANA_OPERASIONAL_BYD
+  DANA_OPERASIONAL_KHUSUS
+}
+
+enum StatusVerifikasiNota {
+  BELUM_OCR
+  OCR_SELESAI
+  DIVERIFIKASI
+  DITOLAK
+}
+
+model Nota {
+  id                   Int                  @id @default(autoincrement())
+  idDeklarasi          Int                  @map("id_deklarasi")
+  kategoriNota         KategoriNota?        @map("kategori_nota")
+  barangJasa           String?              @map("barang_jasa") @db.VarChar(255)
+  picSettlement        String?              @map("pic_settlement") @db.VarChar(150)
+  keteranganSettlement String?              @map("keterangan_settlement") @db.Text
+  jumlahItemSettlement Int                  @default(1) @map("jumlah_item_settlement")
+  namaFile             String               @map("nama_file") @db.VarChar(180)
+  pathFile             String               @map("path_file") @db.VarChar(255)
+  hasilOcrText         String?              @map("hasil_ocr_text") @db.Text
+  nominalOcr           Decimal              @default(0) @map("nominal_ocr") @db.Decimal(15, 2)
+  nominalFinal         Decimal              @default(0) @map("nominal_final") @db.Decimal(15, 2)
+  apakahDikoreksi      Boolean              @default(false) @map("apakah_dikoreksi")
+  alasanKoreksi        String?              @map("alasan_koreksi") @db.Text
+  statusVerifikasi     StatusVerifikasiNota @default(BELUM_OCR) @map("status_verifikasi")
+  createdAt            DateTime             @default(now()) @map("dibuat_pada")
+  updatedAt            DateTime             @updatedAt @map("diperbarui_pada")
+
+  @@map("nota")
+}
+
+enum StatusDataDatabaseSettlement {
+  AKTIF
+  DIBATALKAN
+}
+
+model DatabaseSettlement {
+  id               Int                          @id @default(autoincrement())
+  idDeklarasi      Int                          @map("id_deklarasi")
+  idSaldo          Int?                         @map("id_saldo")
+  idPengguna       Int                          @map("id_pengguna")
+  kodeJanganDiubah String                       @map("kode_jangan_diubah") @db.VarChar(50)
+  nomorSettlement  String                       @map("nomor_settlement") @db.VarChar(50)
+  item             Int                          @map("item")
+  itemSett         String                       @map("item_sett") @db.VarChar(50)
+  department       String                       @default("HCGA") @map("department") @db.VarChar(120)
+  tanggalPembuatan DateTime                     @map("tanggal_pembuatan") @db.Date
+  tanggalPerItem   DateTime                     @map("tanggal_per_item") @db.Date
+  namaBarangJasa   String                       @map("nama_barang_jasa") @db.VarChar(255)
+  qty              Decimal                      @default(1) @map("qty") @db.Decimal(15, 2)
+  hargaPerQty      Decimal                      @default(0) @map("harga_per_qty") @db.Decimal(15, 2)
+  total            Decimal                      @default(0) @map("total") @db.Decimal(15, 2)
+  keterangan       String?                      @map("keterangan") @db.Text
+  costCenter       String                       @default("HCGA") @map("cost_center") @db.VarChar(120)
+  nomorRabPb       String?                      @map("nomor_rab_pb") @db.VarChar(160)
+  pic              String?                      @map("pic") @db.VarChar(150)
+  statusData       StatusDataDatabaseSettlement @default(AKTIF) @map("status_data")
+  createdAt        DateTime                     @default(now()) @map("dibuat_pada")
+  updatedAt        DateTime                     @updatedAt @map("diperbarui_pada")
+
+  @@unique([idDeklarasi, item])
+  @@map("database_settlement")
+}
+
+enum StatusSaldo {
+  AKTIF
+  PAS
+  ADA_SISA
+  MELEBIHI_NOMINAL
+  MENUNGGU_PENGEMBALIAN
+  SELESAI
+}
+
+enum StatusBuktiPengembalian {
+  BELUM_UPLOAD
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+}
+
+model Saldo {
+  id                             Int                     @id @default(autoincrement())
+  idPengguna                     Int                     @map("id_pengguna")
+  nrp                            String                  @map("nrp")
+  namaPengguna                   String                  @map("nama_pengguna")
+  lokasi                         String?                 @map("lokasi") @db.VarChar(120)
+  jenisSaldo                     JenisDeklarasi          @map("jenis_saldo")
+  nominalTransfer                Decimal                 @default(0) @map("nominal_transfer") @db.Decimal(15, 2)
+  totalPenggunaan                Decimal                 @default(0) @map("total_penggunaan") @db.Decimal(15, 2)
+  sisaSaldo                      Decimal                 @default(0) @map("sisa_saldo") @db.Decimal(15, 2)
+  nominalPengembalian            Decimal                 @default(0) @map("nominal_pengembalian") @db.Decimal(15, 2)
+  tanggalTransfer                DateTime                @map("tanggal_transfer") @db.Date
+  keterangan                     String?                 @map("keterangan") @db.Text
+  nomorStd                       String?                 @map("nomor_std") @db.VarChar(120)
+  statusSaldo                    StatusSaldo             @default(AKTIF) @map("status_saldo")
+  namaFileBuktiPengembalian      String?                 @map("nama_file_bukti_pengembalian") @db.VarChar(255)
+  pathFileBuktiPengembalian      String?                 @map("path_file_bukti_pengembalian") @db.VarChar(255)
+  statusBuktiPengembalian        StatusBuktiPengembalian @default(BELUM_UPLOAD) @map("status_bukti_pengembalian")
+  alasanBuktiPengembalianDitolak String?                 @map("alasan_bukti_pengembalian_ditolak") @db.Text
+  tanggalUploadBuktiPengembalian DateTime?               @map("tanggal_upload_bukti_pengembalian") @db.Timestamp
+  tanggalVerifikasiPengembalian  DateTime?               @map("tanggal_verifikasi_pengembalian") @db.Timestamp
+  createdAt                      DateTime                @default(now()) @map("dibuat_pada")
+  updatedAt                      DateTime                @updatedAt @map("diperbarui_pada")
+
+  @@map("saldo")
+}
+
+enum StatusPengajuan {
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+  MENUNGGU_TRANSFER
+  SELESAI
+}
+
+model Pengajuan {
+  id                    Int             @id @default(autoincrement())
+  idPengguna            Int             @map("id_pengguna")
+  nrp                   String          @map("nrp") @db.VarChar(50)
+  namaPengguna          String          @map("nama_pengguna") @db.VarChar(150)
+  jenisPengajuan        JenisDeklarasi  @default(PERJALANAN_DINAS) @map("jenis_pengajuan")
+  lokasi                String?         @map("lokasi") @db.VarChar(120)
+  keterangan            String?         @map("keterangan") @db.Text
+  nomorStd              String?         @map("nomor_std") @db.VarChar(120)
+  nomorRab              String?         @map("nomor_rab") @db.VarChar(120)
+  namaFileStd           String?         @map("nama_file_std") @db.VarChar(255)
+  pathFileStd           String?         @map("path_file_std") @db.VarChar(255)
+  namaFileRab           String          @map("nama_file_rab") @db.VarChar(255)
+  pathFileRab           String          @map("path_file_rab") @db.VarChar(255)
+  nominalTransfer       Decimal         @default(0) @map("nominal_transfer") @db.Decimal(15, 2)
+  namaFileBuktiTransfer String?         @map("nama_file_bukti_transfer") @db.VarChar(255)
+  pathFileBuktiTransfer String?         @map("path_file_bukti_transfer") @db.VarChar(255)
+  tanggalTransfer       DateTime?       @map("tanggal_transfer") @db.Date
+  idSaldo               Int?            @map("id_saldo")
+  statusPengajuan       StatusPengajuan @default(DIAJUKAN) @map("status_pengajuan")
+  catatanAdmin          String?         @map("catatan_admin") @db.Text
+  tanggalPengajuan      DateTime        @map("tanggal_pengajuan") @db.Date
+  createdAt             DateTime        @default(now()) @map("dibuat_pada")
+  updatedAt             DateTime        @updatedAt @map("diperbarui_pada")
+
+  @@map("pengajuan")
+}
