@@ -1,27 +1,14 @@
-// ==================================================
-// FILE: backend/prisma/seed.ts
-// FUNGSI: Membuat akun admin awal HCGA TEAM
-// ==================================================
-
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ALL_ACCESS_KEYS, DEFAULT_GUEST_ACCESS_KEYS } from '../src/access/access.constants';
 
-// ==================================================
-// CEK DATABASE URL
-// ==================================================
-
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error('DATABASE_URL tidak ditemukan di file backend/.env');
 }
-
-// ==================================================
-// KONFIGURASI PRISMA 7
-// ==================================================
 
 const adapter = new PrismaPg({
   connectionString,
@@ -31,12 +18,28 @@ const prisma = new PrismaClient({
   adapter,
 });
 
-// ==================================================
-// PROSES MEMBUAT ADMIN
-// ==================================================
-
 async function main(): Promise<void> {
-  const passwordHash = await bcrypt.hash('Admin123!', 12);
+  const universalPasswordHash = await bcrypt.hash('password123', 12);
+  
+  await prisma.user.upsert({
+    where: {
+      username: 'superadmin',
+    },
+    update: {
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
+    },
+    create: {
+      name: 'Super Administrator',
+      username: 'superadmin',
+      passwordHash: universalPasswordHash,
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+    },
+  });
 
   await prisma.user.upsert({
     where: {
@@ -46,18 +49,59 @@ async function main(): Promise<void> {
       role: UserRole.ADMIN,
       isActive: true,
       accessKeys: ALL_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
     },
     create: {
       name: 'Administrator',
       username: 'admin',
-      passwordHash,
+      passwordHash: universalPasswordHash,
       role: UserRole.ADMIN,
       isActive: true,
       accessKeys: ALL_ACCESS_KEYS,
     },
   });
 
-  const guestPasswordHash = await bcrypt.hash('Tamu123!', 12);
+  await prisma.user.upsert({
+    where: {
+      username: 'fa',
+    },
+    update: {
+      role: UserRole.FA,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
+    },
+    create: {
+      name: 'Finance & Accounting',
+      username: 'fa',
+      passwordHash: universalPasswordHash,
+      role: UserRole.FA,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: {
+      username: 'karyawan',
+    },
+    update: {
+      role: UserRole.KARYAWAN,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
+      nrp: '12345678',
+    },
+    create: {
+      name: 'Karyawan Biasa',
+      username: 'karyawan',
+      nrp: '12345678',
+      passwordHash: universalPasswordHash,
+      role: UserRole.KARYAWAN,
+      isActive: true,
+      accessKeys: ALL_ACCESS_KEYS,
+    },
+  });
 
   await prisma.user.upsert({
     where: {
@@ -67,23 +111,20 @@ async function main(): Promise<void> {
       role: UserRole.TAMU,
       isActive: true,
       accessKeys: DEFAULT_GUEST_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
     },
     create: {
       name: 'Tamu Order Pack Meal',
       username: 'tamu',
-      passwordHash: guestPasswordHash,
+      passwordHash: universalPasswordHash,
       role: UserRole.TAMU,
       isActive: true,
       accessKeys: DEFAULT_GUEST_ACCESS_KEYS,
     },
   });
 
-  console.log('Akun admin dan akun TAMU berhasil dibuat');
+  console.log('Akun superadmin, admin, fa, karyawan, dan tamu berhasil dibuat dengan password universal');
 }
-
-// ==================================================
-// JALANKAN SEED
-// ==================================================
 
 main()
   .catch((error: unknown) => {
@@ -93,7 +134,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-// ==================================================
-// SELESAI: backend/prisma/seed.ts
-// ==================================================

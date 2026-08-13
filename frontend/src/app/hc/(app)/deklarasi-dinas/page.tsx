@@ -2550,7 +2550,7 @@ const indexNotaRevisiDipilih =
  (saldoDipilih?.status_deklarasi_aktif === "DITOLAK" &&
  (!notaRevisiDipilih || !fileNota))
  }
- className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white !text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {sedangUpload ? (
  <RefreshCw className="h-4 w-4 animate-spin" />
