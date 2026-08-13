@@ -51,6 +51,8 @@ export class AuthService {
     const payload = {
       sub: user.id,
       username: user.username,
+      nrp: user.nrp,
+      nama: user.name,
       role: user.role,
     };
 
@@ -96,6 +98,8 @@ export class AuthService {
     const payload = {
       sub: user.id,
       username: user.username,
+      nrp: user.nrp,
+      nama: user.name,
       role: user.role,
     };
 

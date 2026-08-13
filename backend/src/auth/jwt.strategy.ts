@@ -1,4 +1,4 @@
-﻿// ==================================================
+// ==================================================
 // FILE: backend/src/auth/jwt.strategy.ts
 // FUNGSI: Membaca dan memvalidasi token JWT
 // ==================================================
@@ -33,6 +33,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: user.id,
       username: user.username,
+      nrp: user.nrp,
+      nama: user.name,
       role: user.role,
       accessKeys: user.accessKeys,
     };

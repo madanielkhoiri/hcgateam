@@ -1933,7 +1933,7 @@ export default function HalamanDetailDeklarasi() {
  handleUbahStatusDeklarasi("DIVERIFIKASI")
  }
  disabled={sedangUbahStatus}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-amber-700 shadow-lg shadow-red-900/20 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-900/20 transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
  >
  <ShieldCheck className="h-4 w-4" />
  {sedangUbahStatus ? "Memproses..." : "Verifikasi"}
@@ -1945,7 +1945,7 @@ export default function HalamanDetailDeklarasi() {
  type="button"
  onClick={() => handleUbahStatusDeklarasi("DISETUJUI")}
  disabled={sedangUbahStatus}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-red-900/20 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
  >
  <CheckCircle2 className="h-4 w-4" />
  {sedangUbahStatus ? "Memproses..." : "Setujui Deklarasi"}
@@ -1957,7 +1957,7 @@ export default function HalamanDetailDeklarasi() {
  type="button"
  onClick={() => handleUbahStatusDeklarasi("DITOLAK")}
  disabled={sedangUbahStatus}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-red-700 shadow-lg shadow-red-900/20 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-900/20 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
  >
  <XCircle className="h-4 w-4" />
  {sedangUbahStatus ? "Memproses..." : "Tolak Deklarasi"}
