@@ -1462,7 +1462,7 @@ export default function HalamanPengajuanAdmin() {
  type="button"
  disabled={idProses === pengajuan.id}
  onClick={() => setujuiPengajuanFa(pengajuan.id)}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white !text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {idProses === pengajuan.id ? (
  <Loader2 className="h-4 w-4 animate-spin" />
@@ -1476,7 +1476,7 @@ export default function HalamanPengajuanAdmin() {
  type="button"
  disabled={idProses === pengajuan.id}
  onClick={() => bukaModalTolak(pengajuan)}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white !text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  <XCircle className="h-4 w-4" />
  Tolak
@@ -1514,7 +1514,7 @@ export default function HalamanPengajuanAdmin() {
  onClick={() =>
  bukaModalBuktiTransfer(pengajuan)
  }
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-600 px-4 py-3 text-sm font-black text-white transition hover:bg-purple-700"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-600 px-4 py-3 text-sm font-black text-white !text-white transition hover:bg-purple-700"
  >
  <WalletCards className="h-4 w-4" />
  Upload Bukti Transfer
@@ -1671,7 +1671,7 @@ export default function HalamanPengajuanAdmin() {
  <button
  type="submit"
  disabled={sedangUploadBukti}
- className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-purple-100 transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-black text-white !text-white shadow-lg shadow-purple-100 transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {sedangUploadBukti ? (
  <Loader2 className="h-4 w-4 animate-spin" />
@@ -1744,7 +1744,7 @@ export default function HalamanPengajuanAdmin() {
  <button
  type="submit"
  disabled={sedangTolak}
- className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+ className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white !text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
  >
  {sedangTolak ? (
  <Loader2 className="h-4 w-4 animate-spin" />

@@ -31,6 +31,7 @@ const publicUserSelect = {
   id: true,
   name: true,
   username: true,
+  nrp: true,
   role: true,
   isActive: true,
   accessKeys: true,

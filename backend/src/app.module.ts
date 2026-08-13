@@ -26,12 +26,23 @@ import { SignatureLibraryModule } from './signature-library/signature-library.mo
 import { P5mModule } from './p5m/p5m.module';
 import { TransportModule } from './transport/transport.module';
 import { OrderPackMealModule } from './order-pack-meal/order-pack-meal.module';
+
+
+import { DatabaseSettlementModule } from './deklarasi-dinas/database-settlement/database-settlement.module';
+import { DeklarasiModule } from './deklarasi-dinas/deklarasi/deklarasi.module';
+import { KaryawanModule } from './deklarasi-dinas/karyawan/karyawan.module';
+import { NotaModule } from './deklarasi-dinas/nota/nota.module';
+import { PengajuanModule } from './deklarasi-dinas/pengajuan/pengajuan.module';
+import { PenggunaModule } from './deklarasi-dinas/pengguna/pengguna.module';
+import { SaldoModule } from './deklarasi-dinas/saldo/saldo.module';
+
 @Module({
   imports: [
     InventoryModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -44,6 +55,13 @@ import { OrderPackMealModule } from './order-pack-meal/order-pack-meal.module';
     P5mModule,
     TransportModule,
     OrderPackMealModule,
+    PenggunaModule,
+    KaryawanModule,
+    DeklarasiModule,
+    DatabaseSettlementModule,
+    NotaModule,
+    SaldoModule,
+    PengajuanModule,
   ],
   controllers: [AppController],
   providers: [AppService],
