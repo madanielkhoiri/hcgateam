@@ -501,10 +501,31 @@ export default function AccountManagementPage() {
                     }
                   >
                     <option value="TAMU">Tamu</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="GRUP_LEADER">Group Leader</option>
+                    <option value="KARYAWAN">Karyawan</option>
                     <option value="SECTION_HEAD">Section Head</option>
+                    <option value="GRUP_LEADER">Group Leader</option>
+                    <option value="FA">FA</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                    <optgroup label="Peran MCU Periodik">
+                      <option value="ADMIN_DEPT">Admin Dept (MCU)</option>
+                      <option value="HC">HC (MCU)</option>
+                      <option value="DOKTER">Dokter (MCU)</option>
+                      <option value="SHE">SHE / K3 (MCU)</option>
+                      <option value="KLINIK">Klinik Provider (MCU)</option>
+                    </optgroup>
                   </select>
+                  <small className={styles.roleHint}>
+                    Satu akun = satu role. Karyawan dipakai untuk login
+                    Deklarasi Dinas &amp; MCU Periodik. FA &amp; Super Admin
+                    dipakai untuk approval Deklarasi Dinas. Role di grup
+                    &quot;Peran MCU Periodik&quot; dipakai khusus alur MCU
+                    (Bagian 2 dokumen alur) - cakupan Admin Dept diatur lebih
+                    lanjut di Master Departemen, dan cakupan Klinik Provider
+                    di Master Klinik pada modul MCU. Administrator
+                    (Admin/Super Admin) otomatis mendapat akses penuh ke
+                    seluruh menu.
+                  </small>
                 </label>
                 <label className={styles.checkLine}>
                   <input

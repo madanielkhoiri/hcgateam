@@ -9,6 +9,7 @@ export type PortalUser = {
 
 export const ACCESS_KEYS = {
   HC: 'HC',
+  HC_MCU: 'HC_MCU',
   GA: 'GA',
   GA_INVENTORY: 'GA_INVENTORY',
   GA_PEKERJAAN: 'GA_PEKERJAAN',
@@ -95,6 +96,22 @@ export function formatRole(role?: string): string {
 
   if (role === 'GRUP_LEADER') {
     return 'Group Leader';
+  }
+
+  if (role === 'FA') {
+    return 'FA';
+  }
+
+  if (role === 'HC') {
+    return 'HC';
+  }
+
+  if (role === 'SHE') {
+    return 'SHE (K3)';
+  }
+
+  if (role === 'KLINIK') {
+    return 'Klinik Provider';
   }
 
   return role

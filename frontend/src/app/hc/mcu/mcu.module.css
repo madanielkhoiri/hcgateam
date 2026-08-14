@@ -1,0 +1,768 @@
+/* ==================================================
+   FILE: frontend/src/app/hc/mcu/mcu.module.css
+   FUNGSI: Gaya bersama seluruh halaman MCU Periodik
+   ================================================== */
+
+.shell {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: #10244a;
+  background: #eef4fc;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px clamp(16px, 4vw, 48px);
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid #dbe6f3;
+  backdrop-filter: blur(6px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #10244a;
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.brandLogo {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: #0f8f5f;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(15, 143, 95, 0.25);
+}
+
+.topbarMeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.peranList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.peranChip {
+  padding: 4px 9px;
+  color: #0f6f4c;
+  background: #e2f6ec;
+  border: 1px solid #bfe8d4;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.akun {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding-left: 14px;
+  border-left: 1px solid #e2e9f2;
+}
+
+.akun strong {
+  font-size: 12px;
+}
+
+.akun span {
+  color: #7688a0;
+  font-size: 10px;
+}
+
+.body {
+  flex: 1;
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 22px 0 56px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #7688a0;
+  font-size: 12px;
+}
+
+.breadcrumb a {
+  color: #0868f6;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.breadcrumb strong {
+  color: #10244a;
+}
+
+.pageHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pageIcon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #0f8f5f;
+  background: #e2f6ec;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(15, 143, 95, 0.13);
+}
+
+.pageTitle h1 {
+  margin: 0;
+  color: #0d7a51;
+  font-size: clamp(21px, 3vw, 27px);
+  letter-spacing: -0.3px;
+}
+
+.pageTitle p {
+  margin: 5px 0 0;
+  max-width: 720px;
+  color: #6d7f99;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+/* ==================================================
+   KARTU ALUR
+   ================================================== */
+
+.flowGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(298px, 1fr));
+  gap: 16px;
+}
+
+.flowCard {
+  --accent: #0f8f5f;
+  --soft: #e2f6ec;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  color: inherit;
+  background: #ffffff;
+  border: 1.5px solid #dce7f4;
+  border-left: 5px solid var(--accent);
+  border-radius: 15px;
+  box-shadow: 0 12px 28px rgba(36, 73, 116, 0.07);
+  text-decoration: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.flowCard:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 45%, #dce7f4);
+  box-shadow: 0 18px 38px rgba(36, 73, 116, 0.13);
+}
+
+.flowIcon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 14px;
+}
+
+.flowBody {
+  min-width: 0;
+}
+
+.flowStep {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.flowBody h2 {
+  margin: 0;
+  color: #10244a;
+  font-size: 15.5px;
+  font-weight: 800;
+}
+
+.flowBody p {
+  margin: 6px 0 0;
+  color: #6d7f99;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.flowMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.flowTag {
+  padding: 3px 8px;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.flowBadge {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  color: #ffffff;
+  background: #e0453a;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.flowArrow {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Varian warna per tahap alur */
+.tahapKaryawan { --accent: #0868f6; --soft: #e9f1ff; }
+.tahapJadwal { --accent: #7a4ce0; --soft: #f0ebff; }
+.tahapSurat { --accent: #d97706; --soft: #fff3e0; }
+.tahapHasil { --accent: #0783a8; --soft: #e4f6fb; }
+.tahapRekomendasi { --accent: #0f8f5f; --soft: #e2f6ec; }
+.tahapFollowUp { --accent: #d53535; --soft: #ffecec; }
+.tahapInduksi { --accent: #9a4fd1; --soft: #f6eaff; }
+.tahapKlinik { --accent: #0a7f8c; --soft: #e2f5f7; }
+.tahapHistory { --accent: #4b5c74; --soft: #eef1f6; }
+.tahapRetensi { --accent: #8a6a12; --soft: #fbf3dc; }
+.tahapNotifikasi { --accent: #c2410c; --soft: #ffeee4; }
+
+/* ==================================================
+   STATISTIK
+   ================================================== */
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 13px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: #ffffff;
+  border: 1px solid #dce7f4;
+  border-radius: 13px;
+  box-shadow: 0 8px 20px rgba(36, 73, 116, 0.05);
+}
+
+.statIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #0f8f5f;
+  background: #e2f6ec;
+  border-radius: 11px;
+}
+
+.statCard strong {
+  display: block;
+  color: #10244a;
+  font-size: 21px;
+  line-height: 1.1;
+}
+
+.statCard p {
+  margin: 3px 0 0;
+  color: #7688a0;
+  font-size: 11px;
+}
+
+.statPenting .statIcon {
+  color: #d53535;
+  background: #ffecec;
+}
+
+/* ==================================================
+   PANEL & TABEL
+   ================================================== */
+
+.panel {
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #dce7f4;
+  border-radius: 15px;
+  box-shadow: 0 10px 26px rgba(36, 73, 116, 0.06);
+}
+
+.panel + .panel {
+  margin-top: 18px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.panelHead h2 {
+  margin: 0;
+  color: #10244a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.panelHead p {
+  margin: 4px 0 0;
+  color: #7688a0;
+  font-size: 11.5px;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #e6edf6;
+  border-radius: 11px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.table thead th {
+  padding: 11px 13px;
+  color: #5b6c85;
+  background: #f5f8fc;
+  border-bottom: 1px solid #e6edf6;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.table tbody td {
+  padding: 11px 13px;
+  border-bottom: 1px solid #eef2f8;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.tableNama {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tableNama strong {
+  font-size: 12.5px;
+}
+
+.tableNama span {
+  color: #8494a9;
+  font-size: 10.5px;
+}
+
+.rowAksi {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ==================================================
+   BADGE
+   ================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sukses {
+  color: #0b7a4b;
+  background: #e2f6ec;
+}
+
+.bahaya {
+  color: #b62b22;
+  background: #ffeaea;
+}
+
+.peringatan {
+  color: #96650a;
+  background: #fdf3dc;
+}
+
+.info {
+  color: #0a5fb4;
+  background: #e6f0ff;
+}
+
+.netral {
+  color: #5b6c85;
+  background: #eef2f7;
+}
+
+/* ==================================================
+   FORM & TOMBOL
+   ================================================== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.field label {
+  color: #5b6c85;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 9px 11px;
+  color: #10244a;
+  background: #ffffff;
+  border: 1.5px solid #dbe4f0;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: #0f8f5f;
+  box-shadow: 0 0 0 3px rgba(15, 143, 95, 0.12);
+}
+
+.textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 13px;
+}
+
+.formGrid .lebar {
+  grid-column: 1 / -1;
+}
+
+.tombol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 15px;
+  color: #ffffff;
+  background: #0f8f5f;
+  border: 1.5px solid transparent;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.tombol:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.tombol:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.tombol:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tombolLembut {
+  color: #0f8f5f;
+  background: #e2f6ec;
+  border-color: #c4e9d6;
+}
+
+.tombolNetral {
+  color: #4b5c74;
+  background: #ffffff;
+  border-color: #dbe4f0;
+}
+
+.tombolBahaya {
+  color: #ffffff;
+  background: #d53535;
+}
+
+.tombolKecil {
+  padding: 6px 11px;
+  font-size: 11px;
+}
+
+/* ==================================================
+   DIALOG
+   ================================================== */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(11, 26, 48, 0.5);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.dialog {
+  width: min(620px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 26px 60px rgba(11, 26, 48, 0.3);
+}
+
+.dialogHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.dialogHead h3 {
+  margin: 0;
+  color: #10244a;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.dialogHead p {
+  margin: 4px 0 0;
+  color: #7688a0;
+  font-size: 11.5px;
+}
+
+.dialogTutup {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: #6d7f99;
+  background: #f1f5fa;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.dialogAksi {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+/* ==================================================
+   STATUS HALAMAN
+   ================================================== */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.noticeError {
+  color: #b62b22;
+  background: #ffeaea;
+  border: 1px solid #ffd0cd;
+}
+
+.noticeSukses {
+  color: #0b7a4b;
+  background: #e2f6ec;
+  border: 1px solid #c4e9d6;
+}
+
+.noticeInfo {
+  color: #0a5fb4;
+  background: #e9f1ff;
+  border: 1px solid #cfe0fb;
+}
+
+.kosong {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 42px 18px;
+  color: #8494a9;
+  text-align: center;
+}
+
+.kosong strong {
+  color: #5b6c85;
+  font-size: 13px;
+}
+
+.kosong p {
+  margin: 0;
+  max-width: 380px;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.memuat {
+  padding: 42px;
+  color: #7688a0;
+  font-size: 13px;
+  text-align: center;
+}
+
+.catatanAlur {
+  margin-top: 22px;
+  padding: 15px 17px;
+  color: #5b6c85;
+  background: #ffffff;
+  border: 1px dashed #cfdcec;
+  border-radius: 13px;
+  font-size: 11.5px;
+  line-height: 1.65;
+}
+
+.catatanAlur strong {
+  color: #10244a;
+}
+
+.catatanAlur ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.catatanAlur li + li {
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .peranList {
+    display: none;
+  }
+
+  .body {
+    width: calc(100% - 22px);
+  }
+
+  .flowGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .flowArrow {
+    display: none;
+  }
+}

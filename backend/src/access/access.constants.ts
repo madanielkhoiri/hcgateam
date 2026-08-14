@@ -15,6 +15,14 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'department',
   },
   {
+    key: 'HC_MCU',
+    title: 'MCU Periodik',
+    description:
+      'Monitoring MCU periodik: jadwal, hasil, rekomendasi, Follow Up, dan induksi ulang.',
+    parentKey: 'HC',
+    level: 'card',
+  },
+  {
     key: 'GA',
     title: 'GA',
     description: 'Akses judul utama General Affair pada dashboard.',

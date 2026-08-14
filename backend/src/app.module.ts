@@ -27,7 +27,6 @@ import { P5mModule } from './p5m/p5m.module';
 import { TransportModule } from './transport/transport.module';
 import { OrderPackMealModule } from './order-pack-meal/order-pack-meal.module';
 
-
 import { DatabaseSettlementModule } from './deklarasi-dinas/database-settlement/database-settlement.module';
 import { DeklarasiModule } from './deklarasi-dinas/deklarasi/deklarasi.module';
 import { KaryawanModule } from './deklarasi-dinas/karyawan/karyawan.module';
@@ -35,6 +34,8 @@ import { NotaModule } from './deklarasi-dinas/nota/nota.module';
 import { PengajuanModule } from './deklarasi-dinas/pengajuan/pengajuan.module';
 import { PenggunaModule } from './deklarasi-dinas/pengguna/pengguna.module';
 import { SaldoModule } from './deklarasi-dinas/saldo/saldo.module';
+
+import { McuModule } from './mcu/mcu.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { SaldoModule } from './deklarasi-dinas/saldo/saldo.module';
     NotaModule,
     SaldoModule,
     PengajuanModule,
+    McuModule,
   ],
   controllers: [AppController],
   providers: [AppService],
