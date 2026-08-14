@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   FileText,
+  HeartPulse,
   UsersRound,
   UserCircle2,
 } from 'lucide-react';
@@ -45,6 +46,16 @@ const hcMenus: HcMenu[] = [
     icon: FileText,
     variant: 'projectCard',
     accessKey: ACCESS_KEYS.HC,
+  },
+  {
+    title: 'MCU Periodik',
+    description:
+      'Monitoring Medical Check Up periodik: jadwal, hasil, rekomendasi FIT/Follow Up, sampai induksi ulang.',
+    status: 'Tersedia',
+    href: '/hc/mcu',
+    icon: HeartPulse,
+    variant: 'inventoryCard',
+    accessKey: ACCESS_KEYS.HC_MCU,
   },
 ];
 
