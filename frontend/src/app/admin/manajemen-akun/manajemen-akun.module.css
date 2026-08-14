@@ -192,6 +192,13 @@
   padding-top: 21px;
 }
 .checkLine input { width: 16px; height: 16px; }
+.roleHint {
+  margin-top: -3px;
+  color: #7688a0;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+}
 .formActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .cancelButton {
   min-height: 42px;

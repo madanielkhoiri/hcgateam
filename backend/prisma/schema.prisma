@@ -15,6 +15,13 @@ enum UserRole {
   KARYAWAN
   VENDOR
   TAMU
+  // Peran khusus alur MCU Periodik (Bagian 2 alur-workflow-mcu-periodik-v3.md).
+  // Satu akun = satu role, tidak ada peran ganda.
+  ADMIN_DEPT
+  HC
+  DOKTER
+  SHE
+  KLINIK
 }
 
 model User {
@@ -50,6 +57,19 @@ model User {
   safetyMeetings   SafetyMeeting[]
   transportRecords TransportRecord[] @relation("TransportRecordCreator")
   packMealOrders   PackMealOrder[]   @relation("PackMealOrderCreator")
+
+  profilKaryawan     Karyawan?
+  departemenDikelola Departemen[]        @relation("AdminDepartemen")
+  klinikDikelola     Klinik[]            @relation("AkunKlinik")
+  jadwalMcuDibuat    JadwalMcu[]         @relation("PembuatJadwalMcu")
+  jadwalMcuDiubah    JadwalMcu[]         @relation("PengubahJadwalMcu")
+  suratPengantarMcu  SuratPengantar[]    @relation("PenerbitSuratPengantar")
+  hasilMcuDiupload   HasilMcu[]          @relation("PengunggahHasilMcu")
+  rekomendasiMcu     RekomendasiMcu[]    @relation("DokterRekomendasi")
+  batasFollowUp      FollowUp[]          @relation("PenetapBatasFollowUp")
+  hasilFollowUp      HasilFollowUp[]     @relation("PengunggahHasilFollowUp")
+  induksiUlangPic    InduksiUlang[]      @relation("PicSheInduksi")
+  notifikasiMcu      LogNotifikasiMcu[]  @relation("PenerimaNotifikasiMcu")
 
   @@map("users")
 }
@@ -795,4 +815,440 @@ model Pengajuan {
   updatedAt             DateTime        @updatedAt @map("diperbarui_pada")
 
   @@map("pengajuan")
+}
+
+// ==================================================
+// MCU PERIODIK
+// Digitalisasi monitoring Medical Check Up periodik.
+// Referensi alur: alur-workflow-mcu-periodik-v3.md
+// ==================================================
+
+enum StatusKerja {
+  AKTIF
+  DIRUMAHKAN
+  RESIGN
+}
+
+// Dirumahkan melewati FIT dua tahap: FIT atas sakitnya, lalu FIT MCU lengkap.
+enum StatusKesehatanDirumahkan {
+  SAKIT
+  FIT_SAKIT
+}
+
+enum JenisMcu {
+  AWAL
+  BERKALA
+  KHUSUS
+}
+
+enum StatusPendaftaran {
+  DRAFT
+  TERKUNCI
+  SELESAI
+  DIBATALKAN
+}
+
+enum StatusSuratPengantar {
+  DRAFT
+  TERKIRIM
+}
+
+enum StatusReview {
+  MENUNGGU
+  DIREVIEW
+  SELESAI
+}
+
+enum StatusRekomendasi {
+  FIT
+  FOLLOW_UP
+}
+
+// Keputusan #3: seluruh biaya FU ditanggung karyawan.
+enum PosBiayaFollowUp {
+  MANDIRI
+}
+
+enum StatusFollowUp {
+  MENUNGGU_TANGGAL
+  TERJADWAL
+  TERLAKSANA
+  TERLAMBAT_RESCHEDULE
+  SELESAI
+}
+
+enum TipePengunggah {
+  KARYAWAN
+  KLINIK_TERKONEKSI
+  HC
+  ADMIN_DEPT
+}
+
+enum StatusInduksiUlang {
+  MENUNGGU
+  TERJADWAL
+  SELESAI
+}
+
+enum TipeNotifikasiMcu {
+  REMINDER_H3_BULAN
+  JADWAL_MCU
+  REKOMENDASI_FIT_FU
+  PILIHAN_TANGGAL_FU
+  REMINDER_FU_ULANG
+  HASIL_FU
+  INDUKSI_ULANG
+}
+
+enum KanalNotifikasi {
+  EMAIL_OUTLOOK
+  IN_APP
+}
+
+enum StatusKirimNotifikasi {
+  MENUNGGU
+  TERKIRIM
+  GAGAL
+}
+
+// --------------------------------------------------
+// DEPARTEMEN
+// --------------------------------------------------
+
+model Departemen {
+  id             Int      @id @default(autoincrement())
+  namaDepartemen String   @unique @map("nama_departemen")
+  adminAkunId    Int?     @map("admin_akun_id")
+  aktif          Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  adminAkun    User?          @relation("AdminDepartemen", fields: [adminAkunId], references: [id], onDelete: SetNull)
+  karyawan     Karyawan[]
+  jadwalMcu    JadwalMcu[]
+  induksiUlang InduksiUlang[]
+
+  @@index([adminAkunId])
+  @@map("departemen")
+}
+
+// --------------------------------------------------
+// KARYAWAN
+// tanggal_mcu_berikutnya = tanggal_mcu_expired - 3 bulan (pemicu reminder)
+// --------------------------------------------------
+
+model Karyawan {
+  id                        Int                        @id @default(autoincrement())
+  nik                       String                     @unique
+  nama                      String
+  departemenId              Int                        @map("departemen_id")
+  jabatan                   String?
+  email                     String?
+  tanggalLahir              DateTime?                  @map("tanggal_lahir") @db.Date
+  tanggalMcuTerakhir        DateTime?                  @map("tanggal_mcu_terakhir") @db.Date
+  tanggalMcuExpired         DateTime?                  @map("tanggal_mcu_expired") @db.Date
+  tanggalMcuBerikutnya      DateTime?                  @map("tanggal_mcu_berikutnya") @db.Date
+  statusKerja               StatusKerja                @default(AKTIF) @map("status_kerja")
+  statusKesehatanDirumahkan StatusKesehatanDirumahkan? @map("status_kesehatan_dirumahkan")
+  akunId                    Int?                       @unique @map("akun_id")
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  updatedAt                 DateTime                   @updatedAt @map("updated_at")
+
+  departemen   Departemen     @relation(fields: [departemenId], references: [id], onDelete: Restrict)
+  akun         User?          @relation(fields: [akunId], references: [id], onDelete: SetNull)
+  jadwalMcu    JadwalMcu[]
+  followUp     FollowUp[]
+  induksiUlang InduksiUlang[]
+
+  @@index([departemenId])
+  @@index([statusKerja])
+  @@index([tanggalMcuBerikutnya])
+  @@index([tanggalMcuExpired])
+  @@map("karyawan")
+}
+
+// --------------------------------------------------
+// KLINIK
+// Klinik terkoneksi punya akun & bisa submit hasil sendiri.
+// --------------------------------------------------
+
+model Klinik {
+  id          Int      @id @default(autoincrement())
+  namaKlinik  String   @map("nama_klinik")
+  alamat      String?  @db.Text
+  picKlinik   String?  @map("pic_klinik")
+  terkoneksi  Boolean  @default(false)
+  akunId      Int?     @map("akun_id")
+  statusAktif Boolean  @default(true) @map("status_aktif")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  akun            User?            @relation("AkunKlinik", fields: [akunId], references: [id], onDelete: SetNull)
+  jadwalMcu       JadwalMcu[]
+  suratPengantar  SuratPengantar[]
+  followUp        FollowUp[]
+
+  @@index([terkoneksi])
+  @@index([statusAktif])
+  @@map("klinik")
+}
+
+// --------------------------------------------------
+// JADWAL MCU
+// tanggal_lock = tanggal_mcu - 3 hari; setelah terkunci hanya HC yang boleh ubah.
+// --------------------------------------------------
+
+model JadwalMcu {
+  id                 Int               @id @default(autoincrement())
+  karyawanId         Int               @map("karyawan_id")
+  departemenId       Int               @map("departemen_id")
+  tanggalMcu         DateTime          @map("tanggal_mcu") @db.Date
+  jenisMcu           JenisMcu          @default(BERKALA) @map("jenis_mcu")
+  klinikId           Int?              @map("klinik_id")
+  statusPendaftaran  StatusPendaftaran @default(DRAFT) @map("status_pendaftaran")
+  tanggalLock        DateTime          @map("tanggal_lock") @db.Date
+  catatan            String?           @db.Text
+  diubahOlehHcId     Int?              @map("diubah_oleh_hc_id")
+  diubahOlehHcAt     DateTime?         @map("diubah_oleh_hc_at")
+  alasanPerubahanHc  String?           @map("alasan_perubahan_hc") @db.Text
+  dibatalkanAt       DateTime?         @map("dibatalkan_at")
+  dibuatOlehId       Int               @map("dibuat_oleh_id")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  karyawan       Karyawan        @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  departemen     Departemen      @relation(fields: [departemenId], references: [id], onDelete: Restrict)
+  klinik         Klinik?         @relation(fields: [klinikId], references: [id], onDelete: SetNull)
+  diubahOlehHc   User?           @relation("PengubahJadwalMcu", fields: [diubahOlehHcId], references: [id], onDelete: SetNull)
+  dibuatOleh     User            @relation("PembuatJadwalMcu", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
+  suratPengantar SuratPengantar?
+  hasilMcu       HasilMcu?
+
+  @@index([karyawanId])
+  @@index([departemenId])
+  @@index([tanggalMcu])
+  @@index([statusPendaftaran])
+  @@index([jenisMcu])
+  @@map("jadwal_mcu")
+}
+
+// --------------------------------------------------
+// SURAT PENGANTAR MCU (diterbitkan HC)
+// Surat pengantar FU tidak ada di sini - FU memakai surat rujukan Dokter.
+// --------------------------------------------------
+
+model SuratPengantar {
+  id            Int                  @id @default(autoincrement())
+  jadwalMcuId   Int                  @unique @map("jadwal_mcu_id")
+  nomorSurat    String               @unique @map("nomor_surat")
+  nomorUrut     Int                  @map("nomor_urut")
+  tahunTerbit   Int                  @map("tahun_terbit")
+  klinikId      Int?                 @map("klinik_id")
+  tanggalTerbit DateTime             @map("tanggal_terbit") @db.Date
+  filePdf       String?              @map("file_pdf")
+  status        StatusSuratPengantar @default(DRAFT)
+  tanggalKirim  DateTime?            @map("tanggal_kirim")
+  diterbitkanId Int                  @map("diterbitkan_id")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  jadwalMcu    JadwalMcu @relation(fields: [jadwalMcuId], references: [id], onDelete: Cascade)
+  klinik       Klinik?   @relation(fields: [klinikId], references: [id], onDelete: SetNull)
+  diterbitkan  User      @relation("PenerbitSuratPengantar", fields: [diterbitkanId], references: [id], onDelete: Restrict)
+
+  @@unique([tahunTerbit, nomorUrut])
+  @@index([status])
+  @@index([tanggalTerbit])
+  @@map("surat_pengantar")
+}
+
+// --------------------------------------------------
+// HASIL MCU (file mentah - hanya HC & Dokter)
+// retensi_hapus_at = tanggal_upload + 6 bulan
+// --------------------------------------------------
+
+model HasilMcu {
+  id              Int            @id @default(autoincrement())
+  jadwalMcuId     Int            @unique @map("jadwal_mcu_id")
+  tanggalUpload   DateTime       @default(now()) @map("tanggal_upload")
+  diunggahOlehId  Int            @map("diunggah_oleh_id")
+  tipePengunggah  TipePengunggah @map("tipe_pengunggah")
+  fileHasilMcu    String         @map("file_hasil_mcu")
+  namaFileAsli    String?        @map("nama_file_asli")
+  statusReview    StatusReview   @default(MENUNGGU) @map("status_review")
+  retensiHapusAt  DateTime       @map("retensi_hapus_at") @db.Date
+  fileDihapusAt   DateTime?      @map("file_dihapus_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  jadwalMcu      JadwalMcu        @relation(fields: [jadwalMcuId], references: [id], onDelete: Cascade)
+  diunggahOleh   User             @relation("PengunggahHasilMcu", fields: [diunggahOlehId], references: [id], onDelete: Restrict)
+  rekomendasi    RekomendasiMcu[]
+
+  @@index([statusReview])
+  @@index([retensiHapusAt])
+  @@index([tanggalUpload])
+  @@map("hasil_mcu")
+}
+
+// --------------------------------------------------
+// REKOMENDASI MCU (Dokter)
+// Jika FU, Dokter sekaligus menerbitkan surat rujukan FU.
+// --------------------------------------------------
+
+model RekomendasiMcu {
+  id                      Int               @id @default(autoincrement())
+  hasilMcuId              Int               @map("hasil_mcu_id")
+  hasilFollowUpAsalId     Int?              @unique @map("hasil_follow_up_asal_id")
+  dokterId                Int               @map("dokter_id")
+  status                  StatusRekomendasi
+  catatanMedisTerbatas    String?           @map("catatan_medis_terbatas") @db.Text
+  filePdfRekomendasi      String?           @map("file_pdf_rekomendasi")
+  suratRujukanFu          String?           @map("surat_rujukan_fu")
+  nomorSuratRujukan       String?           @unique @map("nomor_surat_rujukan")
+  siklusKe                Int               @default(1) @map("siklus_ke")
+  tanggalSubmit           DateTime          @default(now()) @map("tanggal_submit")
+  diteruskanKeDeptAt      DateTime?         @map("diteruskan_ke_dept_at")
+  diteruskanKeKaryawanAt  DateTime?         @map("diteruskan_ke_karyawan_at")
+  diteruskanOlehId        Int?              @map("diteruskan_oleh_id")
+  retensiHapusAt          DateTime          @map("retensi_hapus_at") @db.Date
+  fileDihapusAt           DateTime?         @map("file_dihapus_at")
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @updatedAt @map("updated_at")
+
+  hasilMcu          HasilMcu       @relation(fields: [hasilMcuId], references: [id], onDelete: Cascade)
+  hasilFollowUpAsal HasilFollowUp? @relation("RekomendasiDariHasilFu", fields: [hasilFollowUpAsalId], references: [id], onDelete: SetNull)
+  dokter            User           @relation("DokterRekomendasi", fields: [dokterId], references: [id], onDelete: Restrict)
+  followUp          FollowUp?
+  induksiUlang      InduksiUlang?
+
+  @@index([hasilMcuId])
+  @@index([status])
+  @@index([tanggalSubmit])
+  @@index([retensiHapusAt])
+  @@map("rekomendasi_mcu")
+}
+
+// --------------------------------------------------
+// FOLLOW UP
+// Biaya selalu mandiri; batas waktu ditetapkan HC manual
+// (maksimal 2 bulan setelah MCU ulang).
+// --------------------------------------------------
+
+model FollowUp {
+  id                     Int              @id @default(autoincrement())
+  rekomendasiId          Int              @unique @map("rekomendasi_id")
+  karyawanId             Int              @map("karyawan_id")
+  posBiaya               PosBiayaFollowUp @default(MANDIRI) @map("pos_biaya")
+  batasWaktuFu           DateTime?        @map("batas_waktu_fu") @db.Date
+  ditetapkanOlehHcId     Int?             @map("ditetapkan_oleh_hc_id")
+  ditetapkanAt           DateTime?        @map("ditetapkan_at")
+  tanggalPilihanKaryawan DateTime?        @map("tanggal_pilihan_karyawan") @db.Date
+  klinikId               Int?             @map("klinik_id")
+  status                 StatusFollowUp   @default(MENUNGGU_TANGGAL)
+  jumlahReminderHc       Int              @default(0) @map("jumlah_reminder_hc")
+  reminderTerakhirAt     DateTime?        @map("reminder_terakhir_at")
+  siklusKe               Int              @default(1) @map("siklus_ke")
+  ditutupAt              DateTime?        @map("ditutup_at")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  rekomendasi     RekomendasiMcu  @relation(fields: [rekomendasiId], references: [id], onDelete: Cascade)
+  karyawan        Karyawan        @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  ditetapkanOleh  User?           @relation("PenetapBatasFollowUp", fields: [ditetapkanOlehHcId], references: [id], onDelete: SetNull)
+  klinik          Klinik?         @relation(fields: [klinikId], references: [id], onDelete: SetNull)
+  hasilFollowUp   HasilFollowUp[]
+
+  @@index([karyawanId])
+  @@index([status])
+  @@index([batasWaktuFu])
+  @@map("follow_up")
+}
+
+// --------------------------------------------------
+// HASIL FOLLOW UP
+// Direview ulang -> melahirkan RekomendasiMcu baru (loop sampai FIT).
+// --------------------------------------------------
+
+model HasilFollowUp {
+  id             Int            @id @default(autoincrement())
+  followUpId     Int            @map("follow_up_id")
+  tanggalSubmit  DateTime       @default(now()) @map("tanggal_submit")
+  diunggahOlehId Int            @map("diunggah_oleh_id")
+  tipePengunggah TipePengunggah @map("tipe_pengunggah")
+  fileHasilFu    String         @map("file_hasil_fu")
+  namaFileAsli   String?        @map("nama_file_asli")
+  statusReview   StatusReview   @default(MENUNGGU) @map("status_review")
+  retensiHapusAt DateTime       @map("retensi_hapus_at") @db.Date
+  fileDihapusAt  DateTime?      @map("file_dihapus_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  followUp       FollowUp        @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  diunggahOleh   User            @relation("PengunggahHasilFollowUp", fields: [diunggahOlehId], references: [id], onDelete: Restrict)
+  rekomendasiBaru RekomendasiMcu? @relation("RekomendasiDariHasilFu")
+
+  @@index([followUpId])
+  @@index([statusReview])
+  @@index([retensiHapusAt])
+  @@map("hasil_follow_up")
+}
+
+// --------------------------------------------------
+// INDUKSI ULANG (didaftarkan Admin Dept, dilaksanakan SHE)
+// --------------------------------------------------
+
+model InduksiUlang {
+  id                 Int                @id @default(autoincrement())
+  karyawanId         Int                @map("karyawan_id")
+  rekomendasiPemicId Int                @unique @map("rekomendasi_pemicu_id")
+  departemenId       Int                @map("departemen_id")
+  tanggalDaftar      DateTime           @default(now()) @map("tanggal_daftar")
+  tanggalPelaksanaan DateTime?          @map("tanggal_pelaksanaan") @db.Date
+  status             StatusInduksiUlang @default(MENUNGGU)
+  sheId              Int?               @map("she_id")
+  catatan            String?            @db.Text
+  selesaiAt          DateTime?          @map("selesai_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  karyawan         Karyawan       @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  rekomendasiPemic RekomendasiMcu @relation(fields: [rekomendasiPemicId], references: [id], onDelete: Cascade)
+  departemen       Departemen     @relation(fields: [departemenId], references: [id], onDelete: Restrict)
+  she              User?          @relation("PicSheInduksi", fields: [sheId], references: [id], onDelete: SetNull)
+
+  @@index([karyawanId])
+  @@index([status])
+  @@index([tanggalDaftar])
+  @@map("induksi_ulang")
+}
+
+// --------------------------------------------------
+// LOG NOTIFIKASI MCU
+// --------------------------------------------------
+
+model LogNotifikasiMcu {
+  id            Int                   @id @default(autoincrement())
+  tipe          TipeNotifikasiMcu
+  refTabel      String                @map("ref_tabel")
+  refId         Int                   @map("ref_id")
+  penerimaId    Int?                  @map("penerima_id")
+  penerimaEmail String?               @map("penerima_email")
+  judul         String
+  pesan         String                @db.Text
+  kanal         KanalNotifikasi       @default(IN_APP)
+  statusKirim   StatusKirimNotifikasi @default(MENUNGGU) @map("status_kirim")
+  waktuKirim    DateTime?             @map("waktu_kirim")
+  dibacaAt      DateTime?             @map("dibaca_at")
+  keterangan    String?               @db.Text
+  createdAt     DateTime              @default(now()) @map("created_at")
+
+  penerima User? @relation("PenerimaNotifikasiMcu", fields: [penerimaId], references: [id], onDelete: Cascade)
+
+  @@index([tipe])
+  @@index([penerimaId])
+  @@index([statusKirim])
+  @@index([refTabel, refId])
+  @@index([createdAt])
+  @@map("log_notifikasi_mcu")
 }

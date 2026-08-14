@@ -8,19 +8,32 @@ import { UserRole } from '@prisma/client';
 import { firstValueFrom, isObservable } from 'rxjs';
 
 const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
-  { pattern: /\/api\/inventory-dashboard(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
+  {
+    pattern: /\/api\/inventory-dashboard(?:\/|\?|$)/,
+    accessKey: 'GA_INVENTORY',
+  },
   { pattern: /\/api\/inventory-area(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
   { pattern: /\/api\/inventory(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
   { pattern: /\/api\/work-orders(?:\/|\?|$)/, accessKey: 'GA_PEKERJAAN' },
   { pattern: /\/api\/handovers(?:\/|\?|$)/, accessKey: 'GA_PEKERJAAN' },
-  { pattern: /\/api\/daily-activities(?:\/|\?|$)/, accessKey: 'GA_AKTIVITAS_HARIAN' },
-  { pattern: /\/api\/daily-activity-images(?:\/|\?|$)/, accessKey: 'GA_AKTIVITAS_HARIAN' },
+  {
+    pattern: /\/api\/daily-activities(?:\/|\?|$)/,
+    accessKey: 'GA_AKTIVITAS_HARIAN',
+  },
+  {
+    pattern: /\/api\/daily-activity-images(?:\/|\?|$)/,
+    accessKey: 'GA_AKTIVITAS_HARIAN',
+  },
   { pattern: /\/api\/pre-activity-checks(?:\/|\?|$)/, accessKey: 'GA_PROJECT' },
   { pattern: /\/api\/post-activities(?:\/|\?|$)/, accessKey: 'GA_PROJECT' },
   { pattern: /\/api\/p5m(?:\/|\?|$)/, accessKey: 'GA_SAFETY_MEETING' },
   { pattern: /\/api\/transport(?:\/|\?|$)/, accessKey: 'GA_TRANSPORT' },
-  { pattern: /\/api\/order-pack-meal(?:\/|\?|$)/, accessKey: 'GA_ORDER_PACK_MEAL' },
+  {
+    pattern: /\/api\/order-pack-meal(?:\/|\?|$)/,
+    accessKey: 'GA_ORDER_PACK_MEAL',
+  },
   { pattern: /\/api\/signature-library(?:\/|\?|$)/, accessKey: 'GA' },
+  { pattern: /\/api\/mcu(?:\/|\?|$)/, accessKey: 'HC_MCU' },
 ];
 
 type GuardRequest = {
@@ -48,7 +61,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest<GuardRequest>();
     const user = request.user;
 
-    if (!user || user.role === UserRole.ADMIN) {
+    if (
+      !user ||
+      user.role === UserRole.ADMIN ||
+      user.role === UserRole.SUPER_ADMIN
+    ) {
       return true;
     }
 
