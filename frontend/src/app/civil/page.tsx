@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  FileText,
-  HeartHandshake,
-  HeartPulse,
-  LifeBuoy,
-  Scale,
+  Building,
+  ClipboardList,
+  Droplet,
+  FolderKanban,
+  HardHat,
+  Plug,
   UsersRound,
-  UserCircle2,
-  Wallet,
+  Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -25,83 +25,103 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
-import styles from './hc.module.css';
+import styles from './civil.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-const hcTree: MenuTreeNode[] = [
+const civilTree: MenuTreeNode[] = [
   {
-    key: 'HC_IR',
-    title: 'IR',
-    description: 'Industrial Relations - belum tersedia.',
-    status: 'Belum tersedia',
-    icon: Scale,
-    accessKey: ACCESS_KEYS.HC_IR,
+    key: 'CIVIL_GA_MEP',
+    title: 'GA MEP',
+    description: 'Mechanical, Electrical & Plumbing.',
+    icon: Zap,
+    accessKey: ACCESS_KEYS.CIVIL_GA_MEP,
     accent: '#0783a8',
     soft: '#e5f7fb',
-  },
-  {
-    key: 'HC_RND',
-    title: 'R & D',
-    description: 'Research & Development.',
-    icon: HeartHandshake,
-    accessKey: ACCESS_KEYS.HC_RND,
-    accent: '#d97706',
-    soft: '#fff2df',
     children: [
       {
-        key: 'HC_DEKLARASI',
-        title: 'Deklarasi Dinas',
-        description:
-          'Aplikasi pengelolaan deklarasi perjalanan dinas dan uang operasional.',
-        status: 'Tersedia',
-        href: '/hc/deklarasi-dinas',
-        icon: FileText,
-        accessKey: ACCESS_KEYS.HC_DEKLARASI,
+        key: 'CIVIL_ELECTRIC',
+        title: 'Electric',
+        description: 'Inventory Electric.',
+        icon: Zap,
+        accessKey: ACCESS_KEYS.CIVIL_ELECTRIC,
         accent: '#d97706',
         soft: '#fff2df',
+        children: [
+          {
+            key: 'CIVIL_INVENTORY_ELECTRIC',
+            title: 'Inventory Electric',
+            description:
+              'Master barang, barang masuk, barang keluar, dan stok Inventory Electric.',
+            status: 'Tersedia',
+            href: '/ga/inventory/electric/dashboard',
+            icon: Plug,
+            accessKey: ACCESS_KEYS.GA_INVENTORY,
+            accent: '#d97706',
+            soft: '#fff2df',
+          },
+        ],
+      },
+      {
+        key: 'CIVIL_AIR',
+        title: 'Air',
+        description: 'Belum tersedia.',
+        status: 'Belum tersedia',
+        icon: Droplet,
+        accessKey: ACCESS_KEYS.CIVIL_AIR,
+        accent: '#0868f6',
+        soft: '#eaf2ff',
       },
     ],
   },
   {
-    key: 'HC_COMBEN',
-    title: 'Comben & Benefit',
-    description: 'Compensation & Benefit.',
-    icon: Wallet,
-    accessKey: ACCESS_KEYS.HC_COMBEN,
+    key: 'CIVIL_INFRAS',
+    title: 'CIVIL INFRAS',
+    description: 'Project dan Work Order Infrastruktur.',
+    icon: Building,
+    accessKey: ACCESS_KEYS.CIVIL_INFRAS,
     accent: '#07984c',
     soft: '#e4f7ec',
     children: [
       {
-        key: 'HC_MCU',
-        title: 'MCU Periodik',
-        description:
-          'Monitoring Medical Check Up periodik: jadwal, hasil, rekomendasi FIT/Follow Up, sampai induksi ulang.',
-        status: 'Tersedia',
-        href: '/hc/mcu',
-        icon: HeartPulse,
-        accessKey: ACCESS_KEYS.HC_MCU,
-        accent: '#07984c',
-        soft: '#e4f7ec',
+        key: 'CIVIL_PROJECT',
+        title: 'PROJECT',
+        description: 'Belum tersedia.',
+        status: 'Belum tersedia',
+        icon: FolderKanban,
+        accessKey: ACCESS_KEYS.CIVIL_PROJECT,
+        accent: '#7a4ce0',
+        soft: '#f0ebff',
       },
       {
-        key: 'HC_HELPDESK',
-        title: 'Helpdesk Center',
-        description:
-          'Pelaporan kendala, tiket, dan riwayat penyelesaian oleh Admin/Admin HC.',
-        status: 'Tersedia',
-        href: '/hc/helpdesk',
-        icon: LifeBuoy,
-        accessKey: ACCESS_KEYS.HC_HELPDESK,
-        accent: '#c2410c',
-        soft: '#ffeee4',
+        key: 'CIVIL_WO_INFRAS',
+        title: 'WO INFRAS',
+        description: 'Work Order dan Serah Terima Pekerjaan.',
+        icon: ClipboardList,
+        accessKey: ACCESS_KEYS.CIVIL_WO_INFRAS,
+        accent: '#d53535',
+        soft: '#ffeded',
+        children: [
+          {
+            key: 'GA_PEKERJAAN',
+            title: 'Pekerjaan',
+            description:
+              'Pengelolaan Work Order dan dokumen Serah Terima Pekerjaan.',
+            status: 'Tersedia',
+            href: '/ga/inventory/work-order',
+            icon: HardHat,
+            accessKey: ACCESS_KEYS.GA_PEKERJAAN,
+            accent: '#d53535',
+            soft: '#ffeded',
+          },
+        ],
       },
     ],
   },
 ];
 
-export default function HcPage() {
+export default function CivilPage() {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
 
@@ -140,7 +160,7 @@ export default function HcPage() {
         // Gunakan data login terakhir saat backend sementara tidak terjangkau.
       }
 
-      if (!hasAccess(current, ACCESS_KEYS.HC)) {
+      if (!hasAccess(current, ACCESS_KEYS.CIVIL)) {
         router.replace('/dashboard');
         return;
       }
@@ -163,7 +183,7 @@ export default function HcPage() {
   );
 
   if (!user) {
-    return <main className={styles.page}>Memuat pilihan HC...</main>;
+    return <main className={styles.page}>Memuat pilihan CIVIL...</main>;
   }
 
   return (
@@ -195,16 +215,16 @@ export default function HcPage() {
           </Link>
 
           <div className={styles.titleSection}>
-            <span className={styles.gaIcon}>
-              <UserCircle2 size={31} />
+            <span className={styles.civilIcon}>
+              <Building size={31} />
             </span>
             <div>
-              <h1>HC (Human Capital)</h1>
-              <p>Pilih layanan dan pengelolaan data Human Capital.</p>
+              <h1>CIVIL</h1>
+              <p>Pilih layanan dan pengelolaan data CIVIL.</p>
             </div>
           </div>
 
-          <MenuTree nodes={hcTree} bolehLihat={bolehLihat} />
+          <MenuTree nodes={civilTree} bolehLihat={bolehLihat} />
         </div>
       </section>
 

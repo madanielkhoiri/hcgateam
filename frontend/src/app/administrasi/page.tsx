@@ -4,14 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  FileText,
-  HeartHandshake,
-  HeartPulse,
-  LifeBuoy,
-  Scale,
+  BookOpen,
+  Download,
+  HandHeart,
+  ShieldCheck,
   UsersRound,
-  UserCircle2,
-  Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -25,83 +22,56 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
-import styles from './hc.module.css';
+import styles from './administrasi.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-const hcTree: MenuTreeNode[] = [
+const administrasiTree: MenuTreeNode[] = [
   {
-    key: 'HC_IR',
-    title: 'IR',
-    description: 'Industrial Relations - belum tersedia.',
+    key: 'ADMINISTRASI_DOKUMENTASI',
+    title: 'Dokumentasi',
+    description: 'Belum tersedia.',
     status: 'Belum tersedia',
-    icon: Scale,
-    accessKey: ACCESS_KEYS.HC_IR,
-    accent: '#0783a8',
-    soft: '#e5f7fb',
+    icon: BookOpen,
+    accessKey: ACCESS_KEYS.ADMINISTRASI_DOKUMENTASI,
+    accent: '#7a4ce0',
+    soft: '#f0ebff',
   },
   {
-    key: 'HC_RND',
-    title: 'R & D',
-    description: 'Research & Development.',
-    icon: HeartHandshake,
-    accessKey: ACCESS_KEYS.HC_RND,
-    accent: '#d97706',
-    soft: '#fff2df',
-    children: [
-      {
-        key: 'HC_DEKLARASI',
-        title: 'Deklarasi Dinas',
-        description:
-          'Aplikasi pengelolaan deklarasi perjalanan dinas dan uang operasional.',
-        status: 'Tersedia',
-        href: '/hc/deklarasi-dinas',
-        icon: FileText,
-        accessKey: ACCESS_KEYS.HC_DEKLARASI,
-        accent: '#d97706',
-        soft: '#fff2df',
-      },
-    ],
+    key: 'GA_SAFETY_MEETING',
+    title: 'P5M / Safety Meeting',
+    description: 'Pencatatan kegiatan P5M beserta materi, peserta, dan dokumentasi.',
+    status: 'Tersedia',
+    href: '/ga/inventory/p5m',
+    icon: ShieldCheck,
+    accessKey: ACCESS_KEYS.GA_SAFETY_MEETING,
+    accent: '#d53535',
+    soft: '#ffeded',
   },
   {
-    key: 'HC_COMBEN',
-    title: 'Comben & Benefit',
-    description: 'Compensation & Benefit.',
-    icon: Wallet,
-    accessKey: ACCESS_KEYS.HC_COMBEN,
+    key: 'ADMINISTRASI_FORM',
+    title: 'Form Download',
+    description: 'Belum tersedia, form-form yang dapat diunduh.',
+    status: 'Belum tersedia',
+    icon: Download,
+    accessKey: ACCESS_KEYS.ADMINISTRASI_FORM,
+    accent: '#0868f6',
+    soft: '#eaf2ff',
+  },
+  {
+    key: 'ADMINISTRASI_CSR',
+    title: 'CSR',
+    description: 'Belum tersedia.',
+    status: 'Belum tersedia',
+    icon: HandHeart,
+    accessKey: ACCESS_KEYS.ADMINISTRASI_CSR,
     accent: '#07984c',
     soft: '#e4f7ec',
-    children: [
-      {
-        key: 'HC_MCU',
-        title: 'MCU Periodik',
-        description:
-          'Monitoring Medical Check Up periodik: jadwal, hasil, rekomendasi FIT/Follow Up, sampai induksi ulang.',
-        status: 'Tersedia',
-        href: '/hc/mcu',
-        icon: HeartPulse,
-        accessKey: ACCESS_KEYS.HC_MCU,
-        accent: '#07984c',
-        soft: '#e4f7ec',
-      },
-      {
-        key: 'HC_HELPDESK',
-        title: 'Helpdesk Center',
-        description:
-          'Pelaporan kendala, tiket, dan riwayat penyelesaian oleh Admin/Admin HC.',
-        status: 'Tersedia',
-        href: '/hc/helpdesk',
-        icon: LifeBuoy,
-        accessKey: ACCESS_KEYS.HC_HELPDESK,
-        accent: '#c2410c',
-        soft: '#ffeee4',
-      },
-    ],
   },
 ];
 
-export default function HcPage() {
+export default function AdministrasiPage() {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
 
@@ -140,7 +110,7 @@ export default function HcPage() {
         // Gunakan data login terakhir saat backend sementara tidak terjangkau.
       }
 
-      if (!hasAccess(current, ACCESS_KEYS.HC)) {
+      if (!hasAccess(current, ACCESS_KEYS.ADMINISTRASI)) {
         router.replace('/dashboard');
         return;
       }
@@ -163,7 +133,7 @@ export default function HcPage() {
   );
 
   if (!user) {
-    return <main className={styles.page}>Memuat pilihan HC...</main>;
+    return <main className={styles.page}>Memuat pilihan Administrasi...</main>;
   }
 
   return (
@@ -195,16 +165,16 @@ export default function HcPage() {
           </Link>
 
           <div className={styles.titleSection}>
-            <span className={styles.gaIcon}>
-              <UserCircle2 size={31} />
+            <span className={styles.administrasiIcon}>
+              <BookOpen size={31} />
             </span>
             <div>
-              <h1>HC (Human Capital)</h1>
-              <p>Pilih layanan dan pengelolaan data Human Capital.</p>
+              <h1>ADMINISTRASI</h1>
+              <p>Dokumentasi, safety meeting, form unduhan, dan CSR.</p>
             </div>
           </div>
 
-          <MenuTree nodes={hcTree} bolehLihat={bolehLihat} />
+          <MenuTree nodes={administrasiTree} bolehLihat={bolehLihat} />
         </div>
       </section>
 

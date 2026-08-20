@@ -34,6 +34,7 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
   },
   { pattern: /\/api\/signature-library(?:\/|\?|$)/, accessKey: 'GA' },
   { pattern: /\/api\/mcu(?:\/|\?|$)/, accessKey: 'HC_MCU' },
+  { pattern: /\/api\/helpdesk(?:\/|\?|$)/, accessKey: 'HC_HELPDESK' },
 ];
 
 type GuardRequest = {
