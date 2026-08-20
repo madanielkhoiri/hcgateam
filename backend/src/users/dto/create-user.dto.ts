@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsOptional,
   IsString,
@@ -32,6 +33,26 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsEmail({}, { message: 'Format email tidak valid' })
+  @MaxLength(150)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phoneNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  departemen?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  jabatan?: string;
 
   @IsOptional()
   @IsArray()

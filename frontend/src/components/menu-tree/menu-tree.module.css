@@ -1,0 +1,191 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ==================================================
+   PEMBATAS (DIVIDER) - dipakai untuk section di setiap kedalaman,
+   mengikuti gaya judul halaman departemen (icon + judul + deskripsi).
+   ================================================== */
+
+.sectionBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.divider {
+  --accent: #0868f6;
+  --soft: #eaf2ff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #e2ecf7;
+}
+
+.dividerIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 12px;
+}
+
+.dividerIcon[data-depth='0'] { width: 42px; height: 42px; }
+.dividerIcon[data-depth='1'] { width: 36px; height: 36px; border-radius: 10px; }
+.dividerIcon[data-depth='2'],
+.dividerIcon[data-depth='3'] { width: 31px; height: 31px; border-radius: 9px; }
+
+.dividerText {
+  min-width: 0;
+}
+
+.dividerTitle {
+  margin: 0;
+  color: #10244a;
+  letter-spacing: -0.2px;
+}
+
+.dividerTitle[data-depth='0'] { font-size: 17px; }
+.dividerTitle[data-depth='1'] { font-size: 14.5px; }
+.dividerTitle[data-depth='2'],
+.dividerTitle[data-depth='3'] { font-size: 13px; }
+
+.dividerDesc {
+  margin: 3px 0 0;
+  color: #6d7f99;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Isi section diindentasi bertahap dengan garis panduan vertikal,
+   supaya kedalaman terlihat jelas tanpa kotak-dalam-kotak. */
+.sectionBody {
+  padding-left: 20px;
+  margin-left: 4px;
+  border-left: 2px solid #e2ecf7;
+}
+
+/* ==================================================
+   GRID CARD - hanya berisi node yang benar-benar bisa diklik
+   atau placeholder polos, dikumpulkan per level.
+   ================================================== */
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.cardGrid[data-depth='0'] {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.card {
+  --accent: #0868f6;
+  --soft: #eaf2ff;
+  min-height: 128px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1.5px solid #d8e5f2;
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(36, 73, 116, 0.06);
+  text-decoration: none;
+}
+
+a.card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+a.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 42%, #d8e5f2);
+  box-shadow: 0 16px 32px rgba(36, 73, 116, 0.13);
+}
+
+.cardKosong {
+  border-left-style: dashed;
+  border-left-color: #c3cee0;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+.cardIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 13px;
+}
+
+.cardContent {
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.cardTitle[data-kosong='true'] {
+  color: #5b6c85;
+}
+
+.cardDesc {
+  margin: 5px 0 0;
+  color: #687a94;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.cardStatus {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 3px 9px;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.cardStatus[data-kosong='true'] {
+  color: #8494a9;
+  background: #eef2f7;
+}
+
+.cardArrow {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+@media (max-width: 700px) {
+  .cardGrid,
+  .cardGrid[data-depth='0'] {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionBody {
+    padding-left: 14px;
+  }
+
+  .cardArrow {
+    display: none;
+  }
+}

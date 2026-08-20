@@ -22,6 +22,8 @@ enum UserRole {
   DOKTER
   SHE
   KLINIK
+  // Admin Compensation & Benefit.
+  ADMIN_COMBEN
 }
 
 model User {
@@ -40,6 +42,8 @@ model User {
   isTwoFactorEnabled Boolean  @default(false) @map("is_two_factor_enabled")
   vendorId           Int?     @map("vendor_id")
   ticketCode         String?  @map("kode_tiket")
+  departemen         String?
+  jabatan            String?
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -70,6 +74,9 @@ model User {
   hasilFollowUp      HasilFollowUp[]     @relation("PengunggahHasilFollowUp")
   induksiUlangPic    InduksiUlang[]      @relation("PicSheInduksi")
   notifikasiMcu      LogNotifikasiMcu[]  @relation("PenerimaNotifikasiMcu")
+
+  tiketHelpdeskDibuat   TiketHelpdesk[] @relation("PembuatTiketHelpdesk")
+  tiketHelpdeskDiproses TiketHelpdesk[] @relation("PicTiketHelpdesk")
 
   @@map("users")
 }
@@ -1251,4 +1258,41 @@ model LogNotifikasiMcu {
   @@index([refTabel, refId])
   @@index([createdAt])
   @@map("log_notifikasi_mcu")
+}
+
+// ==================================================
+// HELPDESK CENTER (Comben & Benefit)
+// ==================================================
+
+enum StatusTiketHelpdesk {
+  TERBUKA
+  DIPROSES
+  SELESAI
+}
+
+model TiketHelpdesk {
+  id                  Int                 @id @default(autoincrement())
+  nomorTiket          String              @unique @map("nomor_tiket")
+  sequenceNumber      Int                 @unique @map("sequence_number")
+  kategori            String
+  subKategori         String              @map("sub_kategori")
+  masalah             String?
+  deskripsi           String              @db.Text
+  lampiran            String?
+  namaFileAsli        String?             @map("nama_file_asli")
+  status              StatusTiketHelpdesk @default(TERBUKA)
+  level               String?
+  catatanPenyelesaian String?             @db.Text @map("catatan_penyelesaian")
+  pembuatId           Int                 @map("pembuat_id")
+  picId               Int?                @map("pic_id")
+  dibuatPada          DateTime            @default(now()) @map("dibuat_pada")
+  diprosesPada        DateTime?           @map("diproses_pada")
+  selesaiPada         DateTime?           @map("selesai_pada")
+
+  pembuat User  @relation("PembuatTiketHelpdesk", fields: [pembuatId], references: [id], onDelete: Restrict)
+  pic     User? @relation("PicTiketHelpdesk", fields: [picId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([dibuatPada])
+  @@map("tiket_helpdesk")
 }

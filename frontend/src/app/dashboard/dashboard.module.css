@@ -230,6 +230,10 @@
   color: #ef7100;
 }
 
+.visualAdministrasi {
+  color: #7a4ce0;
+}
+
 .sliderButton {
   position: absolute;
   z-index: 3;
@@ -284,7 +288,7 @@
 
 .departmentGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
   margin-top: 18px;
 }
@@ -341,6 +345,12 @@
   color: #ef7100;
   background: #fff7ef;
   border: 1px solid #ffdfc0;
+}
+
+.administrasiCard {
+  color: #7a4ce0;
+  background: #f7f4ff;
+  border: 1px solid #ded0ff;
 }
 
 /* ==================================================

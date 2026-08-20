@@ -32,6 +32,10 @@ const publicUserSelect = {
   name: true,
   username: true,
   nrp: true,
+  email: true,
+  phoneNumber: true,
+  departemen: true,
+  jabatan: true,
   role: true,
   isActive: true,
   accessKeys: true,
@@ -76,6 +80,10 @@ export class UsersService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
+      const target = (error.meta?.target as string[] | undefined) ?? [];
+      if (target.includes('email')) {
+        throw new BadRequestException('Email sudah digunakan');
+      }
       throw new BadRequestException('Username sudah digunakan');
     }
 
@@ -154,6 +162,10 @@ export class UsersService {
           role: dto.role,
           isActive: dto.isActive ?? true,
           accessKeys,
+          email: dto.email?.trim() || null,
+          phoneNumber: dto.phoneNumber?.trim() || null,
+          departemen: dto.departemen?.trim() || null,
+          jabatan: dto.jabatan?.trim() || null,
         },
         select: publicUserSelect,
       });
@@ -201,6 +213,18 @@ export class UsersService {
           ...(dto.role !== undefined ? { role: dto.role } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
           ...(accessKeys ? { accessKeys } : {}),
+          ...(dto.email !== undefined
+            ? { email: dto.email?.trim() || null }
+            : {}),
+          ...(dto.phoneNumber !== undefined
+            ? { phoneNumber: dto.phoneNumber?.trim() || null }
+            : {}),
+          ...(dto.departemen !== undefined
+            ? { departemen: dto.departemen?.trim() || null }
+            : {}),
+          ...(dto.jabatan !== undefined
+            ? { jabatan: dto.jabatan?.trim() || null }
+            : {}),
         },
         select: publicUserSelect,
       });

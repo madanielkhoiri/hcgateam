@@ -63,7 +63,53 @@ const slides = [
   {
     label: 'HCGA TEAM',
     title: 'Kolaborasi Menjadi Lebih Mudah.',
-    subtitle: 'Terhubung bersama HC, GA, dan SIPIL.',
+    subtitle: 'Terhubung bersama HC, GA, CIVIL, dan Administrasi.',
+  },
+];
+
+// ==================================================
+// DATA DEPARTEMEN UTAMA
+// ==================================================
+
+const departmentCards: Array<{
+  key: string;
+  title: string;
+  href: string;
+  icon: React.ElementType;
+  cardClass: 'hcCard' | 'gaCard' | 'sipilCard' | 'administrasiCard';
+  accessKey: string;
+}> = [
+  {
+    key: 'HC',
+    title: 'HC',
+    href: '/hc',
+    icon: UsersRound,
+    cardClass: 'hcCard',
+    accessKey: ACCESS_KEYS.HC,
+  },
+  {
+    key: 'GA',
+    title: 'GA',
+    href: '/ga',
+    icon: Building2,
+    cardClass: 'gaCard',
+    accessKey: ACCESS_KEYS.GA,
+  },
+  {
+    key: 'CIVIL',
+    title: 'CIVIL',
+    href: '/civil',
+    icon: HardHat,
+    cardClass: 'sipilCard',
+    accessKey: ACCESS_KEYS.CIVIL,
+  },
+  {
+    key: 'ADMINISTRASI',
+    title: 'ADMINISTRASI',
+    href: '/administrasi',
+    icon: BookOpen,
+    cardClass: 'administrasiCard',
+    accessKey: ACCESS_KEYS.ADMINISTRASI,
   },
 ];
 
@@ -586,7 +632,12 @@ export default function DashboardPage() {
 
                 <span className={styles.visualSipil}>
                   <HardHat size={22} />
-                  SIPIL
+                  CIVIL
+                </span>
+
+                <span className={styles.visualAdministrasi}>
+                  <BookOpen size={22} />
+                  ADMIN.
                 </span>
               </div>
             </div>
@@ -623,49 +674,27 @@ export default function DashboardPage() {
         ================================================== */}
 
         <section className={styles.departmentGrid}>
-          {hasAccess(user, ACCESS_KEYS.HC) && (
-            <button
-              type="button"
-              className={`${styles.departmentCard} ${styles.hcCard}`}
-              onClick={() => router.push('/hc')}
-            >
-              <div className={styles.departmentIcon}>
-                <UsersRound size={34} />
-              </div>
+          {departmentCards
+            .filter((department) => hasAccess(user, department.accessKey))
+            .map((department) => {
+              const Icon = department.icon;
 
-              <strong>HC</strong>
-              <ChevronRight />
-            </button>
-          )}
+              return (
+                <button
+                  key={department.key}
+                  type="button"
+                  className={`${styles.departmentCard} ${styles[department.cardClass]}`}
+                  onClick={() => router.push(department.href)}
+                >
+                  <div className={styles.departmentIcon}>
+                    <Icon size={34} />
+                  </div>
 
-          {hasAccess(user, ACCESS_KEYS.GA) && (
-            <button
-              type="button"
-              className={`${styles.departmentCard} ${styles.gaCard}`}
-              onClick={() => router.push('/ga')}
-            >
-              <div className={styles.departmentIcon}>
-                <Building2 size={34} />
-              </div>
-
-              <strong>GA</strong>
-              <ChevronRight />
-            </button>
-          )}
-
-          {hasAccess(user, ACCESS_KEYS.SIPIL) && (
-            <button
-              type="button"
-              className={`${styles.departmentCard} ${styles.sipilCard}`}
-            >
-              <div className={styles.departmentIcon}>
-                <HardHat size={34} />
-              </div>
-
-              <strong>SIPIL</strong>
-              <ChevronRight />
-            </button>
-          )}
+                  <strong>{department.title}</strong>
+                  <ChevronRight />
+                </button>
+              );
+            })}
         </section>
 
         {/* ==================================================

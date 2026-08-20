@@ -232,14 +232,22 @@
   text-align: left;
 }
 .departmentToggle { background: #f5f9fc; }
+.sectionToggle { background: #fbfdfe; }
 .departmentToggle div,
+.sectionToggle div,
 .cardToggle div { display: flex; flex-direction: column; gap: 4px; }
 .departmentToggle strong,
+.sectionToggle strong,
 .cardToggle strong { color: #17375f; font-size: 11px; }
 .departmentToggle small,
+.sectionToggle small,
 .cardToggle small { color: #8493a7; font-size: 9px; line-height: 1.45; }
 .cardList { border-top: 1px solid #e4ebf2; }
-.cardToggle + .cardToggle { border-top: 1px solid #edf1f5; }
+.sectionToggle + .cardList,
+.cardToggle + .cardToggle,
+.sectionToggle + .sectionToggle,
+.cardToggle + .sectionToggle,
+.sectionToggle + .cardToggle { border-top: 1px solid #edf1f5; }
 .switch {
   position: relative;
   width: 42px;
