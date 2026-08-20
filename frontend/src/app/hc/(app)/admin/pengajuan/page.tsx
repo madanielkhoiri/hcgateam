@@ -983,7 +983,7 @@ export default function HalamanPengajuanAdmin() {
  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-red-50">
  {apakahFa
  ? "FA melakukan review STD/RAB, menyetujui atau menolak pengajuan, lalu upload bukti transfer jika disetujui."
- : "Admin / Super Admin membuat pengajuan dengan file STD dan RAB. Notifikasi akan dikirim ke FA untuk proses review."}
+ : "Admin / Admin HC membuat pengajuan dengan file STD dan RAB. Notifikasi akan dikirim ke FA untuk proses review."}
  </p>
 
  {namaLogin && (
@@ -1244,7 +1244,7 @@ export default function HalamanPengajuanAdmin() {
  <p className="mt-1 text-sm font-semibold text-slate-500">
  {apakahFa
  ? "FA melakukan review STD/RAB, lalu upload bukti transfer jika sudah disetujui."
- : "Data pengajuan STD/RAB yang dibuat Admin / Super Admin."}
+ : "Data pengajuan STD/RAB yang dibuat Admin / Admin HC."}
  </p>
  </div>
 

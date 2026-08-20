@@ -26,6 +26,10 @@ const API_URL =
 type ManagedUser = PortalUser & {
   isActive: boolean;
   accessKeys: string[];
+  email?: string | null;
+  phoneNumber?: string | null;
+  departemen?: string | null;
+  jabatan?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,7 +39,7 @@ type AccessOption = {
   title: string;
   description: string;
   parentKey: string | null;
-  level: 'department' | 'card';
+  level: 'department' | 'section' | 'card';
 };
 
 type AccountForm = {
@@ -44,14 +48,22 @@ type AccountForm = {
   password: string;
   role: string;
   isActive: boolean;
+  email: string;
+  phoneNumber: string;
+  departemen: string;
+  jabatan: string;
 };
 
 const emptyForm: AccountForm = {
   name: '',
   username: '',
   password: '',
-  role: 'TAMU',
+  role: 'KARYAWAN',
   isActive: true,
+  email: '',
+  phoneNumber: '',
+  departemen: '',
+  jabatan: '',
 };
 
 export default function AccountManagementPage() {
@@ -161,6 +173,10 @@ export default function AccountManagementPage() {
       password: '',
       role: user.role,
       isActive: user.isActive,
+      email: user.email ?? '',
+      phoneNumber: user.phoneNumber ?? '',
+      departemen: user.departemen ?? '',
+      jabatan: user.jabatan ?? '',
     });
     setError('');
     setFormModalOpen(true);
@@ -178,6 +194,10 @@ export default function AccountManagementPage() {
         username: form.username.trim(),
         role: form.role,
         isActive: form.isActive,
+        email: form.email.trim() || undefined,
+        phoneNumber: form.phoneNumber.trim() || undefined,
+        departemen: form.departemen.trim() || undefined,
+        jabatan: form.jabatan.trim() || undefined,
       };
 
       if (!editingUser || form.password.trim()) {
@@ -218,6 +238,25 @@ export default function AccountManagementPage() {
     setError('');
   }
 
+  /** Seluruh keturunan (anak, cucu, dst.) satu key, rekursif. */
+  function descendantsOf(key: string): string[] {
+    const anak = accessOptions.filter((option) => option.parentKey === key);
+    return anak.flatMap((child) => [child.key, ...descendantsOf(child.key)]);
+  }
+
+  /** Seluruh leluhur (parent, grandparent, dst.) satu key, rekursif. */
+  function ancestorsOf(key: string): string[] {
+    const hasil: string[] = [];
+    let current = accessOptions.find((option) => option.key === key);
+
+    while (current?.parentKey) {
+      hasil.push(current.parentKey);
+      current = accessOptions.find((option) => option.key === current!.parentKey);
+    }
+
+    return hasil;
+  }
+
   function toggleAccess(option: AccessOption) {
     setSelectedAccess((current) => {
       const next = new Set(current);
@@ -225,22 +264,48 @@ export default function AccountManagementPage() {
 
       if (enabled) {
         next.delete(option.key);
-        if (option.level === 'department') {
-          for (const child of accessOptions) {
-            if (child.parentKey === option.key) {
-              next.delete(child.key);
-            }
-          }
+        for (const descendant of descendantsOf(option.key)) {
+          next.delete(descendant);
         }
       } else {
         next.add(option.key);
-        if (option.parentKey) {
-          next.add(option.parentKey);
+        for (const ancestor of ancestorsOf(option.key)) {
+          next.add(ancestor);
         }
       }
 
       return Array.from(next);
     });
+  }
+
+  /** Render satu node akses (department/section/card) beserta anaknya secara rekursif. */
+  function renderAccessNode(option: AccessOption, depth: number) {
+    const children = accessOptions.filter((item) => item.parentKey === option.key);
+    const isOn = selectedAccess.includes(option.key);
+    const isDepartment = option.level === 'department';
+
+    return (
+      <div key={option.key}>
+        <button
+          type="button"
+          className={isDepartment ? styles.departmentToggle : styles.cardToggle}
+          style={depth > 0 ? { paddingLeft: 16 + depth * 18 } : undefined}
+          onClick={() => toggleAccess(option)}
+        >
+          <div>
+            <strong>{option.title}</strong>
+            <small>{option.description}</small>
+          </div>
+          <span className={`${styles.switch} ${isOn ? styles.switchOn : ''}`} />
+        </button>
+
+        {children.length > 0 && isOn && (
+          <div className={styles.cardList}>
+            {children.map((child) => renderAccessNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   async function saveAccess() {
@@ -293,7 +358,8 @@ export default function AccountManagementPage() {
           <h1>Manajemen Akun</h1>
           <p>
             Tambah akun, atur role, aktif/nonaktif akun, serta tentukan akses
-            judul HC, GA, SIPIL dan setiap card di dalamnya.
+            judul HC, GA, CIVIL, ADMINISTRASI dan setiap section/card di
+            dalamnya.
           </p>
         </div>
         <button type="button" className={styles.addButton} onClick={openCreate}>
@@ -446,7 +512,7 @@ export default function AccountManagementPage() {
               </button>
             </div>
 
-            <form className={styles.form} onSubmit={submitAccount}>
+            <form className={styles.form} onSubmit={submitAccount} autoComplete="off">
               <div className={styles.formGrid}>
                 <label>
                   <span>Nama</span>
@@ -458,6 +524,7 @@ export default function AccountManagementPage() {
                         name: event.target.value,
                       }))
                     }
+                    autoComplete="off"
                     required
                   />
                 </label>
@@ -471,6 +538,7 @@ export default function AccountManagementPage() {
                         username: event.target.value,
                       }))
                     }
+                    autoComplete="off"
                     required
                   />
                 </label>
@@ -486,6 +554,7 @@ export default function AccountManagementPage() {
                         password: event.target.value,
                       }))
                     }
+                    autoComplete="new-password"
                     required={!editingUser}
                   />
                 </label>
@@ -500,32 +569,90 @@ export default function AccountManagementPage() {
                       }))
                     }
                   >
-                    <option value="TAMU">Tamu</option>
                     <option value="KARYAWAN">Karyawan</option>
                     <option value="SECTION_HEAD">Section Head</option>
                     <option value="GRUP_LEADER">Group Leader</option>
                     <option value="FA">FA</option>
+                    <option value="ADMIN_DEPT">Admin Departemen</option>
+                    <option value="HC">HC</option>
+                    <option value="ADMIN_COMBEN">Admin Comben</option>
+                    <option value="DOKTER">Dokter</option>
+                    <option value="SHE">SHE / K3</option>
+                    <option value="KLINIK">Klinik Provider</option>
                     <option value="ADMIN">Admin</option>
-                    <option value="SUPER_ADMIN">Super Admin</option>
-                    <optgroup label="Peran MCU Periodik">
-                      <option value="ADMIN_DEPT">Admin Dept (MCU)</option>
-                      <option value="HC">HC (MCU)</option>
-                      <option value="DOKTER">Dokter (MCU)</option>
-                      <option value="SHE">SHE / K3 (MCU)</option>
-                      <option value="KLINIK">Klinik Provider (MCU)</option>
-                    </optgroup>
+                    <option value="SUPER_ADMIN">Admin HC</option>
                   </select>
                   <small className={styles.roleHint}>
-                    Satu akun = satu role. Karyawan dipakai untuk login
-                    Deklarasi Dinas &amp; MCU Periodik. FA &amp; Super Admin
-                    dipakai untuk approval Deklarasi Dinas. Role di grup
-                    &quot;Peran MCU Periodik&quot; dipakai khusus alur MCU
-                    (Bagian 2 dokumen alur) - cakupan Admin Dept diatur lebih
-                    lanjut di Master Departemen, dan cakupan Klinik Provider
-                    di Master Klinik pada modul MCU. Administrator
-                    (Admin/Super Admin) otomatis mendapat akses penuh ke
-                    seluruh menu.
+                    Satu akun = satu role, sesuai jabatan/fungsi orang
+                    tersebut. Menu dan card yang bisa diakses diatur terpisah
+                    lewat pengaturan akses di bawah. Cakupan Admin Departemen
+                    diatur lebih lanjut di Master Departemen, dan cakupan
+                    Klinik Provider di Master Klinik pada modul MCU. Admin HC
+                    juga merangkap admin IR. Administrator (Admin/Admin HC)
+                    otomatis mendapat akses penuh ke seluruh menu.
                   </small>
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    autoComplete="off"
+                    placeholder="nama@perusahaan.com"
+                  />
+                </label>
+                <label>
+                  <span>No. Telepon</span>
+                  <input
+                    type="tel"
+                    value={form.phoneNumber}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        phoneNumber: event.target.value,
+                      }))
+                    }
+                    autoComplete="off"
+                    placeholder="08xxxxxxxxxx"
+                  />
+                  <small className={styles.roleHint}>
+                    Nomor ini dipakai sebagai nomor terdaftar akun di Helpdesk
+                    Center saat membuat laporan.
+                  </small>
+                </label>
+                <label>
+                  <span>Departemen</span>
+                  <input
+                    value={form.departemen}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        departemen: event.target.value,
+                      }))
+                    }
+                    autoComplete="off"
+                    placeholder="Contoh: HCG"
+                  />
+                </label>
+                <label>
+                  <span>Jabatan</span>
+                  <input
+                    value={form.jabatan}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        jabatan: event.target.value,
+                      }))
+                    }
+                    autoComplete="off"
+                    placeholder="Contoh: Comben Admin"
+                  />
                 </label>
                 <label className={styles.checkLine}>
                   <input
@@ -581,6 +708,10 @@ export default function AccountManagementPage() {
               <div><span>Nama</span><strong>{detailUser.name}</strong></div>
               <div><span>Username</span><strong>{detailUser.username}</strong></div>
               <div><span>Role</span><strong>{formatRole(detailUser.role)}</strong></div>
+              <div><span>Email</span><strong>{detailUser.email || '-'}</strong></div>
+              <div><span>No. Telepon</span><strong>{detailUser.phoneNumber || '-'}</strong></div>
+              <div><span>Departemen</span><strong>{detailUser.departemen || '-'}</strong></div>
+              <div><span>Jabatan</span><strong>{detailUser.jabatan || '-'}</strong></div>
               <div><span>Status</span><strong>{detailUser.isActive ? 'Aktif' : 'Nonaktif'}</strong></div>
               <div><span>Jumlah Akses</span><strong>{detailUser.role === 'ADMIN' ? 'Akses penuh' : `${detailUser.accessKeys.length} akses aktif`}</strong></div>
               <div><span>Dibuat</span><strong>{new Date(detailUser.createdAt).toLocaleString('id-ID')}</strong></div>
@@ -612,50 +743,11 @@ export default function AccountManagementPage() {
                 Card yang aktif otomatis mengaktifkan judul departemennya.
               </p>
 
-              {departments.map((department) => {
-                const children = accessOptions.filter(
-                  (option) => option.parentKey === department.key,
-                );
-                const departmentOn = selectedAccess.includes(department.key);
-
-                return (
-                  <section className={styles.accessGroup} key={department.key}>
-                    <button
-                      type="button"
-                      className={styles.departmentToggle}
-                      onClick={() => toggleAccess(department)}
-                    >
-                      <div>
-                        <strong>{department.title}</strong>
-                        <small>{department.description}</small>
-                      </div>
-                      <span className={`${styles.switch} ${departmentOn ? styles.switchOn : ''}`} />
-                    </button>
-
-                    {children.length > 0 && departmentOn && (
-                      <div className={styles.cardList}>
-                        {children.map((child) => {
-                          const childOn = selectedAccess.includes(child.key);
-                          return (
-                            <button
-                              type="button"
-                              className={styles.cardToggle}
-                              key={child.key}
-                              onClick={() => toggleAccess(child)}
-                            >
-                              <div>
-                                <strong>{child.title}</strong>
-                                <small>{child.description}</small>
-                              </div>
-                              <span className={`${styles.switch} ${childOn ? styles.switchOn : ''}`} />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </section>
-                );
-              })}
+              {departments.map((department) => (
+                <section className={styles.accessGroup} key={department.key}>
+                  {renderAccessNode(department, 0)}
+                </section>
+              ))}
 
               {error && <div className={styles.error}>{error}</div>}
               <div className={styles.accessFooter}>

@@ -246,9 +246,9 @@ export default function LoginPage() {
                 <HardHat size={31} />
               </div>
 
-              <strong>SIPIL</strong>
+              <strong>CIVIL</strong>
               <div className={styles.departmentLine} />
-              <span>Sipil</span>
+              <span>Civil</span>
             </article>
           </div>
 

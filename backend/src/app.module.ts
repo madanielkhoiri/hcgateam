@@ -36,6 +36,7 @@ import { PenggunaModule } from './deklarasi-dinas/pengguna/pengguna.module';
 import { SaldoModule } from './deklarasi-dinas/saldo/saldo.module';
 
 import { McuModule } from './mcu/mcu.module';
+import { HelpdeskModule } from './helpdesk/helpdesk.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { McuModule } from './mcu/mcu.module';
     SaldoModule,
     PengajuanModule,
     McuModule,
+    HelpdeskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,11 +4,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  ArrowRight,
   FileText,
+  HeartHandshake,
   HeartPulse,
+  LifeBuoy,
+  Scale,
   UsersRound,
   UserCircle2,
+  Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -21,41 +24,80 @@ import {
   type PortalUser,
   saveStoredUser,
 } from '@/lib/access-control';
+import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
 import styles from './hc.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-type HcMenu = {
-  title: string;
-  description: string;
-  status: string;
-  href?: string;
-  icon: React.ElementType;
-  variant: string;
-  accessKey: string;
-};
-
-const hcMenus: HcMenu[] = [
+const hcTree: MenuTreeNode[] = [
   {
-    title: 'Deklarasi Dinas',
-    description:
-      'Aplikasi pengelolaan deklarasi perjalanan dinas dan uang operasional.',
-    status: 'Tersedia',
-    href: '/hc/deklarasi-dinas',
-    icon: FileText,
-    variant: 'projectCard',
-    accessKey: ACCESS_KEYS.HC,
+    key: 'HC_IR',
+    title: 'IR',
+    description: 'Industrial Relations - belum tersedia.',
+    status: 'Belum tersedia',
+    icon: Scale,
+    accessKey: ACCESS_KEYS.HC_IR,
+    accent: '#0783a8',
+    soft: '#e5f7fb',
   },
   {
-    title: 'MCU Periodik',
-    description:
-      'Monitoring Medical Check Up periodik: jadwal, hasil, rekomendasi FIT/Follow Up, sampai induksi ulang.',
-    status: 'Tersedia',
-    href: '/hc/mcu',
-    icon: HeartPulse,
-    variant: 'inventoryCard',
-    accessKey: ACCESS_KEYS.HC_MCU,
+    key: 'HC_RND',
+    title: 'R & D',
+    description: 'Research & Development.',
+    icon: HeartHandshake,
+    accessKey: ACCESS_KEYS.HC_RND,
+    accent: '#d97706',
+    soft: '#fff2df',
+    children: [
+      {
+        key: 'HC_DEKLARASI',
+        title: 'Deklarasi Dinas',
+        description:
+          'Aplikasi pengelolaan deklarasi perjalanan dinas dan uang operasional.',
+        status: 'Tersedia',
+        href: '/hc/deklarasi-dinas',
+        icon: FileText,
+        accessKey: ACCESS_KEYS.HC_DEKLARASI,
+        accent: '#d97706',
+        soft: '#fff2df',
+      },
+    ],
+  },
+  {
+    key: 'HC_COMBEN',
+    title: 'Comben & Benefit',
+    description: 'Compensation & Benefit.',
+    icon: Wallet,
+    accessKey: ACCESS_KEYS.HC_COMBEN,
+    accent: '#07984c',
+    soft: '#e4f7ec',
+    children: [
+      {
+        key: 'HC_MCU',
+        title: 'MCU Periodik',
+        description:
+          'Monitoring Medical Check Up periodik: jadwal, hasil, rekomendasi FIT/Follow Up, sampai induksi ulang.',
+        status: 'Tersedia',
+        href: '/hc/mcu',
+        icon: HeartPulse,
+        accessKey: ACCESS_KEYS.HC_MCU,
+        accent: '#07984c',
+        soft: '#e4f7ec',
+      },
+      {
+        key: 'HC_HELPDESK',
+        title: 'Helpdesk Center',
+        description:
+          'Pelaporan kendala, tiket, dan riwayat penyelesaian oleh Admin/Admin HC.',
+        status: 'Tersedia',
+        href: '/hc/helpdesk',
+        icon: LifeBuoy,
+        accessKey: ACCESS_KEYS.HC_HELPDESK,
+        accent: '#c2410c',
+        soft: '#ffeee4',
+      },
+    ],
   },
 ];
 
@@ -115,8 +157,8 @@ export default function HcPage() {
     };
   }, [router]);
 
-  const visibleMenus = useMemo(
-    () => hcMenus.filter((menu) => hasAccess(user, menu.accessKey)),
+  const bolehLihat = useMemo(
+    () => (accessKey: string) => hasAccess(user, accessKey),
     [user],
   );
 
@@ -162,39 +204,7 @@ export default function HcPage() {
             </div>
           </div>
 
-          <div className={styles.categoryGrid}>
-            {visibleMenus.map((menu) => {
-              const Icon = menu.icon;
-              const cardClass = `${styles.categoryCard} ${styles[menu.variant]}`;
-              const content = (
-                <>
-                  <span className={styles.categoryIcon}>
-                    <Icon size={34} />
-                  </span>
-
-                  <div className={styles.categoryContent}>
-                    <h2>{menu.title}</h2>
-                    <p>{menu.description}</p>
-                    <span className={styles.cardStatus}>{menu.status}</span>
-                  </div>
-
-                  {menu.href ? (
-                    <ArrowRight className={styles.cardArrow} size={23} />
-                  ) : null}
-                </>
-              );
-
-              return menu.href ? (
-                <Link key={menu.title} href={menu.href} className={cardClass}>
-                  {content}
-                </Link>
-              ) : (
-                <article key={menu.title} className={cardClass}>
-                  {content}
-                </article>
-              );
-            })}
-          </div>
+          <MenuTree nodes={hcTree} bolehLihat={bolehLihat} />
         </div>
       </section>
 
