@@ -4,17 +4,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  ArrowRight,
   Boxes,
   Building2,
-  ClipboardList,
   Construction,
   FileText,
+  GlassWater,
   HardHat,
-  ShieldCheck,
+  Home,
+  Scissors,
+  TreePine,
   Truck,
-  UtensilsCrossed,
   UsersRound,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -27,100 +28,168 @@ import {
   type PortalUser,
   saveStoredUser,
 } from '@/lib/access-control';
+import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
 import styles from './ga.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-type GaMenu = {
-  title: string;
-  description: string;
-  status: string;
-  href?: string;
-  icon: React.ElementType;
-  variant: string;
-  accessKey: string;
-};
-
-const gaMenus: GaMenu[] = [
+const gaTree: MenuTreeNode[] = [
   {
+    key: 'GA_INVENTORY',
     title: 'Inventory',
     description:
       'Pengelolaan master barang, barang masuk, barang keluar, dan stok Inventory Infras, Mess, serta Electric.',
     status: '12 menu tersedia',
     href: '/ga/inventory/dashboard-inventory',
     icon: Boxes,
-    variant: 'inventoryCard',
     accessKey: ACCESS_KEYS.GA_INVENTORY,
+    accent: '#07984c',
+    soft: '#e4f7ec',
   },
   {
-    title: 'Pekerjaan',
-    description:
-      'Pengelolaan Work Order dan dokumen Serah Terima Pekerjaan.',
-    status: '2 menu tersedia',
-    href: '/ga/inventory/work-order',
-    icon: ClipboardList,
-    variant: 'workCard',
-    accessKey: ACCESS_KEYS.GA_PEKERJAAN,
-  },
-  {
+    key: 'GA_AKTIVITAS_HARIAN',
     title: 'Aktivitas Harian',
-    description:
-      'Pencatatan Daily Activity serta kegiatan pemotongan rumput.',
+    description: 'Pencatatan Daily Activity serta kegiatan pemotongan rumput.',
     status: '2 menu tersedia',
     href: '/ga/inventory/daily-report',
     icon: FileText,
-    variant: 'dailyCard',
     accessKey: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
+    accent: '#7a4ce0',
+    soft: '#f0ebff',
   },
   {
+    key: 'GA_PROJECT',
     title: 'Project',
     description:
       'Dokumentasi Pre-Activity Check dan laporan Post Activity pekerjaan project.',
     status: '2 menu tersedia',
     href: '/ga/inventory/pre-activity-check',
     icon: HardHat,
-    variant: 'projectCard',
     accessKey: ACCESS_KEYS.GA_PROJECT,
+    accent: '#d97706',
+    soft: '#fff2df',
   },
   {
-    title: 'Safety Meeting',
-    description:
-      'Pencatatan kegiatan P5M beserta materi, peserta, dan dokumentasi.',
-    status: '1 menu tersedia',
-    href: '/ga/inventory/p5m',
-    icon: ShieldCheck,
-    variant: 'safetyCard',
-    accessKey: ACCESS_KEYS.GA_SAFETY_MEETING,
-  },
-  {
+    key: 'GA_TRANSPORT_SECTION',
     title: 'Transport',
-    description:
-      'Pengelolaan data transportasi, bahan bakar, kilometer, dan laporan kendaraan.',
-    status: '2 menu tersedia',
-    href: '/ga/transport/dashboard',
+    description: 'Pengelolaan data transportasi dan kendaraan.',
     icon: Truck,
-    variant: 'transportCard',
-    accessKey: ACCESS_KEYS.GA_TRANSPORT,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_SECTION,
+    accent: '#0783a8',
+    soft: '#e5f7fb',
+    children: [
+      {
+        key: 'GA_TRANSPORT',
+        title: 'Transport',
+        description:
+          'Pengelolaan data transportasi, bahan bakar, kilometer, dan laporan kendaraan.',
+        status: '2 menu tersedia',
+        href: '/ga/transport/dashboard',
+        icon: Truck,
+        accessKey: ACCESS_KEYS.GA_TRANSPORT,
+        accent: '#0783a8',
+        soft: '#e5f7fb',
+      },
+    ],
   },
   {
-    title: 'Order Pack Meal',
-    description:
-      'Pemesanan konsumsi tamu dengan nomor order otomatis, rincian jenis order, dan form approved.',
-    status: 'CRUD tersedia',
-    href: '/ga/order-pack-meal',
-    icon: UtensilsCrossed,
-    variant: 'orderMealCard',
-    accessKey: ACCESS_KEYS.GA_ORDER_PACK_MEAL,
-  },
-  {
-    title: 'General Service',
-    description:
-      'Layanan umum dan pengelolaan fasilitas untuk pengembangan berikutnya.',
-    status: 'Belum tersedia',
+    key: 'GA_GENERAL_SERVICE',
+    title: 'GS (General Service)',
+    description: 'Housekeeping dan Packmeal.',
     icon: Construction,
-    variant: 'generalCard',
     accessKey: ACCESS_KEYS.GA_GENERAL_SERVICE,
+    accent: '#e86600',
+    soft: '#fff0e4',
+    children: [
+      {
+        key: 'GA_GS_HOUSEKEEPING',
+        title: 'Housekeeping',
+        description: 'Indoor dan Outdoor.',
+        icon: Home,
+        accessKey: ACCESS_KEYS.GA_GS_HOUSEKEEPING,
+        accent: '#e86600',
+        soft: '#fff0e4',
+        children: [
+          {
+            key: 'GA_GS_HOUSEKEEPING_INDOOR',
+            title: 'Indoor',
+            description: 'Belum tersedia.',
+            status: 'Belum tersedia',
+            icon: Home,
+            accessKey: ACCESS_KEYS.GA_GS_HOUSEKEEPING_INDOOR,
+            accent: '#e86600',
+            soft: '#fff0e4',
+          },
+          {
+            key: 'GA_GS_HOUSEKEEPING_OUTDOOR',
+            title: 'Outdoor',
+            description: 'Potong Rumput.',
+            icon: TreePine,
+            accessKey: ACCESS_KEYS.GA_GS_HOUSEKEEPING_OUTDOOR,
+            accent: '#0b9d4d',
+            soft: '#e6f7ec',
+            children: [
+              {
+                key: 'GA_POTONG_RUMPUT',
+                title: 'Potong Rumput',
+                description: 'Pencatatan kegiatan pemotongan rumput area kerja.',
+                status: 'Tersedia',
+                href: '/ga/inventory/potong-rumput',
+                icon: Scissors,
+                accessKey: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
+                accent: '#0b9d4d',
+                soft: '#e6f7ec',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        key: 'GA_GS_PACKMEAL',
+        title: 'Packmeal',
+        description: 'Catering dan Air Minum.',
+        icon: UtensilsCrossed,
+        accessKey: ACCESS_KEYS.GA_GS_PACKMEAL,
+        accent: '#9a4fd1',
+        soft: '#f5eaff',
+        children: [
+          {
+            key: 'GA_GS_PACKMEAL_CATERING',
+            title: 'Catering',
+            description: 'Order Pack Meal.',
+            icon: UtensilsCrossed,
+            accessKey: ACCESS_KEYS.GA_GS_PACKMEAL_CATERING,
+            accent: '#9a4fd1',
+            soft: '#f5eaff',
+            children: [
+              {
+                key: 'GA_ORDER_PACK_MEAL',
+                title: 'Order Pack Meal',
+                description:
+                  'Pemesanan konsumsi tamu dengan nomor order otomatis, rincian jenis order, dan form approved.',
+                status: 'CRUD tersedia',
+                href: '/ga/order-pack-meal',
+                icon: UtensilsCrossed,
+                accessKey: ACCESS_KEYS.GA_ORDER_PACK_MEAL,
+                accent: '#9a4fd1',
+                soft: '#f5eaff',
+              },
+            ],
+          },
+          {
+            key: 'GA_GS_PACKMEAL_AIR_MINUM',
+            title: 'Air Minum',
+            description: 'Belum tersedia.',
+            status: 'Belum tersedia',
+            icon: GlassWater,
+            accessKey: ACCESS_KEYS.GA_GS_PACKMEAL_AIR_MINUM,
+            accent: '#0868f6',
+            soft: '#eaf2ff',
+          },
+        ],
+      },
+    ],
   },
 ];
 
@@ -180,8 +249,8 @@ export default function GaPage() {
     };
   }, [router]);
 
-  const visibleMenus = useMemo(
-    () => gaMenus.filter((menu) => hasAccess(user, menu.accessKey)),
+  const bolehLihat = useMemo(
+    () => (accessKey: string) => hasAccess(user, accessKey),
     [user],
   );
 
@@ -227,39 +296,7 @@ export default function GaPage() {
             </div>
           </div>
 
-          <div className={styles.categoryGrid}>
-            {visibleMenus.map((menu) => {
-              const Icon = menu.icon;
-              const cardClass = `${styles.categoryCard} ${styles[menu.variant]}`;
-              const content = (
-                <>
-                  <span className={styles.categoryIcon}>
-                    <Icon size={34} />
-                  </span>
-
-                  <div className={styles.categoryContent}>
-                    <h2>{menu.title}</h2>
-                    <p>{menu.description}</p>
-                    <span className={styles.cardStatus}>{menu.status}</span>
-                  </div>
-
-                  {menu.href ? (
-                    <ArrowRight className={styles.cardArrow} size={23} />
-                  ) : null}
-                </>
-              );
-
-              return menu.href ? (
-                <Link key={menu.title} href={menu.href} className={cardClass}>
-                  {content}
-                </Link>
-              ) : (
-                <article key={menu.title} className={cardClass}>
-                  {content}
-                </article>
-              );
-            })}
-          </div>
+          <MenuTree nodes={gaTree} bolehLihat={bolehLihat} />
         </div>
       </section>
 
