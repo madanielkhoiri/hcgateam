@@ -61,7 +61,7 @@ import { McuSuratService } from './surat/mcu-surat.service';
     McuInduksiService,
     McuRetensiService,
   ],
-  exports: [McuAksesService, McuNotifikasiService],
+  exports: [McuAksesService, McuNotifikasiService, McuKaryawanService],
 })
 export class McuModule {}
 

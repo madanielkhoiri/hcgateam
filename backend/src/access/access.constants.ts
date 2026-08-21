@@ -25,6 +25,14 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'section',
   },
   {
+    key: 'HC_KARYAWAN',
+    title: 'Database Karyawan',
+    description:
+      'Master data seluruh karyawan (NIK, departemen, jabatan, status kerja) yang dipakai bersama oleh card-card HC lainnya.',
+    parentKey: 'HC',
+    level: 'card',
+  },
+  {
     key: 'HC_RND',
     title: 'R & D',
     description: 'Research & Development.',
@@ -35,6 +43,38 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     key: 'HC_DEKLARASI',
     title: 'Deklarasi Dinas',
     description: 'Pengelolaan deklarasi perjalanan dinas dan uang operasional.',
+    parentKey: 'HC_RND',
+    level: 'card',
+  },
+  {
+    key: 'HC_TUGAS_DINAS',
+    title: 'Form Tugas Dinas',
+    description:
+      'Pembuatan Surat Tugas Dinas otomatis jadi PDF, lengkap dengan alur persetujuan SH & PJO.',
+    parentKey: 'HC_RND',
+    level: 'card',
+  },
+  {
+    key: 'HC_ANAK_MAGANG',
+    title: 'Database Anak Magang',
+    description:
+      'Master data mahasiswa magang (NRP, NIM, jurusan, ukuran seragam, status aktif/non aktif), dipakai bersama Surat Balasan & Surat Penolakan Magang.',
+    parentKey: 'HC_RND',
+    level: 'card',
+  },
+  {
+    key: 'HC_SURAT_BALASAN_MAGANG',
+    title: 'Surat Balasan Magang',
+    description:
+      'Pembuatan surat persetujuan permohonan magang industri otomatis jadi PDF, data mahasiswa dari Database Anak Magang.',
+    parentKey: 'HC_RND',
+    level: 'card',
+  },
+  {
+    key: 'HC_SURAT_PENOLAKAN_MAGANG',
+    title: 'Surat Penolakan Magang',
+    description:
+      'Pembuatan surat penolakan permohonan magang industri otomatis jadi PDF, data pelamar dari Database Anak Magang.',
     parentKey: 'HC_RND',
     level: 'card',
   },

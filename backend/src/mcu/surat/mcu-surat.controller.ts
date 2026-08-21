@@ -17,7 +17,7 @@ import { StatusSuratPengantar } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
-import { McuSuratService, TerbitkanSuratDto } from './mcu-surat.service';
+import { McuSuratService, TerbitkanSuratBatchDto } from './mcu-surat.service';
 
 @Controller('mcu/surat-pengantar')
 @UseGuards(JwtAuthGuard)
@@ -39,13 +39,14 @@ export class McuSuratController {
     return this.service.detail(id);
   }
 
-  @Post('jadwal/:jadwalId/terbitkan')
-  terbitkan(
-    @Aktor() aktor: AktorMcu,
-    @Param('jadwalId', ParseIntPipe) jadwalId: number,
-    @Body() dto: TerbitkanSuratDto,
-  ) {
-    return this.service.terbitkan(jadwalId, dto, aktor);
+  @Post('terbitkan')
+  terbitkan(@Aktor() aktor: AktorMcu, @Body() dto: TerbitkanSuratBatchDto) {
+    return this.service.terbitkan(dto, aktor);
+  }
+
+  @Post(':id/cetak-ulang')
+  cetakUlang(@Param('id', ParseIntPipe) id: number) {
+    return this.service.cetakUlang(id);
   }
 
   @Post(':id/kirim')

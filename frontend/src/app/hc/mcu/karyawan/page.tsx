@@ -2,12 +2,15 @@
 
 // ==================================================
 // FILE: frontend/src/app/hc/mcu/karyawan/page.tsx
-// FUNGSI: Master karyawan, status kerja, dan reminder H-3 bulan
+// FUNGSI: Tracking MCU per karyawan (tanggal terakhir/expired, status
+// kerja) + reminder H-3 bulan. Identitas karyawan (NIK, nama, kontak,
+// departemen, jabatan) dikelola di card Database Karyawan - halaman
+// ini hanya memilih karyawan yang sudah ada lalu mengatur data MCU-nya.
 // Referensi: Bagian 4.1 & 4.11 alur-workflow-mcu-periodik-v3.md
 // ==================================================
 
 import Link from 'next/link';
-import { ArrowLeft, BellRing, Pencil, Plus, Users } from 'lucide-react';
+import { ArrowLeft, BellRing, Database, Pencil, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
@@ -25,31 +28,18 @@ import {
   nilaiInputTanggal,
   type Departemen,
   type Karyawan,
-  type StatusKerja,
 } from '@/lib/mcu-api';
 import { useMcu } from '../layout';
 import styles from '../mcu.module.css';
 
-type FormKaryawan = {
-  nik: string;
-  nama: string;
-  departemenId: string;
-  jabatan: string;
-  email: string;
-  tanggalLahir: string;
+type FormMcuKaryawan = {
   tanggalMcuTerakhir: string;
   tanggalMcuExpired: string;
-  statusKerja: StatusKerja;
+  statusKerja: 'AKTIF' | 'DIRUMAHKAN' | 'RESIGN';
   statusKesehatanDirumahkan: string;
 };
 
-const formKosong: FormKaryawan = {
-  nik: '',
-  nama: '',
-  departemenId: '',
-  jabatan: '',
-  email: '',
-  tanggalLahir: '',
+const formKosong: FormMcuKaryawan = {
   tanggalMcuTerakhir: '',
   tanggalMcuExpired: '',
   statusKerja: 'AKTIF',
@@ -72,9 +62,8 @@ export default function KaryawanMcuPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [hanyaJatuhTempo, setHanyaJatuhTempo] = useState(false);
 
-  const [dialogTerbuka, setDialogTerbuka] = useState(false);
-  const [idDiedit, setIdDiedit] = useState<number | null>(null);
-  const [form, setForm] = useState<FormKaryawan>(formKosong);
+  const [karyawanDiedit, setKaryawanDiedit] = useState<Karyawan | null>(null);
+  const [form, setForm] = useState<FormMcuKaryawan>(formKosong);
 
   const muat = useCallback(async () => {
     setMemuat(true);
@@ -128,62 +117,37 @@ export default function KaryawanMcuPage() {
     [karyawan],
   );
 
-  function bukaTambah() {
-    setIdDiedit(null);
-    setForm({
-      ...formKosong,
-      departemenId: departemen[0] ? String(departemen[0].id) : '',
-    });
-    setDialogTerbuka(true);
-  }
-
   function bukaEdit(item: Karyawan) {
-    setIdDiedit(item.id);
+    setKaryawanDiedit(item);
     setForm({
-      nik: item.nik,
-      nama: item.nama,
-      departemenId: String(item.departemenId),
-      jabatan: item.jabatan ?? '',
-      email: item.email ?? '',
-      tanggalLahir: nilaiInputTanggal(item.tanggalLahir),
       tanggalMcuTerakhir: nilaiInputTanggal(item.tanggalMcuTerakhir),
       tanggalMcuExpired: nilaiInputTanggal(item.tanggalMcuExpired),
       statusKerja: item.statusKerja,
       statusKesehatanDirumahkan: item.statusKesehatanDirumahkan ?? '',
     });
-    setDialogTerbuka(true);
   }
 
   async function simpan() {
+    if (!karyawanDiedit) {
+      return;
+    }
+
     setProses(true);
     setGalat(null);
 
-    const muatan = {
-      nik: form.nik.trim(),
-      nama: form.nama.trim(),
-      departemenId: Number(form.departemenId),
-      jabatan: form.jabatan.trim() || undefined,
-      email: form.email.trim() || undefined,
-      tanggalLahir: form.tanggalLahir || undefined,
-      tanggalMcuTerakhir: form.tanggalMcuTerakhir || undefined,
-      tanggalMcuExpired: form.tanggalMcuExpired || undefined,
-      statusKerja: form.statusKerja,
-      statusKesehatanDirumahkan:
-        form.statusKerja === 'DIRUMAHKAN' && form.statusKesehatanDirumahkan
-          ? form.statusKesehatanDirumahkan
-          : undefined,
-    };
-
     try {
-      if (idDiedit) {
-        await mcuApi.ubah(`/karyawan/${idDiedit}`, muatan);
-        setSukses('Data karyawan berhasil diperbarui');
-      } else {
-        await mcuApi.kirim('/karyawan', muatan);
-        setSukses('Karyawan baru berhasil ditambahkan');
-      }
+      await mcuApi.ubah(`/karyawan/${karyawanDiedit.id}`, {
+        tanggalMcuTerakhir: form.tanggalMcuTerakhir || undefined,
+        tanggalMcuExpired: form.tanggalMcuExpired || undefined,
+        statusKerja: form.statusKerja,
+        statusKesehatanDirumahkan:
+          form.statusKerja === 'DIRUMAHKAN' && form.statusKesehatanDirumahkan
+            ? form.statusKesehatanDirumahkan
+            : undefined,
+      });
 
-      setDialogTerbuka(false);
+      setSukses('Data MCU karyawan berhasil diperbarui');
+      setKaryawanDiedit(null);
       await muat();
     } catch (error) {
       setGalat((error as Error).message);
@@ -217,7 +181,7 @@ export default function KaryawanMcuPage() {
       <div className={styles.breadcrumb}>
         <Link href="/hc/mcu">MCU Periodik</Link>
         <span>/</span>
-        <strong>Data Karyawan</strong>
+        <strong>Data Karyawan &amp; Reminder H-3 Bulan</strong>
       </div>
 
       <div className={styles.pageHead}>
@@ -229,9 +193,12 @@ export default function KaryawanMcuPage() {
           <div>
             <h1>Data Karyawan &amp; Reminder H-3 Bulan</h1>
             <p>
-              Tanggal MCU berikutnya dihitung otomatis 3 bulan sebelum MCU
-              terakhir expired. Karyawan dirumahkan dikecualikan dari reminder
-              periodik sampai kembali aktif.
+              Karyawan diambil dari card{' '}
+              <Link href="/hc/karyawan" style={{ color: 'inherit', fontWeight: 800 }}>
+                Database Karyawan
+              </Link>{' '}
+              (nama &amp; NIK). Tanggal MCU berikutnya dihitung otomatis 3
+              bulan sebelum MCU terakhir expired.
             </p>
           </div>
         </div>
@@ -245,28 +212,24 @@ export default function KaryawanMcuPage() {
             Kembali
           </Link>
 
-          {bolehKelola ? (
-            <>
-              <button
-                type="button"
-                className={`${styles.tombol} ${styles.tombolLembut}`}
-                onClick={kirimReminder}
-                disabled={proses || jumlahJatuhTempo === 0}
-              >
-                <BellRing size={15} />
-                Kirim Reminder ({jumlahJatuhTempo})
-              </button>
+          <Link
+            href="/hc/karyawan"
+            className={`${styles.tombol} ${styles.tombolNetral}`}
+          >
+            <Database size={15} />
+            Buka Database Karyawan
+          </Link>
 
-              <button
-                type="button"
-                className={styles.tombol}
-                onClick={bukaTambah}
-                disabled={departemen.length === 0}
-              >
-                <Plus size={15} />
-                Tambah Karyawan
-              </button>
-            </>
+          {bolehKelola ? (
+            <button
+              type="button"
+              className={`${styles.tombol} ${styles.tombolLembut}`}
+              onClick={kirimReminder}
+              disabled={proses || jumlahJatuhTempo === 0}
+            >
+              <BellRing size={15} />
+              Kirim Reminder ({jumlahJatuhTempo})
+            </button>
           ) : null}
         </div>
       </div>
@@ -274,10 +237,10 @@ export default function KaryawanMcuPage() {
       {galat ? <Pesan jenis="error">{galat}</Pesan> : null}
       {sukses ? <Pesan jenis="sukses">{sukses}</Pesan> : null}
 
-      {departemen.length === 0 && !memuat ? (
+      {karyawan.length === 0 && !memuat ? (
         <Pesan jenis="info">
-          Belum ada departemen terdaftar. Tambahkan departemen terlebih dahulu
-          di halaman Notifikasi &amp; Peran Akun sebelum mengisi data karyawan.
+          Belum ada karyawan terdaftar. Tambahkan data karyawan terlebih
+          dahulu di card Database Karyawan sebelum mengatur data MCU-nya.
         </Pesan>
       ) : null}
 
@@ -337,7 +300,7 @@ export default function KaryawanMcuPage() {
         ) : tampil.length === 0 ? (
           <Kosong
             judul="Belum ada data karyawan"
-            keterangan="Tambahkan data karyawan untuk mulai menjalankan siklus MCU periodik."
+            keterangan="Tambahkan karyawan di card Database Karyawan untuk mulai menjalankan siklus MCU periodik."
           />
         ) : (
           <div className={styles.tableWrap}>
@@ -418,7 +381,7 @@ export default function KaryawanMcuPage() {
                             onClick={() => bukaEdit(item)}
                           >
                             <Pencil size={12} />
-                            Edit
+                            Data MCU
                           </button>
                         ) : null}
                       </div>
@@ -431,17 +394,17 @@ export default function KaryawanMcuPage() {
         )}
       </Panel>
 
-      {dialogTerbuka ? (
+      {karyawanDiedit ? (
         <Dialog
-          judul={idDiedit ? 'Edit Data Karyawan' : 'Tambah Karyawan'}
-          keterangan="Tanggal MCU berikutnya dihitung otomatis dari tanggal expired dikurangi 3 bulan."
-          onTutup={() => setDialogTerbuka(false)}
+          judul={`Data MCU - ${karyawanDiedit.nama}`}
+          keterangan="Identitas karyawan dikelola di card Database Karyawan. Tanggal MCU berikutnya dihitung otomatis dari tanggal expired dikurangi 3 bulan."
+          onTutup={() => setKaryawanDiedit(null)}
           aksi={
             <>
               <button
                 type="button"
                 className={`${styles.tombol} ${styles.tombolNetral}`}
-                onClick={() => setDialogTerbuka(false)}
+                onClick={() => setKaryawanDiedit(null)}
                 disabled={proses}
               >
                 Batal
@@ -451,12 +414,7 @@ export default function KaryawanMcuPage() {
                 type="button"
                 className={styles.tombol}
                 onClick={simpan}
-                disabled={
-                  proses ||
-                  !form.nik.trim() ||
-                  !form.nama.trim() ||
-                  !form.departemenId
-                }
+                disabled={proses}
               >
                 {proses ? 'Menyimpan...' : 'Simpan'}
               </button>
@@ -464,75 +422,6 @@ export default function KaryawanMcuPage() {
           }
         >
           <div className={styles.formGrid}>
-            <Field label="NIK">
-              <input
-                className={styles.input}
-                value={form.nik}
-                onChange={(event) =>
-                  setForm({ ...form, nik: event.target.value })
-                }
-              />
-            </Field>
-
-            <Field label="Nama Lengkap">
-              <input
-                className={styles.input}
-                value={form.nama}
-                onChange={(event) =>
-                  setForm({ ...form, nama: event.target.value })
-                }
-              />
-            </Field>
-
-            <Field label="Departemen">
-              <select
-                className={styles.select}
-                value={form.departemenId}
-                onChange={(event) =>
-                  setForm({ ...form, departemenId: event.target.value })
-                }
-              >
-                <option value="">Pilih departemen</option>
-                {departemen.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.namaDepartemen}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Jabatan">
-              <input
-                className={styles.input}
-                value={form.jabatan}
-                onChange={(event) =>
-                  setForm({ ...form, jabatan: event.target.value })
-                }
-              />
-            </Field>
-
-            <Field label="Email (blast Outlook)">
-              <input
-                className={styles.input}
-                type="email"
-                value={form.email}
-                onChange={(event) =>
-                  setForm({ ...form, email: event.target.value })
-                }
-              />
-            </Field>
-
-            <Field label="Tanggal Lahir">
-              <input
-                className={styles.input}
-                type="date"
-                value={form.tanggalLahir}
-                onChange={(event) =>
-                  setForm({ ...form, tanggalLahir: event.target.value })
-                }
-              />
-            </Field>
-
             <Field label="Tanggal MCU Terakhir">
               <input
                 className={styles.input}
@@ -562,7 +451,8 @@ export default function KaryawanMcuPage() {
                 onChange={(event) =>
                   setForm({
                     ...form,
-                    statusKerja: event.target.value as StatusKerja,
+                    statusKerja: event.target
+                      .value as FormMcuKaryawan['statusKerja'],
                   })
                 }
               >

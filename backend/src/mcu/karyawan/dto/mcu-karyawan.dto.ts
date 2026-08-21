@@ -53,6 +53,10 @@ export class BuatKaryawanDto {
   email?: string;
 
   @IsOptional()
+  @IsString()
+  noTelepon?: string;
+
+  @IsOptional()
   @IsDateString()
   tanggalLahir?: string;
 

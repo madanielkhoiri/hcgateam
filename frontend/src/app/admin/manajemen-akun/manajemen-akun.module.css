@@ -184,6 +184,67 @@
   font: inherit;
   font-size: 11px;
 }
+.karyawanPicker {
+  position: relative;
+  padding: 12px;
+  margin-bottom: 16px;
+  background: #f5f9fc;
+  border: 1px dashed #c7dcee;
+  border-radius: 10px;
+}
+.karyawanPickerLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  color: #526a86;
+  font-size: 10px;
+  font-weight: 700;
+}
+.karyawanPickerInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 11px;
+  color: #203d61;
+  background: #fff;
+  border: 1px solid #d6e1ec;
+  border-radius: 9px;
+  outline: 0;
+  font: inherit;
+  font-size: 11px;
+}
+.karyawanDropdown {
+  position: absolute;
+  z-index: 20;
+  left: 12px;
+  right: 12px;
+  margin-top: 4px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #d6e1ec;
+  border-radius: 9px;
+  box-shadow: 0 12px 26px rgba(20, 40, 70, 0.14);
+}
+.karyawanDropdownItem {
+  width: 100%;
+  padding: 9px 12px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  cursor: pointer;
+}
+.karyawanDropdownItem:last-child { border-bottom: 0; }
+.karyawanDropdownItem:hover { background: #f5f9fc; }
+.karyawanDropdownItem strong {
+  display: block;
+  color: #203d61;
+  font-size: 11.5px;
+}
+.karyawanDropdownItem span {
+  color: #7688a0;
+  font-size: 10px;
+}
 .checkLine {
   min-height: 42px;
   flex-direction: row !important;
