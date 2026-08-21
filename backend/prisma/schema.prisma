@@ -24,6 +24,8 @@ enum UserRole {
   KLINIK
   // Admin Compensation & Benefit.
   ADMIN_COMBEN
+  // Project Manager - penyetuju tahap 2 Surat Tugas Dinas (setelah SH).
+  PJO
 }
 
 model User {
@@ -77,6 +79,13 @@ model User {
 
   tiketHelpdeskDibuat   TiketHelpdesk[] @relation("PembuatTiketHelpdesk")
   tiketHelpdeskDiproses TiketHelpdesk[] @relation("PicTiketHelpdesk")
+
+  suratTugasDibuat        SuratTugasDinas[] @relation("PembuatSuratTugas")
+  suratTugasDisetujuiSh   SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
+  suratTugasDisetujuiPjo  SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
+
+  suratBalasanMagangDibuat   SuratBalasanMagang[]   @relation("PembuatSuratBalasanMagang")
+  suratPenolakanMagangDibuat SuratPenolakanMagang[] @relation("PembuatSuratPenolakanMagang")
 
   @@map("users")
 }
@@ -951,6 +960,7 @@ model Karyawan {
   departemenId              Int                        @map("departemen_id")
   jabatan                   String?
   email                     String?
+  noTelepon                 String?                    @map("no_telepon")
   tanggalLahir              DateTime?                  @map("tanggal_lahir") @db.Date
   tanggalMcuTerakhir        DateTime?                  @map("tanggal_mcu_terakhir") @db.Date
   tanggalMcuExpired         DateTime?                  @map("tanggal_mcu_expired") @db.Date
@@ -1011,7 +1021,9 @@ model JadwalMcu {
   departemenId       Int               @map("departemen_id")
   tanggalMcu         DateTime          @map("tanggal_mcu") @db.Date
   jenisMcu           JenisMcu          @default(BERKALA) @map("jenis_mcu")
+  jenisPemeriksaan   String?           @map("jenis_pemeriksaan")
   klinikId           Int?              @map("klinik_id")
+  suratPengantarId   Int?              @map("surat_pengantar_id")
   statusPendaftaran  StatusPendaftaran @default(DRAFT) @map("status_pendaftaran")
   tanggalLock        DateTime          @map("tanggal_lock") @db.Date
   catatan            String?           @db.Text
@@ -1028,7 +1040,7 @@ model JadwalMcu {
   klinik         Klinik?         @relation(fields: [klinikId], references: [id], onDelete: SetNull)
   diubahOlehHc   User?           @relation("PengubahJadwalMcu", fields: [diubahOlehHcId], references: [id], onDelete: SetNull)
   dibuatOleh     User            @relation("PembuatJadwalMcu", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
-  suratPengantar SuratPengantar?
+  suratPengantar SuratPengantar? @relation(fields: [suratPengantarId], references: [id], onDelete: SetNull)
   hasilMcu       HasilMcu?
 
   @@index([karyawanId])
@@ -1036,22 +1048,25 @@ model JadwalMcu {
   @@index([tanggalMcu])
   @@index([statusPendaftaran])
   @@index([jenisMcu])
+  @@index([suratPengantarId])
   @@map("jadwal_mcu")
 }
 
 // --------------------------------------------------
 // SURAT PENGANTAR MCU (diterbitkan HC)
+// Satu surat bisa mencakup beberapa Jadwal MCU sekaligus (batch ke
+// satu klinik tujuan yang sama), mengikuti format PPA-ADR-F-HCGA.
 // Surat pengantar FU tidak ada di sini - FU memakai surat rujukan Dokter.
 // --------------------------------------------------
 
 model SuratPengantar {
   id            Int                  @id @default(autoincrement())
-  jadwalMcuId   Int                  @unique @map("jadwal_mcu_id")
   nomorSurat    String               @unique @map("nomor_surat")
   nomorUrut     Int                  @map("nomor_urut")
   tahunTerbit   Int                  @map("tahun_terbit")
   klinikId      Int?                 @map("klinik_id")
   tanggalTerbit DateTime             @map("tanggal_terbit") @db.Date
+  catatan       String?              @db.Text
   filePdf       String?              @map("file_pdf")
   status        StatusSuratPengantar @default(DRAFT)
   tanggalKirim  DateTime?            @map("tanggal_kirim")
@@ -1059,9 +1074,9 @@ model SuratPengantar {
   createdAt     DateTime             @default(now()) @map("created_at")
   updatedAt     DateTime             @updatedAt @map("updated_at")
 
-  jadwalMcu    JadwalMcu @relation(fields: [jadwalMcuId], references: [id], onDelete: Cascade)
-  klinik       Klinik?   @relation(fields: [klinikId], references: [id], onDelete: SetNull)
-  diterbitkan  User      @relation("PenerbitSuratPengantar", fields: [diterbitkanId], references: [id], onDelete: Restrict)
+  jadwalMcu   JadwalMcu[]
+  klinik      Klinik?   @relation(fields: [klinikId], references: [id], onDelete: SetNull)
+  diterbitkan User      @relation("PenerbitSuratPengantar", fields: [diterbitkanId], references: [id], onDelete: Restrict)
 
   @@unique([tahunTerbit, nomorUrut])
   @@index([status])
@@ -1295,4 +1310,175 @@ model TiketHelpdesk {
   @@index([status])
   @@index([dibuatPada])
   @@map("tiket_helpdesk")
+}
+
+// ==================================================
+// SURAT TUGAS DINAS (R & D)
+// ==================================================
+
+enum StatusSuratTugas {
+  MENUNGGU_SH
+  MENUNGGU_PJO
+  DISETUJUI
+  DITOLAK
+}
+
+model SuratTugasDinas {
+  id              Int              @id @default(autoincrement())
+  nomor           String           @unique
+  tujuanLokasi    String           @map("tujuan_lokasi")
+  tanggalMulai    DateTime         @map("tanggal_mulai") @db.Date
+  tanggalSelesai  DateTime         @map("tanggal_selesai") @db.Date
+  keteranganTugas String           @db.Text @map("keterangan_tugas")
+  status          StatusSuratTugas @default(MENUNGGU_SH)
+  filePdf         String?          @map("file_pdf")
+  dibuatOlehId    Int              @map("dibuat_oleh_id")
+  disetujuiShOlehId  Int?      @map("disetujui_sh_oleh_id")
+  disetujuiShPada    DateTime? @map("disetujui_sh_pada")
+  disetujuiPjoOlehId Int?      @map("disetujui_pjo_oleh_id")
+  disetujuiPjoPada   DateTime? @map("disetujui_pjo_pada")
+  alasanTolak     String?          @db.Text @map("alasan_tolak")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  dibuatOleh    User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
+  disetujuiShOleh  User? @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
+  disetujuiPjoOleh User? @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
+  karyawan      SuratTugasKaryawan[]
+
+  @@index([status])
+  @@index([dibuatOlehId])
+  @@map("surat_tugas_dinas")
+}
+
+model SuratTugasKaryawan {
+  id           Int    @id @default(autoincrement())
+  suratTugasId Int    @map("surat_tugas_id")
+  urutan       Int
+  nrp          String
+  nama         String
+  departemen   String
+  jabatan      String
+
+  suratTugas SuratTugasDinas @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
+
+  @@index([suratTugasId])
+  @@map("surat_tugas_karyawan")
+}
+
+// ==================================================
+// DATABASE ANAK MAGANG + SURAT BALASAN / PENOLAKAN (R & D)
+// ==================================================
+
+enum StatusAnakMagang {
+  AKTIF
+  NONAKTIF
+}
+
+model AnakMagang {
+  id             Int              @id @default(autoincrement())
+  nrp            String?
+  nama           String
+  gender         String?
+  universitas    String?
+  jurusan        String?
+  maritalStatus  String?          @map("marital_status")
+  agama          String?
+  departemen     String?
+  jabatan        String?
+  posisi         String?
+  tempatLahir    String?          @map("tempat_lahir")
+  tanggalLahir   DateTime?        @map("tanggal_lahir") @db.Date
+  pendidikan     String?
+  tanggalMulai   DateTime?        @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime?        @map("tanggal_selesai") @db.Date
+  email          String?
+  noHp           String?          @map("no_hp")
+  noKtp          String?          @map("no_ktp")
+  npwp           String?
+  nomorRekening  String?          @map("nomor_rekening")
+  bank           String?
+  namaRekening   String?          @map("nama_rekening")
+  alamat         String?          @db.Text
+  site           String?
+  golonganDarah  String?          @map("golongan_darah")
+  bpjsTk         String?          @map("bpjs_tk")
+  bpjsKesehatan  String?          @map("bpjs_kesehatan")
+  tanggalMcu         DateTime?    @map("tanggal_mcu") @db.Date
+  tanggalPemeriksaan DateTime?    @map("tanggal_pemeriksaan") @db.Date
+  tanggalInduksi     DateTime?    @map("tanggal_induksi") @db.Date
+  ukuranBaju     String?          @map("ukuran_baju")
+  ukuranCelana   String?          @map("ukuran_celana")
+  ukuranSepatu   String?          @map("ukuran_sepatu")
+  noKk           String?          @map("no_kk")
+  rekomendasi    String?
+  atasanLangsung String?          @map("atasan_langsung")
+  status         StatusAnakMagang @default(AKTIF)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  suratBalasanBaris SuratBalasanMagangBaris[]
+  suratPenolakan    SuratPenolakanMagang[]
+
+  @@index([status])
+  @@map("anak_magang")
+}
+
+model SuratBalasanMagang {
+  id                Int      @id @default(autoincrement())
+  nomor             String   @unique
+  nomorUrut         Int      @map("nomor_urut")
+  tahunTerbit       Int      @map("tahun_terbit")
+  nomorSuratMasuk   String?  @map("nomor_surat_masuk")
+  perihalSuratMasuk String?  @map("perihal_surat_masuk")
+  tujuanJurusan     String   @map("tujuan_jurusan")
+  kotaTujuan        String   @map("kota_tujuan")
+  filePdf           String?  @map("file_pdf")
+  dibuatOlehId      Int      @map("dibuat_oleh_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  dibuatOleh User                      @relation("PembuatSuratBalasanMagang", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
+  baris      SuratBalasanMagangBaris[]
+
+  @@index([tahunTerbit])
+  @@map("surat_balasan_magang")
+}
+
+model SuratBalasanMagangBaris {
+  id               Int      @id @default(autoincrement())
+  suratId          Int      @map("surat_id")
+  anakMagangId     Int      @map("anak_magang_id")
+  urutan           Int
+  nama             String
+  nrp              String
+  jurusan          String
+  departemenTujuan String   @map("departemen_tujuan")
+  tanggalMulai     DateTime @map("tanggal_mulai") @db.Date
+  tanggalSelesai   DateTime @map("tanggal_selesai") @db.Date
+
+  surat      SuratBalasanMagang @relation(fields: [suratId], references: [id], onDelete: Cascade)
+  anakMagang AnakMagang         @relation(fields: [anakMagangId], references: [id], onDelete: Restrict)
+
+  @@index([suratId])
+  @@map("surat_balasan_magang_baris")
+}
+
+model SuratPenolakanMagang {
+  id              Int      @id @default(autoincrement())
+  nomor           String   @unique
+  nomorUrut       Int      @map("nomor_urut")
+  tahunTerbit     Int      @map("tahun_terbit")
+  anakMagangId    Int      @map("anak_magang_id")
+  nama            String
+  sapaan          String
+  alasanPenolakan String   @db.Text @map("alasan_penolakan")
+  filePdf         String?  @map("file_pdf")
+  dibuatOlehId    Int      @map("dibuat_oleh_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  anakMagang AnakMagang @relation(fields: [anakMagangId], references: [id], onDelete: Restrict)
+  dibuatOleh User       @relation("PembuatSuratPenolakanMagang", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
+
+  @@index([tahunTerbit])
+  @@map("surat_penolakan_magang")
 }

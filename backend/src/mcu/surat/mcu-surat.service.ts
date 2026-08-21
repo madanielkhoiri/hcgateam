@@ -11,10 +11,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { IsOptional, IsString } from 'class-validator';
-import PDFDocument from 'pdfkit';
+import { Type } from 'class-transformer';
+import {
+  ArrayMinSize,
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import PDFDocument from 'pdfkit';
 import {
   Prisma,
   StatusPendaftaran,
@@ -25,13 +34,44 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
-import { formatTanggalIndonesia, hariIni } from '../mcu-date.util';
+import { hariIni, tanggalSaja } from '../mcu-date.util';
 import { McuNotifikasiService } from '../notifikasi/mcu-notifikasi.service';
 
-export class TerbitkanSuratDto {
+const SIGNATURE_DIR = join(process.cwd(), 'uploads', 'signatures');
+const LOGO_PATH = join(SIGNATURE_DIR, 'PPA_cut.png');
+const SH_SIGNER = {
+  nama: 'SINGGIEH PRANANDA',
+  jabatan: 'Section Head HCGA',
+  file: join(SIGNATURE_DIR, 'singgieh-prananda.png'),
+};
+/** Alamat email tetap penerima hasil MCU, sesuai format surat resmi. */
+const EMAIL_HASIL_MCU =
+  'hcd.ppaadr@ppa.co.id; lela.kurniawati@amm.id; misbakhulhuda@ppa.co.id';
+
+export class BarisSuratPengantarDto {
+  @IsInt()
+  jadwalMcuId: number;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Jenis pemeriksaan wajib diisi' })
+  jenisPemeriksaan: string;
+
+  @IsDateString()
+  tanggalMcu: string;
+}
+
+export class TerbitkanSuratBatchDto {
+  @IsInt()
+  klinikId: number;
+
   @IsOptional()
   @IsString()
   catatan?: string;
+
+  @ValidateNested({ each: true })
+  @Type(() => BarisSuratPengantarDto)
+  @ArrayMinSize(1, { message: 'Minimal 1 jadwal MCU pada surat pengantar' })
+  jadwal: BarisSuratPengantarDto[];
 }
 
 const SURAT_INCLUDE = {
@@ -83,7 +123,7 @@ export class McuSuratService {
   async jadwalMenungguSurat() {
     return this.prisma.jadwalMcu.findMany({
       where: {
-        suratPengantar: null,
+        suratPengantarId: null,
         statusPendaftaran: {
           in: [StatusPendaftaran.DRAFT, StatusPendaftaran.TERKUNCI],
         },
@@ -110,82 +150,112 @@ export class McuSuratService {
     return surat;
   }
 
-  /** Generate surat pengantar (PDF + nomor otomatis) untuk satu jadwal. */
-  async terbitkan(jadwalId: number, dto: TerbitkanSuratDto, aktor: AktorMcu) {
+  /**
+   * Generate surat pengantar batch (PDF + nomor otomatis) mencakup
+   * beberapa Jadwal MCU sekaligus ke satu klinik tujuan yang sama.
+   * Jenis Pemeriksaan & Tanggal MCU diisi manual per baris di sini;
+   * identitas karyawan (NIK/Nama/Jabatan/Departemen) tetap diambil dari
+   * Jadwal MCU -> Database Karyawan, tidak diketik ulang.
+   */
+  async terbitkan(dto: TerbitkanSuratBatchDto, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.HC);
 
-    const jadwal = await this.prisma.jadwalMcu.findUnique({
-      where: { id: jadwalId },
-      include: {
-        karyawan: true,
-        departemen: true,
-        klinik: true,
-        suratPengantar: true,
-      },
+    const klinik = await this.prisma.klinik.findUnique({
+      where: { id: dto.klinikId },
     });
 
-    if (!jadwal) {
-      throw new NotFoundException('Jadwal MCU tidak ditemukan');
+    if (!klinik) {
+      throw new NotFoundException('Klinik tidak ditemukan');
     }
 
-    if (jadwal.suratPengantar) {
+    const jadwalIds = dto.jadwal.map((item) => item.jadwalMcuId);
+    const jadwalList = await this.prisma.jadwalMcu.findMany({
+      where: { id: { in: jadwalIds } },
+    });
+
+    if (jadwalList.length !== jadwalIds.length) {
       throw new BadRequestException(
-        'Surat pengantar untuk jadwal ini sudah diterbitkan',
+        'Sebagian Jadwal MCU yang dipilih tidak ditemukan',
       );
     }
 
-    if (jadwal.statusPendaftaran === StatusPendaftaran.DIBATALKAN) {
-      throw new BadRequestException('Jadwal MCU sudah dibatalkan');
-    }
+    for (const jadwal of jadwalList) {
+      if (jadwal.suratPengantarId) {
+        throw new BadRequestException(
+          `Jadwal MCU #${jadwal.id} sudah memiliki surat pengantar`,
+        );
+      }
 
-    if (!jadwal.klinikId) {
-      throw new BadRequestException(
-        'Klinik tujuan wajib ditentukan sebelum surat pengantar diterbitkan',
-      );
+      if (jadwal.statusPendaftaran === StatusPendaftaran.DIBATALKAN) {
+        throw new BadRequestException(
+          `Jadwal MCU #${jadwal.id} sudah dibatalkan`,
+        );
+      }
     }
 
     const tanggalTerbit = hariIni();
     const tahunTerbit = tanggalTerbit.getUTCFullYear();
+    const catatan = dto.catatan?.trim() || null;
 
-    const terakhir = await this.prisma.suratPengantar.findFirst({
-      where: { tahunTerbit },
-      orderBy: { nomorUrut: 'desc' },
-      select: { nomorUrut: true },
+    const surat = await this.prisma.$transaction(async (tx) => {
+      const terakhir = await tx.suratPengantar.findFirst({
+        where: { tahunTerbit },
+        orderBy: { nomorUrut: 'desc' },
+        select: { nomorUrut: true },
+      });
+
+      const nomorUrut = (terakhir?.nomorUrut ?? 0) + 1;
+      const nomorSurat = this.formatNomorSurat(nomorUrut, tahunTerbit);
+
+      const dibuat = await tx.suratPengantar.create({
+        data: {
+          nomorSurat,
+          nomorUrut,
+          tahunTerbit,
+          klinikId: dto.klinikId,
+          tanggalTerbit,
+          catatan,
+          status: StatusSuratPengantar.DRAFT,
+          diterbitkanId: aktor.id,
+        },
+      });
+
+      for (const baris of dto.jadwal) {
+        await tx.jadwalMcu.update({
+          where: { id: baris.jadwalMcuId },
+          data: {
+            klinikId: dto.klinikId,
+            jenisPemeriksaan: baris.jenisPemeriksaan.trim(),
+            tanggalMcu: tanggalSaja(baris.tanggalMcu),
+            suratPengantarId: dibuat.id,
+          },
+        });
+      }
+
+      return dibuat;
     });
 
-    const nomorUrut = (terakhir?.nomorUrut ?? 0) + 1;
-    const nomorSurat = this.formatNomorSurat(nomorUrut, tahunTerbit);
+    return this.cetakUlang(surat.id);
+  }
 
-    const filePdf = await this.buatPdfSurat({
-      nomorSurat,
-      tanggalTerbit,
-      namaKaryawan: jadwal.karyawan.nama,
-      nik: jadwal.karyawan.nik,
-      jabatan: jadwal.karyawan.jabatan,
-      departemen: jadwal.departemen.namaDepartemen,
-      jenisMcu: jadwal.jenisMcu,
-      tanggalMcu: jadwal.tanggalMcu,
-      namaKlinik: jadwal.klinik?.namaKlinik ?? '-',
-      alamatKlinik: jadwal.klinik?.alamat ?? null,
-      catatan: dto.catatan?.trim() || null,
-    });
-
-    const surat = await this.prisma.suratPengantar.create({
-      data: {
-        jadwalMcuId: jadwal.id,
-        nomorSurat,
-        nomorUrut,
-        tahunTerbit,
-        klinikId: jadwal.klinikId,
-        tanggalTerbit,
-        filePdf,
-        status: StatusSuratPengantar.DRAFT,
-        diterbitkanId: aktor.id,
-      },
+  /** Cetak ulang PDF surat pengantar dari data yang sudah tersimpan. */
+  async cetakUlang(id: number) {
+    const surat = await this.prisma.suratPengantar.findUnique({
+      where: { id },
       include: SURAT_INCLUDE,
     });
 
-    return surat;
+    if (!surat) {
+      throw new NotFoundException('Surat pengantar tidak ditemukan');
+    }
+
+    const filePdf = await this.buatPdfSurat(surat);
+
+    return this.prisma.suratPengantar.update({
+      where: { id },
+      data: { filePdf },
+      include: SURAT_INCLUDE,
+    });
   }
 
   /**
@@ -211,22 +281,27 @@ export class McuSuratService {
       include: SURAT_INCLUDE,
     });
 
-    const pesan =
-      `Surat pengantar MCU ${diperbarui.nomorSurat} atas nama ` +
-      `${diperbarui.jadwalMcu.karyawan.nama} untuk pelaksanaan ` +
-      `${formatTanggalIndonesia(diperbarui.jadwalMcu.tanggalMcu)}.`;
+    const namaKaryawan = diperbarui.jadwalMcu
+      .map((item) => item.karyawan.nama)
+      .join(', ');
 
-    const target = [
-      // Akun klinik terkoneksi
-      ...(diperbarui.klinik?.terkoneksi && diperbarui.klinik.akunId
+    const pesan =
+      `Surat pengantar MCU ${diperbarui.nomorSurat} untuk ` +
+      `${diperbarui.jadwalMcu.length} karyawan (${namaKaryawan}).`;
+
+    const targetKlinik =
+      diperbarui.klinik?.terkoneksi && diperbarui.klinik.akunId
         ? [{ penerimaId: diperbarui.klinik.akunId, penerimaEmail: null }]
-        : []),
-      // Karyawan yang bersangkutan
-      {
-        penerimaId: diperbarui.jadwalMcu.karyawan.akunId,
-        penerimaEmail: diperbarui.jadwalMcu.karyawan.email,
-      },
-    ].filter((item) => item.penerimaId);
+        : [];
+
+    const targetKaryawan = diperbarui.jadwalMcu.map((item) => ({
+      penerimaId: item.karyawan.akunId,
+      penerimaEmail: item.karyawan.email,
+    }));
+
+    const target = [...targetKlinik, ...targetKaryawan].filter(
+      (item) => item.penerimaId,
+    );
 
     await this.notifikasi.kirimBanyak(
       target.flatMap((item) =>
@@ -245,8 +320,8 @@ export class McuSuratService {
   }
 
   private formatNomorSurat(nomorUrut: number, tahun: number): string {
-    const urut = String(nomorUrut).padStart(4, '0');
-    return `${urut}/HC-MCU/${this.angkaRomawi(new Date().getUTCMonth() + 1)}/${tahun}`;
+    const urut = String(nomorUrut).padStart(2, '0');
+    return `${urut}/S-Out/HCGA/PPA-Adw/${this.angkaRomawi(new Date().getUTCMonth() + 1)}/${tahun}`;
   }
 
   private angkaRomawi(bulan: number): string {
@@ -268,87 +343,28 @@ export class McuSuratService {
     return romawi[bulan - 1] ?? 'I';
   }
 
-  /** Render surat pengantar ke PDF dan kembalikan path relatifnya. */
-  private async buatPdfSurat(data: {
-    nomorSurat: string;
-    tanggalTerbit: Date;
-    namaKaryawan: string;
-    nik: string;
-    jabatan: string | null;
-    departemen: string;
-    jenisMcu: string;
-    tanggalMcu: Date;
-    namaKlinik: string;
-    alamatKlinik: string | null;
-    catatan: string | null;
-  }): Promise<string> {
+  /** Render surat pengantar batch ke PDF dan kembalikan path relatifnya. */
+  private async buatPdfSurat(
+    surat: Prisma.SuratPengantarGetPayload<{ include: typeof SURAT_INCLUDE }>,
+  ): Promise<string> {
     const dir = join(process.cwd(), 'uploads', 'mcu', 'surat-pengantar');
 
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
 
-    const namaFile = `surat-pengantar-${data.nomorSurat.replace(/\//g, '-')}.pdf`;
+    const namaFile = `surat-pengantar-${surat.nomorSurat.replace(/[\\/:*?"<>|]+/g, '-')}.pdf`;
     const tujuan = join(dir, namaFile);
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 56 });
+      const doc = new PDFDocument({ size: 'A4', margin: 0 });
       const potongan: Buffer[] = [];
 
       doc.on('data', (chunk: Buffer) => potongan.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(potongan)));
       doc.on('error', reject);
 
-      doc.fontSize(16).text('SURAT PENGANTAR MEDICAL CHECK UP', {
-        align: 'center',
-      });
-      doc.moveDown(0.3);
-      doc.fontSize(10).text(`Nomor: ${data.nomorSurat}`, { align: 'center' });
-      doc.moveDown(1.5);
-
-      doc.fontSize(11).text('Kepada Yth.');
-      doc.text(data.namaKlinik);
-
-      if (data.alamatKlinik) {
-        doc.text(data.alamatKlinik);
-      }
-
-      doc.moveDown(1);
-      doc.text(
-        'Dengan hormat, bersama surat ini kami mengajukan pelaksanaan Medical Check Up untuk karyawan berikut:',
-        { align: 'justify' },
-      );
-      doc.moveDown(1);
-
-      const baris: Array<[string, string]> = [
-        ['Nama', data.namaKaryawan],
-        ['NIK', data.nik],
-        ['Jabatan', data.jabatan ?? '-'],
-        ['Departemen', data.departemen],
-        ['Jenis MCU', data.jenisMcu],
-        ['Tanggal Pelaksanaan', formatTanggalIndonesia(data.tanggalMcu)],
-      ];
-
-      for (const [label, nilai] of baris) {
-        doc.text(`${label.padEnd(22, ' ')}: ${nilai}`);
-      }
-
-      if (data.catatan) {
-        doc.moveDown(1);
-        doc.text(`Catatan: ${data.catatan}`, { align: 'justify' });
-      }
-
-      doc.moveDown(1.5);
-      doc.text(
-        'Hasil pemeriksaan mohon disampaikan kepada Human Capital untuk direview oleh Dokter perusahaan.',
-        { align: 'justify' },
-      );
-
-      doc.moveDown(3);
-      doc.text(formatTanggalIndonesia(data.tanggalTerbit), { align: 'right' });
-      doc.text('Human Capital', { align: 'right' });
-      doc.moveDown(3);
-      doc.text('( ....................... )', { align: 'right' });
+      this.gambarHalamanSurat(doc, surat);
 
       doc.end();
     });
@@ -356,5 +372,298 @@ export class McuSuratService {
     writeFileSync(tujuan, buffer);
 
     return `mcu/surat-pengantar/${namaFile}`;
+  }
+
+  private gambarHalamanSurat(
+    document: PDFKit.PDFDocument,
+    surat: Prisma.SuratPengantarGetPayload<{ include: typeof SURAT_INCLUDE }>,
+  ): void {
+    const left = 56;
+    const width = document.page.width - 112;
+    const namaKlinik = surat.klinik?.namaKlinik ?? '-';
+
+    let y = 45;
+
+    y = this.gambarKopSurat(document, y, left, width);
+    y += 24;
+
+    document
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor('#000000')
+      .text(`Tabalong, ${this.formatTanggalPanjang(surat.tanggalTerbit)}`, left, y, {
+        width,
+        align: 'right',
+      });
+    y += 24;
+
+    document
+      .fontSize(9)
+      .text(`Nomor      : ${surat.nomorSurat}`, left, y, { width: 300 })
+      .text('Lampiran   : -', left, y + 13, { width: 300 });
+
+    document
+      .font('Helvetica-Bold')
+      .text('Perihal      : Pengantar MCU Karyawan (Periodical MCU)', left, y + 26, {
+        width,
+      });
+    y += 50;
+
+    document.font('Helvetica').text('Kepada Yth,', left, y);
+    y += 13;
+    document
+      .font('Helvetica-Bold')
+      .text(`Pimpinan ${namaKlinik}`, left, y);
+    y += 13;
+    document.font('Helvetica').text('di – Tabalong', left, y);
+    y += 13;
+    document
+      .font('Helvetica-BoldOblique')
+      .text('u.p.     : Bagian Medical Check-Up', left, y);
+    y += 24;
+
+    document.font('Helvetica').text('Dengan hormat,', left, y);
+    y += 16;
+
+    document.text(
+      'Sehubungan dengan hal tersebut di atas, bersama ini kami sampaikan bahwa karyawan ' +
+        'PT. Putra Perkasa Abadi Job Site Adaro-Wara mohon untuk dilakukan tindakan MCU di ' +
+        `Klinik ${namaKlinik}.`,
+      left,
+      y,
+      { width, align: 'justify', lineGap: 2 },
+    );
+    y += 44;
+
+    document.text(`Berikut karyawan yang akan melaksanakan MCU `, left, y, {
+      continued: true,
+    });
+    document
+      .font('Helvetica-BoldOblique')
+      .text(`di ${namaKlinik}:`);
+    y += 16;
+
+    y = this.gambarTabelKaryawan(document, y, left, width, surat);
+    y += 16;
+
+    document
+      .font('Helvetica')
+      .fontSize(9)
+      .text(
+        'Mengenai biaya medical check-up tersebut, menjadi tanggung jawab sepenuhnya oleh perusahaan.',
+        left,
+        y,
+        { width, align: 'justify' },
+      );
+    y += 24;
+
+    if (surat.catatan) {
+      document.text(`Catatan: ${surat.catatan}`, left, y, {
+        width,
+        align: 'justify',
+      });
+      y += 24;
+    }
+
+    document.font('Helvetica-Bold').text('NOTE :', left, y);
+    y += 13;
+
+    document
+      .font('Helvetica')
+      .text(`Hasil MCU dikirim ke email: ${EMAIL_HASIL_MCU}`, left, y, {
+        width,
+      });
+    y += 24;
+
+    document.text(
+      'Demikian hal ini kami sampaikan, atas perhatian dan kerjasamanya diucapkan terima kasih.',
+      left,
+      y,
+      { width },
+    );
+    y += 24;
+
+    document.font('Helvetica-Bold').text('PT. PUTRA PERKASA ABADI', left, y);
+    y += 13;
+    document.font('Helvetica').text('Mengetahui,', left, y);
+    y += 6;
+
+    if (existsSync(SH_SIGNER.file)) {
+      try {
+        document.image(SH_SIGNER.file, left, y + 8, {
+          fit: [80, 55],
+        });
+      } catch {
+        // Abaikan tanda tangan rusak.
+      }
+    }
+
+    y += 70;
+
+    document
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text(SH_SIGNER.nama, left, y, { underline: true });
+    y += 13;
+    document.font('Helvetica').text(SH_SIGNER.jabatan, left, y);
+    y += 13;
+    document.text('CC: -FA-File', left, y);
+
+    this.gambarFooterSurat(document);
+  }
+
+  private gambarKopSurat(
+    document: PDFKit.PDFDocument,
+    top: number,
+    left: number,
+    width: number,
+  ): number {
+    if (existsSync(LOGO_PATH)) {
+      try {
+        document.image(LOGO_PATH, left, top, { fit: [46, 46] });
+      } catch {
+        // Abaikan logo yang gagal dibaca.
+      }
+    }
+
+    document
+      .font('Helvetica-Bold')
+      .fontSize(22)
+      .fillColor('#000000')
+      .text('PUTRA PERKASA ABADI', left + 56, top + 12, {
+        width: width - 56,
+      });
+
+    const garisY = top + 50;
+    document
+      .moveTo(left, garisY)
+      .lineTo(left + width, garisY)
+      .lineWidth(1.5)
+      .strokeColor('#c0392b')
+      .stroke()
+      .strokeColor('#000000');
+
+    return garisY;
+  }
+
+  private gambarTabelKaryawan(
+    document: PDFKit.PDFDocument,
+    top: number,
+    left: number,
+    width: number,
+    surat: Prisma.SuratPengantarGetPayload<{ include: typeof SURAT_INCLUDE }>,
+  ): number {
+    const kolom = [
+      { label: 'No', width: 24 },
+      { label: 'NIK', width: 70 },
+      { label: 'Nama', width: 110 },
+      { label: 'Jabatan', width: width - 24 - 70 - 110 - 55 - 65 - 80 },
+      { label: 'Dept.', width: 55 },
+      { label: 'Jenis\nPemeriksaan', width: 65 },
+      { label: 'Tanggal MCU', width: 80 },
+    ];
+
+    const headerHeight = 26;
+    const rowHeight = 26;
+    let y = top;
+
+    let x = left;
+
+    document
+      .lineWidth(0.8)
+      .rect(left, y, width, headerHeight)
+      .fillAndStroke('#bdd7ee', '#000000');
+
+    kolom.forEach((item) => {
+      document
+        .font('Helvetica-Bold')
+        .fontSize(7.5)
+        .fillColor('#000000')
+        .text(item.label, x + 2, y + 7, {
+          width: item.width - 4,
+          align: 'center',
+        });
+
+      if (x > left) {
+        document.moveTo(x, y).lineTo(x, y + headerHeight).stroke();
+      }
+
+      x += item.width;
+    });
+
+    y += headerHeight;
+
+    surat.jadwalMcu.forEach((jadwal, index) => {
+      x = left;
+
+      document.lineWidth(0.8).rect(left, y, width, rowHeight).stroke();
+
+      const nilai = [
+        String(index + 1),
+        jadwal.karyawan.nik,
+        jadwal.karyawan.nama,
+        jadwal.karyawan.jabatan ?? '-',
+        jadwal.departemen.namaDepartemen,
+        jadwal.jenisPemeriksaan ?? '-',
+        this.formatTanggalPendek(jadwal.tanggalMcu),
+      ];
+
+      kolom.forEach((kolomItem, kolomIndex) => {
+        document
+          .font('Helvetica')
+          .fontSize(7.5)
+          .fillColor('#000000')
+          .text(nilai[kolomIndex], x + 3, y + 9, {
+            width: kolomItem.width - 6,
+            align: 'center',
+            ellipsis: true,
+          });
+
+        if (x > left) {
+          document.moveTo(x, y).lineTo(x, y + rowHeight).stroke();
+        }
+
+        x += kolomItem.width;
+      });
+
+      y += rowHeight;
+    });
+
+    return y;
+  }
+
+  private gambarFooterSurat(document: PDFKit.PDFDocument): void {
+    const barHeight = 8;
+    const barTop = document.page.height - barHeight;
+
+    document
+      .rect(0, barTop, document.page.width, barHeight)
+      .fill('#e86600');
+
+    document
+      .font('Helvetica')
+      .fontSize(7)
+      .fillColor('#8494a9')
+      .text(
+        'Gedung Office 8, Lantai 8, SCBD Lot 28. Jl. Jend Sudirman Kav. 52-53 Senayan, ' +
+          'Kebayoran Baru, Jakarta Selatan, 12190.\nTelp. +62 21 5790 3456  |  www.ppa.co.id',
+        0,
+        barTop - 30,
+        { width: document.page.width, align: 'center' },
+      )
+      .fillColor('#000000');
+  }
+
+  private formatTanggalPendek(value: Date): string {
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(value);
+  }
+
+  private formatTanggalPanjang(value: Date): string {
+    return this.formatTanggalPendek(value);
   }
 }

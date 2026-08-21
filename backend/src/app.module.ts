@@ -37,6 +37,11 @@ import { SaldoModule } from './deklarasi-dinas/saldo/saldo.module';
 
 import { McuModule } from './mcu/mcu.module';
 import { HelpdeskModule } from './helpdesk/helpdesk.module';
+import { DatabaseKaryawanModule } from './database-karyawan/database-karyawan.module';
+import { SuratTugasDinasModule } from './surat-tugas-dinas/surat-tugas-dinas.module';
+import { AnakMagangModule } from './anak-magang/anak-magang.module';
+import { SuratBalasanMagangModule } from './surat-balasan-magang/surat-balasan-magang.module';
+import { SuratPenolakanMagangModule } from './surat-penolakan-magang/surat-penolakan-magang.module';
 
 @Module({
   imports: [
@@ -66,6 +71,11 @@ import { HelpdeskModule } from './helpdesk/helpdesk.module';
     PengajuanModule,
     McuModule,
     HelpdeskModule,
+    DatabaseKaryawanModule,
+    SuratTugasDinasModule,
+    AnakMagangModule,
+    SuratBalasanMagangModule,
+    SuratPenolakanMagangModule,
   ],
   controllers: [AppController],
   providers: [AppService],

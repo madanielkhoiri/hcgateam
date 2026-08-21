@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Database,
   Eye,
   KeyRound,
   Pencil,
@@ -18,6 +19,7 @@ import {
   getStoredUser,
   type PortalUser,
 } from '@/lib/access-control';
+import { karyawanApi, type Karyawan } from '@/lib/karyawan-api';
 import styles from './manajemen-akun.module.css';
 
 const API_URL =
@@ -83,6 +85,60 @@ export default function AccountManagementPage() {
 
   const [accessUser, setAccessUser] = useState<ManagedUser | null>(null);
   const [selectedAccess, setSelectedAccess] = useState<string[]>([]);
+
+  const [karyawanCari, setKaryawanCari] = useState('');
+  const [karyawanHasil, setKaryawanHasil] = useState<Karyawan[]>([]);
+  const [karyawanDropdownTerbuka, setKaryawanDropdownTerbuka] = useState(false);
+  const [karyawanMencari, setKaryawanMencari] = useState(false);
+
+  useEffect(() => {
+    if (!karyawanCari.trim() || karyawanCari.trim().length < 2) {
+      setKaryawanHasil([]);
+      return;
+    }
+
+    let aktif = true;
+    setKaryawanMencari(true);
+
+    const timer = setTimeout(() => {
+      karyawanApi
+        .ambil<Karyawan[]>(`?cari=${encodeURIComponent(karyawanCari.trim())}`)
+        .then((hasil) => {
+          if (aktif) {
+            setKaryawanHasil(hasil.slice(0, 8));
+          }
+        })
+        .catch(() => {
+          if (aktif) {
+            setKaryawanHasil([]);
+          }
+        })
+        .finally(() => {
+          if (aktif) {
+            setKaryawanMencari(false);
+          }
+        });
+    }, 300);
+
+    return () => {
+      aktif = false;
+      clearTimeout(timer);
+    };
+  }, [karyawanCari]);
+
+  function pilihKaryawan(item: Karyawan) {
+    setForm((current) => ({
+      ...current,
+      name: item.nama,
+      email: item.email ?? current.email,
+      phoneNumber: item.noTelepon ?? current.phoneNumber,
+      departemen: item.departemen.namaDepartemen,
+      jabatan: item.jabatan ?? current.jabatan,
+    }));
+    setKaryawanCari('');
+    setKaryawanHasil([]);
+    setKaryawanDropdownTerbuka(false);
+  }
 
   const request = useCallback(async (endpoint: string, options?: RequestInit) => {
     const token = getAccessToken();
@@ -162,6 +218,8 @@ export default function AccountManagementPage() {
     setEditingUser(null);
     setForm(emptyForm);
     setError('');
+    setKaryawanCari('');
+    setKaryawanHasil([]);
     setFormModalOpen(true);
   }
 
@@ -513,6 +571,58 @@ export default function AccountManagementPage() {
             </div>
 
             <form className={styles.form} onSubmit={submitAccount} autoComplete="off">
+              {!editingUser ? (
+                <div className={styles.karyawanPicker}>
+                  <div className={styles.karyawanPickerLabel}>
+                    <Database size={13} />
+                    Pilih dari Database Karyawan (opsional)
+                  </div>
+                  <input
+                    className={styles.karyawanPickerInput}
+                    value={karyawanCari}
+                    onChange={(event) => {
+                      setKaryawanCari(event.target.value);
+                      setKaryawanDropdownTerbuka(true);
+                    }}
+                    onFocus={() => setKaryawanDropdownTerbuka(true)}
+                    onBlur={() =>
+                      setTimeout(() => setKaryawanDropdownTerbuka(false), 150)
+                    }
+                    autoComplete="off"
+                    placeholder="Cari nama atau NIK karyawan..."
+                  />
+
+                  {karyawanDropdownTerbuka && karyawanCari.trim().length >= 2 ? (
+                    <div className={styles.karyawanDropdown}>
+                      {karyawanMencari ? (
+                        <div className={styles.karyawanDropdownItem}>
+                          <span>Mencari...</span>
+                        </div>
+                      ) : karyawanHasil.length === 0 ? (
+                        <div className={styles.karyawanDropdownItem}>
+                          <span>Tidak ditemukan</span>
+                        </div>
+                      ) : (
+                        karyawanHasil.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={styles.karyawanDropdownItem}
+                            onClick={() => pilihKaryawan(item)}
+                          >
+                            <strong>{item.nama}</strong>
+                            <span>
+                              {item.nik} - {item.departemen.namaDepartemen}
+                              {item.jabatan ? ` - ${item.jabatan}` : ''}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className={styles.formGrid}>
                 <label>
                   <span>Nama</span>
@@ -579,6 +689,7 @@ export default function AccountManagementPage() {
                     <option value="DOKTER">Dokter</option>
                     <option value="SHE">SHE / K3</option>
                     <option value="KLINIK">Klinik Provider</option>
+                    <option value="PJO">PJO</option>
                     <option value="ADMIN">Admin</option>
                     <option value="SUPER_ADMIN">Admin HC</option>
                   </select>
