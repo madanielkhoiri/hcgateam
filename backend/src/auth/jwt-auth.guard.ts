@@ -35,6 +35,23 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
   { pattern: /\/api\/signature-library(?:\/|\?|$)/, accessKey: 'GA' },
   { pattern: /\/api\/mcu(?:\/|\?|$)/, accessKey: 'HC_MCU' },
   { pattern: /\/api\/helpdesk(?:\/|\?|$)/, accessKey: 'HC_HELPDESK' },
+  {
+    pattern: /\/api\/database-karyawan(?:\/|\?|$)/,
+    accessKey: 'HC_KARYAWAN',
+  },
+  {
+    pattern: /\/api\/surat-tugas-dinas(?:\/|\?|$)/,
+    accessKey: 'HC_TUGAS_DINAS',
+  },
+  { pattern: /\/api\/anak-magang(?:\/|\?|$)/, accessKey: 'HC_ANAK_MAGANG' },
+  {
+    pattern: /\/api\/surat-balasan-magang(?:\/|\?|$)/,
+    accessKey: 'HC_SURAT_BALASAN_MAGANG',
+  },
+  {
+    pattern: /\/api\/surat-penolakan-magang(?:\/|\?|$)/,
+    accessKey: 'HC_SURAT_PENOLAKAN_MAGANG',
+  },
 ];
 
 type GuardRequest = {

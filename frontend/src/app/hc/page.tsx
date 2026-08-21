@@ -4,10 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  Database,
   FileText,
+  FileX2,
+  GraduationCap,
   HeartHandshake,
   HeartPulse,
   LifeBuoy,
+  Mail,
+  Plane,
   Scale,
   UsersRound,
   UserCircle2,
@@ -31,6 +36,18 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 const hcTree: MenuTreeNode[] = [
+  {
+    key: 'HC_KARYAWAN',
+    title: 'Database Karyawan',
+    description:
+      'Master data seluruh karyawan (NIK, departemen, jabatan, status kerja) - dipakai bersama card HC lain.',
+    status: 'Tersedia',
+    href: '/hc/karyawan',
+    icon: Database,
+    accessKey: ACCESS_KEYS.HC_KARYAWAN,
+    accent: '#0a7f8c',
+    soft: '#e2f5f7',
+  },
   {
     key: 'HC_IR',
     title: 'IR',
@@ -59,6 +76,54 @@ const hcTree: MenuTreeNode[] = [
         href: '/hc/deklarasi-dinas',
         icon: FileText,
         accessKey: ACCESS_KEYS.HC_DEKLARASI,
+        accent: '#d97706',
+        soft: '#fff2df',
+      },
+      {
+        key: 'HC_TUGAS_DINAS',
+        title: 'Form Tugas Dinas',
+        description:
+          'Buat Surat Tugas Dinas otomatis jadi PDF, lengkap alur persetujuan SH & PJO.',
+        status: 'Tersedia',
+        href: '/hc/tugas-dinas',
+        icon: Plane,
+        accessKey: ACCESS_KEYS.HC_TUGAS_DINAS,
+        accent: '#d97706',
+        soft: '#fff2df',
+      },
+      {
+        key: 'HC_ANAK_MAGANG',
+        title: 'Database Anak Magang',
+        description:
+          'Master data mahasiswa magang, dipakai bersama Surat Balasan & Surat Penolakan Magang.',
+        status: 'Tersedia',
+        href: '/hc/anak-magang',
+        icon: GraduationCap,
+        accessKey: ACCESS_KEYS.HC_ANAK_MAGANG,
+        accent: '#d97706',
+        soft: '#fff2df',
+      },
+      {
+        key: 'HC_SURAT_BALASAN_MAGANG',
+        title: 'Surat Balasan Magang',
+        description:
+          'Surat persetujuan permohonan magang industri otomatis jadi PDF.',
+        status: 'Tersedia',
+        href: '/hc/surat-balasan-magang',
+        icon: Mail,
+        accessKey: ACCESS_KEYS.HC_SURAT_BALASAN_MAGANG,
+        accent: '#d97706',
+        soft: '#fff2df',
+      },
+      {
+        key: 'HC_SURAT_PENOLAKAN_MAGANG',
+        title: 'Surat Penolakan Magang',
+        description:
+          'Surat penolakan permohonan magang industri otomatis jadi PDF.',
+        status: 'Tersedia',
+        href: '/hc/surat-penolakan-magang',
+        icon: FileX2,
+        accessKey: ACCESS_KEYS.HC_SURAT_PENOLAKAN_MAGANG,
         accent: '#d97706',
         soft: '#fff2df',
       },

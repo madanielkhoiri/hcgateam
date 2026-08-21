@@ -13,9 +13,14 @@ export const ACCESS_KEYS = {
   HC_IR: 'HC_IR',
   HC_RND: 'HC_RND',
   HC_DEKLARASI: 'HC_DEKLARASI',
+  HC_TUGAS_DINAS: 'HC_TUGAS_DINAS',
+  HC_ANAK_MAGANG: 'HC_ANAK_MAGANG',
+  HC_SURAT_BALASAN_MAGANG: 'HC_SURAT_BALASAN_MAGANG',
+  HC_SURAT_PENOLAKAN_MAGANG: 'HC_SURAT_PENOLAKAN_MAGANG',
   HC_COMBEN: 'HC_COMBEN',
   HC_MCU: 'HC_MCU',
   HC_HELPDESK: 'HC_HELPDESK',
+  HC_KARYAWAN: 'HC_KARYAWAN',
 
   // GA
   GA: 'GA',
@@ -145,6 +150,10 @@ export function formatRole(role?: string): string {
 
   if (role === 'KLINIK') {
     return 'Klinik Provider';
+  }
+
+  if (role === 'PJO') {
+    return 'PJO';
   }
 
   return role

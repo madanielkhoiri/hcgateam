@@ -536,7 +536,9 @@ export default function DashboardPage() {
                     </span>
                   </button>
 
-                  {user.role === 'ADMIN' && (
+                  {(user.role === 'ADMIN' ||
+                    user.role === 'SUPER_ADMIN' ||
+                    user.role === 'SECTION_HEAD') && (
                     <button
                       type="button"
                       onClick={() => {
@@ -715,7 +717,9 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.quickGrid}>
-              {user.role === 'ADMIN' && (
+              {(user.role === 'ADMIN' ||
+                user.role === 'SUPER_ADMIN' ||
+                user.role === 'SECTION_HEAD') && (
                 <button
                   type="button"
                   onClick={() => router.push('/admin/manajemen-akun')}

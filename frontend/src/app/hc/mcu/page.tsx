@@ -51,7 +51,7 @@ const kartuAlur: KartuAlur[] = [
     tahap: 'Tahap 1',
     judul: 'Data Karyawan & Reminder H-3 Bulan',
     keterangan:
-      'Master karyawan, masa berlaku MCU, dan reminder otomatis 3 bulan sebelum MCU expired.',
+      'Tracking MCU per karyawan (ambil dari Database Karyawan), masa berlaku MCU, dan reminder otomatis 3 bulan sebelum MCU expired.',
     href: '/hc/mcu/karyawan',
     icon: Users,
     varian: styles.tahapKaryawan,
