@@ -64,8 +64,15 @@ export class UsersService {
   }
 
   private assertAdmin(actor: AdminActor): void {
-    if (actor.role !== UserRole.ADMIN && actor.role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Manajemen akun hanya dapat diakses Admin');
+    const bolehKelola =
+      actor.role === UserRole.ADMIN ||
+      actor.role === UserRole.SUPER_ADMIN ||
+      actor.role === UserRole.SECTION_HEAD;
+
+    if (!bolehKelola) {
+      throw new ForbiddenException(
+        'Manajemen akun hanya dapat diakses Admin/Admin HC/Section Head',
+      );
     }
   }
 

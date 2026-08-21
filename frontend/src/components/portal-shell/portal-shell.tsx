@@ -29,6 +29,12 @@ import styles from './portal-shell.module.css';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
+const ADMIN_ONLY_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
+
+function bolehAksesAdminOnly(role?: string): boolean {
+  return Boolean(role && ADMIN_ONLY_ROLES.includes(role));
+}
+
 type PortalMenuIcon = 'utensils-crossed' | 'user-cog';
 
 const MENU_ICONS = {
@@ -100,7 +106,7 @@ export default function PortalShell({
           ? ((await response.json()) as PortalUser)
           : storedUser;
 
-        if (adminOnly && latestUser.role !== 'ADMIN') {
+        if (adminOnly && !bolehAksesAdminOnly(latestUser.role)) {
           router.replace('/dashboard');
           return;
         }
@@ -118,7 +124,7 @@ export default function PortalShell({
           setUser(latestUser);
         }
       } catch {
-        if (adminOnly && storedUser.role !== 'ADMIN') {
+        if (adminOnly && !bolehAksesAdminOnly(storedUser.role)) {
           router.replace('/dashboard');
           return;
         }

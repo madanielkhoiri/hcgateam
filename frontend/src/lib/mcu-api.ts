@@ -71,6 +71,7 @@ export type Karyawan = {
   departemenId: number;
   jabatan: string | null;
   email: string | null;
+  noTelepon: string | null;
   tanggalLahir: string | null;
   tanggalMcuTerakhir: string | null;
   tanggalMcuExpired: string | null;
@@ -102,6 +103,7 @@ export type JadwalMcu = {
   departemenId: number;
   tanggalMcu: string;
   jenisMcu: JenisMcu;
+  jenisPemeriksaan: string | null;
   klinikId: number | null;
   statusPendaftaran: StatusPendaftaran;
   tanggalLock: string;
@@ -126,16 +128,18 @@ export type SuratPengantar = {
   id: number;
   nomorSurat: string;
   tanggalTerbit: string;
+  catatan: string | null;
   status: StatusSuratPengantar;
   tanggalKirim: string | null;
   filePdf: string | null;
-  jadwalMcu: {
+  jadwalMcu: Array<{
     id: number;
     tanggalMcu: string;
     jenisMcu: JenisMcu;
+    jenisPemeriksaan: string | null;
     karyawan: { id: number; nik: string; nama: string };
     departemen: { id: number; namaDepartemen: string };
-  };
+  }>;
   klinik: { id: number; namaKlinik: string; terkoneksi: boolean } | null;
 };
 

@@ -205,6 +205,7 @@ export class McuKaryawanService {
         departemenId: dto.departemenId,
         jabatan: dto.jabatan?.trim() || null,
         email: dto.email?.trim() || null,
+        noTelepon: dto.noTelepon?.trim() || null,
         tanggalLahir: dto.tanggalLahir ? tanggalSaja(dto.tanggalLahir) : null,
         tanggalMcuTerakhir: dto.tanggalMcuTerakhir
           ? tanggalSaja(dto.tanggalMcuTerakhir)
@@ -262,6 +263,9 @@ export class McuKaryawanService {
           : {}),
         ...(dto.email !== undefined
           ? { email: dto.email?.trim() || null }
+          : {}),
+        ...(dto.noTelepon !== undefined
+          ? { noTelepon: dto.noTelepon?.trim() || null }
           : {}),
         ...(dto.tanggalLahir !== undefined
           ? {
