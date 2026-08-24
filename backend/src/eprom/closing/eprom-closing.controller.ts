@@ -14,11 +14,11 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Aktor } from '../common/eprom-aktor';
@@ -45,14 +45,14 @@ export class EpromClosingController {
   }
 
   @Post(':tipe')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 20, { storage: memoryStorage() }))
   buat(
     @Aktor() aktor: AktorEprom,
     @Param('tipe') tipeRaw: string,
     @Body() dto: BuatClosingDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.service.buat(aktor, this.service.validasiTipe(tipeRaw), dto.projectId, file);
+    return this.service.buat(aktor, this.service.validasiTipe(tipeRaw), dto.projectId, files);
   }
 
   @Patch(':tipe/:id/review')
