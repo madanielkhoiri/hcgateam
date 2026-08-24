@@ -399,3 +399,72 @@
   font-size: 12px;
   font-family: inherit;
 }
+
+.approvalAudit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
+  color: #34506f;
+  font-size: 11px;
+}
+
+.approvalAudit span {
+  color: #7185a0;
+}
+
+.signingHint {
+  margin: 8px 0 0;
+  color: #b26a00;
+  font-size: 11px;
+}
+
+.modalBackdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(10 28 58 / 58%);
+}
+
+.rejectDialog {
+  width: min(480px, 100%);
+  padding: 22px;
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 24px 70px rgb(10 28 58 / 24%);
+}
+
+.rejectDialog h2 {
+  margin: 0 0 6px;
+  color: #10244a;
+  font-size: 17px;
+}
+
+.rejectDialog p {
+  margin: 0 0 14px;
+  color: #7185a0;
+  font-size: 12px;
+}
+
+.rejectDialog textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  resize: vertical;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 16px;
+}

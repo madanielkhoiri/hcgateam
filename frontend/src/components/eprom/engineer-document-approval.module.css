@@ -1,0 +1,298 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.backLink {
+  color: #7185a0;
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  color: #fff;
+  background: #10244a;
+  border-radius: 15px;
+}
+.header span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.header h1 {
+  margin: 5px 0 2px;
+  font-size: 22px;
+}
+.header p {
+  margin: 0;
+  color: #cbd7e8;
+  font-size: 13px;
+}
+.status {
+  align-self: flex-start;
+  padding: 6px 11px;
+  color: #7b4a00;
+  background: #fff2df;
+  border-radius: 999px;
+  opacity: 1 !important;
+}
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  background: #e4edf7;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+.infoGrid div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px;
+  background: #fff;
+}
+.infoGrid span {
+  color: #8392a8;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.infoGrid strong {
+  overflow-wrap: anywhere;
+  color: #10244a;
+  font-size: 12px;
+}
+.viewerPanel {
+  overflow: hidden;
+  background: #26354b;
+  border-radius: 14px;
+}
+.viewerToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  color: #fff;
+  background: #17263a;
+}
+.viewerToolbar button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  background: #31455e;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.viewerToolbar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.viewerToolbar span {
+  font-size: 12px;
+}
+.pageJump {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.pageJump input {
+  width: 62px;
+  height: 30px;
+  padding: 4px 7px;
+  color: #10244a;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #47607e;
+  border-radius: 7px;
+}
+.viewerToolbar small {
+  color: #aebed2;
+  font-size: 10px;
+}
+.canvasArea {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  max-height: 74vh;
+  padding: 24px;
+  overflow: auto;
+}
+.pageSurface {
+  position: relative;
+  width: min(100%, 900px);
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: #fff;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 24%);
+}
+.canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.signatureOverlay {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  touch-action: none;
+  cursor: move;
+  border: 1px dashed #ef7100;
+  user-select: none;
+}
+.signatureOverlayActive {
+  z-index: 3;
+  border-style: solid;
+  box-shadow: 0 0 0 2px rgb(239 113 0 / 20%);
+}
+.signatureOverlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.signatureOverlay button {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  touch-action: none;
+  cursor: nwse-resize;
+  background: #ef7100;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+.controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+.controls label {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 6px;
+  color: #34506f;
+  font-size: 11px;
+  font-weight: 700;
+}
+.controls select {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+}
+.placementSummary {
+  flex: 1 0 100%;
+  margin: 0;
+  color: #7185a0;
+  font-size: 11px;
+}
+.secondaryButton,
+.approveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 9px 15px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+.secondaryButton {
+  color: #34506f;
+  background: #fff;
+  border: 1px solid #d8e4f2;
+}
+.approveButton {
+  color: #fff;
+  background: #07984c;
+  border: 1px solid #07984c;
+}
+.secondaryButton:disabled,
+.approveButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+.unsupported {
+  padding: 28px;
+  text-align: center;
+  background: #fff9ed;
+  border: 1px solid #ffe0a6;
+  border-radius: 14px;
+}
+.unsupported h2 {
+  margin: 0 0 7px;
+  color: #7b4a00;
+  font-size: 16px;
+}
+.unsupported p {
+  color: #9a6a22;
+  font-size: 12px;
+}
+.unsupported a {
+  color: #ef7100;
+  font-size: 12px;
+  font-weight: 700;
+}
+.error {
+  margin: 0;
+  padding: 11px 14px;
+  color: #b3261e;
+  background: #ffeded;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.stateText {
+  padding: 32px;
+  color: #7185a0;
+  text-align: center;
+}
+.stateText a {
+  color: #ef7100;
+}
+@media (max-width: 850px) {
+  .infoGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .canvasArea {
+    padding: 12px;
+  }
+}
+@media (max-width: 560px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  .actions {
+    flex-direction: column;
+  }
+}

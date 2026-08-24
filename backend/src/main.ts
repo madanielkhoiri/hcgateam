@@ -16,10 +16,6 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/api/uploads/',
-  });
-
   // ==================================================
   // PREFIX SEMUA ENDPOINT
   // Contoh: http://localhost:3001/api/auth/login
@@ -32,8 +28,20 @@ async function bootstrap() {
   // ==================================================
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3011', 'http://localhost:3012'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'http://localhost:3011',
+      'http://localhost:3012',
+    ],
     credentials: true,
+  });
+
+  // Static file harus didaftarkan setelah CORS. PDF.js mengambil dokumen
+  // uploads lewat fetch lintas origin (frontend :3000 -> backend :3001).
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/api/uploads/',
   });
 
   // ==================================================
@@ -50,9 +58,10 @@ async function bootstrap() {
 
   // ==================================================
   // JALANKAN BACKEND DI PORT 3001
+  // Port ini hanya boleh digunakan oleh satu proses backend pada saat yang sama.
   // ==================================================
 
-  const port = process.env.PORT ?? 3001;
+  const port = Number(process.env.PORT ?? 3001);
 
   await app.listen(port);
 

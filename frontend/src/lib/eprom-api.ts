@@ -235,6 +235,7 @@ export type Project = {
     metodePekerjaan: number;
     sertifikasiPekerjaan: number;
     peralatanList: number;
+    komisioningAlatBerat: number;
     checklistKonstruksi: number;
     ibpr: number;
     jsa: number;
@@ -256,7 +257,8 @@ export type TipeEngineer =
   | 'material-approval'
   | 'metode-pekerjaan'
   | 'sertifikasi-pekerjaan'
-  | 'peralatan-list';
+  | 'peralatan-list'
+  | 'komisioning-alat-berat';
 
 export type StatusApprovalEprom = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -264,6 +266,8 @@ export type EngineerItem = {
   id: number;
   projectId: number;
   fileUrl: string | null;
+  originalFileName: string | null;
+  effectiveFileUrl: string | null;
   status: StatusApprovalEprom;
   komentar: string | null;
   createdAt: string;
@@ -271,6 +275,54 @@ export type EngineerItem = {
   namaPekerjaan?: string;
   namaMaterial?: string;
   namaMetode?: string;
+  latestApproval: EngineerDocumentApproval | null;
+};
+
+export type EngineerDocumentApproval = {
+  id: number;
+  documentId: number;
+  documentType:
+    | 'SHOP_DRAWING'
+    | 'MATERIAL_APPROVAL'
+    | 'METODE_PEKERJAAN'
+    | 'SERTIFIKASI_PEKERJAAN'
+    | 'DAFTAR_PERALATAN'
+    | 'KOMISIONING_ALAT_BERAT';
+  approvedAt: string;
+  signatureFile: string;
+  signaturePage: number;
+  signatureXRatio: number;
+  signatureYRatio: number;
+  signatureWidthRatio: number;
+  signatureHeightRatio: number;
+  signaturePlacements: EngineerSignaturePosition[] | null;
+  originalFilePath: string;
+  sourceFilePath: string;
+  signedFilePath: string;
+  approvedBy: { id: number; name: string };
+};
+
+export type EngineerSignature = {
+  filename: string;
+  name: string;
+  path: string;
+};
+
+export type EngineerApprovalDetail = {
+  item: EngineerItem;
+  project: Project;
+  documentType: EngineerDocumentApproval['documentType'];
+  documentLabel: string;
+  canSign: boolean;
+};
+
+export type EngineerSignaturePosition = {
+  signatureFile: string;
+  signaturePage: number;
+  signatureXRatio: number;
+  signatureYRatio: number;
+  signatureWidthRatio: number;
+  signatureHeightRatio: number;
 };
 
 export type RingkasanPendingEngineer = Record<TipeEngineer, number>;
@@ -404,6 +456,72 @@ export type ClosingItem = {
 };
 
 export type RingkasanPendingClosing = Record<TipeClosing, number>;
+
+export type TipeSafetyMeeting = 'p5m' | 'safety-talk' | 'fatigue-test';
+
+export type SafetyMeetingFileItem = {
+  id: number;
+  projectId: number;
+  tipe: 'P5M' | 'SAFETY_TALK' | 'FATIGUE_TEST';
+  fileUrl: string;
+  originalFileName: string;
+  uploadedAt: string;
+  uploadedBy: { id: number; name: string };
+};
+
+export type StatusKewajibanUpload = 'HIJAU' | 'MERAH' | 'ABU_ABU' | 'ORANYE';
+
+export type KewajibanUploadVendor = {
+  tanggal: string;
+  tipe:
+    | 'inspeksi-area'
+    | 'inspeksi-peralatan'
+    | 'progress-harian'
+    | 'progress-mingguan'
+    | 'progress-bulanan';
+  label: string;
+  jamBuka: string;
+  jamTutup: string;
+  status: StatusKewajibanUpload;
+  keterangan: string;
+  uploadedAt: string | null;
+};
+
+export type KomponenPerformanceVendor = {
+  key: 'upload' | 'deviasi' | 'ttaKta' | 'jsa' | 'pica';
+  label: string;
+  bobot: number;
+  nilai: number | null;
+  keterangan: string;
+};
+
+export type PerformanceVendorItem = {
+  bulan: string;
+  project: {
+    id: number;
+    namaProject: string;
+    tender: { id: number; namaTender: string };
+    vendor: { id: number; namaVendor: string };
+    kontrak: {
+      id: number;
+      nomorKontrak: string;
+      tanggalMulai: string;
+      tanggalSelesai: string;
+    };
+  };
+  nilaiAkhir: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'E';
+  komponen: KomponenPerformanceVendor[];
+  upload: {
+    hijau: number;
+    merah: number;
+    abuAbu: number;
+    oranye: number;
+    jatuhTempo: number;
+    total: number;
+    kewajiban?: KewajibanUploadVendor[];
+  };
+};
 
 export type MomItem = {
   id: number;
@@ -728,10 +846,23 @@ export const epromApi = {
       if (file) form.append('file', file);
       return request<EngineerItem>(`/engineer/${tipe}`, { method: 'POST', body: form });
     },
-    review: (tipe: TipeEngineer, id: number, status: 'APPROVED' | 'REJECTED', komentar?: string) =>
+    reject: (tipe: TipeEngineer, id: number, komentar: string) =>
       request<EngineerItem>(`/engineer/${tipe}/${id}/review`, {
         method: 'PATCH',
-        body: JSON.stringify({ status, komentar }),
+        body: JSON.stringify({ status: 'REJECTED', komentar }),
+      }),
+    detailApproval: (tipe: TipeEngineer, id: number) =>
+      request<EngineerApprovalDetail>(`/engineer/${tipe}/${id}/approval`),
+    daftarTandaTangan: () =>
+      request<EngineerSignature[]>('/engineer/signatures/available'),
+    approveDenganTandaTangan: (
+      tipe: TipeEngineer,
+      id: number,
+      payload: { placements: EngineerSignaturePosition[] },
+    ) =>
+      request<EngineerItem>(`/engineer/${tipe}/${id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
       }),
     hapus: (tipe: TipeEngineer, id: number) =>
       request<{ message: string }>(`/engineer/${tipe}/${id}`, { method: 'DELETE' }),
@@ -875,11 +1006,11 @@ export const epromApi = {
   closing: {
     daftar: (tipe: TipeClosing, projectId: number) =>
       request<ClosingItem[]>(`/closing/${tipe}?projectId=${projectId}`),
-    buat: (tipe: TipeClosing, projectId: number, file: File | null) => {
+    buat: (tipe: TipeClosing, projectId: number, files: File[]) => {
       const form = new FormData();
       form.append('projectId', String(projectId));
-      if (file) form.append('file', file);
-      return request<ClosingItem>(`/closing/${tipe}`, { method: 'POST', body: form });
+      files.forEach((file) => form.append('file', file));
+      return request<ClosingItem[]>(`/closing/${tipe}`, { method: 'POST', body: form });
     },
     review: (tipe: TipeClosing, id: number, status: 'APPROVED' | 'REJECTED', komentar?: string) =>
       request<ClosingItem>(`/closing/${tipe}/${id}/review`, {
@@ -891,6 +1022,37 @@ export const epromApi = {
     ringkasan: (projectId: number) =>
       request<RingkasanPendingClosing>(`/closing/ringkasan/${projectId}`),
   },
+
+  safetyMeeting: {
+    daftar: (tipe: TipeSafetyMeeting, projectId: number) =>
+      request<SafetyMeetingFileItem[]>(
+        `/safety-meeting/${tipe}?projectId=${projectId}`,
+      ),
+    unggah: (tipe: TipeSafetyMeeting, projectId: number, files: File[]) => {
+      const form = new FormData();
+      form.append('projectId', String(projectId));
+      files.forEach((file) => form.append('file', file));
+      return request<SafetyMeetingFileItem[]>(`/safety-meeting/${tipe}`, {
+        method: 'POST',
+        body: form,
+      });
+    },
+    hapus: (tipe: TipeSafetyMeeting, id: number) =>
+      request<{ message: string }>(`/safety-meeting/${tipe}/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  performanceVendor: {
+    daftar: (bulan: string) =>
+      request<{ bulan: string; items: PerformanceVendorItem[] }>(
+        `/performance-vendor?bulan=${encodeURIComponent(bulan)}`,
+      ),
+    detail: (projectId: number, bulan: string) =>
+      request<PerformanceVendorItem>(
+        `/performance-vendor/${projectId}?bulan=${encodeURIComponent(bulan)}`,
+      ),
+  },
 };
 
 export const LABEL_TIPE_ENGINEER: Record<TipeEngineer, string> = {
@@ -899,6 +1061,7 @@ export const LABEL_TIPE_ENGINEER: Record<TipeEngineer, string> = {
   'metode-pekerjaan': 'Metode Pekerjaan',
   'sertifikasi-pekerjaan': 'Sertifikasi Pekerjaan',
   'peralatan-list': 'Daftar Peralatan',
+  'komisioning-alat-berat': 'Komisioning Alat Berat',
 };
 
 export const LABEL_TIPE_KONSTRUKSI: Record<TipeKonstruksi, string> = {
@@ -947,6 +1110,12 @@ export const LABEL_TIPE_CLOSING: Record<TipeClosing, string> = {
   'serah-terima': 'Serah Terima',
   'masa-pemeliharaan-checklist': 'Checklist Masa Pemeliharaan',
   'ba-serah-terima': 'BA Serah Terima',
+};
+
+export const LABEL_TIPE_SAFETY_MEETING: Record<TipeSafetyMeeting, string> = {
+  p5m: 'P5M',
+  'safety-talk': 'Safety Talk',
+  'fatigue-test': 'Fatigue Test',
 };
 
 // ==================================================

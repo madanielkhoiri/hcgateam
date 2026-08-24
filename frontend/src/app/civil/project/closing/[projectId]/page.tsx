@@ -111,7 +111,8 @@ function ClosingTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
+  const [inputKey, setInputKey] = useState(0);
   const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
 
   const muatItems = useCallback(() => {
@@ -125,7 +126,8 @@ function ClosingTab({
 
   useEffect(() => {
     muatItems();
-    setFileBaru(null);
+    setFileBaru([]);
+    setInputKey((current) => current + 1);
   }, [muatItems]);
 
   async function tambahItem(event: React.FormEvent) {
@@ -134,7 +136,8 @@ function ClosingTab({
     setError(null);
     try {
       await epromApi.closing.buat(tipe, projectId, fileBaru);
-      setFileBaru(null);
+      setFileBaru([]);
+      setInputKey((current) => current + 1);
       muatItems();
       window.dispatchEvent(new Event("eprom-closing-updated"));
     } catch (err) {
@@ -176,9 +179,14 @@ function ClosingTab({
             File
             <input
               type="file"
+              key={inputKey}
+              multiple
               accept={ACCEPT_DOKUMEN}
-              onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+              onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
             />
+            {fileBaru.length > 0 && (
+              <span>{fileBaru.length} file dipilih</span>
+            )}
           </label>
           <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
             {submitting ? "Mengunggah..." : "Unggah Baru"}
