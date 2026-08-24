@@ -1,7 +1,7 @@
 // ==================================================
 // FILE: backend/src/eprom/engineer/eprom-engineer.controller.ts
 // FUNGSI: Endpoint Shop Drawing, Material Approval, Metode Pekerjaan,
-// Sertifikasi Pekerjaan, dan Daftar Peralatan
+// Sertifikasi Pekerjaan, Daftar Peralatan, dan Komisioning Alat Berat
 // ==================================================
 
 import {
@@ -23,7 +23,12 @@ import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
-import { BuatEngineerDto, EpromEngineerService, ReviewEngineerDto } from './eprom-engineer.service';
+import {
+  ApproveEngineerDto,
+  BuatEngineerDto,
+  EpromEngineerService,
+  ReviewEngineerDto,
+} from './eprom-engineer.service';
 
 @Controller('eprom/engineer')
 @UseGuards(JwtAuthGuard)
@@ -31,8 +36,29 @@ export class EpromEngineerController {
   constructor(private readonly service: EpromEngineerService) {}
 
   @Get('ringkasan/:projectId')
-  ringkasan(@Aktor() aktor: AktorEprom, @Param('projectId', ParseIntPipe) projectId: number) {
+  ringkasan(
+    @Aktor() aktor: AktorEprom,
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ) {
     return this.service.ringkasanPending(aktor, projectId);
+  }
+
+  @Get('signatures/available')
+  tandaTangan(@Aktor() aktor: AktorEprom) {
+    return this.service.daftarTandaTangan(aktor);
+  }
+
+  @Get(':tipe/:id/approval')
+  detailApproval(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.service.detailApproval(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      id,
+    );
   }
 
   @Get(':tipe')
@@ -41,7 +67,11 @@ export class EpromEngineerController {
     @Param('tipe') tipeRaw: string,
     @Query('projectId', ParseIntPipe) projectId: number,
   ) {
-    return this.service.daftar(aktor, this.service.validasiTipe(tipeRaw), projectId);
+    return this.service.daftar(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      projectId,
+    );
   }
 
   @Post(':tipe')
@@ -52,7 +82,13 @@ export class EpromEngineerController {
     @Body() dto: BuatEngineerDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.service.buat(aktor, this.service.validasiTipe(tipeRaw), dto.projectId, dto, file);
+    return this.service.buat(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      dto.projectId,
+      dto,
+      file,
+    );
   }
 
   @Patch(':tipe/:id/review')
@@ -62,7 +98,27 @@ export class EpromEngineerController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ReviewEngineerDto,
   ) {
-    return this.service.review(aktor, this.service.validasiTipe(tipeRaw), id, dto);
+    return this.service.review(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      id,
+      dto,
+    );
+  }
+
+  @Post(':tipe/:id/approve')
+  approve(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ApproveEngineerDto,
+  ) {
+    return this.service.approveDenganTandaTangan(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      id,
+      dto,
+    );
   }
 
   @Delete(':tipe/:id')

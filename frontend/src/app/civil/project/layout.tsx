@@ -42,6 +42,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   StickyNote,
+  TrendingUp,
   Users,
   UsersRound,
   Wrench,
@@ -67,6 +68,7 @@ import {
   type RingkasanPendingEngineer,
   type RingkasanPendingKonstruksi,
   type TipeEngineer,
+  type TipeSafetyMeeting,
 } from "@/lib/eprom-api";
 import styles from "./project-layout.module.css";
 
@@ -90,6 +92,11 @@ type NavGroup = {
 
 const dashboardItem: NavItem = { label: "Dashboard", href: "/civil/project", icon: Gauge };
 const dataVendorItem: NavItem = { label: "Data Vendor", href: "/civil/project/vendor", icon: Users };
+const performanceVendorItem: NavItem = {
+  label: "Performance Vendor",
+  href: "/civil/project/performance-vendor",
+  icon: TrendingUp,
+};
 
 const segeraHadirItems: NavItem[] = [];
 
@@ -99,6 +106,7 @@ const TAB_ENGINEER: { tab: TipeEngineer; label: string; icon: React.ElementType 
   { tab: "metode-pekerjaan", label: "Metode Pekerjaan", icon: Wrench },
   { tab: "sertifikasi-pekerjaan", label: "Sertifikasi Pekerjaan", icon: ShieldCheck },
   { tab: "peralatan-list", label: "Daftar Peralatan", icon: ClipboardList },
+  { tab: "komisioning-alat-berat", label: "Komisioning Alat Berat", icon: Cog },
 ];
 
 const TAB_KONSTRUKSI: { tab: string; label: string; icon: React.ElementType }[] = [
@@ -121,6 +129,16 @@ const TAB_MEETING: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: "meeting", label: "Meeting", icon: CalendarClock },
   { tab: "dokumentasi", label: "Dokumentasi Meeting", icon: Camera },
   { tab: "mom", label: "MOM", icon: ListTodo },
+];
+
+const TAB_SAFETY_MEETING: {
+  tab: TipeSafetyMeeting;
+  label: string;
+  icon: React.ElementType;
+}[] = [
+  { tab: "p5m", label: "P5M", icon: ClipboardCheck },
+  { tab: "safety-talk", label: "Safety Talk", icon: MessageSquare },
+  { tab: "fatigue-test", label: "Fatigue Test", icon: Gauge },
 ];
 
 const TAB_DOKUMEN: { tab: string; label: string; icon: React.ElementType }[] = [
@@ -170,6 +188,11 @@ export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
   const activeKonstruksiProjectId = konstruksiDetailMatch ? konstruksiDetailMatch[1] : null;
   const meetingDetailMatch = /^\/civil\/project\/meeting\/(\d+)/.exec(pathname);
   const activeMeetingProjectId = meetingDetailMatch ? meetingDetailMatch[1] : null;
+  const safetyMeetingDetailMatch =
+    /^\/civil\/project\/safety-meeting\/(\d+)/.exec(pathname);
+  const activeSafetyMeetingProjectId = safetyMeetingDetailMatch
+    ? safetyMeetingDetailMatch[1]
+    : null;
   const dokumenDetailMatch = /^\/civil\/project\/dokumen\/(\d+)/.exec(pathname);
   const activeDokumenProjectId = dokumenDetailMatch ? dokumenDetailMatch[1] : null;
   const financialDetailMatch = /^\/civil\/project\/financial\/(\d+)/.exec(pathname);
@@ -281,6 +304,25 @@ export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
               label: t.label,
               href: `/civil/project/meeting/${activeMeetingProjectId}?tab=${t.tab}`,
               icon: t.icon,
+            }))
+          : []),
+      ],
+    },
+    {
+      id: "safety-meeting",
+      label: "Safety Meeting",
+      icon: ShieldCheck,
+      items: [
+        {
+          label: "Daftar Tender",
+          href: "/civil/project/safety-meeting",
+          icon: ListChecks,
+        },
+        ...(activeSafetyMeetingProjectId
+          ? TAB_SAFETY_MEETING.map((item) => ({
+              label: item.label,
+              href: `/civil/project/safety-meeting/${activeSafetyMeetingProjectId}?tab=${item.tab}`,
+              icon: item.icon,
             }))
           : []),
       ],
@@ -656,6 +698,14 @@ export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
           >
             <Users size={18} />
             <span>{dataVendorItem.label}</span>
+          </Link>
+
+          <Link
+            href={performanceVendorItem.href}
+            className={`${styles.navItem} ${pathname === performanceVendorItem.href ? styles.navItemActive : ""}`}
+          >
+            <TrendingUp size={18} />
+            <span>{performanceVendorItem.label}</span>
           </Link>
 
           {navGroups.map(renderGroup)}

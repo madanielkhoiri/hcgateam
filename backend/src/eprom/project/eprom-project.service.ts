@@ -41,6 +41,7 @@ export class EpromProjectService {
             metodePekerjaan: HANYA_PENDING,
             sertifikasiPekerjaan: HANYA_PENDING,
             peralatanList: HANYA_PENDING,
+            komisioningAlatBerat: HANYA_PENDING,
             checklistKonstruksi: HANYA_PENDING,
             ibpr: HANYA_PENDING,
             jsa: HANYA_PENDING,
@@ -63,7 +64,8 @@ export class EpromProjectService {
         p._count.materialApprovals +
         p._count.metodePekerjaan +
         p._count.sertifikasiPekerjaan +
-        p._count.peralatanList,
+        p._count.peralatanList +
+        p._count.komisioningAlatBerat,
       pendingKonstruksi: p._count.checklistKonstruksi + p._count.ibpr + p._count.jsa,
       pendingFinancial: p._count.opnamePekerjaan,
       pendingClosing:
