@@ -185,7 +185,40 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log('Akun superadmin, admin, fa, karyawan, tamu, owner, dan vendor berhasil dibuat dengan password universal');
+  const driverDemo = await prisma.driver.upsert({
+    where: { id: 1 },
+    update: {
+      nama: 'Driver Demo',
+    },
+    create: {
+      nama: 'Driver Demo',
+      noTelepon: '081200000000',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: {
+      username: 'driver',
+    },
+    update: {
+      role: UserRole.DRIVER,
+      isActive: true,
+      accessKeys: [],
+      passwordHash: universalPasswordHash,
+      driverId: driverDemo.id,
+    },
+    create: {
+      name: 'Driver Demo',
+      username: 'driver',
+      passwordHash: universalPasswordHash,
+      role: UserRole.DRIVER,
+      isActive: true,
+      accessKeys: [],
+      driverId: driverDemo.id,
+    },
+  });
+
+  console.log('Akun superadmin, admin, fa, karyawan, tamu, owner, vendor, dan driver berhasil dibuat dengan password universal');
 }
 
 main()

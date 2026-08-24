@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3,
+  Bus,
   ChevronLeft,
   Fuel,
   Home,
   Menu,
   PanelLeftClose,
+  Ticket,
   Truck,
   UsersRound,
   X,
@@ -30,8 +32,26 @@ const menus = [
     label: 'Dashboard Transportasi',
     href: '/ga/transport/dashboard',
     icon: BarChart3,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT,
   },
-  { label: 'Transportasi', href: '/ga/transport/data', icon: Fuel },
+  {
+    label: 'Transportasi',
+    href: '/ga/transport/data',
+    icon: Fuel,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT,
+  },
+  {
+    label: 'Tiket',
+    href: '/ga/transport/tiket',
+    icon: Ticket,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
+  },
+  {
+    label: 'Travel',
+    href: '/ga/transport/travel',
+    icon: Bus,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_TRAVEL,
+  },
 ];
 
 export default function TransportLayout({ children }: { children: ReactNode }) {
@@ -53,7 +73,12 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT)) {
+    const bolehMasuk =
+      hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT) ||
+      hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT_TIKET) ||
+      hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT_TRAVEL);
+
+    if (!bolehMasuk) {
       router.replace('/ga');
       return;
     }
@@ -90,18 +115,20 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
             {!collapsed && <span>Pilihan GA</span>}
           </Link>
           {!collapsed && <p className={styles.caption}>MENU TRANSPORT</p>}
-          {menus.map(({ label, href, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`${styles.menu} ${
-                pathname === href ? styles.active : ''
-              }`}
-            >
-              <Icon size={20} />
-              {!collapsed && <span>{label}</span>}
-            </Link>
-          ))}
+          {menus
+            .filter(({ accessKey }) => !user || hasAccess(user, accessKey))
+            .map(({ label, href, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`${styles.menu} ${
+                  pathname === href ? styles.active : ''
+                }`}
+              >
+                <Icon size={20} />
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            ))}
         </nav>
         <button
           className={styles.collapse}
