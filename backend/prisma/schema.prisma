@@ -26,6 +26,10 @@ enum UserRole {
   ADMIN_COMBEN
   // Project Manager - penyetuju tahap 2 Surat Tugas Dinas (setelah SH).
   PJO
+  // Peran khusus modul e-ProM (Civil Project). Akses penuh di dalam
+  // modul e-ProM saja, bukan bypass admin portal secara umum.
+  // Referensi: alur-workflow-tender-kontrak-project-area.md
+  OWNER
 }
 
 model User {
@@ -44,6 +48,7 @@ model User {
   isTwoFactorEnabled Boolean  @default(false) @map("is_two_factor_enabled")
   vendorId           Int?     @map("vendor_id")
   ticketCode         String?  @map("kode_tiket")
+  vendor             Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   departemen         String?
   jabatan            String?
   createdAt          DateTime @default(now()) @map("created_at")
@@ -65,27 +70,29 @@ model User {
   packMealOrders   PackMealOrder[]   @relation("PackMealOrderCreator")
 
   profilKaryawan     Karyawan?
-  departemenDikelola Departemen[]        @relation("AdminDepartemen")
-  klinikDikelola     Klinik[]            @relation("AkunKlinik")
-  jadwalMcuDibuat    JadwalMcu[]         @relation("PembuatJadwalMcu")
-  jadwalMcuDiubah    JadwalMcu[]         @relation("PengubahJadwalMcu")
-  suratPengantarMcu  SuratPengantar[]    @relation("PenerbitSuratPengantar")
-  hasilMcuDiupload   HasilMcu[]          @relation("PengunggahHasilMcu")
-  rekomendasiMcu     RekomendasiMcu[]    @relation("DokterRekomendasi")
-  batasFollowUp      FollowUp[]          @relation("PenetapBatasFollowUp")
-  hasilFollowUp      HasilFollowUp[]     @relation("PengunggahHasilFollowUp")
-  induksiUlangPic    InduksiUlang[]      @relation("PicSheInduksi")
-  notifikasiMcu      LogNotifikasiMcu[]  @relation("PenerimaNotifikasiMcu")
+  departemenDikelola Departemen[]       @relation("AdminDepartemen")
+  klinikDikelola     Klinik[]           @relation("AkunKlinik")
+  jadwalMcuDibuat    JadwalMcu[]        @relation("PembuatJadwalMcu")
+  jadwalMcuDiubah    JadwalMcu[]        @relation("PengubahJadwalMcu")
+  suratPengantarMcu  SuratPengantar[]   @relation("PenerbitSuratPengantar")
+  hasilMcuDiupload   HasilMcu[]         @relation("PengunggahHasilMcu")
+  rekomendasiMcu     RekomendasiMcu[]   @relation("DokterRekomendasi")
+  batasFollowUp      FollowUp[]         @relation("PenetapBatasFollowUp")
+  hasilFollowUp      HasilFollowUp[]    @relation("PengunggahHasilFollowUp")
+  induksiUlangPic    InduksiUlang[]     @relation("PicSheInduksi")
+  notifikasiMcu      LogNotifikasiMcu[] @relation("PenerimaNotifikasiMcu")
 
   tiketHelpdeskDibuat   TiketHelpdesk[] @relation("PembuatTiketHelpdesk")
   tiketHelpdeskDiproses TiketHelpdesk[] @relation("PicTiketHelpdesk")
 
-  suratTugasDibuat        SuratTugasDinas[] @relation("PembuatSuratTugas")
-  suratTugasDisetujuiSh   SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
-  suratTugasDisetujuiPjo  SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
+  suratTugasDibuat       SuratTugasDinas[] @relation("PembuatSuratTugas")
+  suratTugasDisetujuiSh  SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
+  suratTugasDisetujuiPjo SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
 
   suratBalasanMagangDibuat   SuratBalasanMagang[]   @relation("PembuatSuratBalasanMagang")
   suratPenolakanMagangDibuat SuratPenolakanMagang[] @relation("PembuatSuratPenolakanMagang")
+
+  epromFileUploads FileUpload[] @relation("EpromFileUploader")
 
   @@map("users")
 }
@@ -1000,10 +1007,10 @@ model Klinik {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  akun            User?            @relation("AkunKlinik", fields: [akunId], references: [id], onDelete: SetNull)
-  jadwalMcu       JadwalMcu[]
-  suratPengantar  SuratPengantar[]
-  followUp        FollowUp[]
+  akun           User?            @relation("AkunKlinik", fields: [akunId], references: [id], onDelete: SetNull)
+  jadwalMcu      JadwalMcu[]
+  suratPengantar SuratPengantar[]
+  followUp       FollowUp[]
 
   @@index([terkoneksi])
   @@index([statusAktif])
@@ -1016,24 +1023,24 @@ model Klinik {
 // --------------------------------------------------
 
 model JadwalMcu {
-  id                 Int               @id @default(autoincrement())
-  karyawanId         Int               @map("karyawan_id")
-  departemenId       Int               @map("departemen_id")
-  tanggalMcu         DateTime          @map("tanggal_mcu") @db.Date
-  jenisMcu           JenisMcu          @default(BERKALA) @map("jenis_mcu")
-  jenisPemeriksaan   String?           @map("jenis_pemeriksaan")
-  klinikId           Int?              @map("klinik_id")
-  suratPengantarId   Int?              @map("surat_pengantar_id")
-  statusPendaftaran  StatusPendaftaran @default(DRAFT) @map("status_pendaftaran")
-  tanggalLock        DateTime          @map("tanggal_lock") @db.Date
-  catatan            String?           @db.Text
-  diubahOlehHcId     Int?              @map("diubah_oleh_hc_id")
-  diubahOlehHcAt     DateTime?         @map("diubah_oleh_hc_at")
-  alasanPerubahanHc  String?           @map("alasan_perubahan_hc") @db.Text
-  dibatalkanAt       DateTime?         @map("dibatalkan_at")
-  dibuatOlehId       Int               @map("dibuat_oleh_id")
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
+  id                Int               @id @default(autoincrement())
+  karyawanId        Int               @map("karyawan_id")
+  departemenId      Int               @map("departemen_id")
+  tanggalMcu        DateTime          @map("tanggal_mcu") @db.Date
+  jenisMcu          JenisMcu          @default(BERKALA) @map("jenis_mcu")
+  jenisPemeriksaan  String?           @map("jenis_pemeriksaan")
+  klinikId          Int?              @map("klinik_id")
+  suratPengantarId  Int?              @map("surat_pengantar_id")
+  statusPendaftaran StatusPendaftaran @default(DRAFT) @map("status_pendaftaran")
+  tanggalLock       DateTime          @map("tanggal_lock") @db.Date
+  catatan           String?           @db.Text
+  diubahOlehHcId    Int?              @map("diubah_oleh_hc_id")
+  diubahOlehHcAt    DateTime?         @map("diubah_oleh_hc_at")
+  alasanPerubahanHc String?           @map("alasan_perubahan_hc") @db.Text
+  dibatalkanAt      DateTime?         @map("dibatalkan_at")
+  dibuatOlehId      Int               @map("dibuat_oleh_id")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
 
   karyawan       Karyawan        @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
   departemen     Departemen      @relation(fields: [departemenId], references: [id], onDelete: Restrict)
@@ -1075,8 +1082,8 @@ model SuratPengantar {
   updatedAt     DateTime             @updatedAt @map("updated_at")
 
   jadwalMcu   JadwalMcu[]
-  klinik      Klinik?   @relation(fields: [klinikId], references: [id], onDelete: SetNull)
-  diterbitkan User      @relation("PenerbitSuratPengantar", fields: [diterbitkanId], references: [id], onDelete: Restrict)
+  klinik      Klinik?     @relation(fields: [klinikId], references: [id], onDelete: SetNull)
+  diterbitkan User        @relation("PenerbitSuratPengantar", fields: [diterbitkanId], references: [id], onDelete: Restrict)
 
   @@unique([tahunTerbit, nomorUrut])
   @@index([status])
@@ -1090,22 +1097,22 @@ model SuratPengantar {
 // --------------------------------------------------
 
 model HasilMcu {
-  id              Int            @id @default(autoincrement())
-  jadwalMcuId     Int            @unique @map("jadwal_mcu_id")
-  tanggalUpload   DateTime       @default(now()) @map("tanggal_upload")
-  diunggahOlehId  Int            @map("diunggah_oleh_id")
-  tipePengunggah  TipePengunggah @map("tipe_pengunggah")
-  fileHasilMcu    String         @map("file_hasil_mcu")
-  namaFileAsli    String?        @map("nama_file_asli")
-  statusReview    StatusReview   @default(MENUNGGU) @map("status_review")
-  retensiHapusAt  DateTime       @map("retensi_hapus_at") @db.Date
-  fileDihapusAt   DateTime?      @map("file_dihapus_at")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
+  id             Int            @id @default(autoincrement())
+  jadwalMcuId    Int            @unique @map("jadwal_mcu_id")
+  tanggalUpload  DateTime       @default(now()) @map("tanggal_upload")
+  diunggahOlehId Int            @map("diunggah_oleh_id")
+  tipePengunggah TipePengunggah @map("tipe_pengunggah")
+  fileHasilMcu   String         @map("file_hasil_mcu")
+  namaFileAsli   String?        @map("nama_file_asli")
+  statusReview   StatusReview   @default(MENUNGGU) @map("status_review")
+  retensiHapusAt DateTime       @map("retensi_hapus_at") @db.Date
+  fileDihapusAt  DateTime?      @map("file_dihapus_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  jadwalMcu      JadwalMcu        @relation(fields: [jadwalMcuId], references: [id], onDelete: Cascade)
-  diunggahOleh   User             @relation("PengunggahHasilMcu", fields: [diunggahOlehId], references: [id], onDelete: Restrict)
-  rekomendasi    RekomendasiMcu[]
+  jadwalMcu    JadwalMcu        @relation(fields: [jadwalMcuId], references: [id], onDelete: Cascade)
+  diunggahOleh User             @relation("PengunggahHasilMcu", fields: [diunggahOlehId], references: [id], onDelete: Restrict)
+  rekomendasi  RekomendasiMcu[]
 
   @@index([statusReview])
   @@index([retensiHapusAt])
@@ -1119,24 +1126,24 @@ model HasilMcu {
 // --------------------------------------------------
 
 model RekomendasiMcu {
-  id                      Int               @id @default(autoincrement())
-  hasilMcuId              Int               @map("hasil_mcu_id")
-  hasilFollowUpAsalId     Int?              @unique @map("hasil_follow_up_asal_id")
-  dokterId                Int               @map("dokter_id")
-  status                  StatusRekomendasi
-  catatanMedisTerbatas    String?           @map("catatan_medis_terbatas") @db.Text
-  filePdfRekomendasi      String?           @map("file_pdf_rekomendasi")
-  suratRujukanFu          String?           @map("surat_rujukan_fu")
-  nomorSuratRujukan       String?           @unique @map("nomor_surat_rujukan")
-  siklusKe                Int               @default(1) @map("siklus_ke")
-  tanggalSubmit           DateTime          @default(now()) @map("tanggal_submit")
-  diteruskanKeDeptAt      DateTime?         @map("diteruskan_ke_dept_at")
-  diteruskanKeKaryawanAt  DateTime?         @map("diteruskan_ke_karyawan_at")
-  diteruskanOlehId        Int?              @map("diteruskan_oleh_id")
-  retensiHapusAt          DateTime          @map("retensi_hapus_at") @db.Date
-  fileDihapusAt           DateTime?         @map("file_dihapus_at")
-  createdAt               DateTime          @default(now()) @map("created_at")
-  updatedAt               DateTime          @updatedAt @map("updated_at")
+  id                     Int               @id @default(autoincrement())
+  hasilMcuId             Int               @map("hasil_mcu_id")
+  hasilFollowUpAsalId    Int?              @unique @map("hasil_follow_up_asal_id")
+  dokterId               Int               @map("dokter_id")
+  status                 StatusRekomendasi
+  catatanMedisTerbatas   String?           @map("catatan_medis_terbatas") @db.Text
+  filePdfRekomendasi     String?           @map("file_pdf_rekomendasi")
+  suratRujukanFu         String?           @map("surat_rujukan_fu")
+  nomorSuratRujukan      String?           @unique @map("nomor_surat_rujukan")
+  siklusKe               Int               @default(1) @map("siklus_ke")
+  tanggalSubmit          DateTime          @default(now()) @map("tanggal_submit")
+  diteruskanKeDeptAt     DateTime?         @map("diteruskan_ke_dept_at")
+  diteruskanKeKaryawanAt DateTime?         @map("diteruskan_ke_karyawan_at")
+  diteruskanOlehId       Int?              @map("diteruskan_oleh_id")
+  retensiHapusAt         DateTime          @map("retensi_hapus_at") @db.Date
+  fileDihapusAt          DateTime?         @map("file_dihapus_at")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
 
   hasilMcu          HasilMcu       @relation(fields: [hasilMcuId], references: [id], onDelete: Cascade)
   hasilFollowUpAsal HasilFollowUp? @relation("RekomendasiDariHasilFu", fields: [hasilFollowUpAsalId], references: [id], onDelete: SetNull)
@@ -1175,11 +1182,11 @@ model FollowUp {
   createdAt              DateTime         @default(now()) @map("created_at")
   updatedAt              DateTime         @updatedAt @map("updated_at")
 
-  rekomendasi     RekomendasiMcu  @relation(fields: [rekomendasiId], references: [id], onDelete: Cascade)
-  karyawan        Karyawan        @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
-  ditetapkanOleh  User?           @relation("PenetapBatasFollowUp", fields: [ditetapkanOlehHcId], references: [id], onDelete: SetNull)
-  klinik          Klinik?         @relation(fields: [klinikId], references: [id], onDelete: SetNull)
-  hasilFollowUp   HasilFollowUp[]
+  rekomendasi    RekomendasiMcu  @relation(fields: [rekomendasiId], references: [id], onDelete: Cascade)
+  karyawan       Karyawan        @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  ditetapkanOleh User?           @relation("PenetapBatasFollowUp", fields: [ditetapkanOlehHcId], references: [id], onDelete: SetNull)
+  klinik         Klinik?         @relation(fields: [klinikId], references: [id], onDelete: SetNull)
+  hasilFollowUp  HasilFollowUp[]
 
   @@index([karyawanId])
   @@index([status])
@@ -1206,8 +1213,8 @@ model HasilFollowUp {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  followUp       FollowUp        @relation(fields: [followUpId], references: [id], onDelete: Cascade)
-  diunggahOleh   User            @relation("PengunggahHasilFollowUp", fields: [diunggahOlehId], references: [id], onDelete: Restrict)
+  followUp        FollowUp        @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  diunggahOleh    User            @relation("PengunggahHasilFollowUp", fields: [diunggahOlehId], references: [id], onDelete: Restrict)
   rekomendasiBaru RekomendasiMcu? @relation("RekomendasiDariHasilFu")
 
   @@index([followUpId])
@@ -1297,7 +1304,7 @@ model TiketHelpdesk {
   namaFileAsli        String?             @map("nama_file_asli")
   status              StatusTiketHelpdesk @default(TERBUKA)
   level               String?
-  catatanPenyelesaian String?             @db.Text @map("catatan_penyelesaian")
+  catatanPenyelesaian String?             @map("catatan_penyelesaian") @db.Text
   pembuatId           Int                 @map("pembuat_id")
   picId               Int?                @map("pic_id")
   dibuatPada          DateTime            @default(now()) @map("dibuat_pada")
@@ -1324,27 +1331,27 @@ enum StatusSuratTugas {
 }
 
 model SuratTugasDinas {
-  id              Int              @id @default(autoincrement())
-  nomor           String           @unique
-  tujuanLokasi    String           @map("tujuan_lokasi")
-  tanggalMulai    DateTime         @map("tanggal_mulai") @db.Date
-  tanggalSelesai  DateTime         @map("tanggal_selesai") @db.Date
-  keteranganTugas String           @db.Text @map("keterangan_tugas")
-  status          StatusSuratTugas @default(MENUNGGU_SH)
-  filePdf         String?          @map("file_pdf")
-  dibuatOlehId    Int              @map("dibuat_oleh_id")
-  disetujuiShOlehId  Int?      @map("disetujui_sh_oleh_id")
-  disetujuiShPada    DateTime? @map("disetujui_sh_pada")
-  disetujuiPjoOlehId Int?      @map("disetujui_pjo_oleh_id")
-  disetujuiPjoPada   DateTime? @map("disetujui_pjo_pada")
-  alasanTolak     String?          @db.Text @map("alasan_tolak")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
+  id                 Int              @id @default(autoincrement())
+  nomor              String           @unique
+  tujuanLokasi       String           @map("tujuan_lokasi")
+  tanggalMulai       DateTime         @map("tanggal_mulai") @db.Date
+  tanggalSelesai     DateTime         @map("tanggal_selesai") @db.Date
+  keteranganTugas    String           @map("keterangan_tugas") @db.Text
+  status             StatusSuratTugas @default(MENUNGGU_SH)
+  filePdf            String?          @map("file_pdf")
+  dibuatOlehId       Int              @map("dibuat_oleh_id")
+  disetujuiShOlehId  Int?             @map("disetujui_sh_oleh_id")
+  disetujuiShPada    DateTime?        @map("disetujui_sh_pada")
+  disetujuiPjoOlehId Int?             @map("disetujui_pjo_oleh_id")
+  disetujuiPjoPada   DateTime?        @map("disetujui_pjo_pada")
+  alasanTolak        String?          @map("alasan_tolak") @db.Text
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
 
-  dibuatOleh    User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
-  disetujuiShOleh  User? @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
-  disetujuiPjoOleh User? @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
-  karyawan      SuratTugasKaryawan[]
+  dibuatOleh       User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
+  disetujuiShOleh  User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
+  disetujuiPjoOleh User?                @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
+  karyawan         SuratTugasKaryawan[]
 
   @@index([status])
   @@index([dibuatOlehId])
@@ -1376,46 +1383,46 @@ enum StatusAnakMagang {
 }
 
 model AnakMagang {
-  id             Int              @id @default(autoincrement())
-  nrp            String?
-  nama           String
-  gender         String?
-  universitas    String?
-  jurusan        String?
-  maritalStatus  String?          @map("marital_status")
-  agama          String?
-  departemen     String?
-  jabatan        String?
-  posisi         String?
-  tempatLahir    String?          @map("tempat_lahir")
-  tanggalLahir   DateTime?        @map("tanggal_lahir") @db.Date
-  pendidikan     String?
-  tanggalMulai   DateTime?        @map("tanggal_mulai") @db.Date
-  tanggalSelesai DateTime?        @map("tanggal_selesai") @db.Date
-  email          String?
-  noHp           String?          @map("no_hp")
-  noKtp          String?          @map("no_ktp")
-  npwp           String?
-  nomorRekening  String?          @map("nomor_rekening")
-  bank           String?
-  namaRekening   String?          @map("nama_rekening")
-  alamat         String?          @db.Text
-  site           String?
-  golonganDarah  String?          @map("golongan_darah")
-  bpjsTk         String?          @map("bpjs_tk")
-  bpjsKesehatan  String?          @map("bpjs_kesehatan")
-  tanggalMcu         DateTime?    @map("tanggal_mcu") @db.Date
-  tanggalPemeriksaan DateTime?    @map("tanggal_pemeriksaan") @db.Date
-  tanggalInduksi     DateTime?    @map("tanggal_induksi") @db.Date
-  ukuranBaju     String?          @map("ukuran_baju")
-  ukuranCelana   String?          @map("ukuran_celana")
-  ukuranSepatu   String?          @map("ukuran_sepatu")
-  noKk           String?          @map("no_kk")
-  rekomendasi    String?
-  atasanLangsung String?          @map("atasan_langsung")
-  status         StatusAnakMagang @default(AKTIF)
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  id                 Int              @id @default(autoincrement())
+  nrp                String?
+  nama               String
+  gender             String?
+  universitas        String?
+  jurusan            String?
+  maritalStatus      String?          @map("marital_status")
+  agama              String?
+  departemen         String?
+  jabatan            String?
+  posisi             String?
+  tempatLahir        String?          @map("tempat_lahir")
+  tanggalLahir       DateTime?        @map("tanggal_lahir") @db.Date
+  pendidikan         String?
+  tanggalMulai       DateTime?        @map("tanggal_mulai") @db.Date
+  tanggalSelesai     DateTime?        @map("tanggal_selesai") @db.Date
+  email              String?
+  noHp               String?          @map("no_hp")
+  noKtp              String?          @map("no_ktp")
+  npwp               String?
+  nomorRekening      String?          @map("nomor_rekening")
+  bank               String?
+  namaRekening       String?          @map("nama_rekening")
+  alamat             String?          @db.Text
+  site               String?
+  golonganDarah      String?          @map("golongan_darah")
+  bpjsTk             String?          @map("bpjs_tk")
+  bpjsKesehatan      String?          @map("bpjs_kesehatan")
+  tanggalMcu         DateTime?        @map("tanggal_mcu") @db.Date
+  tanggalPemeriksaan DateTime?        @map("tanggal_pemeriksaan") @db.Date
+  tanggalInduksi     DateTime?        @map("tanggal_induksi") @db.Date
+  ukuranBaju         String?          @map("ukuran_baju")
+  ukuranCelana       String?          @map("ukuran_celana")
+  ukuranSepatu       String?          @map("ukuran_sepatu")
+  noKk               String?          @map("no_kk")
+  rekomendasi        String?
+  atasanLangsung     String?          @map("atasan_langsung")
+  status             StatusAnakMagang @default(AKTIF)
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
 
   suratBalasanBaris SuratBalasanMagangBaris[]
   suratPenolakan    SuratPenolakanMagang[]
@@ -1471,7 +1478,7 @@ model SuratPenolakanMagang {
   anakMagangId    Int      @map("anak_magang_id")
   nama            String
   sapaan          String
-  alasanPenolakan String   @db.Text @map("alasan_penolakan")
+  alasanPenolakan String   @map("alasan_penolakan") @db.Text
   filePdf         String?  @map("file_pdf")
   dibuatOlehId    Int      @map("dibuat_oleh_id")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -1482,3 +1489,714 @@ model SuratPenolakanMagang {
   @@index([tahunTerbit])
   @@map("surat_penolakan_magang")
 }
+
+// ==================================================
+// E-PROM: TENDER, KONTRAK & PROJECT AREA (CIVIL PROJECT)
+// Digitalisasi Tender, Kontrak, Project Area, Meeting Progress,
+// Dokumen, Financial Monitoring & Project Closing untuk proyek Civil Infras.
+// Referensi alur: alur-workflow-tender-kontrak-project-area.md
+//
+// Catatan implementasi fase ini: seluruh tabel di bawah dibuat sekaligus
+// agar struktur data lengkap sesuai ERD, tapi hanya modul Vendor, Tender
+// dan Kontrak yang punya backend/frontend aktif pada fase ini. Modul
+// Project Area, Meeting Progress, Dokumen, Financial & Project Closing
+// baru berupa tabel kosong, menyusul di sesi pengembangan berikutnya.
+// ==================================================
+
+enum StatusLegalitasVendor {
+  BELUM_LENGKAP
+  LENGKAP
+}
+
+enum StatusTender {
+  PERSIAPAN
+  UNDANGAN_TERKIRIM
+  EVALUASI_SPH
+  SELESAI
+}
+
+enum ScopeDocumentFolder {
+  TENDER_DOKUMEN
+  LEGALITAS_VENDOR
+}
+
+enum TipeFileEprom {
+  PDF
+  RAB
+  CAD
+  FOTO
+}
+
+/**
+ * Status approve/reject Owner atas submission Vendor di Project Area (bagian 3.1 dokumen alur).
+ */
+enum StatusApprovalEprom {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TipeLinkMeeting {
+  MINGGUAN
+  BULANAN
+}
+
+enum TipeDokumenSurat {
+  SURAT_TEGURAN
+  SURAT_PERINGATAN
+  COACHING_COUNSELING
+  MEMO
+}
+
+// --------------------------------------------------
+// VENDOR
+// --------------------------------------------------
+
+model Vendor {
+  id              Int                   @id @default(autoincrement())
+  namaVendor      String                @map("nama_vendor")
+  email           String?
+  noTelepon       String?               @map("no_telepon")
+  /**
+   * Vendor non-aktif tidak muncul di pilihan Undangan Tender.
+   */
+  statusAktif     Boolean               @default(true) @map("status_aktif")
+  legalitasStatus StatusLegalitasVendor @default(BELUM_LENGKAP) @map("legalitas_status")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  users           User[]
+  undanganTender  TenderUndangan[]
+  sph             TenderSPH[]
+  kontrak         Kontrak[]
+  documentFolders DocumentFolder[]
+  evaluasiVendor  EvaluasiVendor[]
+
+  @@map("eprom_vendors")
+}
+
+// --------------------------------------------------
+// TENDER
+// --------------------------------------------------
+
+model TenderProcess {
+  id             Int          @id @default(autoincrement())
+  namaTender     String       @map("nama_tender")
+  status         StatusTender @default(PERSIAPAN)
+  tanggalMulai   DateTime?    @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime?    @map("tanggal_selesai") @db.Date
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  documentFolders DocumentFolder[]
+  undangan        TenderUndangan[]
+  sph             TenderSPH[]
+  evaluasiVendor  EvaluasiVendor[]
+  kontrak         Kontrak?
+
+  @@map("eprom_tender_process")
+}
+
+/**
+ * Evaluasi vendor — satu baris per (tender, vendor), gabungan 2 penilaian:
+ * 1) Eksternal — 7 kategori tetap, tiap kategori diisi kode 1-4 yang
+ *    dipetakan ke bobot % (lihat KODE_EVALUASI_VENDOR di
+ *    eprom-evaluasi-vendor.service.ts). Nilai Avg dihitung on-the-fly.
+ * 2) Teknis — 5 kriteria berbobot tetap (Teknikal 25%, Schedule 20%, Harga
+ *    Penawaran 20%, SHE 20%, Legalitas Perusahaan 15%), sebagian kriteria
+ *    punya sub-item (input skor bebas/desimal). Nilai & Round dihitung
+ *    on-the-fly, lihat BOBOT_KRITERIA_TEKNIS di service yang sama.
+ * Keduanya jadi pertimbangan Owner (bersama SPH) untuk memilih pemenang
+ * tender secara manual di tab "Klasifikasi & Evaluasi".
+ */
+model EvaluasiVendor {
+  id               Int      @id @default(autoincrement())
+  tenderId         Int      @map("tender_id")
+  vendorId         Int      @map("vendor_id")
+  bumdesKode       Int?     @map("bumdes_kode")
+  bupatiDprKode    Int?     @map("bupati_dpr_kode")
+  lingkunganKode   Int?     @map("lingkungan_kode")
+  pekerjaLokalKode Int?     @map("pekerja_lokal_kode")
+  kepolisianKode   Int?     @map("kepolisian_kode")
+  dlhKode          Int?     @map("dlh_kode")
+  dpuprKode        Int?     @map("dpupr_kode")
+
+  teknikalMetode      Decimal? @map("teknikal_metode") @db.Decimal(4, 2)
+  teknikalAlatKerja   Decimal? @map("teknikal_alat_kerja") @db.Decimal(4, 2)
+  teknikalSpesifikasi Decimal? @map("teknikal_spesifikasi") @db.Decimal(4, 2)
+  teknikalPengalaman  Decimal? @map("teknikal_pengalaman") @db.Decimal(4, 2)
+  teknikalKomunikatif Decimal? @map("teknikal_komunikatif") @db.Decimal(4, 2)
+  scheduleSkor        Decimal? @map("schedule_skor") @db.Decimal(4, 2)
+  hargaKetepatanWaktu Decimal? @map("harga_ketepatan_waktu") @db.Decimal(4, 2)
+  hargaNegosiasi      Decimal? @map("harga_negosiasi") @db.Decimal(4, 2)
+  sheSkor             Decimal? @map("she_skor") @db.Decimal(4, 2)
+  legalitasSkor       Decimal? @map("legalitas_skor") @db.Decimal(4, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([tenderId, vendorId])
+  @@map("eprom_evaluasi_vendor")
+}
+
+model TenderUndangan {
+  id           Int       @id @default(autoincrement())
+  tenderId     Int       @map("tender_id")
+  vendorId     Int       @map("vendor_id")
+  fileUndangan String?   @map("file_undangan")
+  tanggalKirim DateTime? @map("tanggal_kirim")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@unique([tenderId, vendorId])
+  @@map("eprom_tender_undangan")
+}
+
+model TenderSPH {
+  id             Int      @id @default(autoincrement())
+  tenderId       Int      @map("tender_id")
+  vendorId       Int      @map("vendor_id")
+  roundKe        Int      @map("round_ke")
+  fileSph        String?  @map("file_sph")
+  hargaPenawaran Decimal? @map("harga_penawaran") @db.Decimal(18, 2)
+  isFinal        Boolean  @default(false) @map("is_final")
+  statusPemenang Boolean  @default(false) @map("status_pemenang")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@unique([tenderId, vendorId, roundKe])
+  @@map("eprom_tender_sph")
+}
+
+// --------------------------------------------------
+// DOKUMEN (folder/file ala Google Drive)
+// Dipakai bersama oleh Upload Dokumen Tender & Legalitas Vendor.
+// --------------------------------------------------
+
+model DocumentFolder {
+  id             Int                 @id @default(autoincrement())
+  scope          ScopeDocumentFolder
+  tenderId       Int?                @map("tender_id")
+  vendorId       Int?                @map("vendor_id")
+  namaFolder     String              @map("nama_folder")
+  parentFolderId Int?                @map("parent_folder_id")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  tender       TenderProcess?   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor       Vendor?          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  parentFolder DocumentFolder?  @relation("FolderChildren", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  children     DocumentFolder[] @relation("FolderChildren")
+  files        FileUpload[]
+
+  @@index([tenderId])
+  @@index([vendorId])
+  @@index([parentFolderId])
+  @@map("eprom_document_folders")
+}
+
+model FileUpload {
+  id           Int           @id @default(autoincrement())
+  folderId     Int           @map("folder_id")
+  namaFile     String        @map("nama_file")
+  tipeFile     TipeFileEprom @map("tipe_file")
+  urlFile      String        @map("url_file")
+  uploadedById Int           @map("uploaded_by")
+  uploadedAt   DateTime      @default(now()) @map("uploaded_at")
+
+  folder     DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  uploadedBy User           @relation("EpromFileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([folderId])
+  @@map("eprom_file_uploads")
+}
+
+// --------------------------------------------------
+// KONTRAK
+// --------------------------------------------------
+
+model Kontrak {
+  id             Int      @id @default(autoincrement())
+  tenderId       Int      @unique @map("tender_id")
+  vendorId       Int      @map("vendor_id")
+  nomorKontrak   String   @map("nomor_kontrak")
+  fileKontrak    String?  @map("file_kontrak")
+  tanggalMulai   DateTime @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime @map("tanggal_selesai") @db.Date
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tender  TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Restrict)
+  vendor  Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  project Project[]
+
+  @@map("eprom_kontrak")
+}
+
+// --------------------------------------------------
+// PROJECT AREA
+// --------------------------------------------------
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  kontrakId   Int      @map("kontrak_id")
+  namaProject String   @map("nama_project")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  kontrak Kontrak @relation(fields: [kontrakId], references: [id], onDelete: Restrict)
+
+  shopDrawings              ShopDrawing[]
+  materialApprovals         MaterialApproval[]
+  metodePekerjaan           MetodePekerjaan[]
+  sertifikasiPekerjaan      SertifikasiPekerjaan[]
+  peralatanList             PeralatanList[]
+  checklistKonstruksi       ChecklistKonstruksi[]
+  inspeksiAreaPekerjaan     InspeksiAreaPekerjaan[]
+  inspeksiPeralatan         InspeksiPeralatan[]
+  progressHarian            ProgressHarian[]
+  progressMingguan          ProgressMingguan[]
+  progressBulanan           ProgressBulanan[]
+  tta                       TTA[]
+  kta                       KTA[]
+  ibpr                      IBPR[]
+  jsa                       JSA[]
+  meetings                  Meeting[]
+  dokumenSurat              DokumenSurat[]
+  opnamePekerjaan           OpnamePekerjaan[]
+  asBuildDrawing            AsBuildDrawing[]
+  komisioning               Komisioning[]
+  serahTerima               SerahTerima[]
+  masaPemeliharaanChecklist MasaPemeliharaanChecklist[]
+  baSerahTerima             BASerahTerima[]
+
+  @@map("eprom_projects")
+}
+
+// -------- Engineer --------
+
+model ShopDrawing {
+  id            Int                 @id @default(autoincrement())
+  projectId     Int                 @map("project_id")
+  namaPekerjaan String              @map("nama_pekerjaan")
+  fileUrl       String?             @map("file_url")
+  status        StatusApprovalEprom @default(PENDING)
+  komentar      String?             @db.Text
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_shop_drawings")
+}
+
+model MaterialApproval {
+  id           Int                 @id @default(autoincrement())
+  projectId    Int                 @map("project_id")
+  namaMaterial String              @map("nama_material")
+  fileUrl      String?             @map("file_url")
+  status       StatusApprovalEprom @default(PENDING)
+  komentar     String?             @db.Text
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_material_approvals")
+}
+
+model MetodePekerjaan {
+  id         Int                 @id @default(autoincrement())
+  projectId  Int                 @map("project_id")
+  namaMetode String              @map("nama_metode")
+  fileUrl    String?             @map("file_url")
+  status     StatusApprovalEprom @default(PENDING)
+  komentar   String?             @db.Text
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_metode_pekerjaan")
+}
+
+model SertifikasiPekerjaan {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_sertifikasi_pekerjaan")
+}
+
+model PeralatanList {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_peralatan_list")
+}
+
+// -------- Konstruksi --------
+
+model ChecklistKonstruksi {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  namaTahap String              @map("nama_tahap")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_checklist_konstruksi")
+}
+
+/**
+ * Upload murni, jam buka 08:00-12:00 WITA, tanpa approve/reject (bagian 3.3 & 5.2.2).
+ */
+model InspeksiAreaPekerjaan {
+  id         Int      @id @default(autoincrement())
+  projectId  Int      @map("project_id")
+  fileUrl    String?  @map("file_url")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("eprom_inspeksi_area_pekerjaan")
+}
+
+/**
+ * Upload murni, jam buka 08:00-10:00 WITA, tanpa approve/reject (bagian 3.3 & 5.2.6).
+ */
+model InspeksiPeralatan {
+  id         Int      @id @default(autoincrement())
+  projectId  Int      @map("project_id")
+  fileUrl    String?  @map("file_url")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("eprom_inspeksi_peralatan")
+}
+
+model ProgressHarian {
+  id         Int      @id @default(autoincrement())
+  projectId  Int      @map("project_id")
+  tanggal    DateTime @db.Date
+  fileUrl    String?  @map("file_url")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, tanggal])
+  @@map("eprom_progress_harian")
+}
+
+/**
+ * namaPekerjaan diketik manual oleh vendor tiap input (tanpa daftar master WBS).
+ * Deviasi (actual - planned) dihitung on-the-fly, tidak disimpan sebagai kolom fisik.
+ */
+model ProgressMingguan {
+  id            Int      @id @default(autoincrement())
+  projectId     Int      @map("project_id")
+  mingguKe      Int      @map("minggu_ke")
+  namaPekerjaan String   @map("nama_pekerjaan")
+  planned       Decimal  @map("planned_persen") @db.Decimal(5, 2)
+  actual        Decimal  @map("actual_persen") @db.Decimal(5, 2)
+  fileUrl       String?  @map("file_url")
+  uploadedAt    DateTime @default(now()) @map("uploaded_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("eprom_progress_mingguan")
+}
+
+model ProgressBulanan {
+  id         Int      @id @default(autoincrement())
+  projectId  Int      @map("project_id")
+  bulan      String
+  fileUrl    String?  @map("file_url")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("eprom_progress_bulanan")
+}
+
+/**
+ * Tindakan Tidak Aman - persen performa dihitung on-the-fly, lihat bagian 3.4.
+ */
+model TTA {
+  id            Int      @id @default(autoincrement())
+  projectId     Int      @map("project_id")
+  bulan         String
+  fileUrl       String?  @map("file_url")
+  tanggalUpload DateTime @default(now()) @map("tanggal_upload")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, bulan])
+  @@map("eprom_tta")
+}
+
+/**
+ * Kondisi Tidak Aman - persen performa dihitung on-the-fly, lihat bagian 3.4.
+ */
+model KTA {
+  id            Int      @id @default(autoincrement())
+  projectId     Int      @map("project_id")
+  bulan         String
+  fileUrl       String?  @map("file_url")
+  tanggalUpload DateTime @default(now()) @map("tanggal_upload")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, bulan])
+  @@map("eprom_kta")
+}
+
+model IBPR {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_ibpr")
+}
+
+model JSA {
+  id            Int                 @id @default(autoincrement())
+  projectId     Int                 @map("project_id")
+  namaPekerjaan String              @map("nama_pekerjaan")
+  fileUrl       String?             @map("file_url")
+  status        StatusApprovalEprom @default(PENDING)
+  komentar      String?             @db.Text
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sosialisasi SosialisasiJSA?
+
+  @@index([projectId, status])
+  @@map("eprom_jsa")
+}
+
+/**
+ * Relasi 1:1 ketat dengan JSA, lihat bagian 3.5.
+ */
+model SosialisasiJSA {
+  id        Int       @id @default(autoincrement())
+  jsaId     Int       @unique @map("jsa_id")
+  fileUrl   String?   @map("file_url")
+  tanggal   DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  jsa JSA @relation(fields: [jsaId], references: [id], onDelete: Cascade)
+
+  @@map("eprom_sosialisasi_jsa")
+}
+
+// -------- Meeting Progress --------
+
+model Meeting {
+  id             Int             @id @default(autoincrement())
+  projectId      Int             @map("project_id")
+  tipeLink       TipeLinkMeeting @map("tipe_link")
+  refProgressId  Int?            @map("ref_progress_id")
+  tanggalMeeting DateTime?       @map("tanggal_meeting") @db.Date
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dokumentasi DokumentasiMeeting[]
+  mom         MOM[]
+
+  @@index([projectId])
+  @@map("eprom_meetings")
+}
+
+model DokumentasiMeeting {
+  id        Int      @id @default(autoincrement())
+  meetingId Int      @map("meeting_id")
+  fileFoto  String?  @map("file_foto")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("eprom_dokumentasi_meeting")
+}
+
+/**
+ * hariTerlambat dibekukan saat statusClose = true, lihat bagian 5.3.3.
+ */
+model MOM {
+  id            Int       @id @default(autoincrement())
+  meetingId     Int       @map("meeting_id")
+  pica          String    @db.Text
+  dueDate       DateTime  @map("due_date") @db.Date
+  pic           String
+  statusClose   Boolean   @default(false) @map("status_close")
+  tglClose      DateTime? @map("tgl_close") @db.Date
+  fileFotoClose String?   @map("file_foto_close")
+  hariTerlambat Int?      @map("hari_terlambat")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("eprom_mom")
+}
+
+// -------- Dokumen --------
+
+model DokumenSurat {
+  id        Int              @id @default(autoincrement())
+  projectId Int              @map("project_id")
+  tipe      TipeDokumenSurat
+  fileUrl   String?          @map("file_url")
+  tanggal   DateTime?        @db.Date
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, tipe])
+  @@map("eprom_dokumen_surat")
+}
+
+// -------- Financial & Monitoring --------
+
+model OpnamePekerjaan {
+  id             Int                 @id @default(autoincrement())
+  projectId      Int                 @map("project_id")
+  progressPersen Decimal             @map("progress_persen") @db.Decimal(5, 2)
+  fileUrl        String?             @map("file_url")
+  status         StatusApprovalEprom @default(PENDING)
+  komentar       String?             @db.Text
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_opname_pekerjaan")
+}
+
+// -------- Project Closing --------
+
+model AsBuildDrawing {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_as_build_drawing")
+}
+
+model Komisioning {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_komisioning")
+}
+
+model SerahTerima {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_serah_terima")
+}
+
+model MasaPemeliharaanChecklist {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_masa_pemeliharaan_checklist")
+}
+
+model BASerahTerima {
+  id        Int                 @id @default(autoincrement())
+  projectId Int                 @map("project_id")
+  fileUrl   String?             @map("file_url")
+  status    StatusApprovalEprom @default(PENDING)
+  komentar  String?             @db.Text
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_ba_serah_terima")
+}
+
+// ==================================================
+// SELESAI: E-PROM TENDER, KONTRAK & PROJECT AREA
+// ==================================================

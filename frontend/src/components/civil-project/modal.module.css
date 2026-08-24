@@ -1,0 +1,59 @@
+.overlay {
+  position: fixed;
+  z-index: 300;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 29, 52, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(80vh, 720px);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(10, 29, 52, 0.28);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e4edf7;
+}
+
+.header strong {
+  color: #10244a;
+  font-size: 14px;
+}
+
+.closeButton {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #7185a0;
+  background: #f7fafd;
+  border: 1px solid #e4edf7;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: #b3261e;
+  background: #ffeded;
+  border-color: #ffd7d7;
+}
+
+.body {
+  min-height: 0;
+  padding: 18px;
+  overflow-y: auto;
+}

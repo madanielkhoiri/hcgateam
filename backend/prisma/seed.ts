@@ -2,7 +2,16 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { ALL_ACCESS_KEYS, DEFAULT_GUEST_ACCESS_KEYS } from '../src/access/access.constants';
+import {
+  ALL_ACCESS_KEYS,
+  DEFAULT_GUEST_ACCESS_KEYS,
+  sanitizeAccessKeys,
+} from '../src/access/access.constants';
+
+const CIVIL_PROJECT_ACCESS_KEYS = sanitizeAccessKeys([
+  'CIVIL_PROJECT_TENDER',
+  'CIVIL_PROJECT_KONTRAK',
+]);
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -123,7 +132,60 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log('Akun superadmin, admin, fa, karyawan, dan tamu berhasil dibuat dengan password universal');
+  await prisma.user.upsert({
+    where: {
+      username: 'owner',
+    },
+    update: {
+      role: UserRole.OWNER,
+      isActive: true,
+      accessKeys: CIVIL_PROJECT_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
+    },
+    create: {
+      name: 'Owner e-ProM',
+      username: 'owner',
+      passwordHash: universalPasswordHash,
+      role: UserRole.OWNER,
+      isActive: true,
+      accessKeys: CIVIL_PROJECT_ACCESS_KEYS,
+    },
+  });
+
+  const vendorDemo = await prisma.vendor.upsert({
+    where: { id: 1 },
+    update: {
+      namaVendor: 'PT Vendor Contoh e-ProM',
+    },
+    create: {
+      namaVendor: 'PT Vendor Contoh e-ProM',
+      email: 'vendor-demo@eprom.test',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: {
+      username: 'vendor',
+    },
+    update: {
+      role: UserRole.VENDOR,
+      isActive: true,
+      accessKeys: CIVIL_PROJECT_ACCESS_KEYS,
+      passwordHash: universalPasswordHash,
+      vendorId: vendorDemo.id,
+    },
+    create: {
+      name: 'Vendor Demo',
+      username: 'vendor',
+      passwordHash: universalPasswordHash,
+      role: UserRole.VENDOR,
+      isActive: true,
+      accessKeys: CIVIL_PROJECT_ACCESS_KEYS,
+      vendorId: vendorDemo.id,
+    },
+  });
+
+  console.log('Akun superadmin, admin, fa, karyawan, tamu, owner, dan vendor berhasil dibuat dengan password universal');
 }
 
 main()
