@@ -1,0 +1,254 @@
+.shell {
+  min-height: 100vh;
+  background: #f4f7fb;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2eaf3;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar h1 {
+  margin: 0;
+  color: #12355f;
+  font-size: 18px;
+}
+
+.topbar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #385675;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.landingGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.landingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 20px;
+  border: 1px solid #d8e4f1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(34, 75, 116, 0.06);
+  text-decoration: none;
+  color: inherit;
+}
+
+.landingCard svg {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: 12px;
+  color: #fff;
+  background: #079654;
+}
+
+.landingCard strong {
+  color: #12355f;
+  font-size: 16px;
+}
+
+.landingCard span {
+  color: #71839d;
+  font-size: 12px;
+}
+
+.card {
+  padding: 18px;
+  margin-bottom: 14px;
+  border: 1px solid #d8e4f1;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(34, 75, 116, 0.05);
+}
+
+.card h3 {
+  margin: 0 0 4px;
+  color: #12355f;
+  font-size: 15px;
+}
+
+.card p {
+  margin: 0;
+  color: #71839d;
+  font-size: 13px;
+}
+
+.rowBetween {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pillGreen { color: #087848; background: #e6f9ef; }
+.pillRed { color: #b02031; background: #ffe7ea; }
+.pillGray { color: #536b86; background: #eef2f7; }
+.pillBlue { color: #1c5ea8; background: #e8f2ff; }
+
+.fileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  margin-right: 10px;
+  padding: 7px 12px;
+  border: 1px solid #b9e1cd;
+  border-radius: 10px;
+  color: #067b46;
+  background: #f1fff8;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #067b46;
+  border-radius: 11px;
+  color: #fff;
+  background: #079654;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #cad8e8;
+  border-radius: 11px;
+  color: #385675;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hint {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #71839d;
+  background: #f8fbff;
+  font-size: 12px;
+}
+
+.errorText {
+  padding: 12px 14px;
+  border: 1px solid #f1b6bd;
+  border-radius: 12px;
+  color: #a52131;
+  background: #fff0f2;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.emptyText {
+  padding: 24px;
+  text-align: center;
+  color: #8a9bb0;
+  font-size: 13px;
+}
+
+.starRow {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.starButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #d8e0ea;
+}
+
+.starButtonActive {
+  color: #e8a527;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 12px;
+  border: 1px solid #cbd9e8;
+  border-radius: 11px;
+  color: #193b62;
+  font: inherit;
+  resize: vertical;
+}
+
+.photoInput {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 2px dashed #9bcfb7;
+  border-radius: 14px;
+  color: #067b46;
+  background: #f3fff9;
+  text-align: center;
+  cursor: pointer;
+}
+
+.photoPreview {
+  width: 100%;
+  max-width: 260px;
+  border-radius: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 560px) {
+  .landingGrid {
+    grid-template-columns: 1fr;
+  }
+}

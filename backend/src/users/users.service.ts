@@ -40,6 +40,7 @@ const publicUserSelect = {
   isActive: true,
   accessKeys: true,
   vendorId: true,
+  driverId: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -77,10 +78,26 @@ export class UsersService {
     }
   }
 
+  /**
+   * Hanya Admin, Admin HC (Super Admin), dan Section Head yang default-nya
+   * akses penuh. Role lain default-nya KOSONG — HC/Section Head wajib
+   * menentukan sendiri akses tiap akun lewat panel "Atur akses", supaya
+   * tidak ada akun yang ke-grant akses penuh tanpa sengaja.
+   */
   private defaultAccessKeys(role: UserRole): string[] {
-    return role === UserRole.TAMU
-      ? [...DEFAULT_GUEST_ACCESS_KEYS]
-      : [...ALL_ACCESS_KEYS];
+    if (
+      role === UserRole.ADMIN ||
+      role === UserRole.SUPER_ADMIN ||
+      role === UserRole.SECTION_HEAD
+    ) {
+      return [...ALL_ACCESS_KEYS];
+    }
+
+    if (role === UserRole.TAMU) {
+      return [...DEFAULT_GUEST_ACCESS_KEYS];
+    }
+
+    return [];
   }
 
   private handlePrismaError(error: unknown): never {

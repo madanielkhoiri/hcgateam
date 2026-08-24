@@ -147,6 +147,22 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'card',
   },
   {
+    key: 'GA_TRANSPORT_TIKET',
+    title: 'Tiket',
+    description:
+      'Halaman ADMIN untuk kirim tiket cuti ke akun karyawan mana pun. Karyawan biasa TIDAK perlu akses ini — menu "Tiket Saya" (lihat tiket milik sendiri) otomatis tersedia untuk semua akun tanpa perlu dicentang.',
+    parentKey: 'GA_TRANSPORT_SECTION',
+    level: 'card',
+  },
+  {
+    key: 'GA_TRANSPORT_TRAVEL',
+    title: 'Travel',
+    description:
+      'Halaman ADMIN untuk kelola profil Driver dan jadwal Travel seluruh karyawan. Karyawan/Driver biasa TIDAK perlu akses ini — menu "Travel Saya" dan menu Driver otomatis tersedia untuk semua akun tanpa perlu dicentang.',
+    parentKey: 'GA_TRANSPORT_SECTION',
+    level: 'card',
+  },
+  {
     key: 'GA_GENERAL_SERVICE',
     title: 'GS (General Service)',
     description: 'Housekeeping dan Packmeal.',
@@ -163,7 +179,7 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
   {
     key: 'GA_GS_HOUSEKEEPING_INDOOR',
     title: 'Indoor',
-    description: 'Belum tersedia, pembatas untuk pengembangan berikutnya.',
+    description: 'Laporan kebersihan Housekeeping Indoor (pilih lokasi, upload foto).',
     parentKey: 'GA_GS_HOUSEKEEPING',
     level: 'card',
   },

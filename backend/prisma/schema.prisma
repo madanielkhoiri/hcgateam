@@ -30,6 +30,9 @@ enum UserRole {
   // modul e-ProM saja, bukan bypass admin portal secara umum.
   // Referensi: alur-workflow-tender-kontrak-project-area.md
   OWNER
+  // Peran khusus modul Transport ▸ Travel: checkin/checkout perjalanan
+  // shuttle karyawan, tidak terikat ke tabel Karyawan (profil dikelola GA).
+  DRIVER
 }
 
 model User {
@@ -47,8 +50,10 @@ model User {
   twoFactorSecret    String?  @map("two_factor_secret")
   isTwoFactorEnabled Boolean  @default(false) @map("is_two_factor_enabled")
   vendorId           Int?     @map("vendor_id")
+  driverId           Int?     @map("driver_id")
   ticketCode         String?  @map("kode_tiket")
   vendor             Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  driver             Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
   departemen         String?
   jabatan            String?
   createdAt          DateTime @default(now()) @map("created_at")
@@ -95,6 +100,10 @@ model User {
   epromFileUploads          FileUpload[]               @relation("EpromFileUploader")
   engineerDocumentApprovals EngineerDocumentApproval[] @relation("EngineerApprovalActor")
   epromSafetyMeetingFiles   EpromSafetyMeetingFile[]   @relation("EpromSafetyMeetingUploader")
+
+  transportTiketDikirim TransportTiket[]
+  travelJadwalDibuat    TravelJadwal[]
+  housekeepingIndoorDibuat HousekeepingIndoor[]
 
   @@map("users")
 }
@@ -985,6 +994,9 @@ model Karyawan {
   jadwalMcu    JadwalMcu[]
   followUp     FollowUp[]
   induksiUlang InduksiUlang[]
+
+  transportTiket  TransportTiket[]
+  travelPenumpang TravelPenumpang[]
 
   @@index([departemenId])
   @@index([statusKerja])
@@ -2281,6 +2293,159 @@ model BASerahTerima {
   @@index([projectId, status])
   @@map("eprom_ba_serah_terima")
 }
+
+// ==================================================
+// TRANSPORT ▸ TIKET & TRAVEL
+// Tiket cuti karyawan (dikirim admin GA, diunduh karyawan sendiri) dan
+// jadwal Travel/shuttle (checkin/checkout karyawan + driver, rating).
+// ==================================================
+
+model Driver {
+  id          Int      @id @default(autoincrement())
+  nama        String
+  noTelepon   String?  @map("no_telepon")
+  statusAktif Boolean  @default(true) @map("status_aktif")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users        User[]
+  travelJadwal TravelJadwal[]
+
+  @@map("transport_driver")
+}
+
+model TransportTiket {
+  id             Int      @id @default(autoincrement())
+  karyawanId     Int      @map("karyawan_id")
+  tanggalMulai   DateTime @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime @map("tanggal_selesai") @db.Date
+  keterangan     String?  @db.Text
+  createdBy      Int      @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  karyawan Karyawan             @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+  pengirim User                 @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  files    TransportTiketFile[]
+
+  @@index([karyawanId])
+  @@map("transport_tiket")
+}
+
+model TransportTiketFile {
+  id        Int      @id @default(autoincrement())
+  tiketId   Int      @map("tiket_id")
+  fileUrl   String   @map("file_url")
+  namaFile  String   @map("nama_file")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tiket TransportTiket @relation(fields: [tiketId], references: [id], onDelete: Cascade)
+
+  @@index([tiketId])
+  @@map("transport_tiket_file")
+}
+
+enum StatusTravel {
+  DIJADWALKAN
+  BERJALAN
+  SELESAI
+  DIBATALKAN
+}
+
+model TravelJadwal {
+  id                    Int          @id @default(autoincrement())
+  armada                String
+  driverId              Int          @map("driver_id")
+  asal                  String?
+  tujuan                String
+  waktuBerangkatRencana DateTime     @map("waktu_berangkat_rencana")
+  status                StatusTravel @default(DIJADWALKAN)
+  catatan               String?      @db.Text
+
+  driverCheckIn     DateTime? @map("driver_check_in")
+  driverCheckInFoto String?   @map("driver_check_in_foto")
+  driverCheckOut    DateTime? @map("driver_check_out")
+  durasiMenit       Int?      @map("durasi_menit")
+
+  createdBy Int      @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  driver    Driver            @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  pengirim  User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  penumpang TravelPenumpang[]
+
+  @@index([driverId])
+  @@index([waktuBerangkatRencana])
+  @@map("transport_travel_jadwal")
+}
+
+model TravelPenumpang {
+  id            Int       @id @default(autoincrement())
+  travelId      Int       @map("travel_id")
+  karyawanId    Int       @map("karyawan_id")
+  checkInWaktu  DateTime? @map("check_in_waktu")
+  checkOutWaktu DateTime? @map("check_out_waktu")
+  ratingBintang Int?      @map("rating_bintang")
+  ratingUlasan  String?   @map("rating_ulasan") @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  travel   TravelJadwal @relation(fields: [travelId], references: [id], onDelete: Cascade)
+  karyawan Karyawan     @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+
+  @@unique([travelId, karyawanId])
+  @@index([karyawanId])
+  @@map("transport_travel_penumpang")
+}
+
+// ==================================================
+// SELESAI: TRANSPORT ▸ TIKET & TRAVEL
+// ==================================================
+
+// ==================================================
+// GA ▸ HOUSEKEEPING INDOOR
+// Laporan kebersihan per lokasi (log biasa, tanpa approval) — foto bisa
+// banyak (puluhan) per laporan.
+// ==================================================
+
+enum LokasiHousekeepingIndoor {
+  OFFICE
+  PLANT
+  CSA_GIBSON
+  VIEW_POINT
+  CSA_MONTE_BARU
+  CSA_MONTE_BARU_SUPPORT
+}
+
+model HousekeepingIndoor {
+  id          Int                      @id @default(autoincrement())
+  lokasi      LokasiHousekeepingIndoor
+  namaPetugas String                   @map("nama_petugas")
+  createdBy   Int                      @map("created_by")
+  createdAt   DateTime                 @default(now()) @map("created_at")
+
+  pengirim User                     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  foto     HousekeepingIndoorFoto[]
+
+  @@index([lokasi])
+  @@index([createdAt])
+  @@map("ga_housekeeping_indoor")
+}
+
+model HousekeepingIndoorFoto {
+  id        Int      @id @default(autoincrement())
+  laporanId Int      @map("laporan_id")
+  fileUrl   String   @map("file_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  laporan HousekeepingIndoor @relation(fields: [laporanId], references: [id], onDelete: Cascade)
+
+  @@index([laporanId])
+  @@map("ga_housekeeping_indoor_foto")
+}
+
+// ==================================================
+// SELESAI: GA ▸ HOUSEKEEPING INDOOR
+// ==================================================
 
 // ==================================================
 // SELESAI: E-PROM TENDER, KONTRAK & PROJECT AREA
