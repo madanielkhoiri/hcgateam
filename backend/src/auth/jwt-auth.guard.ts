@@ -52,6 +52,7 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
     pattern: /\/api\/surat-penolakan-magang(?:\/|\?|$)/,
     accessKey: 'HC_SURAT_PENOLAKAN_MAGANG',
   },
+  { pattern: /\/api\/eprom(?:\/|\?|$)/, accessKey: 'CIVIL_PROJECT' },
 ];
 
 type GuardRequest = {

@@ -42,6 +42,7 @@ import { SuratTugasDinasModule } from './surat-tugas-dinas/surat-tugas-dinas.mod
 import { AnakMagangModule } from './anak-magang/anak-magang.module';
 import { SuratBalasanMagangModule } from './surat-balasan-magang/surat-balasan-magang.module';
 import { SuratPenolakanMagangModule } from './surat-penolakan-magang/surat-penolakan-magang.module';
+import { EpromModule } from './eprom/eprom.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { SuratPenolakanMagangModule } from './surat-penolakan-magang/surat-penol
     AnakMagangModule,
     SuratBalasanMagangModule,
     SuratPenolakanMagangModule,
+    EpromModule,
   ],
   controllers: [AppController],
   providers: [AppService],

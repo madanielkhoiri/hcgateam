@@ -1,0 +1,612 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============ STAT CARDS ============ */
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(20, 45, 80, 0.05);
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+}
+
+.statCard > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.statCard strong {
+  color: #10244a;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.statCard span {
+  color: #34506f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.statCard small {
+  color: #8a99ac;
+  font-size: 10px;
+}
+
+/* ============ MAIN GRID ============ */
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.areaCard,
+.notifCard {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(20, 45, 80, 0.05);
+  overflow: hidden;
+}
+
+.areaHeader,
+.areaHeaderNotif {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 18px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.areaHeaderOwner {
+  background: #ef7100;
+}
+
+.areaHeaderProject {
+  background: #7a4ce0;
+}
+
+.areaHeaderNotif {
+  background: #0868f6;
+}
+
+.areaList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 18px;
+  list-style: none;
+  flex: 1;
+}
+
+.areaList li a {
+  display: block;
+  padding: 10px 12px;
+  color: #34506f;
+  text-decoration: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.areaList li a:hover {
+  color: #ef7100;
+  background: #fff7ef;
+}
+
+.areaListItemLink {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+}
+
+.areaListDisabled {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 18px;
+  list-style: none;
+  flex: 1;
+}
+
+.areaListDisabled li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: #b7c1cf;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.areaListDisabled li span {
+  padding: 2px 8px;
+  color: #9aa5b5;
+  background: #f2f4f8;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.lihatSemua {
+  margin: 0 18px 16px;
+  padding: 9px 0;
+  color: #ef7100;
+  text-align: center;
+  text-decoration: none;
+  background: #fff2df;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.notifList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 8px 16px;
+  list-style: none;
+}
+
+.notifList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 10px;
+}
+
+.notifList li:hover {
+  background: #f6f9fd;
+}
+
+.notifDot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  flex-shrink: 0;
+  background: #0868f6;
+  border-radius: 999px;
+}
+
+.notifList p {
+  margin: 0;
+  color: #26405f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.notifList small {
+  color: #93a2b8;
+  font-size: 10px;
+}
+
+.errorText {
+  margin: 0 18px 12px;
+  color: #d53535;
+  font-size: 12px;
+}
+
+.emptyText {
+  margin: 0 18px 16px;
+  color: #93a2b8;
+  font-size: 12px;
+}
+
+/* ============ CHART & DEVIASI ============ */
+
+.chartCard {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(20, 45, 80, 0.05);
+  overflow: hidden;
+}
+
+.chartCard .areaHeader {
+  background: #0868f6;
+}
+
+.chartBody {
+  padding: 16px 18px 18px;
+}
+
+.deviasiFilter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px 0;
+}
+
+.deviasiFilter label {
+  color: #34506f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.deviasiFilter select {
+  padding: 8px 10px;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 12px;
+  min-width: 220px;
+}
+
+.deviasiTableWrap {
+  padding: 14px 18px 18px;
+}
+
+/* ============ PROGRESS PER PROJECT ============ */
+
+.areaHeaderProgress {
+  background: #07984c;
+}
+
+.progressList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 16px 18px;
+  list-style: none;
+}
+
+.progressRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressRowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.progressRowTop a {
+  color: #10244a;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.progressRowTop a:hover {
+  color: #ef7100;
+}
+
+.progressRowTop strong {
+  color: #07984c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 8px;
+  background: #e4edf7;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: #07984c;
+  border-radius: 999px;
+}
+
+.progressIconBox {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: #34506f;
+  background: #eef2f7;
+  border-radius: 9px;
+}
+
+/* ============ TOP GRID (chart + list + notif) ============ */
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 980px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chartFilter {
+  padding: 6px 10px;
+  color: #10244a;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ============ QUICK ACTIONS ============ */
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+}
+
+.quickActionBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  color: #26405f;
+  text-decoration: none;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(20, 45, 80, 0.04);
+}
+
+.quickActionBtn:hover {
+  border-color: currentColor;
+}
+
+.quickActionIcon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+/* ============ PROJECT AREA ICON GRID ============ */
+
+.projectIconGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+@media (max-width: 560px) {
+  .projectIconGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.projectIconBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  color: #26405f;
+  text-decoration: none;
+  text-align: center;
+  border-radius: 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.projectIconBtn .quickActionIcon {
+  width: 42px;
+  height: 42px;
+}
+
+/* ============ BOTTOM GRID (Project Area + Progress Mingguan) ============ */
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1.1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1180px) {
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plainHeader {
+  padding: 16px 16px 4px;
+}
+
+.headerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.headerBadgeOwner {
+  background: #ef7100;
+}
+
+.headerBadgeProject {
+  background: #7a4ce0;
+}
+
+.ownerAreaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px 12px;
+}
+
+.ownerAreaColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  gap: 6px;
+}
+
+.ownerAreaIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.ownerAreaColumn strong {
+  color: #10244a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.ownerAreaColumn ul {
+  align-self: stretch;
+  margin: 2px 0 8px;
+  padding-left: 14px;
+  list-style: disc;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.ownerAreaColumn ul li {
+  color: #7185a0;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.ownerAreaButton {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+  padding: 6px 0;
+  color: #ffffff;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.miniCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.miniCardHeader strong {
+  color: #10244a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.miniCardHeader select {
+  padding: 6px 9px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.miniTableWrap {
+  overflow-x: auto;
+}
+
+.miniTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.miniTable th {
+  padding: 8px 10px;
+  color: #93a2b8;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #eef2f7;
+  white-space: nowrap;
+}
+
+.miniTable td {
+  padding: 9px 10px;
+  color: #34506f;
+  border-bottom: 1px solid #f5f7fa;
+  white-space: nowrap;
+}
+
+.miniTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}

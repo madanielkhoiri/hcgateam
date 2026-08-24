@@ -1,0 +1,401 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.headerRow h1 {
+  margin: 0 0 4px;
+  color: #10244a;
+  font-size: 20px;
+}
+
+.headerRow p {
+  margin: 0;
+  color: #7185a0;
+  font-size: 12px;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  color: #ffffff;
+  background: #ef7100;
+  border: 0;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  color: #34506f;
+  background: #ffffff;
+  border: 1px solid #d8e4f2;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  color: #b3261e;
+  background: #ffffff;
+  border: 1px solid #ffd7d7;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.iconButton,
+.iconButtonDanger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.iconButton {
+  color: #34506f;
+}
+
+.iconButton:hover {
+  color: #ef7100;
+  border-color: #ef7100;
+}
+
+.iconButtonDanger {
+  color: #b3261e;
+  border-color: #ffd7d7;
+}
+
+.iconButtonDanger:hover {
+  color: #ffffff;
+  background: #d53535;
+  border-color: #d53535;
+}
+
+.iconButton:disabled,
+.iconButtonDanger:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.formCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+
+.formCard label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #34506f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.formCard input,
+.formCard select,
+.formCard textarea {
+  min-width: 200px;
+  padding: 9px 11px;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.errorText {
+  margin: 0;
+  padding: 10px 14px;
+  color: #b3261e;
+  background: #ffeded;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.emptyText {
+  color: #93a2b8;
+  font-size: 12px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table th {
+  padding: 12px 16px;
+  color: #8392a8;
+  text-align: left;
+  background: #f7fafd;
+  border-bottom: 1px solid #e4edf7;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 12px 16px;
+  color: #34506f;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.rowLink {
+  display: block;
+  color: #10244a;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.rowLink:hover {
+  color: #ef7100;
+}
+
+.table td small {
+  display: block;
+  margin-top: 3px;
+  color: #93a2b8;
+  font-size: 10px;
+}
+
+.stackedText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.stackedText a {
+  color: #ef7100;
+  font-weight: 700;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.stackedText a:hover {
+  text-decoration: underline;
+}
+
+.statusPill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.status_PENDING {
+  color: #d97706;
+  background: #fff2df;
+}
+
+.status_APPROVED {
+  color: #07984c;
+  background: #e4f7ec;
+}
+
+.status_REJECTED {
+  color: #d53535;
+  background: #ffeded;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  color: #ffffff;
+  background: #ef2b2b;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ============ DETAIL PAGE ============ */
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #7185a0;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detailHeader h1 {
+  margin: 0 0 6px;
+  color: #10244a;
+  font-size: 20px;
+}
+
+.detailHeader p {
+  margin: 0;
+  color: #7185a0;
+  font-size: 12px;
+}
+
+.tabHint {
+  margin: 0;
+  color: #ef7100;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.tabHint span {
+  color: #93a2b8;
+  font-weight: 550;
+}
+
+.panel {
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  color: #10244a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.itemRow {
+  padding: 12px 14px;
+  background: #f7fafd;
+  border-radius: 12px;
+}
+
+.itemRowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.itemRowTop strong {
+  color: #10244a;
+  font-size: 13px;
+}
+
+.itemRowMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  color: #93a2b8;
+  font-size: 11px;
+}
+
+.itemRowMeta a {
+  color: #ef7100;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.itemRowMeta a:hover {
+  text-decoration: underline;
+}
+
+.komentarBox {
+  margin-top: 8px;
+  padding: 8px 11px;
+  color: #7185a0;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 9px;
+  font-size: 11.5px;
+}
+
+.inlineForm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inlineForm input,
+.inlineForm textarea {
+  padding: 7px 10px;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
