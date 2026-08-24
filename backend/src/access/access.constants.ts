@@ -244,9 +244,69 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
   {
     key: 'CIVIL_PROJECT',
     title: 'PROJECT',
-    description: 'Belum tersedia, pembatas untuk pengembangan berikutnya.',
+    description:
+      'e-ProM: Tender, Kontrak, dan Project Area untuk proyek Civil Infras.',
     parentKey: 'CIVIL_INFRAS',
     level: 'section',
+  },
+  {
+    key: 'CIVIL_PROJECT_TENDER',
+    title: 'Tender',
+    description:
+      'Upload Dokumen Tender, Undangan Tender, dan Klasifikasi & Evaluasi Tender (SPH).',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_KONTRAK',
+    title: 'Kontrak',
+    description: 'Pembuatan Kontrak dan Legalitas Vendor.',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_ENGINEER',
+    title: 'Engineer',
+    description:
+      'Shop Drawing, Material Approval, Metode Pekerjaan, Sertifikasi Pekerjaan, dan Daftar Peralatan.',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_KONSTRUKSI',
+    title: 'Konstruksi',
+    description:
+      'Checklist Tahapan Pekerjaan, Inspeksi Area/Peralatan, Progress Harian/Mingguan/Bulanan, TTA, KTA, IBPR, JSA, dan Sosialisasi JSA.',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_MEETING',
+    title: 'Meeting Progress',
+    description: 'Meeting, Dokumentasi Meeting, dan MOM (Minutes of Meeting).',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_DOKUMEN',
+    title: 'Dokumen',
+    description: 'Surat Teguran, Surat Peringatan, Coaching & Counseling, dan Memo.',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_FINANCIAL',
+    title: 'Financial & Monitoring',
+    description: 'Opname Pekerjaan.',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
+  },
+  {
+    key: 'CIVIL_PROJECT_CLOSING',
+    title: 'Project Closing',
+    description: 'As Build Drawing, Komisioning, Serah Terima, dan Masa Pemeliharaan.',
+    parentKey: 'CIVIL_PROJECT',
+    level: 'card',
   },
   {
     key: 'CIVIL_WO_INFRAS',

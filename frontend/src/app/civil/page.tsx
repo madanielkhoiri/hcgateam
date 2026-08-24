@@ -87,8 +87,9 @@ const civilTree: MenuTreeNode[] = [
       {
         key: 'CIVIL_PROJECT',
         title: 'PROJECT',
-        description: 'Belum tersedia.',
-        status: 'Belum tersedia',
+        description: 'e-ProM: Tender, Kontrak, dan Project Area.',
+        status: 'Tersedia',
+        href: '/civil/project',
         icon: FolderKanban,
         accessKey: ACCESS_KEYS.CIVIL_PROJECT,
         accent: '#7a4ce0',

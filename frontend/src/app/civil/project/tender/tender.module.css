@@ -1,0 +1,610 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.headerRow h1 {
+  margin: 0 0 4px;
+  color: #10244a;
+  font-size: 20px;
+}
+
+.headerRow p {
+  margin: 0;
+  color: #7185a0;
+  font-size: 12px;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  color: #ffffff;
+  background: #ef7100;
+  border: 0;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  color: #34506f;
+  background: #ffffff;
+  border: 1px solid #d8e4f2;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.iconButton,
+.iconButtonDanger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.iconButton {
+  color: #34506f;
+}
+
+.iconButton:hover {
+  color: #ef7100;
+  border-color: #ef7100;
+}
+
+.iconButtonDanger {
+  color: #b3261e;
+  border-color: #ffd7d7;
+}
+
+.iconButtonDanger:hover {
+  color: #ffffff;
+  background: #d53535;
+  border-color: #d53535;
+}
+
+.iconButton:disabled,
+.iconButtonDanger:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.iconButton:disabled:hover {
+  color: #34506f;
+  background: #ffffff;
+  border-color: #d8e4f2;
+}
+
+.iconButtonDanger:disabled:hover {
+  color: #b3261e;
+  background: #ffffff;
+  border-color: #ffd7d7;
+}
+
+.formCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+
+.formCard label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #34506f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.formCard input,
+.formCard select {
+  min-width: 200px;
+  padding: 9px 11px;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.errorText {
+  margin: 0;
+  padding: 10px 14px;
+  color: #b3261e;
+  background: #ffeded;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.emptyText {
+  color: #93a2b8;
+  font-size: 12px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table th {
+  padding: 12px 16px;
+  color: #8392a8;
+  text-align: left;
+  background: #f7fafd;
+  border-bottom: 1px solid #e4edf7;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 12px 16px;
+  color: #34506f;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.evaluasiSelect {
+  min-width: 190px;
+  padding: 8px 10px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1.5px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.evaluasiSelect:hover {
+  border-color: #ef7100;
+}
+
+.evaluasiSelect:focus {
+  outline: none;
+  border-color: #ef7100;
+  box-shadow: 0 0 0 3px rgba(239, 113, 0, 0.12);
+}
+
+.evaluasiSelectKode1 {
+  color: #07984c;
+  background: #e4f7ec;
+  border-color: #b9e9cd;
+}
+
+.evaluasiSelectKode2 {
+  color: #0868f6;
+  background: #eaf2ff;
+  border-color: #bdd6fb;
+}
+
+.evaluasiSelectKode3 {
+  color: #b26a00;
+  background: #fff2df;
+  border-color: #f3d59c;
+}
+
+.evaluasiSelectKode4 {
+  color: #b3261e;
+  background: #ffeded;
+  border-color: #f3bcb8;
+}
+
+.rowLink {
+  display: block;
+  color: #10244a;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.rowLink:hover {
+  color: #ef7100;
+}
+
+.table td small {
+  display: block;
+  margin-top: 3px;
+  color: #93a2b8;
+  font-size: 10px;
+}
+
+.statusPill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.status_PERSIAPAN {
+  color: #8392a8;
+  background: #f0f3f7;
+}
+
+.status_UNDANGAN_TERKIRIM {
+  color: #0868f6;
+  background: #eaf2ff;
+}
+
+.status_EVALUASI_SPH {
+  color: #d97706;
+  background: #fff2df;
+}
+
+.status_SELESAI {
+  color: #07984c;
+  background: #e4f7ec;
+}
+
+.statusBaik {
+  color: #07984c;
+  background: #e4f7ec;
+}
+
+.statusCukup {
+  color: #b26a00;
+  background: #fff2df;
+}
+
+.statusKurang {
+  color: #b3261e;
+  background: #ffeded;
+}
+
+.statusKosong {
+  color: #8392a8;
+  background: #f0f3f7;
+}
+
+.detailPenilaianGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailPenilaianRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #34506f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.detailPenilaianRow .evaluasiSelect {
+  min-width: 0;
+  width: 100%;
+}
+
+/* ============ CETAK / EXPORT PDF ============ */
+
+.cetakArea {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .cetakArea,
+  .cetakArea * {
+    visibility: visible;
+  }
+
+  .cetakArea {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+  }
+}
+
+.cetakJudul {
+  margin: 0 0 10px;
+  padding: 10px;
+  color: #000000;
+  text-align: center;
+  background: #c6e8bd;
+  border: 1px solid #000000;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cetakTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.cetakTable th,
+.cetakTable td {
+  padding: 5px 6px;
+  color: #000000;
+  border: 1px solid #000000;
+  text-align: center;
+}
+
+.cetakTable th {
+  background: #d9d9d9;
+  font-weight: 700;
+}
+
+.cetakNamaVendor {
+  text-align: left !important;
+  font-weight: 600;
+}
+
+.cetakNilaiAvg {
+  background: #f5a94e;
+  font-weight: 800;
+}
+
+/* ============ DETAIL PAGE ============ */
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #7185a0;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detailHeader h1 {
+  margin: 0 0 6px;
+  color: #10244a;
+  font-size: 20px;
+}
+
+.tabHint {
+  margin: 0;
+  color: #ef7100;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.tabHint span {
+  color: #93a2b8;
+  font-weight: 550;
+}
+
+.panel {
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  color: #10244a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.vendorPickerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.vendorPickerCard {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  background: #f7fafd;
+  border: 1.5px solid #e4edf7;
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.vendorPickerCard:hover {
+  border-color: #f5c08a;
+  background: #fffaf3;
+}
+
+.vendorPickerCard input {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  accent-color: #ef7100;
+  cursor: pointer;
+}
+
+.vendorPickerCard div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vendorPickerCard strong {
+  overflow: hidden;
+  color: #15335c;
+  font-size: 13.5px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vendorPickerCard small {
+  overflow: hidden;
+  color: #7185a0;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vendorPickerCardActive {
+  border-color: #ef7100;
+  background: #fff2df;
+  box-shadow: 0 0 0 3px rgba(239, 113, 0, 0.12);
+}
+
+.vendorBlock {
+  padding: 14px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.vendorBlock:last-child {
+  border-bottom: 0;
+}
+
+.finalisasiBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  background: #fff7ef;
+  border: 1.5px solid #f5c08a;
+  border-radius: 14px;
+}
+
+.finalisasiBar .emptyText {
+  margin: 0;
+}
+
+.vendorBlockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.vendorBlockHeader strong {
+  color: #10244a;
+  font-size: 13px;
+}
+
+.winnerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  color: #07984c;
+  background: #e4f7ec;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.roundList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roundRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #f7fafd;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.roundRow strong {
+  color: #34506f;
+}
+
+.roundFinalBadge {
+  padding: 3px 8px;
+  color: #07984c;
+  background: #e4f7ec;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.inlineForm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inlineForm input {
+  padding: 7px 10px;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #34506f;
+}

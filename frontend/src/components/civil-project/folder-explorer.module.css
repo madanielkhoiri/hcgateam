@@ -1,0 +1,188 @@
+.explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.crumb {
+  padding: 4px 8px;
+  color: #ef7100;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.crumb:hover {
+  background: #fff2df;
+}
+
+.crumbSep {
+  color: #b7c1cf;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toolButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.folderForm {
+  display: flex;
+  gap: 8px;
+}
+
+.folderForm input {
+  padding: 8px 11px;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.errorText {
+  margin: 0;
+  padding: 8px 12px;
+  color: #b3261e;
+  background: #ffeded;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.emptyText {
+  color: #93a2b8;
+  font-size: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.itemCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 8px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #e4edf7;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.itemCard:hover {
+  border-color: #ef7100;
+  background: #fff7ef;
+}
+
+.itemCard span {
+  width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemCard small {
+  color: #9aa5b5;
+  font-size: 9px;
+}
+
+.fileCard {
+  padding: 0;
+  cursor: default;
+}
+
+.fileCheckLabel {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+}
+
+.fileButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 16px 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.actionRow {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+
+.downloadButton,
+.deleteButton {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.downloadButton {
+  color: #34506f;
+  border: 1px solid #d8e4f2;
+}
+
+.downloadButton:hover {
+  color: #ffffff;
+  background: #ef7100;
+  border-color: #ef7100;
+}
+
+.deleteButton {
+  color: #b3261e;
+  border: 1px solid #ffd7d7;
+}
+
+.deleteButton:hover {
+  color: #ffffff;
+  background: #d53535;
+  border-color: #d53535;
+}
