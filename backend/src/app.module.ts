@@ -43,6 +43,9 @@ import { AnakMagangModule } from './anak-magang/anak-magang.module';
 import { SuratBalasanMagangModule } from './surat-balasan-magang/surat-balasan-magang.module';
 import { SuratPenolakanMagangModule } from './surat-penolakan-magang/surat-penolakan-magang.module';
 import { EpromModule } from './eprom/eprom.module';
+import { TiketModule } from './tiket/tiket.module';
+import { TravelModule } from './travel/travel.module';
+import { HousekeepingIndoorModule } from './housekeeping-indoor/housekeeping-indoor.module';
 
 @Module({
   imports: [
@@ -78,6 +81,9 @@ import { EpromModule } from './eprom/eprom.module';
     SuratBalasanMagangModule,
     SuratPenolakanMagangModule,
     EpromModule,
+    TiketModule,
+    TravelModule,
+    HousekeepingIndoorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

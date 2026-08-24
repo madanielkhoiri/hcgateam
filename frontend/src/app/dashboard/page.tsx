@@ -24,6 +24,7 @@ import {
   Phone,
   Save,
   ShieldCheck,
+  Ticket,
   UserCog,
   UsersRound,
   X,
@@ -193,6 +194,11 @@ export default function DashboardPage() {
 
     try {
       const parsedUser = JSON.parse(savedUser) as LoginUser;
+
+      if (parsedUser.role === 'DRIVER') {
+        router.replace('/transport-saya/driver');
+        return;
+      }
 
       setUser(parsedUser);
 
@@ -465,6 +471,16 @@ export default function DashboardPage() {
         </div>
 
         <div className={styles.headerRight}>
+          <button
+            type="button"
+            className={styles.notificationButton}
+            aria-label="Tiket & Travel Saya"
+            title="Tiket & Travel Saya"
+            onClick={() => router.push('/transport-saya')}
+          >
+            <Ticket size={24} />
+          </button>
+
           <button
             type="button"
             className={styles.notificationButton}
