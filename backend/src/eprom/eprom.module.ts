@@ -21,6 +21,7 @@ import { EpromProjectController } from './project/eprom-project.controller';
 import { EpromProjectService } from './project/eprom-project.service';
 import { EpromEngineerController } from './engineer/eprom-engineer.controller';
 import { EpromEngineerService } from './engineer/eprom-engineer.service';
+import { EpromEngineerSigningService } from './engineer/eprom-engineer-signing.service';
 import { EpromKonstruksiController } from './konstruksi/eprom-konstruksi.controller';
 import { EpromKonstruksiService } from './konstruksi/eprom-konstruksi.service';
 import { EpromProgressController } from './progress/eprom-progress.controller';
@@ -37,6 +38,10 @@ import { EpromClosingController } from './closing/eprom-closing.controller';
 import { EpromClosingService } from './closing/eprom-closing.service';
 import { EpromEvaluasiVendorController } from './tender/eprom-evaluasi-vendor.controller';
 import { EpromEvaluasiVendorService } from './tender/eprom-evaluasi-vendor.service';
+import { EpromSafetyMeetingController } from './safety-meeting/eprom-safety-meeting.controller';
+import { EpromSafetyMeetingService } from './safety-meeting/eprom-safety-meeting.service';
+import { EpromPerformanceVendorController } from './performance-vendor/eprom-performance-vendor.controller';
+import { EpromPerformanceVendorService } from './performance-vendor/eprom-performance-vendor.service';
 
 @Module({
   controllers: [
@@ -55,6 +60,8 @@ import { EpromEvaluasiVendorService } from './tender/eprom-evaluasi-vendor.servi
     EpromDokumenController,
     EpromFinancialController,
     EpromClosingController,
+    EpromSafetyMeetingController,
+    EpromPerformanceVendorController,
   ],
   providers: [
     EpromAksesService,
@@ -67,6 +74,7 @@ import { EpromEvaluasiVendorService } from './tender/eprom-evaluasi-vendor.servi
     EpromDashboardService,
     EpromProjectService,
     EpromEngineerService,
+    EpromEngineerSigningService,
     EpromKonstruksiService,
     EpromProgressService,
     EpromSosialisasiJsaService,
@@ -74,6 +82,8 @@ import { EpromEvaluasiVendorService } from './tender/eprom-evaluasi-vendor.servi
     EpromDokumenService,
     EpromFinancialService,
     EpromClosingService,
+    EpromSafetyMeetingService,
+    EpromPerformanceVendorService,
   ],
 })
 export class EpromModule {}

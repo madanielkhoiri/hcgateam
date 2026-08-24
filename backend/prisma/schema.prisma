@@ -92,7 +92,9 @@ model User {
   suratBalasanMagangDibuat   SuratBalasanMagang[]   @relation("PembuatSuratBalasanMagang")
   suratPenolakanMagangDibuat SuratPenolakanMagang[] @relation("PembuatSuratPenolakanMagang")
 
-  epromFileUploads FileUpload[] @relation("EpromFileUploader")
+  epromFileUploads          FileUpload[]               @relation("EpromFileUploader")
+  engineerDocumentApprovals EngineerDocumentApproval[] @relation("EngineerApprovalActor")
+  epromSafetyMeetingFiles   EpromSafetyMeetingFile[]   @relation("EpromSafetyMeetingUploader")
 
   @@map("users")
 }
@@ -1527,6 +1529,15 @@ enum TipeFileEprom {
   FOTO
 }
 
+enum EngineerDocumentType {
+  SHOP_DRAWING
+  MATERIAL_APPROVAL
+  METODE_PEKERJAAN
+  SERTIFIKASI_PEKERJAAN
+  DAFTAR_PERALATAN
+  KOMISIONING_ALAT_BERAT
+}
+
 /**
  * Status approve/reject Owner atas submission Vendor di Project Area (bagian 3.1 dokumen alur).
  */
@@ -1600,26 +1611,26 @@ model TenderProcess {
 /**
  * Evaluasi vendor — satu baris per (tender, vendor), gabungan 2 penilaian:
  * 1) Eksternal — 7 kategori tetap, tiap kategori diisi kode 1-4 yang
- *    dipetakan ke bobot % (lihat KODE_EVALUASI_VENDOR di
- *    eprom-evaluasi-vendor.service.ts). Nilai Avg dihitung on-the-fly.
+ * dipetakan ke bobot % (lihat KODE_EVALUASI_VENDOR di
+ * eprom-evaluasi-vendor.service.ts). Nilai Avg dihitung on-the-fly.
  * 2) Teknis — 5 kriteria berbobot tetap (Teknikal 25%, Schedule 20%, Harga
- *    Penawaran 20%, SHE 20%, Legalitas Perusahaan 15%), sebagian kriteria
- *    punya sub-item (input skor bebas/desimal). Nilai & Round dihitung
- *    on-the-fly, lihat BOBOT_KRITERIA_TEKNIS di service yang sama.
+ * Penawaran 20%, SHE 20%, Legalitas Perusahaan 15%), sebagian kriteria
+ * punya sub-item (input skor bebas/desimal). Nilai & Round dihitung
+ * on-the-fly, lihat BOBOT_KRITERIA_TEKNIS di service yang sama.
  * Keduanya jadi pertimbangan Owner (bersama SPH) untuk memilih pemenang
  * tender secara manual di tab "Klasifikasi & Evaluasi".
  */
 model EvaluasiVendor {
-  id               Int      @id @default(autoincrement())
-  tenderId         Int      @map("tender_id")
-  vendorId         Int      @map("vendor_id")
-  bumdesKode       Int?     @map("bumdes_kode")
-  bupatiDprKode    Int?     @map("bupati_dpr_kode")
-  lingkunganKode   Int?     @map("lingkungan_kode")
-  pekerjaLokalKode Int?     @map("pekerja_lokal_kode")
-  kepolisianKode   Int?     @map("kepolisian_kode")
-  dlhKode          Int?     @map("dlh_kode")
-  dpuprKode        Int?     @map("dpupr_kode")
+  id               Int  @id @default(autoincrement())
+  tenderId         Int  @map("tender_id")
+  vendorId         Int  @map("vendor_id")
+  bumdesKode       Int? @map("bumdes_kode")
+  bupatiDprKode    Int? @map("bupati_dpr_kode")
+  lingkunganKode   Int? @map("lingkungan_kode")
+  pekerjaLokalKode Int? @map("pekerja_lokal_kode")
+  kepolisianKode   Int? @map("kepolisian_kode")
+  dlhKode          Int? @map("dlh_kode")
+  dpuprKode        Int? @map("dpupr_kode")
 
   teknikalMetode      Decimal? @map("teknikal_metode") @db.Decimal(4, 2)
   teknikalAlatKerja   Decimal? @map("teknikal_alat_kerja") @db.Decimal(4, 2)
@@ -1759,6 +1770,7 @@ model Project {
   metodePekerjaan           MetodePekerjaan[]
   sertifikasiPekerjaan      SertifikasiPekerjaan[]
   peralatanList             PeralatanList[]
+  komisioningAlatBerat      KomisioningAlatBerat[]
   checklistKonstruksi       ChecklistKonstruksi[]
   inspeksiAreaPekerjaan     InspeksiAreaPekerjaan[]
   inspeksiPeralatan         InspeksiPeralatan[]
@@ -1777,6 +1789,8 @@ model Project {
   serahTerima               SerahTerima[]
   masaPemeliharaanChecklist MasaPemeliharaanChecklist[]
   baSerahTerima             BASerahTerima[]
+  engineerDocumentApprovals EngineerDocumentApproval[]
+  safetyMeetingFiles        EpromSafetyMeetingFile[]
 
   @@map("eprom_projects")
 }
@@ -1784,14 +1798,15 @@ model Project {
 // -------- Engineer --------
 
 model ShopDrawing {
-  id            Int                 @id @default(autoincrement())
-  projectId     Int                 @map("project_id")
-  namaPekerjaan String              @map("nama_pekerjaan")
-  fileUrl       String?             @map("file_url")
-  status        StatusApprovalEprom @default(PENDING)
-  komentar      String?             @db.Text
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  namaPekerjaan    String              @map("nama_pekerjaan")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -1800,14 +1815,15 @@ model ShopDrawing {
 }
 
 model MaterialApproval {
-  id           Int                 @id @default(autoincrement())
-  projectId    Int                 @map("project_id")
-  namaMaterial String              @map("nama_material")
-  fileUrl      String?             @map("file_url")
-  status       StatusApprovalEprom @default(PENDING)
-  komentar     String?             @db.Text
-  createdAt    DateTime            @default(now()) @map("created_at")
-  updatedAt    DateTime            @updatedAt @map("updated_at")
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  namaMaterial     String              @map("nama_material")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -1816,14 +1832,15 @@ model MaterialApproval {
 }
 
 model MetodePekerjaan {
-  id         Int                 @id @default(autoincrement())
-  projectId  Int                 @map("project_id")
-  namaMetode String              @map("nama_metode")
-  fileUrl    String?             @map("file_url")
-  status     StatusApprovalEprom @default(PENDING)
-  komentar   String?             @db.Text
-  createdAt  DateTime            @default(now()) @map("created_at")
-  updatedAt  DateTime            @updatedAt @map("updated_at")
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  namaMetode       String              @map("nama_metode")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -1832,13 +1849,14 @@ model MetodePekerjaan {
 }
 
 model SertifikasiPekerjaan {
-  id        Int                 @id @default(autoincrement())
-  projectId Int                 @map("project_id")
-  fileUrl   String?             @map("file_url")
-  status    StatusApprovalEprom @default(PENDING)
-  komentar  String?             @db.Text
-  createdAt DateTime            @default(now()) @map("created_at")
-  updatedAt DateTime            @updatedAt @map("updated_at")
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -1847,18 +1865,85 @@ model SertifikasiPekerjaan {
 }
 
 model PeralatanList {
-  id        Int                 @id @default(autoincrement())
-  projectId Int                 @map("project_id")
-  fileUrl   String?             @map("file_url")
-  status    StatusApprovalEprom @default(PENDING)
-  komentar  String?             @db.Text
-  createdAt DateTime            @default(now()) @map("created_at")
-  updatedAt DateTime            @updatedAt @map("updated_at")
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, status])
   @@map("eprom_peralatan_list")
+}
+
+model KomisioningAlatBerat {
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("eprom_komisioning_alat_berat")
+}
+
+model EngineerDocumentApproval {
+  id                   Int                  @id @default(autoincrement())
+  documentId           Int                  @map("document_id")
+  documentType         EngineerDocumentType @map("document_type")
+  projectId            Int                  @map("project_id")
+  approvedById         Int                  @map("approved_by")
+  approvedAt           DateTime             @default(now()) @map("approved_at")
+  signatureFile        String               @map("signature_file")
+  signaturePage        Int                  @map("signature_page")
+  signatureXRatio      Float                @map("signature_x_ratio")
+  signatureYRatio      Float                @map("signature_y_ratio")
+  signatureWidthRatio  Float                @map("signature_width_ratio")
+  signatureHeightRatio Float                @map("signature_height_ratio")
+  signaturePlacements  Json?                @map("signature_placements")
+  originalFilePath     String               @map("original_file_path")
+  sourceFilePath       String               @map("source_file_path")
+  signedFilePath       String               @map("signed_file_path")
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvedBy User    @relation("EngineerApprovalActor", fields: [approvedById], references: [id], onDelete: Restrict)
+
+  @@index([documentType, documentId, approvedAt])
+  @@index([projectId])
+  @@index([approvedById])
+  @@map("eprom_engineer_document_approvals")
+}
+
+enum EpromSafetyMeetingType {
+  P5M
+  SAFETY_TALK
+  FATIGUE_TEST
+}
+
+model EpromSafetyMeetingFile {
+  id               Int                    @id @default(autoincrement())
+  projectId        Int                    @map("project_id")
+  tipe             EpromSafetyMeetingType
+  fileUrl          String                 @map("file_url")
+  originalFileName String                 @map("original_file_name")
+  uploadedById     Int                    @map("uploaded_by")
+  uploadedAt       DateTime               @default(now()) @map("uploaded_at")
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation("EpromSafetyMeetingUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([projectId, tipe, uploadedAt])
+  @@index([uploadedById])
+  @@map("eprom_safety_meeting_files")
 }
 
 // -------- Konstruksi --------

@@ -92,14 +92,36 @@ export class EpromClosingService {
     });
   }
 
-  async buat(aktor: AktorEprom, tipe: TipeClosing, projectId: number, file?: Express.Multer.File) {
+  async buat(
+    aktor: AktorEprom,
+    tipe: TipeClosing,
+    projectId: number,
+    files: Express.Multer.File[] = [],
+  ) {
     await this.akses.wajibAksesProject(aktor, projectId);
 
-    const fileUrl = file
-      ? this.file.simpanDokumen(file, `project/${projectId}/closing/${tipe}`)
-      : null;
+    if (files.length === 0) {
+      return [await this.delegate(tipe).create({ data: { projectId, fileUrl: null } })];
+    }
 
-    return this.delegate(tipe).create({ data: { projectId, fileUrl } });
+    const fileUrls: string[] = [];
+
+    try {
+      for (const file of files) {
+        fileUrls.push(
+          this.file.simpanDokumen(file, `project/${projectId}/closing/${tipe}`),
+        );
+      }
+
+      return await this.prisma.$transaction(
+        fileUrls.map((fileUrl) =>
+          this.delegate(tipe).create({ data: { projectId, fileUrl } }),
+        ),
+      );
+    } catch (error) {
+      fileUrls.forEach((fileUrl) => this.file.hapus(fileUrl));
+      throw error;
+    }
   }
 
   async review(aktor: AktorEprom, tipe: TipeClosing, id: number, dto: ReviewClosingDto) {
