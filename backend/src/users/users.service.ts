@@ -39,6 +39,7 @@ const publicUserSelect = {
   role: true,
   isActive: true,
   accessKeys: true,
+  vendorId: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;

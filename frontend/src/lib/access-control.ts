@@ -5,6 +5,7 @@ export type PortalUser = {
   role: string;
   accessKeys?: string[];
   isActive?: boolean;
+  vendorId?: number | null;
 };
 
 export const ACCESS_KEYS = {
@@ -45,6 +46,14 @@ export const ACCESS_KEYS = {
   CIVIL_AIR: 'CIVIL_AIR',
   CIVIL_INFRAS: 'CIVIL_INFRAS',
   CIVIL_PROJECT: 'CIVIL_PROJECT',
+  CIVIL_PROJECT_TENDER: 'CIVIL_PROJECT_TENDER',
+  CIVIL_PROJECT_KONTRAK: 'CIVIL_PROJECT_KONTRAK',
+  CIVIL_PROJECT_ENGINEER: 'CIVIL_PROJECT_ENGINEER',
+  CIVIL_PROJECT_KONSTRUKSI: 'CIVIL_PROJECT_KONSTRUKSI',
+  CIVIL_PROJECT_MEETING: 'CIVIL_PROJECT_MEETING',
+  CIVIL_PROJECT_DOKUMEN: 'CIVIL_PROJECT_DOKUMEN',
+  CIVIL_PROJECT_FINANCIAL: 'CIVIL_PROJECT_FINANCIAL',
+  CIVIL_PROJECT_CLOSING: 'CIVIL_PROJECT_CLOSING',
   CIVIL_WO_INFRAS: 'CIVIL_WO_INFRAS',
   GA_PEKERJAAN: 'GA_PEKERJAAN',
 
@@ -97,6 +106,35 @@ export function saveStoredUser(user: PortalUser): void {
     : sessionStorage;
 
   storage.setItem('hcga_user', JSON.stringify(user));
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+/** Ambil ulang profil terbaru dari server (mis. setelah vendorId berubah) dan simpan ke storage. */
+export async function refreshStoredUser(): Promise<PortalUser | null> {
+  const token = getAccessToken();
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const user = (await response.json()) as PortalUser;
+    saveStoredUser(user);
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export function clearSession(): void {
@@ -154,6 +192,14 @@ export function formatRole(role?: string): string {
 
   if (role === 'PJO') {
     return 'PJO';
+  }
+
+  if (role === 'OWNER') {
+    return 'Owner';
+  }
+
+  if (role === 'VENDOR') {
+    return 'Vendor';
   }
 
   return role
