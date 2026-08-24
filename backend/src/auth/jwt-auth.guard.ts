@@ -53,6 +53,18 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
     accessKey: 'HC_SURAT_PENOLAKAN_MAGANG',
   },
   { pattern: /\/api\/eprom(?:\/|\?|$)/, accessKey: 'CIVIL_PROJECT' },
+  {
+    pattern: /\/api\/tiket\/admin(?:\/|\?|$)/,
+    accessKey: 'GA_TRANSPORT_TIKET',
+  },
+  {
+    pattern: /\/api\/travel\/admin(?:\/|\?|$)/,
+    accessKey: 'GA_TRANSPORT_TRAVEL',
+  },
+  {
+    pattern: /\/api\/housekeeping-indoor(?:\/|\?|$)/,
+    accessKey: 'GA_GS_HOUSEKEEPING_INDOOR',
+  },
 ];
 
 type GuardRequest = {

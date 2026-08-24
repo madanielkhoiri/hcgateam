@@ -30,6 +30,8 @@ export const ACCESS_KEYS = {
   GA_PROJECT: 'GA_PROJECT',
   GA_TRANSPORT_SECTION: 'GA_TRANSPORT_SECTION',
   GA_TRANSPORT: 'GA_TRANSPORT',
+  GA_TRANSPORT_TIKET: 'GA_TRANSPORT_TIKET',
+  GA_TRANSPORT_TRAVEL: 'GA_TRANSPORT_TRAVEL',
   GA_GENERAL_SERVICE: 'GA_GENERAL_SERVICE',
   GA_GS_HOUSEKEEPING: 'GA_GS_HOUSEKEEPING',
   GA_GS_HOUSEKEEPING_INDOOR: 'GA_GS_HOUSEKEEPING_INDOOR',
@@ -200,6 +202,10 @@ export function formatRole(role?: string): string {
 
   if (role === 'VENDOR') {
     return 'Vendor';
+  }
+
+  if (role === 'DRIVER') {
+    return 'Driver';
   }
 
   return role

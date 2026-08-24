@@ -114,8 +114,9 @@ const gaTree: MenuTreeNode[] = [
           {
             key: 'GA_GS_HOUSEKEEPING_INDOOR',
             title: 'Indoor',
-            description: 'Belum tersedia.',
-            status: 'Belum tersedia',
+            description: 'Laporan kebersihan per lokasi.',
+            status: 'Tersedia',
+            href: '/ga/housekeeping-indoor',
             icon: Home,
             accessKey: ACCESS_KEYS.GA_GS_HOUSEKEEPING_INDOOR,
             accent: '#e86600',

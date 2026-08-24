@@ -690,6 +690,7 @@ export default function AccountManagementPage() {
                     <option value="SHE">SHE / K3</option>
                     <option value="KLINIK">Klinik Provider</option>
                     <option value="PJO">PJO</option>
+                    <option value="DRIVER">Driver</option>
                     <option value="ADMIN">Admin</option>
                     <option value="SUPER_ADMIN">Admin HC</option>
                   </select>
