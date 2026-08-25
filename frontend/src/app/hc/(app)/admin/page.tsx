@@ -31,7 +31,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string;
  nomor_telepon: string;
- role: "SUPER_ADMIN" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
  kode_tiket?: string;
 };
 
@@ -154,11 +154,18 @@ export default function HalamanAdmin() {
  );
 
  const apakahAdmin = (role: string) => {
- return role === "SUPER_ADMIN" || role === "FA";
+ return (
+ role === "SUPER_ADMIN" ||
+ role === "ADMIN" ||
+ role === "SECTION_HEAD" ||
+ role === "FA"
+ );
  };
 
  const formatRole = (role: string | undefined) => {
- if (role === "SUPER_ADMIN") return "Admin";
+ if (role === "SUPER_ADMIN") return "Admin HC";
+ if (role === "ADMIN") return "Admin";
+ if (role === "SECTION_HEAD") return "Section Head";
  if (role === "FA") return "Admin FA";
  if (role === "KARYAWAN") return "Karyawan";
  return role || "-";
@@ -621,10 +628,10 @@ export default function HalamanAdmin() {
  },
  {
  judul: "Kelola Akun",
- deskripsi: "Update data karyawan",
+ deskripsi: "Manajemen Akun (HC)",
  icon: <Users className="h-6 w-6" />,
  warna: "bg-blue-50 text-blue-600",
- aksi: () => router.push("/hc/admin/karyawan"),
+ aksi: () => router.push("/admin/manajemen-akun"),
  },
  {
  judul: pengguna?.role === "FA" ? "Transfer" : "Pengajuan",

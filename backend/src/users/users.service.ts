@@ -109,6 +109,9 @@ export class UsersService {
       if (target.includes('email')) {
         throw new BadRequestException('Email sudah digunakan');
       }
+      if (target.includes('nrp')) {
+        throw new BadRequestException('NRP sudah digunakan');
+      }
       throw new BadRequestException('Username sudah digunakan');
     }
 
@@ -187,6 +190,7 @@ export class UsersService {
           role: dto.role,
           isActive: dto.isActive ?? true,
           accessKeys,
+          nrp: dto.nrp?.trim() || null,
           email: dto.email?.trim() || null,
           phoneNumber: dto.phoneNumber?.trim() || null,
           departemen: dto.departemen?.trim() || null,
@@ -238,6 +242,7 @@ export class UsersService {
           ...(dto.role !== undefined ? { role: dto.role } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
           ...(accessKeys ? { accessKeys } : {}),
+          ...(dto.nrp !== undefined ? { nrp: dto.nrp?.trim() || null } : {}),
           ...(dto.email !== undefined
             ? { email: dto.email?.trim() || null }
             : {}),

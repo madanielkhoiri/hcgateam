@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 
 /* <--- tipe data laporan admin dan FA ---> */
 
-type RolePengguna = "SUPER_ADMIN" | "FA" | "KARYAWAN";
+type RolePengguna = "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
 
 type StatusDeklarasi =
  | "DRAFT"
@@ -232,7 +232,12 @@ function formatJenis(jenis: JenisDeklarasi) {
 }
 
 function apakahAdmin(role: string) {
- return role === "SUPER_ADMIN" || role === "FA";
+ return (
+ role === "SUPER_ADMIN" ||
+ role === "ADMIN" ||
+ role === "SECTION_HEAD" ||
+ role === "FA"
+ );
 }
 
 function classStatus(status: StatusDeklarasi) {

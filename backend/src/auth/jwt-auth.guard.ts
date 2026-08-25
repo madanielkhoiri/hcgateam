@@ -65,6 +65,7 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
     pattern: /\/api\/housekeeping-indoor(?:\/|\?|$)/,
     accessKey: 'GA_GS_HOUSEKEEPING_INDOOR',
   },
+  { pattern: /\/api\/ir(?:\/|\?|$)/, accessKey: 'HC_IR' },
 ];
 
 type GuardRequest = {
@@ -95,7 +96,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (
       !user ||
       user.role === UserRole.ADMIN ||
-      user.role === UserRole.SUPER_ADMIN
+      user.role === UserRole.SUPER_ADMIN ||
+      user.role === UserRole.SECTION_HEAD
     ) {
       return true;
     }
