@@ -105,6 +105,13 @@ model User {
   travelJadwalDibuat    TravelJadwal[]
   housekeepingIndoorDibuat HousekeepingIndoor[]
 
+  dokumenIrDiupload        DokumenIr[]          @relation("DokumenIrUploader")
+  aspirasiPertanyaanDibuat AspirasiPertanyaan[] @relation("AspirasiPertanyaanCreator")
+  aspirasiJawabanDiberikan AspirasiJawaban[]    @relation("AspirasiJawabanUser")
+  irCourseVideoDiupload    IrCourseVideo[]      @relation("IrCourseUploader")
+  irCourseTontonan         IrCourseTontonan[]   @relation("IrCourseTontonanUser")
+  postinganDiupload        Postingan[]          @relation("PostinganUploader")
+
   @@map("users")
 }
 
@@ -2449,4 +2456,150 @@ model HousekeepingIndoorFoto {
 
 // ==================================================
 // SELESAI: E-PROM TENDER, KONTRAK & PROJECT AREA
+// ==================================================
+
+// ==================================================
+// PORTAL IR (Industrial Relations)
+// Tiga card: Upload Dokumen (SK/IM/FORM), Aspirasi Karyawan
+// (kuesioner pilihan ganda/essay dari Admin HC), IR Course (video).
+// Kelola penuh: Admin/Admin HC/Section Head. Role lain: lihat/unduh
+// dokumen, jawab aspirasi (tercatat nama & NRP akun), nonton video.
+// ==================================================
+
+enum KategoriDokumenIr {
+  SK
+  IM
+  FORM
+}
+
+model DokumenIr {
+  id           Int               @id @default(autoincrement())
+  kategori     KategoriDokumenIr
+  judul        String
+  namaFile     String            @map("nama_file")
+  urlFile      String            @map("url_file")
+  uploadedById Int               @map("uploaded_by_id")
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  uploadedBy User @relation("DokumenIrUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([kategori])
+  @@map("ir_dokumen")
+}
+
+enum TipeAspirasiPertanyaan {
+  PILIHAN_GANDA
+  ESSAY
+}
+
+model AspirasiPertanyaan {
+  id          Int                    @id @default(autoincrement())
+  teks        String                 @db.Text
+  tipe        TipeAspirasiPertanyaan
+  aktif       Boolean                @default(true)
+  urutan      Int                    @default(0)
+  createdById Int                    @map("created_by_id")
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  createdBy User             @relation("AspirasiPertanyaanCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  opsi      AspirasiOpsi[]
+  jawaban   AspirasiJawaban[]
+
+  @@map("ir_aspirasi_pertanyaan")
+}
+
+model AspirasiOpsi {
+  id           Int    @id @default(autoincrement())
+  pertanyaanId Int    @map("pertanyaan_id")
+  teks         String
+  urutan       Int    @default(0)
+
+  pertanyaan AspirasiPertanyaan @relation(fields: [pertanyaanId], references: [id], onDelete: Cascade)
+  jawaban    AspirasiJawaban[]
+
+  @@index([pertanyaanId])
+  @@map("ir_aspirasi_opsi")
+}
+
+model AspirasiJawaban {
+  id           Int      @id @default(autoincrement())
+  pertanyaanId Int      @map("pertanyaan_id")
+  userId       Int      @map("user_id")
+  opsiId       Int?     @map("opsi_id")
+  jawabanTeks  String?  @map("jawaban_teks") @db.Text
+  namaPenjawab String   @map("nama_penjawab")
+  nrpPenjawab  String?  @map("nrp_penjawab")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  pertanyaan AspirasiPertanyaan @relation(fields: [pertanyaanId], references: [id], onDelete: Cascade)
+  opsi       AspirasiOpsi?      @relation(fields: [opsiId], references: [id], onDelete: SetNull)
+  user       User               @relation("AspirasiJawabanUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pertanyaanId, userId])
+  @@index([pertanyaanId])
+  @@map("ir_aspirasi_jawaban")
+}
+
+model IrCourseVideo {
+  id           Int      @id @default(autoincrement())
+  judul        String
+  deskripsi    String?  @db.Text
+  urlVideo     String   @map("url_video")
+  uploadedById Int      @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedBy User               @relation("IrCourseUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  tontonan   IrCourseTontonan[]
+
+  @@map("ir_course_video")
+}
+
+model IrCourseTontonan {
+  id           Int      @id @default(autoincrement())
+  videoId      Int      @map("video_id")
+  userId       Int      @map("user_id")
+  ditontonPada DateTime @default(now()) @map("ditonton_pada")
+
+  video IrCourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user  User          @relation("IrCourseTontonanUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+  @@map("ir_course_tontonan")
+}
+
+// ==================================================
+// SELESAI: PORTAL IR
+// ==================================================
+
+// ==================================================
+// POSTINGAN (Administrasi) - poster/video informasi yang tampil
+// di carousel beranda. Kelola: Admin/Admin HC/Admin Comben/Section Head.
+// Semua akun yang login bisa melihat carousel beranda.
+// ==================================================
+
+enum TipePostingan {
+  POSTER
+  VIDEO
+}
+
+model Postingan {
+  id            Int           @id @default(autoincrement())
+  judul         String
+  deskripsi     String?       @db.Text
+  tipe          TipePostingan
+  urlMedia      String        @map("url_media")
+  tampilBeranda Boolean       @default(true) @map("tampil_beranda")
+  urutan        Int           @default(0)
+  uploadedById  Int           @map("uploaded_by_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  uploadedBy User @relation("PostinganUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@map("postingan")
+}
+
+// ==================================================
+// SELESAI: POSTINGAN
 // ==================================================

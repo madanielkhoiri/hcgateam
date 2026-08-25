@@ -20,6 +20,7 @@ import {
   type PortalUser,
 } from '@/lib/access-control';
 import { karyawanApi, type Karyawan } from '@/lib/karyawan-api';
+import { epromApi, type Vendor } from '@/lib/eprom-api';
 import styles from './manajemen-akun.module.css';
 
 const API_URL =
@@ -28,6 +29,7 @@ const API_URL =
 type ManagedUser = PortalUser & {
   isActive: boolean;
   accessKeys: string[];
+  nrp?: string | null;
   email?: string | null;
   phoneNumber?: string | null;
   departemen?: string | null;
@@ -50,6 +52,7 @@ type AccountForm = {
   password: string;
   role: string;
   isActive: boolean;
+  nrp: string;
   email: string;
   phoneNumber: string;
   departemen: string;
@@ -62,6 +65,7 @@ const emptyForm: AccountForm = {
   password: '',
   role: 'KARYAWAN',
   isActive: true,
+  nrp: '',
   email: '',
   phoneNumber: '',
   departemen: '',
@@ -90,6 +94,11 @@ export default function AccountManagementPage() {
   const [karyawanHasil, setKaryawanHasil] = useState<Karyawan[]>([]);
   const [karyawanDropdownTerbuka, setKaryawanDropdownTerbuka] = useState(false);
   const [karyawanMencari, setKaryawanMencari] = useState(false);
+
+  const [vendorMasterList, setVendorMasterList] = useState<Vendor[]>([]);
+  const [vendorCari, setVendorCari] = useState('');
+  const [vendorDropdownTerbuka, setVendorDropdownTerbuka] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!karyawanCari.trim() || karyawanCari.trim().length < 2) {
@@ -126,10 +135,45 @@ export default function AccountManagementPage() {
     };
   }, [karyawanCari]);
 
+  useEffect(() => {
+    if (!formModalOpen || form.role !== 'VENDOR' || vendorMasterList.length > 0) {
+      return;
+    }
+
+    epromApi.vendor
+      .daftar(true)
+      .then(setVendorMasterList)
+      .catch(() => setVendorMasterList([]));
+  }, [formModalOpen, form.role, vendorMasterList.length]);
+
+  const vendorHasil = useMemo(() => {
+    const keyword = vendorCari.trim().toLowerCase();
+    const daftar = keyword
+      ? vendorMasterList.filter((item) =>
+          item.namaVendor.toLowerCase().includes(keyword),
+        )
+      : vendorMasterList;
+
+    return daftar.slice(0, 8);
+  }, [vendorCari, vendorMasterList]);
+
+  function pilihVendor(item: Vendor) {
+    setForm((current) => ({
+      ...current,
+      name: item.namaVendor,
+      email: item.email ?? current.email,
+      phoneNumber: item.noTelepon ?? current.phoneNumber,
+    }));
+    setSelectedVendorId(item.id);
+    setVendorCari(item.namaVendor);
+    setVendorDropdownTerbuka(false);
+  }
+
   function pilihKaryawan(item: Karyawan) {
     setForm((current) => ({
       ...current,
       name: item.nama,
+      nrp: item.nik ?? current.nrp,
       email: item.email ?? current.email,
       phoneNumber: item.noTelepon ?? current.phoneNumber,
       departemen: item.departemen.namaDepartemen,
@@ -220,6 +264,8 @@ export default function AccountManagementPage() {
     setError('');
     setKaryawanCari('');
     setKaryawanHasil([]);
+    setVendorCari('');
+    setSelectedVendorId(null);
     setFormModalOpen(true);
   }
 
@@ -231,6 +277,7 @@ export default function AccountManagementPage() {
       password: '',
       role: user.role,
       isActive: user.isActive,
+      nrp: user.nrp ?? '',
       email: user.email ?? '',
       phoneNumber: user.phoneNumber ?? '',
       departemen: user.departemen ?? '',
@@ -252,6 +299,7 @@ export default function AccountManagementPage() {
         username: form.username.trim(),
         role: form.role,
         isActive: form.isActive,
+        nrp: form.nrp.trim() || undefined,
         email: form.email.trim() || undefined,
         phoneNumber: form.phoneNumber.trim() || undefined,
         departemen: form.departemen.trim() || undefined,
@@ -270,14 +318,27 @@ export default function AccountManagementPage() {
         },
       );
 
-      setMessage(
-        editingUser
-          ? `Akun ${result.name} berhasil diperbarui`
-          : `Akun ${result.name} berhasil ditambahkan`,
-      );
+      let successMessage = editingUser
+        ? `Akun ${result.name} berhasil diperbarui`
+        : `Akun ${result.name} berhasil ditambahkan`;
+
+      if (!editingUser && form.role === 'VENDOR' && selectedVendorId) {
+        try {
+          await epromApi.vendor.tautkanUser(selectedVendorId, result.id);
+          successMessage += ` dan ditautkan ke vendor ${result.name}`;
+        } catch (linkError) {
+          successMessage += ` (gagal menautkan ke vendor: ${
+            linkError instanceof Error ? linkError.message : 'error tidak diketahui'
+          })`;
+        }
+      }
+
+      setMessage(successMessage);
       setFormModalOpen(false);
       setEditingUser(null);
       setForm(emptyForm);
+      setSelectedVendorId(null);
+      setVendorCari('');
       await loadData();
     } catch (submitError) {
       setError(
@@ -623,6 +684,58 @@ export default function AccountManagementPage() {
                 </div>
               ) : null}
 
+              {!editingUser && form.role === 'VENDOR' ? (
+                <div className={styles.karyawanPicker}>
+                  <div className={styles.karyawanPickerLabel}>
+                    <Database size={13} />
+                    Pilih dari Database Vendor (opsional)
+                  </div>
+                  <input
+                    className={styles.karyawanPickerInput}
+                    value={vendorCari}
+                    onChange={(event) => {
+                      setVendorCari(event.target.value);
+                      setVendorDropdownTerbuka(true);
+                      setSelectedVendorId(null);
+                    }}
+                    onFocus={() => setVendorDropdownTerbuka(true)}
+                    onBlur={() =>
+                      setTimeout(() => setVendorDropdownTerbuka(false), 150)
+                    }
+                    autoComplete="off"
+                    placeholder="Cari nama vendor..."
+                  />
+                  <small className={styles.roleHint}>
+                    Memilih vendor akan menautkan akun ini ke data vendor
+                    tersebut, sehingga akses akun otomatis dibatasi hanya ke
+                    project milik vendor itu (mis. project dari Kontrak yang
+                    dimenangkannya).
+                  </small>
+
+                  {vendorDropdownTerbuka ? (
+                    <div className={styles.karyawanDropdown}>
+                      {vendorHasil.length === 0 ? (
+                        <div className={styles.karyawanDropdownItem}>
+                          <span>Tidak ditemukan</span>
+                        </div>
+                      ) : (
+                        vendorHasil.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={styles.karyawanDropdownItem}
+                            onClick={() => pilihVendor(item)}
+                          >
+                            <strong>{item.namaVendor}</strong>
+                            <span>{item.email ?? item.noTelepon ?? 'Tanpa kontak'}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className={styles.formGrid}>
                 <label>
                   <span>Nama</span>
@@ -651,6 +764,24 @@ export default function AccountManagementPage() {
                     autoComplete="off"
                     required
                   />
+                </label>
+                <label>
+                  <span>NRP</span>
+                  <input
+                    value={form.nrp}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        nrp: event.target.value,
+                      }))
+                    }
+                    autoComplete="off"
+                    placeholder="Contoh: 260207"
+                  />
+                  <small className={styles.roleHint}>
+                    Dipakai untuk mencatat identitas akun di card lain (mis.
+                    jawaban Aspirasi Karyawan di PORTAL IR).
+                  </small>
                 </label>
                 <label>
                   <span>Password</span>
@@ -691,6 +822,7 @@ export default function AccountManagementPage() {
                     <option value="KLINIK">Klinik Provider</option>
                     <option value="PJO">PJO</option>
                     <option value="DRIVER">Driver</option>
+                    <option value="VENDOR">Vendor</option>
                     <option value="ADMIN">Admin</option>
                     <option value="SUPER_ADMIN">Admin HC</option>
                   </select>
@@ -820,6 +952,7 @@ export default function AccountManagementPage() {
               <div><span>Nama</span><strong>{detailUser.name}</strong></div>
               <div><span>Username</span><strong>{detailUser.username}</strong></div>
               <div><span>Role</span><strong>{formatRole(detailUser.role)}</strong></div>
+              <div><span>NRP</span><strong>{detailUser.nrp || '-'}</strong></div>
               <div><span>Email</span><strong>{detailUser.email || '-'}</strong></div>
               <div><span>No. Telepon</span><strong>{detailUser.phoneNumber || '-'}</strong></div>
               <div><span>Departemen</span><strong>{detailUser.departemen || '-'}</strong></div>

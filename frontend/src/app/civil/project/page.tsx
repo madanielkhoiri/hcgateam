@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getStoredUser } from "@/lib/access-control";
 import {
   Bell,
   Building,
@@ -28,6 +30,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   epromApi,
   formatWaktuRelatif,
+  isEpromOwner,
   LABEL_STATUS_DEVIASI,
   type DashboardRingkasanEprom,
   type ProgressItem,
@@ -83,6 +86,8 @@ const ownerAreaGroups = [
 ];
 
 export default function CivilProjectDashboardPage() {
+  const router = useRouter();
+  const [boleh, setBoleh] = useState<boolean | null>(null);
   const [ringkasan, setRingkasan] = useState<DashboardRingkasanEprom | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filterChartId, setFilterChartId] = useState<number | "semua">("semua");
@@ -92,6 +97,18 @@ export default function CivilProjectDashboardPage() {
   const [deviasiError, setDeviasiError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Dashboard ini berisi ringkasan lintas Vendor/Tender, khusus Owner.
+    // Akun Vendor dialihkan ke Daftar Project miliknya sendiri.
+    if (!isEpromOwner(getStoredUser())) {
+      router.replace("/civil/project/engineer");
+      return;
+    }
+    setBoleh(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (!boleh) return;
+
     epromApi.dashboard
       .ringkasan()
       .then((data) => {
@@ -99,7 +116,7 @@ export default function CivilProjectDashboardPage() {
         setProjectDeviasiId((cur) => cur ?? data.progressPerProject[0]?.id ?? null);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Gagal memuat ringkasan"));
-  }, []);
+  }, [boleh]);
 
   const muatDeviasi = useCallback(() => {
     if (!projectDeviasiId) {
@@ -178,6 +195,10 @@ export default function CivilProjectDashboardPage() {
       soft: "#e4f7f7",
     },
   ];
+
+  if (!boleh) {
+    return null;
+  }
 
   return (
     <div className={styles.page}>

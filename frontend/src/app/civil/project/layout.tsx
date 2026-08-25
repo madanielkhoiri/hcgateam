@@ -62,6 +62,7 @@ import {
 import {
   epromApi,
   isEpromOwner,
+  isEpromVendor,
   type DashboardRingkasanEprom,
   type Project,
   type RingkasanPendingClosing,
@@ -180,6 +181,7 @@ export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
   const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   const boleh = isEpromOwner(user);
+  const vendorSaya = isEpromVendor(user);
   const tenderDetailMatch = /^\/civil\/project\/tender\/(\d+)/.exec(pathname);
   const activeTenderId = tenderDetailMatch ? tenderDetailMatch[1] : null;
   const engineerDetailMatch = /^\/civil\/project\/engineer\/(\d+)/.exec(pathname);
@@ -233,16 +235,19 @@ export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
           : []),
       ],
     },
-    {
-      id: "kontrak",
-      label: "Kontrak",
-      icon: Handshake,
-      items: [
-        { label: "Pembuatan Kontrak", href: "/civil/project/kontrak", icon: FileSignature },
-        { label: "Legalitas Vendor", href: "/civil/project/kontrak/legalitas", icon: ShieldCheck },
-      ],
-    },
   ];
+
+  const kontrakGroup: NavGroup = {
+    id: "kontrak",
+    label: "Kontrak",
+    icon: Handshake,
+    items: [
+      ...(boleh
+        ? [{ label: "Pembuatan Kontrak", href: "/civil/project/kontrak", icon: FileSignature }]
+        : []),
+      { label: "Legalitas Vendor", href: "/civil/project/kontrak/legalitas", icon: ShieldCheck },
+    ],
+  };
 
   const totalPendingProjekAktif = engineerRingkasan
     ? Object.values(engineerRingkasan).reduce((a, b) => a + b, 0)
@@ -682,33 +687,43 @@ export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
             <span>Pilihan Civil</span>
           </Link>
 
-          <div className={styles.navLabel}>OWNER AREA</div>
+          {boleh && (
+            <>
+              <div className={styles.navLabel}>OWNER AREA</div>
 
-          <Link
-            href={dashboardItem.href}
-            className={`${styles.navItem} ${pathname === dashboardItem.href ? styles.navItemActive : ""}`}
-          >
-            <Gauge size={18} />
-            <span>{dashboardItem.label}</span>
-          </Link>
+              <Link
+                href={dashboardItem.href}
+                className={`${styles.navItem} ${pathname === dashboardItem.href ? styles.navItemActive : ""}`}
+              >
+                <Gauge size={18} />
+                <span>{dashboardItem.label}</span>
+              </Link>
+            </>
+          )}
 
-          <Link
-            href={dataVendorItem.href}
-            className={`${styles.navItem} ${pathname === dataVendorItem.href ? styles.navItemActive : ""}`}
-          >
-            <Users size={18} />
-            <span>{dataVendorItem.label}</span>
-          </Link>
+          {boleh && (
+            <Link
+              href={dataVendorItem.href}
+              className={`${styles.navItem} ${pathname === dataVendorItem.href ? styles.navItemActive : ""}`}
+            >
+              <Users size={18} />
+              <span>{dataVendorItem.label}</span>
+            </Link>
+          )}
 
-          <Link
-            href={performanceVendorItem.href}
-            className={`${styles.navItem} ${pathname === performanceVendorItem.href ? styles.navItemActive : ""}`}
-          >
-            <TrendingUp size={18} />
-            <span>{performanceVendorItem.label}</span>
-          </Link>
+          {boleh && (
+            <Link
+              href={performanceVendorItem.href}
+              className={`${styles.navItem} ${pathname === performanceVendorItem.href ? styles.navItemActive : ""}`}
+            >
+              <TrendingUp size={18} />
+              <span>{performanceVendorItem.label}</span>
+            </Link>
+          )}
 
-          {navGroups.map(renderGroup)}
+          {boleh && navGroups.map(renderGroup)}
+
+          {(boleh || vendorSaya) && renderGroup(kontrakGroup)}
 
           <div className={styles.navLabel}>PROJECT AREA</div>
 

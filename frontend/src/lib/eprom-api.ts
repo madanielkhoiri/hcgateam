@@ -1220,7 +1220,12 @@ export const LABEL_LEGALITAS_VENDOR: Record<StatusLegalitasVendor, string> = {
 };
 
 export function isEpromOwner(user: PortalUser | null): boolean {
-  return user?.role === 'OWNER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  return (
+    user?.role === 'OWNER' ||
+    user?.role === 'ADMIN' ||
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'SECTION_HEAD'
+  );
 }
 
 export function isEpromVendor(user: PortalUser | null): boolean {

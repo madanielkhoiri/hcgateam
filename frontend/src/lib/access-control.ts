@@ -61,6 +61,7 @@ export const ACCESS_KEYS = {
 
   // ADMINISTRASI
   ADMINISTRASI: 'ADMINISTRASI',
+  ADMINISTRASI_POSTINGAN: 'ADMINISTRASI_POSTINGAN',
   ADMINISTRASI_DOKUMENTASI: 'ADMINISTRASI_DOKUMENTASI',
   GA_SAFETY_MEETING: 'GA_SAFETY_MEETING',
   ADMINISTRASI_FORM: 'ADMINISTRASI_FORM',
@@ -155,7 +156,11 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
-  if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+  if (
+    user.role === 'ADMIN' ||
+    user.role === 'SUPER_ADMIN' ||
+    user.role === 'SECTION_HEAD'
+  ) {
     return true;
   }
 

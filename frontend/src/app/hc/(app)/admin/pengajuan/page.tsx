@@ -21,7 +21,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 
 /* <--- halaman admin pengajuan STD/RAB dan approval FA ---> */
 
-type RolePengguna = "SUPER_ADMIN" | "FA" | "KARYAWAN";
+type RolePengguna = "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
 
 type DataPengguna = {
  id: number;
@@ -150,7 +150,10 @@ export default function HalamanPengajuanAdmin() {
  );
  const [tampilkanForm, setTampilkanForm] = useState(true);
 
- const apakahAdmin = roleLogin === "SUPER_ADMIN";
+ const apakahAdmin =
+ roleLogin === "SUPER_ADMIN" ||
+ roleLogin === "ADMIN" ||
+ roleLogin === "SECTION_HEAD";
  const apakahFa = roleLogin === "FA";
 
  const ambilToken = () => {

@@ -7,6 +7,7 @@ import {
   BookOpen,
   Download,
   HandHeart,
+  Megaphone,
   ShieldCheck,
   UsersRound,
 } from 'lucide-react';
@@ -28,6 +29,18 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 const administrasiTree: MenuTreeNode[] = [
+  {
+    key: 'ADMINISTRASI_POSTINGAN',
+    title: 'Postingan',
+    description:
+      'Kelola poster/video informasi yang tampil di carousel beranda seluruh akun.',
+    status: 'Tersedia',
+    href: '/administrasi/postingan',
+    icon: Megaphone,
+    accessKey: ACCESS_KEYS.ADMINISTRASI_POSTINGAN,
+    accent: '#c2410c',
+    soft: '#ffeee4',
+  },
   {
     key: 'ADMINISTRASI_DOKUMENTASI',
     title: 'Dokumentasi',

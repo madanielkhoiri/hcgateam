@@ -128,7 +128,9 @@ export class EpromVendorService {
   async hapus(id: number) {
     const vendor = await this.prisma.vendor.findUnique({
       where: { id },
-      include: { _count: { select: { kontrak: true } } },
+      include: {
+        _count: { select: { kontrak: true, undanganTender: true, sph: true } },
+      },
     });
 
     if (!vendor) {
@@ -138,6 +140,18 @@ export class EpromVendorService {
     if (vendor._count.kontrak > 0) {
       throw new BadRequestException(
         'Vendor sudah memiliki Kontrak, tidak dapat dihapus',
+      );
+    }
+
+    if (vendor._count.undanganTender > 0) {
+      throw new BadRequestException(
+        'Vendor sudah pernah diundang ke Tender, tidak dapat dihapus',
+      );
+    }
+
+    if (vendor._count.sph > 0) {
+      throw new BadRequestException(
+        'Vendor sudah mengirim SPH pada Tender, tidak dapat dihapus',
       );
     }
 

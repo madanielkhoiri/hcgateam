@@ -120,7 +120,12 @@ export class TravelService {
       where: {
         statusKerja: 'AKTIF',
         ...(search?.trim()
-          ? { nama: { contains: search.trim(), mode: 'insensitive' } }
+          ? {
+              OR: [
+                { nama: { contains: search.trim(), mode: 'insensitive' } },
+                { nik: { contains: search.trim(), mode: 'insensitive' } },
+              ],
+            }
           : {}),
       },
       select: {

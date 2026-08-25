@@ -22,16 +22,23 @@ import {
   LogOut,
   Megaphone,
   Phone,
+  PlayCircle,
   Save,
   ShieldCheck,
   Ticket,
   UserCog,
   UsersRound,
+  Video,
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ACCESS_KEYS, hasAccess, saveStoredUser } from '@/lib/access-control';
+import {
+  postinganApi,
+  urlMediaPostingan,
+  type Postingan,
+} from '@/lib/postingan-api';
 import styles from './dashboard.module.css';
 
 // ==================================================
@@ -67,6 +74,14 @@ const slides = [
     subtitle: 'Terhubung bersama HC, GA, CIVIL, dan Administrasi.',
   },
 ];
+
+function formatTanggalPendek(iso: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(iso));
+}
 
 // ==================================================
 // DATA DEPARTEMEN UTAMA
@@ -158,6 +173,10 @@ export default function DashboardPage() {
 
   const [user, setUser] = useState<LoginUser | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [postinganList, setPostinganList] = useState<Postingan[]>([]);
+  const [mediaPreview, setMediaPreview] = useState<Postingan | null>(null);
+  const [posterSlide, setPosterSlide] = useState(0);
+  const [videoSlide, setVideoSlide] = useState(0);
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -224,7 +243,46 @@ export default function DashboardPage() {
   }, [router]);
 
   // ==================================================
-  // SLIDER OTOMATIS
+  // POSTINGAN - PAPAN POSTER & VIDEO INFORMASI (section terpisah,
+  // tidak ikut campur di hero)
+  // ==================================================
+
+  useEffect(() => {
+    postinganApi
+      .beranda()
+      .then(setPostinganList)
+      .catch(() => setPostinganList([]));
+  }, []);
+
+  const posterList = postinganList.filter((item) => item.tipe === 'POSTER');
+  const videoList = postinganList.filter((item) => item.tipe === 'VIDEO');
+
+  function prevPoster() {
+    setPosterSlide((current) =>
+      current === 0 ? posterList.length - 1 : current - 1,
+    );
+  }
+
+  function nextPoster() {
+    setPosterSlide((current) =>
+      current === posterList.length - 1 ? 0 : current + 1,
+    );
+  }
+
+  function prevVideo() {
+    setVideoSlide((current) =>
+      current === 0 ? videoList.length - 1 : current - 1,
+    );
+  }
+
+  function nextVideo() {
+    setVideoSlide((current) =>
+      current === videoList.length - 1 ? 0 : current + 1,
+    );
+  }
+
+  // ==================================================
+  // SLIDER OTOMATIS (banner hero - selalu 3 slide bawaan)
   // ==================================================
 
   useEffect(() => {
@@ -716,6 +774,170 @@ export default function DashboardPage() {
         </section>
 
         {/* ==================================================
+            PAPAN POSTER & VIDEO INFORMASI
+        ================================================== */}
+
+        <section className={styles.dashboardContent} style={{ marginTop: 18 }}>
+          <article className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <ImageIcon size={19} />
+                <h3>Papan Poster</h3>
+              </div>
+            </div>
+
+            {posterList.length === 0 ? (
+              <div className={styles.emptySection}>
+                Belum ada poster informasi.
+              </div>
+            ) : (
+              <div className={styles.miniCarousel}>
+                <div
+                  className={styles.miniCarouselMedia}
+                  onClick={() => setMediaPreview(posterList[posterSlide])}
+                >
+                  <img
+                    src={urlMediaPostingan(posterList[posterSlide].urlMedia)}
+                    alt={posterList[posterSlide].judul}
+                  />
+
+                  {posterList.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className={`${styles.miniArrow} ${styles.miniArrowLeft}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          prevPoster();
+                        }}
+                        aria-label="Poster sebelumnya"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.miniArrow} ${styles.miniArrowRight}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          nextPoster();
+                        }}
+                        aria-label="Poster berikutnya"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <div className={styles.miniCarouselInfo}>
+                  <strong>{posterList[posterSlide].judul}</strong>
+                  <small>
+                    {posterList[posterSlide].uploadedBy.name} &middot;{' '}
+                    {formatTanggalPendek(posterList[posterSlide].createdAt)}
+                  </small>
+                </div>
+
+                {posterList.length > 1 && (
+                  <div className={styles.miniDots}>
+                    {posterList.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={index === posterSlide ? styles.miniDotActive : ''}
+                        onClick={() => setPosterSlide(index)}
+                        aria-label={`Poster ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+
+          <article className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <Video size={19} />
+                <h3>Video Informasi</h3>
+              </div>
+            </div>
+
+            {videoList.length === 0 ? (
+              <div className={styles.emptySection}>
+                Belum ada video informasi.
+              </div>
+            ) : (
+              <div className={styles.miniCarousel}>
+                <div
+                  className={styles.miniCarouselMedia}
+                  onClick={() => setMediaPreview(videoList[videoSlide])}
+                >
+                  <video
+                    key={videoList[videoSlide].id}
+                    src={urlMediaPostingan(videoList[videoSlide].urlMedia)}
+                    muted
+                  />
+                  <div className={styles.miniPlayBadge}>
+                    <span>
+                      <PlayCircle size={28} />
+                    </span>
+                  </div>
+
+                  {videoList.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className={`${styles.miniArrow} ${styles.miniArrowLeft}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          prevVideo();
+                        }}
+                        aria-label="Video sebelumnya"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.miniArrow} ${styles.miniArrowRight}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          nextVideo();
+                        }}
+                        aria-label="Video berikutnya"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <div className={styles.miniCarouselInfo}>
+                  <strong>{videoList[videoSlide].judul}</strong>
+                  <small>
+                    {videoList[videoSlide].uploadedBy.name} &middot;{' '}
+                    {formatTanggalPendek(videoList[videoSlide].createdAt)}
+                  </small>
+                </div>
+
+                {videoList.length > 1 && (
+                  <div className={styles.miniDots}>
+                    {videoList.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={index === videoSlide ? styles.miniDotActive : ''}
+                        onClick={() => setVideoSlide(index)}
+                        aria-label={`Video ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+        </section>
+
+        {/* ==================================================
             KONTEN DASHBOARD
         ================================================== */}
 
@@ -1079,6 +1301,44 @@ export default function DashboardPage() {
           </section>
         </div>
       )}
+      {mediaPreview && (
+        <div
+          className={styles.mediaOverlay}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setMediaPreview(null);
+          }}
+        >
+          <div className={styles.mediaBox}>
+            <div className={styles.mediaBoxHead}>
+              <strong>{mediaPreview.judul}</strong>
+              <button
+                type="button"
+                className={styles.mediaBoxClose}
+                onClick={() => setMediaPreview(null)}
+                aria-label="Tutup"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className={styles.mediaBoxBody}>
+              {mediaPreview.tipe === 'VIDEO' ? (
+                <video
+                  src={urlMediaPostingan(mediaPreview.urlMedia)}
+                  controls
+                  autoPlay
+                />
+              ) : (
+                <img
+                  src={urlMediaPostingan(mediaPreview.urlMedia)}
+                  alt={mediaPreview.judul}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ==================================================
           FOOTER
       ================================================== */}

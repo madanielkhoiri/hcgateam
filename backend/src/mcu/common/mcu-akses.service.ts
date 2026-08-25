@@ -9,8 +9,12 @@ import { TipePengunggah, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AktorMcu } from './mcu-aktor';
 
-/** Admin portal otomatis punya akses penuh ke seluruh peran MCU. */
-const ROLE_PORTAL_SUPER: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+/** Admin portal & Section Head otomatis punya akses penuh ke seluruh peran MCU. */
+const ROLE_PORTAL_SUPER: UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.SECTION_HEAD,
+];
 
 /** Enam kategori akun MCU sesuai Bagian 2 dokumen alur (di luar admin portal). */
 const ROLE_MCU: UserRole[] = [

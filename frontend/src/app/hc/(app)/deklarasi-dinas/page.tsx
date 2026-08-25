@@ -24,7 +24,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string | null;
  nomor_telepon: string | null;
- role: "SUPER_ADMIN" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
  aktif?: boolean;
  kode_tiket?: string | null;
 };
@@ -332,7 +332,12 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  const [nominalPengembalianManual, setNominalPengembalianManual] =
  useState("");
  const apakahAdmin = (role: string) => {
- return role === "SUPER_ADMIN" || role === "FA";
+ return (
+ role === "SUPER_ADMIN" ||
+ role === "ADMIN" ||
+ role === "SECTION_HEAD" ||
+ role === "FA"
+ );
  };
  const statusDeklarasiBolehUpload = (status?: string) => {
  return !status || status === "DRAFT" || status === "DITOLAK";

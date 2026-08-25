@@ -46,6 +46,8 @@ import { EpromModule } from './eprom/eprom.module';
 import { TiketModule } from './tiket/tiket.module';
 import { TravelModule } from './travel/travel.module';
 import { HousekeepingIndoorModule } from './housekeeping-indoor/housekeeping-indoor.module';
+import { IrModule } from './ir/ir.module';
+import { PostinganModule } from './postingan/postingan.module';
 
 @Module({
   imports: [
@@ -84,6 +86,8 @@ import { HousekeepingIndoorModule } from './housekeeping-indoor/housekeeping-ind
     TiketModule,
     TravelModule,
     HousekeepingIndoorModule,
+    IrModule,
+    PostinganModule,
   ],
   controllers: [AppController],
   providers: [AppService],
