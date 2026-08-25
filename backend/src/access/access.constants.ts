@@ -19,8 +19,9 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
   },
   {
     key: 'HC_IR',
-    title: 'IR',
-    description: 'Industrial Relations. Belum tersedia, pembatas untuk pengembangan berikutnya.',
+    title: 'PORTAL IR',
+    description:
+      'Industrial Relations: Upload Dokumen (SK/IM/FORM), Aspirasi Karyawan, dan IR Course.',
     parentKey: 'HC',
     level: 'section',
   },
@@ -348,6 +349,14 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     description: 'Akses judul utama Administrasi pada dashboard.',
     parentKey: null,
     level: 'department',
+  },
+  {
+    key: 'ADMINISTRASI_POSTINGAN',
+    title: 'Postingan',
+    description:
+      'Kelola poster/video informasi yang tampil di carousel beranda seluruh akun.',
+    parentKey: 'ADMINISTRASI',
+    level: 'card',
   },
   {
     key: 'ADMINISTRASI_DOKUMENTASI',

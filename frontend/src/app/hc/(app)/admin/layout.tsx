@@ -40,10 +40,10 @@ export default function LayoutAdmin({ children }: LayoutAdminProps) {
  },
  {
  judul: "Akun",
- path: "/hc/admin/karyawan",
+ path: "/admin/manajemen-akun",
  icon: <Users className="h-5 w-5" />,
- aktif: apakahAktif("/hc/admin/karyawan"),
- aksi: () => router.push("/hc/admin/karyawan"),
+ aktif: apakahAktif("/admin/manajemen-akun"),
+ aksi: () => router.push("/admin/manajemen-akun"),
  },
  {
  judul: "Pengajuan",

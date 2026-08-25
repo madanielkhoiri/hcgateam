@@ -178,7 +178,10 @@ export default function KaryawanPage() {
   }, [router]);
 
   const bolehKelola =
-    user?.role === 'HC' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    user?.role === 'HC' ||
+    user?.role === 'ADMIN' ||
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'SECTION_HEAD';
 
   const muat = useCallback(async () => {
     setMemuat(true);

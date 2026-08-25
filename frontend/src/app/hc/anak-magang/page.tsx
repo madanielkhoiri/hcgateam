@@ -193,7 +193,10 @@ export default function AnakMagangPage() {
   const [form, setForm] = useState<FormAnakMagang>(formKosong);
 
   const bolehKelola =
-    user.role === 'HC' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    user.role === 'HC' ||
+    user.role === 'ADMIN' ||
+    user.role === 'SUPER_ADMIN' ||
+    user.role === 'SECTION_HEAD';
 
   const muat = useCallback(async () => {
     setMemuat(true);

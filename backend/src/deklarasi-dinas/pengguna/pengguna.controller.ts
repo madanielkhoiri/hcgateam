@@ -1,21 +1,17 @@
-import { UseInterceptors, Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, UseInterceptors } from '@nestjs/common';
 
-import { BuatPenggunaDto } from './dto/buat-pengguna.dto';
-import { EditPenggunaDto } from './dto/edit-pengguna.dto';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PenggunaService } from './pengguna.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 
-
 // <--- fitur controller manajemen pengguna --->
+// Read-only: dipakai Laporan & Pengajuan Deklarasi Dinas untuk resolve
+// nama/nrp karyawan. Pembuatan/ubah akun lewat Manajemen Akun (HC).
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('pengguna')
+@UseGuards(JwtAuthGuard)
 export class PenggunaController {
   constructor(private readonly penggunaService: PenggunaService) {}
-
-  @Post()
-  buatPengguna(@Body() data: BuatPenggunaDto) {
-    return this.penggunaService.buatPengguna(data);
-  }
 
   @Get()
   ambilSemuaPengguna() {
@@ -25,19 +21,6 @@ export class PenggunaController {
   @Get(':id')
   ambilPenggunaBerdasarkanId(@Param('id') id: string) {
     return this.penggunaService.ambilPenggunaBerdasarkanId(Number(id));
-  }
-
-  @Patch(':id')
-  editPengguna(@Param('id') id: string, @Body() data: EditPenggunaDto) {
-    return this.penggunaService.editPengguna(Number(id), data);
-  }
-
-  @Patch(':id/status')
-  ubahStatusPengguna(
-    @Param('id') id: string,
-    @Body() data: { aktif: boolean },
-  ) {
-    return this.penggunaService.ubahStatusPengguna(Number(id), data.aktif);
   }
 }
 // <--- end --->

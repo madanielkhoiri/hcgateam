@@ -1,0 +1,288 @@
+/* ==================================================
+   FILE: frontend/src/app/hc/ir/ir.module.css
+   FUNGSI: Sistem tampilan PORTAL IR (Upload Dokumen, Aspirasi Karyawan, IR Course)
+   ================================================== */
+
+.page { display: flex; flex-direction: column; gap: 18px; padding-bottom: 40px; }
+
+.breadcrumb {
+  display: flex; align-items: center; gap: 8px;
+  color: #7186a0; font-size: 12.5px; font-weight: 700;
+}
+.breadcrumb a { color: #0783a8; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb strong { color: #12355f; }
+
+.pageHead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.pageTitle { display: flex; align-items: flex-start; gap: 14px; }
+.pageIcon {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: 52px; height: 52px; border-radius: 16px;
+  color: #0783a8; background: #e5f7fb;
+}
+.pageTitle h1 { margin: 0 0 4px; color: #0d2a45; font-size: 24px; font-weight: 900; }
+.pageTitle p { margin: 0; max-width: 560px; color: #5c7a9a; font-size: 13.5px; line-height: 1.5; }
+.headActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ---- Tombol ---- */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 40px; padding: 0 16px; border: 0; border-radius: 12px;
+  color: #fff; background: #0783a8; font-size: 13.5px; font-weight: 800;
+  cursor: pointer; transition: background .15s, transform .1s;
+}
+.btn:hover { background: #066587; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btnGhost { color: #12355f; background: #eef4f9; }
+.btnGhost:hover { background: #e1ebf3; }
+.btnDanger { color: #b3261e; background: #fdeceb; }
+.btnDanger:hover { background: #fadedb; }
+.btnSm { height: 32px; padding: 0 12px; font-size: 12.5px; border-radius: 9px; }
+
+/* ---- Notifikasi ---- */
+.alert {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 700;
+}
+.alertError { color: #b3261e; background: #fdeceb; }
+.alertSuccess { color: #067b46; background: #e6f9ef; }
+
+/* ---- Empty & loading ---- */
+.emptyState {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 48px 20px; border: 1px dashed #cbd9e8; border-radius: 16px;
+  color: #7186a0; text-align: center; background: #fafcfe;
+}
+.emptyState strong { color: #12355f; font-size: 15px; }
+.emptyState p { margin: 0; font-size: 13px; max-width: 340px; }
+.loadingState { padding: 40px; text-align: center; color: #7186a0; font-weight: 700; font-size: 13.5px; }
+
+/* ---- Tab filter ---- */
+.tabRow { display: flex; gap: 8px; flex-wrap: wrap; }
+.tabBtn {
+  height: 36px; padding: 0 16px; border: 1px solid #d8e4f1; border-radius: 999px;
+  color: #385675; background: #fff; font-size: 12.5px; font-weight: 800; cursor: pointer;
+}
+.tabBtnAktif { color: #fff; background: #0783a8; border-color: #0783a8; }
+
+/* ---- Progress ---- */
+.progressWrap {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-radius: 14px; background: #eef7fa;
+}
+.progressLabel { flex: 0 0 auto; color: #0d2a45; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.progressTrack { flex: 1; height: 8px; border-radius: 999px; background: #d7ebf1; overflow: hidden; }
+.progressFill { height: 100%; border-radius: 999px; background: #0783a8; transition: width .3s; }
+
+/* ---- Kartu pertanyaan (Aspirasi) ---- */
+.questionList { display: flex; flex-direction: column; gap: 14px; }
+.questionCard {
+  display: flex; gap: 14px; padding: 18px 20px;
+  border: 1px solid #e1eaf3; border-radius: 16px; background: #fff;
+  box-shadow: 0 6px 20px rgba(19, 55, 92, .04);
+}
+.questionCard.answered { border-color: #bfe8d4; background: #fbfffd; }
+.questionNumber {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: 34px; height: 34px; border-radius: 10px;
+  color: #0783a8; background: #e5f7fb; font-weight: 900; font-size: 14px;
+}
+.questionCard.answered .questionNumber { color: #07984c; background: #e4f7ec; }
+.questionBody { flex: 1; min-width: 0; }
+.questionHead {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  margin-bottom: 12px;
+}
+.questionText { margin: 0; color: #12355f; font-size: 15px; font-weight: 800; line-height: 1.45; }
+.answeredTag {
+  display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
+  padding: 3px 10px; border-radius: 999px; color: #07984c; background: #e4f7ec;
+  font-size: 11px; font-weight: 800; white-space: nowrap;
+}
+
+.optionList { display: flex; flex-direction: column; gap: 8px; }
+.optionItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border: 1.5px solid #dfe8f2; border-radius: 12px;
+  cursor: pointer; transition: border-color .12s, background .12s;
+}
+.optionItem:hover { border-color: #9fc9d8; background: #f7fbfd; }
+.optionItemChecked { border-color: #0783a8; background: #eef7fa; }
+.optionItem input { accent-color: #0783a8; width: 16px; height: 16px; flex: 0 0 auto; }
+.optionItem span { color: #21456b; font-size: 13.5px; font-weight: 600; }
+
+.answerTextarea {
+  width: 100%; min-height: 90px; padding: 12px 14px; border: 1.5px solid #dfe8f2;
+  border-radius: 12px; color: #21456b; font: inherit; font-size: 13.5px; resize: vertical;
+}
+.answerTextarea:focus { outline: 0; border-color: #0783a8; box-shadow: 0 0 0 3px rgba(7,131,168,.12); }
+
+.questionFooter { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+/* ---- Kelola pertanyaan (Admin) ---- */
+.manageList { display: flex; flex-direction: column; gap: 12px; }
+.manageCard {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding: 16px 18px; border: 1px solid #e1eaf3; border-radius: 14px; background: #fff;
+}
+.manageInfo { flex: 1; min-width: 0; }
+.manageInfo p { margin: 0 0 8px; color: #12355f; font-size: 14px; font-weight: 800; line-height: 1.4; }
+.manageMeta { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800;
+}
+.pillAktif { color: #07984c; background: #e4f7ec; }
+.pillNonaktif { color: #94a3b8; background: #f1f5f9; }
+.pillTipe { color: #0783a8; background: #e5f7fb; }
+.pillJawaban { color: #7a4ce0; background: #f0ebff; }
+.manageActions { display: flex; gap: 6px; flex-wrap: wrap; flex: 0 0 auto; }
+
+/* ---- Dokumen ---- */
+.docGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.docCard {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px; border: 1px solid #e1eaf3; border-radius: 16px; background: #fff;
+  box-shadow: 0 6px 20px rgba(19, 55, 92, .04);
+}
+.docTop { display: flex; align-items: center; gap: 10px; }
+.docIcon {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: 40px; height: 40px; border-radius: 11px; color: #0783a8; background: #e5f7fb;
+}
+.docTitle { min-width: 0; }
+.docTitle strong { display: block; color: #12355f; font-size: 13.5px; font-weight: 800; line-height: 1.3; }
+.docTitle small { color: #8ba2ba; font-size: 11.5px; }
+.docFooter { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.docDate { color: #8ba2ba; font-size: 11px; }
+.docActions { display: flex; gap: 6px; }
+.linkBtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; border-radius: 9px;
+  color: #fff; background: #0783a8; font-size: 12.5px; font-weight: 800; text-decoration: none;
+}
+.linkBtn:hover { background: #066587; }
+.iconBtn {
+  display: grid; place-items: center; width: 32px; height: 32px; border: 0;
+  border-radius: 9px; color: #b3261e; background: #fdeceb; cursor: pointer;
+}
+.iconBtnNetral {
+  display: grid; place-items: center; width: 32px; height: 32px; border: 0;
+  border-radius: 9px; color: #385675; background: #eef4f9; cursor: pointer; text-decoration: none;
+}
+.iconBtnNetral:hover { background: #e1ebf3; }
+
+/* ---- Upload dropzone ---- */
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 24px 16px; border: 1.5px dashed #b9d4e0; border-radius: 14px;
+  background: #f7fbfd; cursor: pointer; text-align: center;
+}
+.dropzone input { display: none; }
+.dropzoneIcon { color: #0783a8; }
+.dropzoneText { color: #385675; font-size: 13px; font-weight: 700; }
+.dropzoneHint { color: #8ba2ba; font-size: 11.5px; }
+.dropzoneFile {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+  padding: 5px 12px; border-radius: 999px; background: #e5f7fb; color: #066587;
+  font-size: 12px; font-weight: 800;
+}
+
+/* ---- Form ---- */
+.formStack { display: flex; flex-direction: column; gap: 14px; }
+.formField { display: flex; flex-direction: column; gap: 6px; }
+.formField label { color: #12355f; font-size: 12.5px; font-weight: 800; }
+.formInput, .formSelect, .formTextarea {
+  width: 100%; padding: 10px 13px; border: 1.5px solid #dfe8f2; border-radius: 11px;
+  color: #21456b; font: inherit; font-size: 13.5px; background: #fff;
+}
+.formTextarea { resize: vertical; min-height: 70px; }
+.formInput:focus, .formSelect:focus, .formTextarea:focus {
+  outline: 0; border-color: #0783a8; box-shadow: 0 0 0 3px rgba(7,131,168,.12);
+}
+.opsiRow { display: flex; gap: 8px; align-items: center; }
+
+/* ---- Video (IR Course) ---- */
+.videoGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+.videoCard {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px; border: 1px solid #e1eaf3; border-radius: 16px; background: #fff;
+  box-shadow: 0 6px 20px rgba(19, 55, 92, .04);
+}
+.videoThumb {
+  display: grid; place-items: center; height: 100px; border-radius: 12px;
+  color: #0783a8; background: linear-gradient(135deg, #e5f7fb, #eef4f9);
+}
+.videoTitle { margin: 0; color: #12355f; font-size: 14.5px; font-weight: 800; line-height: 1.35; }
+.videoDesc { margin: 0; color: #7186a0; font-size: 12.5px; line-height: 1.4; }
+.videoMeta { color: #8ba2ba; font-size: 11.5px; }
+.watchedTag {
+  display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
+  padding: 3px 10px; border-radius: 999px; color: #07984c; background: #e4f7ec;
+  font-size: 11px; font-weight: 800;
+}
+.videoActions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+
+/* ---- Landing cards ---- */
+.landingGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.landingCard {
+  display: flex; flex-direction: column; gap: 12px; padding: 22px;
+  border: 1px solid #e1eaf3; border-radius: 18px; background: #fff;
+  box-shadow: 0 8px 24px rgba(19, 55, 92, .05); text-decoration: none;
+  transition: transform .15s, box-shadow .15s;
+}
+.landingCard:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(19, 55, 92, .09); }
+.landingIcon {
+  display: grid; place-items: center; width: 48px; height: 48px;
+  border-radius: 14px; color: #0783a8; background: #e5f7fb;
+}
+.landingCard h2 { margin: 0; color: #12355f; font-size: 16px; font-weight: 850; }
+.landingCard p { margin: 0; color: #7186a0; font-size: 12.5px; line-height: 1.5; }
+.landingArrow { display: flex; justify-content: flex-end; color: #0783a8; }
+
+/* ---- Tabel sederhana (rekap/penonton) ---- */
+.simpleTableWrap { overflow-x: auto; border: 1px solid #e1eaf3; border-radius: 14px; }
+.simpleTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.simpleTable th {
+  padding: 11px 14px; text-align: left; color: #7186a0; font-size: 11.5px;
+  font-weight: 800; text-transform: uppercase; letter-spacing: .03em; background: #f7fafc;
+  border-bottom: 1px solid #e1eaf3;
+}
+.simpleTable td { padding: 11px 14px; color: #21456b; border-bottom: 1px solid #eef2f7; }
+.simpleTable tr:last-child td { border-bottom: 0; }
+
+/* ---- Preview lebar (dokumen PDF/gambar & video) ---- */
+.previewOverlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center; padding: 24px;
+  background: rgba(11, 26, 48, .55); backdrop-filter: blur(2px);
+}
+.previewBox {
+  display: flex; flex-direction: column;
+  width: min(960px, 100%); max-height: calc(100dvh - 48px);
+  background: #fff; border-radius: 18px; overflow: hidden;
+  box-shadow: 0 30px 70px rgba(11, 26, 48, .35);
+}
+.previewHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 14px 18px; border-bottom: 1px solid #eef2f7;
+}
+.previewHead strong { color: #12355f; font-size: 15px; font-weight: 800; }
+.previewClose {
+  display: grid; place-items: center; width: 32px; height: 32px; border: 0;
+  border-radius: 9px; color: #385675; background: #f1f5f9; cursor: pointer; flex: 0 0 auto;
+}
+.previewBody { flex: 1; min-height: 0; background: #f7fafc; }
+.previewFrame { display: block; width: 100%; height: min(75vh, 800px); border: 0; background: #fff; }
+.previewImage { display: block; width: 100%; max-height: min(75vh, 800px); object-fit: contain; background: #0f172a; }
+.previewVideo { display: block; width: 100%; max-height: min(75vh, 800px); background: #000; }
+
+@media (max-width: 720px) {
+  .pageHead { flex-direction: column; }
+  .manageCard { flex-direction: column; }
+  .manageActions { width: 100%; }
+}

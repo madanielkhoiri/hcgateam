@@ -9,11 +9,12 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AktorEprom } from './eprom-aktor';
 
-/** Admin portal diperlakukan setara Owner di dalam modul e-ProM. */
+/** Admin portal & Section Head diperlakukan setara Owner di dalam modul e-ProM. */
 const ROLE_SETARA_OWNER: UserRole[] = [
   UserRole.OWNER,
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
+  UserRole.SECTION_HEAD,
 ];
 
 @Injectable()

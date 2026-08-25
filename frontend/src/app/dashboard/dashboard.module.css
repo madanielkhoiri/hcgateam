@@ -126,7 +126,8 @@
 
 .hero {
   position: relative;
-  height: 245px;
+  min-height: 245px;
+  height: auto;
   overflow: hidden;
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
@@ -201,7 +202,7 @@
 
 .screenMockup > div {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
@@ -351,6 +352,197 @@
   color: #7a4ce0;
   background: #f7f4ff;
   border: 1px solid #ded0ff;
+}
+
+/* ==================================================
+   PAPAN POSTER & VIDEO INFORMASI
+================================================== */
+
+.emptySection {
+  padding: 30px;
+  text-align: center;
+  color: #7585a0;
+  font-size: 13px;
+  background: #ffffff;
+  border: 1px dashed #cfd9e8;
+  border-radius: 14px;
+}
+
+.miniCarousel {
+  display: flex;
+  flex-direction: column;
+}
+
+.miniCarouselMedia {
+  position: relative;
+  width: 100%;
+  height: 230px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #101827;
+  cursor: pointer;
+}
+
+.miniCarouselMedia img,
+.miniCarouselMedia video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.miniPlayBadge {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.miniPlayBadge span {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  color: #101827;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.miniArrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: #1a355d;
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.miniArrowLeft {
+  left: 10px;
+}
+
+.miniArrowRight {
+  right: 10px;
+}
+
+.miniCarouselInfo {
+  margin-top: 12px;
+}
+
+.miniCarouselInfo strong {
+  display: block;
+  font-size: 14px;
+  color: #11294f;
+  line-height: 1.35;
+}
+
+.miniCarouselInfo small {
+  display: block;
+  margin-top: 5px;
+  color: #7585a0;
+  font-size: 12px;
+}
+
+.miniDots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.miniDots button {
+  width: 16px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #d7e3f0;
+  cursor: pointer;
+}
+
+.miniDots .miniDotActive {
+  background: #0868f6;
+}
+
+.mediaOverlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 25, 48, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.mediaBox {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, 100%);
+  max-height: calc(100dvh - 48px);
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px rgba(11, 26, 48, 0.35);
+}
+
+.mediaBoxHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.mediaBoxHead strong {
+  color: #12355f;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mediaBoxClose {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  color: #385675;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+
+.mediaBoxBody {
+  flex: 1;
+  min-height: 0;
+  background: #0e1b30;
+  display: grid;
+  place-items: center;
+}
+
+.mediaBoxBody img,
+.mediaBoxBody video {
+  display: block;
+  width: 100%;
+  max-height: min(75vh, 800px);
+  object-fit: contain;
+}
+
+@media (max-width: 700px) {
+  .miniCarouselMedia {
+    height: 170px;
+  }
 }
 
 /* ==================================================
@@ -576,7 +768,8 @@
 
 @media (max-width: 980px) {
   .hero {
-    height: 225px;
+    min-height: 225px;
+    height: auto;
     grid-template-columns: 1fr 0.75fr;
     padding: 30px 65px;
   }

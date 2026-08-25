@@ -23,7 +23,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string;
  nomor_telepon: string;
- role: "SUPER_ADMIN" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
  kode_tiket?: string;
 };
 
@@ -92,7 +92,12 @@ function HalamanAdminDeklarasiKonten() {
  const [terakhirUpdate, setTerakhirUpdate] = useState<Date | null>(null);
 
  const apakahAdmin = (role: string) => {
- return role === "SUPER_ADMIN" || role === "FA";
+ return (
+ role === "SUPER_ADMIN" ||
+ role === "ADMIN" ||
+ role === "SECTION_HEAD" ||
+ role === "FA"
+ );
  };
 
  const ambilHeaderAuth = () => {

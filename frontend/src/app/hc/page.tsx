@@ -12,10 +12,12 @@ import {
   HeartPulse,
   LifeBuoy,
   Mail,
+  MessageSquareText,
   Plane,
   Scale,
   UsersRound,
   UserCircle2,
+  Video,
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -39,24 +41,72 @@ const hcTree: MenuTreeNode[] = [
   {
     key: 'HC_KARYAWAN',
     title: 'Database Karyawan',
-    description:
-      'Master data seluruh karyawan (NIK, departemen, jabatan, status kerja) - dipakai bersama card HC lain.',
-    status: 'Tersedia',
-    href: '/hc/karyawan',
+    description: 'Master data seluruh karyawan.',
     icon: Database,
     accessKey: ACCESS_KEYS.HC_KARYAWAN,
     accent: '#0a7f8c',
     soft: '#e2f5f7',
+    children: [
+      {
+        key: 'HC_KARYAWAN_DATA',
+        title: 'Database Karyawan',
+        description:
+          'Master data seluruh karyawan (NIK, departemen, jabatan, status kerja) - dipakai bersama card HC lain.',
+        status: 'Tersedia',
+        href: '/hc/karyawan',
+        icon: Database,
+        accessKey: ACCESS_KEYS.HC_KARYAWAN,
+        accent: '#0a7f8c',
+        soft: '#e2f5f7',
+      },
+    ],
   },
   {
     key: 'HC_IR',
-    title: 'IR',
-    description: 'Industrial Relations - belum tersedia.',
-    status: 'Belum tersedia',
+    title: 'PORTAL IR',
+    description: 'Industrial Relations.',
     icon: Scale,
     accessKey: ACCESS_KEYS.HC_IR,
     accent: '#0783a8',
     soft: '#e5f7fb',
+    children: [
+      {
+        key: 'HC_IR_DOKUMEN',
+        title: 'Upload Dokumen',
+        description:
+          'Dokumen SK, IM, dan FORM. Admin/Admin HC/Section Head mengunggah, akun lain melihat & mengunduh.',
+        status: 'Tersedia',
+        href: '/hc/ir/dokumen',
+        icon: Database,
+        accessKey: ACCESS_KEYS.HC_IR,
+        accent: '#0783a8',
+        soft: '#e5f7fb',
+      },
+      {
+        key: 'HC_IR_ASPIRASI',
+        title: 'Aspirasi Karyawan',
+        description:
+          'Pertanyaan pilihan ganda/essay disusun Admin HC; karyawan menjawab, jawaban tercatat nama & NRP.',
+        status: 'Tersedia',
+        href: '/hc/ir/aspirasi',
+        icon: MessageSquareText,
+        accessKey: ACCESS_KEYS.HC_IR,
+        accent: '#0783a8',
+        soft: '#e5f7fb',
+      },
+      {
+        key: 'HC_IR_COURSE',
+        title: 'IR Course',
+        description:
+          'Video pelatihan diunggah Admin HC lengkap judulnya; status tontonan tiap akun tercatat.',
+        status: 'Tersedia',
+        href: '/hc/ir/course',
+        icon: Video,
+        accessKey: ACCESS_KEYS.HC_IR,
+        accent: '#0783a8',
+        soft: '#e5f7fb',
+      },
+    ],
   },
   {
     key: 'HC_RND',

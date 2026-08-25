@@ -35,6 +35,11 @@ export class CreateUserDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  nrp?: string;
+
+  @IsOptional()
   @IsEmail({}, { message: 'Format email tidak valid' })
   @MaxLength(150)
   email?: string;

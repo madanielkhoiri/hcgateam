@@ -25,7 +25,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string | null;
  nomor_telepon: string | null;
- role: "SUPER_ADMIN" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
  kode_tiket?: string | null;
 };
 
@@ -131,7 +131,10 @@ export default function HalamanDetailDeklarasi() {
  >({});
 
  const apakahAdminFa =
- penggunaLogin?.role === "SUPER_ADMIN" || penggunaLogin?.role === "FA";
+ penggunaLogin?.role === "SUPER_ADMIN" ||
+ penggunaLogin?.role === "ADMIN" ||
+ penggunaLogin?.role === "SECTION_HEAD" ||
+ penggunaLogin?.role === "FA";
 
  const halamanKembali = apakahAdminFa ? "/hc/admin" : "/hc";
  const teksKembali = apakahAdminFa
@@ -691,6 +694,8 @@ export default function HalamanDetailDeklarasi() {
 
  const adminAtauFa =
  penggunaTersimpan.role === "SUPER_ADMIN" ||
+ penggunaTersimpan.role === "ADMIN" ||
+ penggunaTersimpan.role === "SECTION_HEAD" ||
  penggunaTersimpan.role === "FA";
 
  const pemilikDeklarasi =
