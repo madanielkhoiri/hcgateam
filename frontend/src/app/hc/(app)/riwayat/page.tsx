@@ -19,7 +19,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string | null;
  nomor_telepon: string | null;
- role: "SUPER_ADMIN" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
  kode_tiket?: string | null;
 };
 
@@ -134,6 +134,8 @@ function KontenRiwayatDeklarasi() {
 
  if (
  penggunaTersimpan.role === "SUPER_ADMIN" ||
+ penggunaTersimpan.role === "ADMIN" ||
+ penggunaTersimpan.role === "SECTION_HEAD" ||
  penggunaTersimpan.role === "FA"
  ) {
  router.replace("/hc/admin");

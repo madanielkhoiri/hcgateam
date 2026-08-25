@@ -39,6 +39,18 @@ type FormMcuKaryawan = {
   statusKesehatanDirumahkan: string;
 };
 
+/** Tanggal expired MCU berlaku 1 tahun sejak MCU terakhir (format YYYY-MM-DD). */
+function tambahSatuTahun(tanggalIso: string): string {
+  const [tahun, bulan, hari] = tanggalIso.split('-').map(Number);
+  const tanggal = new Date(tahun + 1, bulan - 1, hari);
+
+  const y = tanggal.getFullYear();
+  const m = String(tanggal.getMonth() + 1).padStart(2, '0');
+  const d = String(tanggal.getDate()).padStart(2, '0');
+
+  return `${y}-${m}-${d}`;
+}
+
 const formKosong: FormMcuKaryawan = {
   tanggalMcuTerakhir: '',
   tanggalMcuExpired: '',
@@ -197,8 +209,9 @@ export default function KaryawanMcuPage() {
               <Link href="/hc/karyawan" style={{ color: 'inherit', fontWeight: 800 }}>
                 Database Karyawan
               </Link>{' '}
-              (nama &amp; NIK). Tanggal MCU berikutnya dihitung otomatis 3
-              bulan sebelum MCU terakhir expired.
+              (nama &amp; NIK). Tanggal expired otomatis 1 tahun dari MCU
+              terakhir, dan jadwal reminder otomatis 3 bulan sebelum
+              expired.
             </p>
           </div>
         </div>
@@ -311,7 +324,7 @@ export default function KaryawanMcuPage() {
                   <th>Departemen</th>
                   <th>MCU Terakhir</th>
                   <th>Expired</th>
-                  <th>Jadwal Berikutnya</th>
+                  <th>Jadwal Reminder</th>
                   <th>Status Kerja</th>
                   <th>Aksi</th>
                 </tr>
@@ -397,7 +410,7 @@ export default function KaryawanMcuPage() {
       {karyawanDiedit ? (
         <Dialog
           judul={`Data MCU - ${karyawanDiedit.nama}`}
-          keterangan="Identitas karyawan dikelola di card Database Karyawan. Tanggal MCU berikutnya dihitung otomatis dari tanggal expired dikurangi 3 bulan."
+          keterangan="Identitas karyawan dikelola di card Database Karyawan. Tanggal expired otomatis terisi 1 tahun dari MCU terakhir (bisa diubah manual), dan jadwal reminder otomatis dihitung 3 bulan sebelum expired."
           onTutup={() => setKaryawanDiedit(null)}
           aksi={
             <>
@@ -427,13 +440,20 @@ export default function KaryawanMcuPage() {
                 className={styles.input}
                 type="date"
                 value={form.tanggalMcuTerakhir}
-                onChange={(event) =>
-                  setForm({ ...form, tanggalMcuTerakhir: event.target.value })
-                }
+                onChange={(event) => {
+                  const nilai = event.target.value;
+                  setForm((current) => ({
+                    ...current,
+                    tanggalMcuTerakhir: nilai,
+                    tanggalMcuExpired: nilai
+                      ? tambahSatuTahun(nilai)
+                      : current.tanggalMcuExpired,
+                  }));
+                }}
               />
             </Field>
 
-            <Field label="Tanggal MCU Expired">
+            <Field label="Tanggal MCU Expired (otomatis +1 tahun, bisa diubah)">
               <input
                 className={styles.input}
                 type="date"

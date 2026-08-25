@@ -315,8 +315,11 @@ export default function TiketPage() {
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
                   onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                  className={styles.fileInput}
                 />
-                {files.length > 0 && <span>{files.length} file dipilih</span>}
+                {files.length > 0 && (
+                  <span className={styles.fileHint}>{files.length} file dipilih</span>
+                )}
               </label>
             </div>
 

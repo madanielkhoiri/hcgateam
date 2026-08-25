@@ -123,6 +123,16 @@
   border-radius:11px; color:#193b62; background:#fff; outline:0; font:inherit;
 }
 .formGrid input:focus,.formGrid select:focus { border-color:#079654; box-shadow:0 0 0 3px rgba(7,150,84,.10); }
+.fileInput {
+  height:auto; padding:10px 12px; display:flex; align-items:center; gap:10px;
+  border:1px dashed #cbd9e8; border-radius:11px; background:#f7fafc; cursor:pointer;
+}
+.fileInput::file-selector-button {
+  padding:8px 14px; border:0; border-radius:8px; margin-right:2px;
+  color:#fff; background:#079654; font:inherit; font-size:12px; font-weight:800; cursor:pointer;
+}
+.fileInput::file-selector-button:hover { background:#067b46; }
+.fileHint { color:#5c7a9a; font-size:12px; font-weight:700; }
 .cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
 .cards article {
   min-height:96px; padding:17px; display:grid; grid-template-columns:auto 1fr;
