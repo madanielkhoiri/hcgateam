@@ -111,6 +111,8 @@ model User {
   irCourseVideoDiupload    IrCourseVideo[]      @relation("IrCourseUploader")
   irCourseTontonan         IrCourseTontonan[]   @relation("IrCourseTontonanUser")
   postinganDiupload        Postingan[]          @relation("PostinganUploader")
+  driveFileDiupload        DriveFile[]          @relation("DriveFileUploader")
+  albumDokumentasiDibuat   AlbumDokumentasi[]   @relation("AlbumDokumentasiCreator")
 
   @@map("users")
 }
@@ -129,6 +131,8 @@ enum ItemCategory {
   ATK
   HOUSEKEEPING
   BAJU
+  ELEKTRONIK
+  FURNITURE
 }
 
 // ==================================================
@@ -2602,4 +2606,85 @@ model Postingan {
 
 // ==================================================
 // SELESAI: POSTINGAN
+// ==================================================
+
+// ==================================================
+// DRIVE ADMINISTRASI (CSR, Form Download) - folder & file ala
+// Google Drive, generik (tidak terikat Tender/Vendor seperti punya
+// e-ProM). Kelola: Admin/Admin HC/Admin Comben/Section Head.
+// Lihat & unduh: seluruh akun yang punya akses card terkait.
+// ==================================================
+
+enum ScopeDrive {
+  CSR
+  FORM_DOWNLOAD
+}
+
+model DriveFolder {
+  id             Int         @id @default(autoincrement())
+  scope          ScopeDrive
+  namaFolder     String      @map("nama_folder")
+  parentFolderId Int?        @map("parent_folder_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  parentFolder DriveFolder?  @relation("DriveFolderChildren", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  children     DriveFolder[] @relation("DriveFolderChildren")
+  files        DriveFile[]
+
+  @@index([scope])
+  @@index([parentFolderId])
+  @@map("drive_folder")
+}
+
+model DriveFile {
+  id           Int      @id @default(autoincrement())
+  folderId     Int      @map("folder_id")
+  namaFile     String   @map("nama_file")
+  urlFile      String   @map("url_file")
+  uploadedById Int      @map("uploaded_by_id")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  folder     DriveFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  uploadedBy User        @relation("DriveFileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([folderId])
+  @@map("drive_file")
+}
+
+// ==================================================
+// SELESAI: DRIVE ADMINISTRASI
+// ==================================================
+
+// ==================================================
+// ALBUM DOKUMENTASI - album foto kegiatan. Kelola: Admin/Admin HC/
+// Admin Comben/Section Head. Lihat: seluruh akun ber-akses Administrasi.
+// ==================================================
+
+model AlbumDokumentasi {
+  id           Int      @id @default(autoincrement())
+  judul        String
+  deskripsi    String?  @db.Text
+  uploadedById Int      @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedBy User            @relation("AlbumDokumentasiCreator", fields: [uploadedById], references: [id], onDelete: Restrict)
+  foto       AlbumFoto[]
+
+  @@map("album_dokumentasi")
+}
+
+model AlbumFoto {
+  id        Int      @id @default(autoincrement())
+  albumId   Int      @map("album_id")
+  urlFoto   String   @map("url_foto")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  album AlbumDokumentasi @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([albumId])
+  @@map("album_foto")
+}
+
+// ==================================================
+// SELESAI: ALBUM DOKUMENTASI
 // ==================================================

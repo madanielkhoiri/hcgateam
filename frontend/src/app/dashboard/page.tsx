@@ -11,9 +11,9 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  CircleHelp,
   Download,
   FileText,
+  HandHeart,
   HardHat,
   HeartPulse,
   Image as ImageIcon,
@@ -21,10 +21,9 @@ import {
   Link2,
   LogOut,
   Megaphone,
-  Phone,
   PlayCircle,
   Save,
-  ShieldCheck,
+  Scale,
   Ticket,
   UserCog,
   UsersRound,
@@ -39,6 +38,12 @@ import {
   urlMediaPostingan,
   type Postingan,
 } from '@/lib/postingan-api';
+import {
+  aktivitasApi,
+  LABEL_JENIS_AKTIVITAS,
+  type AktivitasItem,
+  type JenisAktivitas,
+} from '@/lib/aktivitas-api';
 import styles from './dashboard.module.css';
 
 // ==================================================
@@ -133,36 +138,15 @@ const departmentCards: Array<{
 // DATA AKTIVITAS
 // ==================================================
 
-const activities = [
-  {
-    icon: FileText,
-    iconClass: 'blue',
-    title: 'Daily Report baru diunggah oleh Andi Setiawan',
-    date: '20 Mei 2024',
-    time: '10:35 WIB',
-  },
-  {
-    icon: BookOpen,
-    iconClass: 'green',
-    title: 'Template Form Cuti diperbarui oleh Admin HCGA',
-    date: '20 Mei 2024',
-    time: '09:12 WIB',
-  },
-  {
-    icon: ShieldCheck,
-    iconClass: 'orange',
-    title: 'Dokumen SOP GS ditambahkan oleh Budi Santoso',
-    date: '20 Mei 2024',
-    time: '08:47 WIB',
-  },
-  {
-    icon: Megaphone,
-    iconClass: 'purple',
-    title: 'Berita HC terbaru dipublikasikan oleh Rina Puspita',
-    date: '20 Mei 2024',
-    time: '08:15 WIB',
-  },
-];
+const IKON_AKTIVITAS: Record<
+  JenisAktivitas,
+  { icon: React.ElementType; kelas: 'blue' | 'green' | 'orange' | 'purple' }
+> = {
+  POSTINGAN_POSTER: { icon: ImageIcon, kelas: 'blue' },
+  POSTINGAN_VIDEO: { icon: Video, kelas: 'purple' },
+  DOKUMEN_IR: { icon: FileText, kelas: 'orange' },
+  IR_COURSE: { icon: PlayCircle, kelas: 'green' },
+};
 
 // ==================================================
 // HALAMAN DASHBOARD
@@ -177,6 +161,7 @@ export default function DashboardPage() {
   const [mediaPreview, setMediaPreview] = useState<Postingan | null>(null);
   const [posterSlide, setPosterSlide] = useState(0);
   const [videoSlide, setVideoSlide] = useState(0);
+  const [aktivitasList, setAktivitasList] = useState<AktivitasItem[]>([]);
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -280,6 +265,27 @@ export default function DashboardPage() {
       current === videoList.length - 1 ? 0 : current + 1,
     );
   }
+
+  // ==================================================
+  // AKSES CEPAT & AKTIVITAS TERBARU - khusus Admin/Admin HC/
+  // Admin Comben/Section Head
+  // ==================================================
+
+  const bisaLihatPanelAdmin =
+    user?.role === 'ADMIN' ||
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'ADMIN_COMBEN' ||
+    user?.role === 'SECTION_HEAD';
+
+  useEffect(() => {
+    if (!bisaLihatPanelAdmin) {
+      setAktivitasList([]);
+      return;
+    }
+
+    aktivitasApi.terbaru().then(setAktivitasList);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bisaLihatPanelAdmin]);
 
   // ==================================================
   // SLIDER OTOMATIS (banner hero - selalu 3 slide bawaan)
@@ -938,9 +944,11 @@ export default function DashboardPage() {
         </section>
 
         {/* ==================================================
-            KONTEN DASHBOARD
+            KONTEN DASHBOARD - khusus Admin/Admin HC/Admin Comben/
+            Section Head
         ================================================== */}
 
+        {bisaLihatPanelAdmin && (
         <section className={styles.dashboardContent}>
           {/* ==================================================
               AKSES CEPAT
@@ -971,59 +979,75 @@ export default function DashboardPage() {
                 </button>
               )}
 
-              <button type="button">
-                <FileText />
-                <span>
-                  <strong>Daftar Form &amp; Berita</strong>
-                  <small>Formulir dan berita resmi</small>
-                </span>
-                <ChevronRight />
-              </button>
+              {hasAccess(user, ACCESS_KEYS.ADMINISTRASI_POSTINGAN) && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/administrasi/postingan')}
+                >
+                  <Megaphone />
+                  <span>
+                    <strong>Postingan</strong>
+                    <small>Kelola poster dan video informasi beranda</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
 
-              <button type="button">
-                <CircleHelp />
-                <span>
-                  <strong>Panduan &amp; FAQ</strong>
-                  <small>Panduan penggunaan portal</small>
-                </span>
-                <ChevronRight />
-              </button>
+              {hasAccess(user, ACCESS_KEYS.ADMINISTRASI_FORM) && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/administrasi/form-download')}
+                >
+                  <Download />
+                  <span>
+                    <strong>Form Download</strong>
+                    <small>Formulir resmi yang dapat diunduh</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
 
-              <button type="button">
-                <ShieldCheck />
-                <span>
-                  <strong>Prosedur &amp; SOP</strong>
-                  <small>Dokumen prosedur kerja</small>
-                </span>
-                <ChevronRight />
-              </button>
+              {hasAccess(user, ACCESS_KEYS.ADMINISTRASI_CSR) && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/administrasi/csr')}
+                >
+                  <HandHeart />
+                  <span>
+                    <strong>CSR</strong>
+                    <small>Proposal dan dokumen kegiatan CSR</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
 
-              <button type="button">
-                <Download />
-                <span>
-                  <strong>Unduhan</strong>
-                  <small>Template dan dokumen penting</small>
-                </span>
-                <ChevronRight />
-              </button>
+              {hasAccess(user, ACCESS_KEYS.ADMINISTRASI_DOKUMENTASI) && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/administrasi/dokumentasi')}
+                >
+                  <ImageIcon />
+                  <span>
+                    <strong>Dokumentasi</strong>
+                    <small>Foto dan dokumentasi kegiatan</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
 
-              <button type="button">
-                <ImageIcon />
-                <span>
-                  <strong>Dokumentasi</strong>
-                  <small>Foto dan dokumentasi kegiatan</small>
-                </span>
-                <ChevronRight />
-              </button>
-
-              <button type="button">
-                <Phone />
-                <span>
-                  <strong>Kontak Darurat</strong>
-                  <small>Nomor penting dan darurat</small>
-                </span>
-                <ChevronRight />
-              </button>
+              {hasAccess(user, ACCESS_KEYS.HC_IR) && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/hc/ir')}
+                >
+                  <Scale />
+                  <span>
+                    <strong>Portal IR</strong>
+                    <small>Dokumen, aspirasi, dan IR course</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
             </div>
           </article>
 
@@ -1042,40 +1066,55 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.activityList}>
-              {activities.map((activity) => {
-                const ActivityIcon = activity.icon;
+              {aktivitasList.length === 0 ? (
+                <div className={styles.emptySection}>
+                  Belum ada aktivitas upload terbaru.
+                </div>
+              ) : (
+                aktivitasList.map((activity, index) => {
+                  const { icon: ActivityIcon, kelas } =
+                    IKON_AKTIVITAS[activity.jenis];
+                  const waktu = new Date(activity.createdAt);
 
-                return (
-                  <button
-                    key={`${activity.title}-${activity.time}`}
-                    type="button"
-                    className={styles.activityItem}
-                  >
-                    <span
-                      className={`${styles.activityIcon} ${
-                        styles[activity.iconClass]
-                      }`}
+                  return (
+                    <button
+                      key={`${activity.jenis}-${activity.judul}-${index}`}
+                      type="button"
+                      className={styles.activityItem}
                     >
-                      <ActivityIcon size={21} />
-                    </span>
+                      <span
+                        className={`${styles.activityIcon} ${styles[kelas]}`}
+                      >
+                        <ActivityIcon size={21} />
+                      </span>
 
-                    <span className={styles.activityText}>
-                      <strong>{activity.title}</strong>
+                      <span className={styles.activityText}>
+                        <strong>
+                          {LABEL_JENIS_AKTIVITAS[activity.jenis]}: &quot;
+                          {activity.judul}&quot; oleh {activity.uploadedBy.name}
+                        </strong>
 
-                      <small>
-                        {activity.date} · {activity.time}
-                      </small>
-                    </span>
+                        <small>
+                          {formatTanggalPendek(activity.createdAt)} &middot;{' '}
+                          {waktu.toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}{' '}
+                          WIB
+                        </small>
+                      </span>
 
-                    <ChevronRight
-                      className={styles.activityArrow}
-                    />
-                  </button>
-                );
-              })}
+                      <ChevronRight
+                        className={styles.activityArrow}
+                      />
+                    </button>
+                  );
+                })
+              )}
             </div>
           </article>
         </section>
+        )}
       </div>
 
       {profileModalOpen && (
