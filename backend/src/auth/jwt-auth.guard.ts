@@ -7,10 +7,18 @@ import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from '@prisma/client';
 import { firstValueFrom, isObservable } from 'rxjs';
 
-const routeAccessMap: Array<{ pattern: RegExp; accessKey: string }> = [
+const routeAccessMap: Array<{ pattern: RegExp; accessKey: string | string[] }> = [
+  {
+    pattern: /\/api\/inventory-dashboard\/electric(?:\/|\?|$)/i,
+    accessKey: ['GA_INVENTORY', 'CIVIL_INVENTORY_ELECTRIC'],
+  },
   {
     pattern: /\/api\/inventory-dashboard(?:\/|\?|$)/,
     accessKey: 'GA_INVENTORY',
+  },
+  {
+    pattern: /\/api\/inventory-area\/ELECTRIC(?:\/|\?|$)/i,
+    accessKey: ['GA_INVENTORY', 'CIVIL_INVENTORY_ELECTRIC'],
   },
   { pattern: /\/api\/inventory-area(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
   { pattern: /\/api\/inventory(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
@@ -111,7 +119,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    if (!(user.accessKeys ?? []).includes(requiredAccess)) {
+    const requiredAccessKeys = Array.isArray(requiredAccess)
+      ? requiredAccess
+      : [requiredAccess];
+    const ownedAccessKeys = user.accessKeys ?? [];
+
+    if (!requiredAccessKeys.some((key) => ownedAccessKeys.includes(key))) {
       throw new ForbiddenException(
         'Akses modul untuk akun ini sedang dinonaktifkan',
       );

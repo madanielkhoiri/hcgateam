@@ -281,6 +281,19 @@
 .previewImage { display: block; width: 100%; max-height: min(75vh, 800px); object-fit: contain; background: #0f172a; }
 .previewVideo { display: block; width: 100%; max-height: min(75vh, 800px); background: #000; }
 
+/* ---- Drive (folder & file ala Google Drive) ---- */
+.driveBreadcrumb {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 4px; font-size: 13px; font-weight: 700; color: #7186a0;
+}
+.driveBreadcrumb button {
+  padding: 2px 4px; border: 0; background: none; color: #0783a8;
+  font: inherit; font-weight: 800; cursor: pointer;
+}
+.driveBreadcrumb button:last-child { color: #12355f; cursor: default; }
+.driveToolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+.folderIcon { color: #d97706; background: #fff2df; }
+
 @media (max-width: 720px) {
   .pageHead { flex-direction: column; }
   .manageCard { flex-direction: column; }

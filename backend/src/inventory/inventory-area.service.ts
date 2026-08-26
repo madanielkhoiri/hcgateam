@@ -46,7 +46,15 @@ export class InventoryAreaService {
       return 'HS';
     }
 
-    return 'BJ';
+    if (category === ItemCategory.BAJU) {
+      return 'BJ';
+    }
+
+    if (category === ItemCategory.ELEKTRONIK) {
+      return 'EL';
+    }
+
+    return 'FR';
   }
 
   private sortByCode<
@@ -59,6 +67,8 @@ export class InventoryAreaService {
       ATK: 1,
       HOUSEKEEPING: 2,
       BAJU: 3,
+      ELEKTRONIK: 4,
+      FURNITURE: 5,
     };
 
     return rows.sort((first, second) => {

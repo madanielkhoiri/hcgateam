@@ -244,8 +244,10 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
           ? "pekerjaan"
           : "inventory";
 
+  const dalamCivilElectric = pathname.startsWith("/ga/inventory/civil-electric");
+
   const sectionTitle = {
-    inventory: "Inventory",
+    inventory: dalamCivilElectric ? "Inventory Electric" : "Inventory",
     pekerjaan: "Pekerjaan",
     aktivitas: "Aktivitas Harian",
     project: "Project",
@@ -260,9 +262,45 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     safety: ACCESS_KEYS.GA_SAFETY_MEETING,
   }[activeSection];
 
-  const visibleMenuGroups = menuGroups.filter(
-    (group) => group.section === activeSection,
-  );
+  const visibleMenuGroups = menuGroups
+    .filter((group) => {
+      if (group.section !== activeSection) {
+        return false;
+      }
+
+      if (activeSection === "inventory" && dalamCivilElectric) {
+        return group.id === "inventory-electric";
+      }
+
+      return true;
+    })
+    .map((group) => {
+      if (
+        activeSection === "inventory" &&
+        dalamCivilElectric &&
+        group.id === "inventory-electric"
+      ) {
+        return {
+          ...group,
+          items: [
+            {
+              label: "Dashboard Inventory Electric",
+              href: "/ga/inventory/civil-electric/dashboard",
+              icon: BarChart3,
+            },
+            ...group.items.map((item) => ({
+              ...item,
+              href: item.href.replace(
+                "/ga/inventory/electric",
+                "/ga/inventory/civil-electric",
+              ),
+            })),
+          ],
+        };
+      }
+
+      return group;
+    });
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -280,13 +318,29 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
       return;
     }
 
-    if (!hasAccess(storedUser, requiredAccessKey)) {
-      router.replace("/ga");
+    const bolehMasuk =
+      activeSection === "inventory"
+        ? hasAccess(storedUser, ACCESS_KEYS.GA_INVENTORY) ||
+          hasAccess(storedUser, ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC)
+        : hasAccess(storedUser, requiredAccessKey);
+
+    if (!bolehMasuk) {
+      router.replace(dalamCivilElectric ? "/civil" : "/ga");
+      return;
+    }
+
+    const hanyaElectric =
+      activeSection === "inventory" &&
+      !hasAccess(storedUser, ACCESS_KEYS.GA_INVENTORY) &&
+      hasAccess(storedUser, ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC);
+
+    if (hanyaElectric && !dalamCivilElectric) {
+      router.replace("/ga/inventory/civil-electric/dashboard");
       return;
     }
 
     setUser(storedUser);
-  }, [requiredAccessKey, router]);
+  }, [activeSection, requiredAccessKey, pathname, router]);
 
   useEffect(() => {
     const activeGroup = visibleMenuGroups.find((group) =>
@@ -357,10 +411,15 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             {!sidebarCollapsed && <span>Dashboard</span>}
           </Link>
 
-          <Link href="/ga" className={styles.mainNavigationItem}>
+          <Link
+            href={dalamCivilElectric ? "/civil" : "/ga"}
+            className={styles.mainNavigationItem}
+          >
             <ChevronLeft size={20} />
 
-            {!sidebarCollapsed && <span>Pilihan GA</span>}
+            {!sidebarCollapsed && (
+              <span>{dalamCivilElectric ? "Kembali ke Civil" : "Pilihan GA"}</span>
+            )}
           </Link>
 
           {!sidebarCollapsed && (

@@ -48,6 +48,9 @@ import { TravelModule } from './travel/travel.module';
 import { HousekeepingIndoorModule } from './housekeeping-indoor/housekeeping-indoor.module';
 import { IrModule } from './ir/ir.module';
 import { PostinganModule } from './postingan/postingan.module';
+import { AktivitasModule } from './aktivitas/aktivitas.module';
+import { DriveModule } from './drive/drive.module';
+import { AlbumModule } from './album/album.module';
 
 @Module({
   imports: [
@@ -88,6 +91,9 @@ import { PostinganModule } from './postingan/postingan.module';
     HousekeepingIndoorModule,
     IrModule,
     PostinganModule,
+    AktivitasModule,
+    DriveModule,
+    AlbumModule,
   ],
   controllers: [AppController],
   providers: [AppService],

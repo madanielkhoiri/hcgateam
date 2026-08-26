@@ -60,7 +60,7 @@ type Item = {
   id: number;
   code: string;
   name: string;
-  category: "ATK" | "HOUSEKEEPING" | "BAJU";
+  category: "ATK" | "HOUSEKEEPING" | "BAJU" | "ELEKTRONIK" | "FURNITURE";
   unit: string;
   isActive: boolean;
   stock?: {
@@ -120,6 +120,14 @@ function categoryLabel(category: string) {
 
   if (category === "BAJU") {
     return "BAJU";
+  }
+
+  if (category === "ELEKTRONIK") {
+    return "ELEKTRONIK";
+  }
+
+  if (category === "FURNITURE") {
+    return "FURNITURE";
   }
 
   return "ATK";
@@ -1326,6 +1334,12 @@ export default function InventoryCrud({
                       </option>
                       <option value="BAJU">
                         BAJU
+                      </option>
+                      <option value="ELEKTRONIK">
+                        ELEKTRONIK
+                      </option>
+                      <option value="FURNITURE">
+                        FURNITURE
                       </option>
                     </select>
                   </label>

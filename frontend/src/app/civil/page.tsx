@@ -55,9 +55,9 @@ const civilTree: MenuTreeNode[] = [
             description:
               'Master barang, barang masuk, barang keluar, dan stok Inventory Electric.',
             status: 'Tersedia',
-            href: '/ga/inventory/electric/dashboard',
+            href: '/ga/inventory/civil-electric/dashboard',
             icon: Plug,
-            accessKey: ACCESS_KEYS.GA_INVENTORY,
+            accessKey: ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC,
             accent: '#d97706',
             soft: '#fff2df',
           },
