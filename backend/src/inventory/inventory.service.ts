@@ -30,7 +30,15 @@ export class InventoryService {
       return 'HS';
     }
 
-    return 'BJ';
+    if (category === ItemCategory.BAJU) {
+      return 'BJ';
+    }
+
+    if (category === ItemCategory.ELEKTRONIK) {
+      return 'EL';
+    }
+
+    return 'FR';
   }
 
   private async generateItemCode(
@@ -74,6 +82,8 @@ export class InventoryService {
       ATK: 1,
       HOUSEKEEPING: 2,
       BAJU: 3,
+      ELEKTRONIK: 4,
+      FURNITURE: 5,
     };
 
     return items.sort((firstItem, secondItem) => {
@@ -217,6 +227,8 @@ export class InventoryService {
       ATK: 1,
       HOUSEKEEPING: 2,
       BAJU: 3,
+      ELEKTRONIK: 4,
+      FURNITURE: 5,
     };
 
     return stocks.sort((firstStock, secondStock) => {
