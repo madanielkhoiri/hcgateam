@@ -10,6 +10,7 @@ import {
   FolderKanban,
   HardHat,
   Plug,
+  Recycle,
   UsersRound,
   Zap,
 } from 'lucide-react';
@@ -117,6 +118,18 @@ const civilTree: MenuTreeNode[] = [
             soft: '#ffeded',
           },
         ],
+      },
+      {
+        key: 'CIVIL_TPS3R',
+        title: 'TPS 3R',
+        description:
+          'Laporan timbangan sampah Organik, Non Organik, Guna Ulang/Reuse, Daur Ulang/Recycle, dan Residu (kg).',
+        status: 'Tersedia',
+        href: '/civil/tps-3r/dashboard',
+        icon: Recycle,
+        accessKey: ACCESS_KEYS.CIVIL_TPS3R,
+        accent: '#0a8a5c',
+        soft: '#e2f7ee',
       },
     ],
   },

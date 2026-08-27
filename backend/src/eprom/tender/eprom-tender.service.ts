@@ -19,6 +19,7 @@ import { StatusTender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromFileService } from '../common/eprom-file.service';
 import { AktorEprom } from '../common/eprom-aktor';
+import { MailService } from '../../mail/mail.service';
 
 export class BuatTenderDto {
   @IsString()
@@ -48,6 +49,7 @@ export class EpromTenderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly file: EpromFileService,
+    private readonly mail: MailService,
   ) {}
 
   async daftar() {
@@ -71,7 +73,10 @@ export class EpromTenderService {
     const tender = await this.prisma.tenderProcess.findUnique({
       where: { id },
       include: {
-        undangan: { include: { vendor: true }, orderBy: { id: 'asc' } },
+        undangan: {
+          include: { vendor: true, files: { orderBy: { id: 'asc' } } },
+          orderBy: { id: 'asc' },
+        },
         sph: { include: { vendor: true }, orderBy: [{ vendorId: 'asc' }, { roundKe: 'asc' }] },
         kontrak: true,
       },
@@ -135,29 +140,45 @@ export class EpromTenderService {
   async kirimUndangan(
     tenderId: number,
     dto: KirimUndanganDto,
-    file?: Express.Multer.File,
+    filesPerVendor: Map<number, Express.Multer.File[]>,
   ) {
     const tender = await this.detail(tenderId);
 
-    const fileUndangan = file
-      ? this.file.simpan(file, `tender/${tenderId}/undangan`, this.file.tebakTipe(file.originalname))
-      : null;
+    const vendors = await this.prisma.vendor.findMany({
+      where: { id: { in: dto.vendorIds } },
+      select: { id: true, namaVendor: true, email: true },
+    });
+
+    const lampiranPerVendor = new Map<number, { namaFile: string; urlFile: string }[]>();
+    for (const vendorId of dto.vendorIds) {
+      const files = filesPerVendor.get(vendorId) ?? [];
+      lampiranPerVendor.set(
+        vendorId,
+        files.map((file) => ({
+          namaFile: file.originalname,
+          urlFile: this.file.simpanDokumen(file, `tender/${tenderId}/undangan/${vendorId}`),
+        })),
+      );
+    }
 
     await this.prisma.$transaction(async (tx) => {
       for (const vendorId of dto.vendorIds) {
-        await tx.tenderUndangan.upsert({
+        const undangan = await tx.tenderUndangan.upsert({
           where: { tenderId_vendorId: { tenderId, vendorId } },
-          update: {
-            fileUndangan: fileUndangan ?? undefined,
-            tanggalKirim: new Date(),
-          },
-          create: {
-            tenderId,
-            vendorId,
-            fileUndangan,
-            tanggalKirim: new Date(),
-          },
+          update: { tanggalKirim: new Date() },
+          create: { tenderId, vendorId, tanggalKirim: new Date() },
         });
+
+        const lampiran = lampiranPerVendor.get(vendorId) ?? [];
+        if (lampiran.length > 0) {
+          await tx.tenderUndanganFile.createMany({
+            data: lampiran.map((item) => ({
+              undanganId: undangan.id,
+              namaFile: item.namaFile,
+              urlFile: item.urlFile,
+            })),
+          });
+        }
       }
 
       if (tender.status === StatusTender.PERSIAPAN) {
@@ -168,7 +189,60 @@ export class EpromTenderService {
       }
     });
 
-    return this.detail(tenderId);
+    const ringkasanEmail = await this.kirimEmailUndangan(
+      tender.namaTender,
+      vendors,
+      lampiranPerVendor,
+    );
+
+    return { ...(await this.detail(tenderId)), ringkasanEmail };
+  }
+
+  /**
+   * Kirim email undangan (SMTP Outlook/M365) ke email yang terdaftar di data
+   * vendor — masing-masing vendor cuma menerima lampiran file miliknya sendiri.
+   */
+  private async kirimEmailUndangan(
+    namaTender: string,
+    vendors: { id: number; namaVendor: string; email: string | null }[],
+    lampiranPerVendor: Map<number, { namaFile: string; urlFile: string }[]>,
+  ) {
+    const ringkasan = {
+      mailAktif: this.mail.aktif,
+      terkirim: [] as string[],
+      gagal: [] as string[],
+      tanpaEmail: [] as string[],
+    };
+
+    if (!this.mail.aktif) {
+      return ringkasan;
+    }
+
+    for (const vendor of vendors) {
+      if (!vendor.email) {
+        ringkasan.tanpaEmail.push(vendor.namaVendor);
+        continue;
+      }
+
+      const lampiranEmail = (lampiranPerVendor.get(vendor.id) ?? []).map((item) => ({
+        filename: item.namaFile,
+        path: this.file.resolveAbsolut(item.urlFile),
+      }));
+
+      const sukses = await this.mail.kirim({
+        to: vendor.email,
+        subjek: `Undangan Tender: ${namaTender}`,
+        teks:
+          `Yth. ${vendor.namaVendor},\n\n` +
+          `Dengan ini kami mengundang perusahaan Anda untuk berpartisipasi pada tender "${namaTender}". ` +
+          `Dokumen undangan terlampir pada email ini.\n\nTerima kasih.`,
+        lampiran: lampiranEmail,
+      });
+
+      (sukses ? ringkasan.terkirim : ringkasan.gagal).push(vendor.namaVendor);
+    }
+
+    return ringkasan;
   }
 
   /** Batalkan undangan vendor — hanya boleh sebelum vendor punya SPH sama sekali. */
