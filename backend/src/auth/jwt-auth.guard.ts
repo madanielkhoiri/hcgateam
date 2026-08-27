@@ -61,6 +61,7 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string | string[] }> =
     accessKey: 'HC_SURAT_PENOLAKAN_MAGANG',
   },
   { pattern: /\/api\/eprom(?:\/|\?|$)/, accessKey: 'CIVIL_PROJECT' },
+  { pattern: /\/api\/civil-tps3r(?:\/|\?|$)/, accessKey: 'CIVIL_TPS3R' },
   {
     pattern: /\/api\/tiket\/admin(?:\/|\?|$)/,
     accessKey: 'GA_TRANSPORT_TIKET',
