@@ -113,6 +113,7 @@ model User {
   postinganDiupload        Postingan[]          @relation("PostinganUploader")
   driveFileDiupload        DriveFile[]          @relation("DriveFileUploader")
   albumDokumentasiDibuat   AlbumDokumentasi[]   @relation("AlbumDokumentasiCreator")
+  laporanTps3rDibuat       LaporanTps3r[]       @relation("LaporanTps3rCreator")
 
   @@map("users")
 }
@@ -1684,11 +1685,24 @@ model TenderUndangan {
   tanggalKirim DateTime? @map("tanggal_kirim")
   createdAt    DateTime  @default(now()) @map("created_at")
 
-  tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
-  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  tender TenderProcess        @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor                @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  files  TenderUndanganFile[]
 
   @@unique([tenderId, vendorId])
   @@map("eprom_tender_undangan")
+}
+
+model TenderUndanganFile {
+  id         Int      @id @default(autoincrement())
+  undanganId Int      @map("undangan_id")
+  namaFile   String   @map("nama_file")
+  urlFile    String   @map("url_file")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  undangan TenderUndangan @relation(fields: [undanganId], references: [id], onDelete: Cascade)
+
+  @@map("eprom_tender_undangan_file")
 }
 
 model TenderSPH {
@@ -2687,4 +2701,30 @@ model AlbumFoto {
 
 // ==================================================
 // SELESAI: ALBUM DOKUMENTASI
+// ==================================================
+
+// ==================================================
+// TPS 3R (Civil Infras) - Laporan Timbangan Sampah
+// ==================================================
+
+model LaporanTps3r {
+  id              Int      @id @default(autoincrement())
+  tanggal         DateTime @db.Date
+  beratOrganik    Float    @default(0) @map("berat_organik")
+  beratNonOrganik Float    @default(0) @map("berat_non_organik")
+  beratReuse      Float    @default(0) @map("berat_reuse")
+  beratRecycle    Float    @default(0) @map("berat_recycle")
+  beratResidu     Float    @default(0) @map("berat_residu")
+  createdById     Int      @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdBy User @relation("LaporanTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([tanggal])
+  @@map("civil_laporan_tps3r")
+}
+
+// ==================================================
+// SELESAI: TPS 3R
 // ==================================================

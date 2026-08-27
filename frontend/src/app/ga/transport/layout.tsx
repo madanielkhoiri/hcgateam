@@ -27,7 +27,9 @@ import {
 } from '@/lib/access-control';
 import styles from './transport-layout.module.css';
 
-const menus = [
+type ScopeTransport = 'sarana' | 'tiket' | 'travel';
+
+const menuSarana = [
   {
     label: 'Dashboard Transportasi',
     href: '/ga/transport/dashboard',
@@ -40,12 +42,18 @@ const menus = [
     icon: Fuel,
     accessKey: ACCESS_KEYS.GA_TRANSPORT,
   },
+];
+
+const menuTiket = [
   {
     label: 'Tiket',
     href: '/ga/transport/tiket',
     icon: Ticket,
     accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
   },
+];
+
+const menuTravel = [
   {
     label: 'Travel',
     href: '/ga/transport/travel',
@@ -54,12 +62,26 @@ const menus = [
   },
 ];
 
+const LABEL_SCOPE: Record<ScopeTransport, string> = {
+  sarana: 'Sarana',
+  tiket: 'Tiket',
+  travel: 'Travel',
+};
+
 export default function TransportLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const scope: ScopeTransport = pathname.startsWith('/ga/transport/tiket')
+    ? 'tiket'
+    : pathname.startsWith('/ga/transport/travel')
+      ? 'travel'
+      : 'sarana';
+
+  const menus = scope === 'tiket' ? menuTiket : scope === 'travel' ? menuTravel : menuSarana;
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
@@ -73,18 +95,20 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    const bolehMasuk =
-      hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT) ||
-      hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT_TIKET) ||
-      hasAccess(storedUser, ACCESS_KEYS.GA_TRANSPORT_TRAVEL);
+    const requiredKey =
+      scope === 'tiket'
+        ? ACCESS_KEYS.GA_TRANSPORT_TIKET
+        : scope === 'travel'
+          ? ACCESS_KEYS.GA_TRANSPORT_TRAVEL
+          : ACCESS_KEYS.GA_TRANSPORT;
 
-    if (!bolehMasuk) {
+    if (!hasAccess(storedUser, requiredKey)) {
       router.replace('/ga');
       return;
     }
 
     setUser(storedUser);
-  }, [router]);
+  }, [router, scope]);
 
   return (
     <div className={styles.shell}>
@@ -114,7 +138,7 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
             <ChevronLeft size={20} />
             {!collapsed && <span>Pilihan GA</span>}
           </Link>
-          {!collapsed && <p className={styles.caption}>MENU TRANSPORT</p>}
+          {!collapsed && <p className={styles.caption}>MENU {LABEL_SCOPE[scope].toUpperCase()}</p>}
           {menus
             .filter(({ accessKey }) => !user || hasAccess(user, accessKey))
             .map(({ label, href, icon: Icon }) => (
@@ -155,7 +179,7 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
           </button>
           <div>
             <small>GA</small>
-            <strong>Transport</strong>
+            <strong>{LABEL_SCOPE[scope]}</strong>
           </div>
           <div className={styles.user}>
             <span>

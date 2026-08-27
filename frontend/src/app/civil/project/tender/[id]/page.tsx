@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Pencil, Plus, Printer, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, Download, Paperclip, Pencil, Plus, Printer, Trash2, Trophy, X } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import {
@@ -23,6 +23,7 @@ import {
   type KategoriEvaluasiVendor,
   type TenderDetail,
   type Vendor,
+  urlFileEprom,
 } from "@/lib/eprom-api";
 import { FolderExplorer } from "@/components/civil-project/folder-explorer";
 import { Modal } from "@/components/civil-project/modal";
@@ -61,7 +62,8 @@ export default function TenderDetailPage() {
   const [detail, setDetail] = useState<TenderDetail | null>(null);
   const [vendorList, setVendorList] = useState<Vendor[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedVendorIds, setSelectedVendorIds] = useState<number[]>([]);
+  const [vendorUndangan, setVendorUndangan] = useState<Record<number, File[]>>({});
+  const [ringkasanKirim, setRingkasanKirim] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [sphFormOpen, setSphFormOpen] = useState<Record<number, boolean>>({});
   const [sphFile, setSphFile] = useState<Record<number, File | null>>({});
@@ -163,14 +165,59 @@ export default function TenderDetailPage() {
     }
   }
 
+  const selectedVendorIds = Object.keys(vendorUndangan).map(Number);
+
+  function toggleVendorUndangan(vendorId: number, dipilih: boolean) {
+    setVendorUndangan((cur) => {
+      const next = { ...cur };
+      if (dipilih) {
+        next[vendorId] = next[vendorId] ?? [];
+      } else {
+        delete next[vendorId];
+      }
+      return next;
+    });
+  }
+
+  function tambahFileVendor(vendorId: number, files: File[]) {
+    setVendorUndangan((cur) => ({
+      ...cur,
+      [vendorId]: [...(cur[vendorId] ?? []), ...files],
+    }));
+  }
+
+  function hapusFileVendor(vendorId: number, index: number) {
+    setVendorUndangan((cur) => ({
+      ...cur,
+      [vendorId]: (cur[vendorId] ?? []).filter((_, i) => i !== index),
+    }));
+  }
+
   async function kirimUndangan() {
     if (selectedVendorIds.length === 0) return;
     setSubmitting(true);
     setError(null);
+    setRingkasanKirim(null);
     try {
-      await epromApi.tender.kirimUndangan(tenderId, selectedVendorIds);
-      setSelectedVendorIds([]);
-      muatUlang();
+      const hasil = await epromApi.tender.kirimUndangan(tenderId, vendorUndangan);
+      setVendorUndangan({});
+      setDetail(hasil);
+
+      const ringkasan = hasil.ringkasanEmail;
+      if (ringkasan) {
+        if (!ringkasan.mailAktif) {
+          setRingkasanKirim(
+            "Undangan tersimpan. Pengiriman email otomatis belum aktif (SMTP belum dikonfigurasi).",
+          );
+        } else {
+          const bagian: string[] = [];
+          if (ringkasan.terkirim.length > 0) bagian.push(`terkirim ke ${ringkasan.terkirim.join(", ")}`);
+          if (ringkasan.tanpaEmail.length > 0)
+            bagian.push(`${ringkasan.tanpaEmail.join(", ")} tidak punya email terdaftar`);
+          if (ringkasan.gagal.length > 0) bagian.push(`gagal terkirim ke ${ringkasan.gagal.join(", ")}`);
+          setRingkasanKirim(bagian.length > 0 ? `Email undangan: ${bagian.join("; ")}.` : null);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengirim undangan");
     } finally {
@@ -351,39 +398,90 @@ export default function TenderDetailPage() {
             <div className={styles.vendorPickerGrid}>
               {vendorBelumDiundang.map((v) => {
                 const dipilih = selectedVendorIds.includes(v.id);
+                const fileVendor = vendorUndangan[v.id] ?? [];
 
                 return (
-                  <label
+                  <div
                     key={v.id}
                     className={`${styles.vendorPickerCard} ${dipilih ? styles.vendorPickerCardActive : ""}`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={dipilih}
-                      onChange={(e) =>
-                        setSelectedVendorIds((cur) =>
-                          e.target.checked ? [...cur, v.id] : cur.filter((id) => id !== v.id),
-                        )
-                      }
-                    />
-                    <div>
-                      <strong>{v.namaVendor}</strong>
-                      <small>{v.email ?? v.noTelepon ?? "Tanpa kontak"}</small>
-                    </div>
-                  </label>
+                    <label className={styles.vendorPickerCardHead}>
+                      <input
+                        type="checkbox"
+                        checked={dipilih}
+                        onChange={(e) => toggleVendorUndangan(v.id, e.target.checked)}
+                      />
+                      <div>
+                        <strong>{v.namaVendor}</strong>
+                        <small>{v.email ?? v.noTelepon ?? "Tanpa kontak"}</small>
+                      </div>
+                    </label>
+
+                    {dipilih && (
+                      <div>
+                        <label
+                          className={styles.secondaryButton}
+                          style={{ cursor: "pointer", width: "100%", justifyContent: "center" }}
+                        >
+                          <Paperclip size={13} />
+                          Lampirkan File
+                          <input
+                            type="file"
+                            multiple
+                            hidden
+                            onChange={(e) => {
+                              const dipilihFile = Array.from(e.target.files ?? []);
+                              tambahFileVendor(v.id, dipilihFile);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+
+                        {fileVendor.length > 0 && (
+                          <div className={styles.roundList} style={{ marginTop: 8 }}>
+                            {fileVendor.map((f, index) => (
+                              <div key={`${f.name}-${index}`} className={styles.roundRow}>
+                                <span>{f.name}</span>
+                                <button
+                                  type="button"
+                                  className={styles.iconButtonDanger}
+                                  onClick={() => hapusFileVendor(v.id, index)}
+                                  title="Hapus file"
+                                >
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
           )}
 
+          <p className={styles.emptyText} style={{ marginTop: 12 }}>
+            File bebas (PDF, Word, Excel, gambar, dll), boleh lebih dari satu per vendor — masing-masing
+            vendor cuma menerima lampiran miliknya sendiri lewat email undangan.
+          </p>
+
           <button
             type="button"
             className={styles.primaryButton}
+            style={{ marginTop: 18 }}
             onClick={kirimUndangan}
             disabled={submitting || selectedVendorIds.length === 0}
           >
             Kirim Undangan{selectedVendorIds.length > 0 ? ` (${selectedVendorIds.length})` : ""}
           </button>
+
+          {ringkasanKirim && (
+            <p className={styles.emptyText} style={{ marginTop: 10 }}>
+              {ringkasanKirim}
+            </p>
+          )}
 
           <h2 className={styles.sectionTitle} style={{ marginTop: 24 }}>
             Vendor Sudah Diundang
@@ -397,6 +495,22 @@ export default function TenderDetailPage() {
                 <div key={u.id} className={styles.roundRow}>
                   <strong>{u.vendor.namaVendor}</strong>
                   <span>Dikirim {formatTanggal(u.tanggalKirim)}</span>
+                  {u.files.length > 0 && (
+                    <span>
+                      {u.files.map((f) => (
+                        <a
+                          key={f.id}
+                          href={urlFileEprom(f.urlFile)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={f.namaFile}
+                          style={{ marginRight: 8 }}
+                        >
+                          <Download size={13} />
+                        </a>
+                      ))}
+                    </span>
+                  )}
                   <button
                     type="button"
                     className={styles.iconButtonDanger}
