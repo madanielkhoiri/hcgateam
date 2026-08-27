@@ -294,6 +294,15 @@
 .driveToolbar { display: flex; gap: 8px; flex-wrap: wrap; }
 .folderIcon { color: #d97706; background: #fff2df; }
 
+/* ---- Kartu ringkasan angka (stat tile) ---- */
+.statGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.statCard {
+  padding: 14px 16px; background: #f7fafc; border: 1px solid #e1eaf3; border-radius: 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.statCard strong { color: #0d2a45; font-size: 20px; font-weight: 800; }
+.statCard span { color: #7186a0; font-size: 12px; font-weight: 700; }
+
 @media (max-width: 720px) {
   .pageHead { flex-direction: column; }
   .manageCard { flex-direction: column; }

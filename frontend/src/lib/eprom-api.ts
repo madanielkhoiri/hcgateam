@@ -28,6 +28,12 @@ export type Vendor = {
   _count?: { kontrak: number };
 };
 
+export type TenderUndanganFile = {
+  id: number;
+  namaFile: string;
+  urlFile: string;
+};
+
 export type TenderUndangan = {
   id: number;
   tenderId: number;
@@ -35,6 +41,14 @@ export type TenderUndangan = {
   fileUndangan: string | null;
   tanggalKirim: string | null;
   vendor: Vendor;
+  files: TenderUndanganFile[];
+};
+
+export type RingkasanEmailUndangan = {
+  mailAktif: boolean;
+  terkirim: string[];
+  gagal: string[];
+  tanpaEmail: string[];
 };
 
 export type TenderSPH = {
@@ -64,6 +78,7 @@ export type TenderProcess = {
 export type TenderDetail = TenderProcess & {
   undangan: TenderUndangan[];
   sph: TenderSPH[];
+  ringkasanEmail?: RingkasanEmailUndangan;
 };
 
 export type KategoriEvaluasiVendor =
@@ -661,10 +676,16 @@ export const epromApi = {
       request<TenderProcess>('/tender', { method: 'POST', body: JSON.stringify(data) }),
     ubah: (id: number, data: Partial<{ namaTender: string; tanggalMulai: string; tanggalSelesai: string }>) =>
       request<TenderProcess>(`/tender/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    kirimUndangan: (id: number, vendorIds: number[], file?: File | null) => {
+    /** Kirim undangan ke beberapa vendor sekaligus — file lampiran per vendor berbeda-beda. */
+    kirimUndangan: (id: number, filesPerVendor: Record<number, File[]>) => {
       const form = new FormData();
+      const vendorIds = Object.keys(filesPerVendor).map(Number);
       form.append('vendorIds', vendorIds.join(','));
-      if (file) form.append('file', file);
+      for (const vendorId of vendorIds) {
+        for (const file of filesPerVendor[vendorId]) {
+          form.append(`files_${vendorId}`, file);
+        }
+      }
       return request<TenderDetail>(`/tender/${id}/undangan`, { method: 'POST', body: form });
     },
     hapus: (id: number) => request<{ message: string }>(`/tender/${id}`, { method: 'DELETE' }),

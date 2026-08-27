@@ -10,6 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { MailModule } from './mail/mail.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 
@@ -49,12 +50,14 @@ import { HousekeepingIndoorModule } from './housekeeping-indoor/housekeeping-ind
 import { IrModule } from './ir/ir.module';
 import { PostinganModule } from './postingan/postingan.module';
 import { AktivitasModule } from './aktivitas/aktivitas.module';
+import { CivilTps3rModule } from './civil-tps3r/civil-tps3r.module';
 import { DriveModule } from './drive/drive.module';
 import { AlbumModule } from './album/album.module';
 
 @Module({
   imports: [
     InventoryModule,
+    MailModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -92,6 +95,7 @@ import { AlbumModule } from './album/album.module';
     IrModule,
     PostinganModule,
     AktivitasModule,
+    CivilTps3rModule,
     DriveModule,
     AlbumModule,
   ],
