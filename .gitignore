@@ -21,6 +21,12 @@ coverage/
 **/.env.*
 !**/.env.example
 
+# Sertifikat HTTPS lokal (dev, testing kamera di HP) — jangan pernah di-commit
+certs/
+*.pem
+*.key
+*.crt
+
 # Upload runtime backend
 backend/uploads/daily-activities/
 backend/uploads/grass-cutting/
