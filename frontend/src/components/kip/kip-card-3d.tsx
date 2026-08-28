@@ -8,9 +8,10 @@ import type { Kip } from '@/lib/kip-api';
 
 const BULAN_LABEL = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGS', 'SEP', 'OKT', 'NOV', 'DES'];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
-const LOGO_PPA_URL = `${API_URL}/uploads/signatures/${encodeURIComponent('Logo PPA Official.png')}`;
-const LOGO_K3_URL = `${API_URL}/uploads/signatures/${encodeURIComponent('k3.png')}`;
+// Aset statis frontend (frontend/public/logos/) — ikut ter-commit ke repo,
+// beda dari backend/uploads/ yang isinya upload runtime (tidak di-commit).
+const LOGO_PPA_URL = '/logos/ppa.png';
+const LOGO_K3_URL = '/logos/k3.png';
 
 /** Preload satu gambar sekali saja, dipakai ulang tiap render kartu. */
 function useGambarLogo(url: string): HTMLImageElement | null {
@@ -18,7 +19,6 @@ function useGambarLogo(url: string): HTMLImageElement | null {
 
   useEffect(() => {
     const gambar = new window.Image();
-    gambar.crossOrigin = 'anonymous';
     gambar.onload = () => setImg(gambar);
     gambar.src = url;
   }, [url]);
