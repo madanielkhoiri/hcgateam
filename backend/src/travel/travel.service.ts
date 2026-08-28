@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TravelFileService } from './travel-file.service';
 import { TravelAksesService } from './travel-akses.service';
 import { BuatDriverDto, BuatJadwalDto, RatingTravelDto, UbahDriverDto, UbahJadwalDto } from './dto/travel.dto';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 /** Karyawan wajib check-in paling cepat H-2 jam sebelum waktu berangkat rencana. */
 const JENDELA_CHECKIN_MS = 2 * 60 * 60 * 1000;
@@ -20,6 +21,7 @@ export class TravelService {
     private readonly prisma: PrismaService,
     private readonly file: TravelFileService,
     private readonly akses: TravelAksesService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   // ==================================================
@@ -209,7 +211,50 @@ export class TravelService {
       },
     });
 
+    await this.notifikasiPenumpangBaru(karyawanIds, dto.tujuan.trim(), waktu, dto.armada.trim(), driver);
+
     return this.jadwalAtauThrow(jadwal.id);
+  }
+
+  /** Notifikasi WA ke akun tiap karyawan penumpang, pakai nomor dari data akunnya. */
+  private async notifikasiPenumpangBaru(
+    karyawanIds: number[],
+    tujuan: string,
+    waktu: Date,
+    armada: string,
+    driver: { nama: string; noTelepon: string | null },
+  ) {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    const daftarKaryawan = await this.prisma.karyawan.findMany({
+      where: { id: { in: karyawanIds } },
+      select: { nama: true, noTelepon: true, akun: { select: { phoneNumber: true } } },
+    });
+
+    const waktuText = waktu.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    for (const karyawan of daftarKaryawan) {
+      const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
+
+      if (!nomor) {
+        continue;
+      }
+
+      const pesan =
+        `Halo ${karyawan.nama}, Anda dijadwalkan Travel ke ${tujuan} pada ${waktuText} WIB. ` +
+        `Armada: ${armada}, Driver: ${driver.nama}${driver.noTelepon ? ` (${driver.noTelepon})` : ''}. ` +
+        `Cek di Portal HCGA TEAM ya.`;
+
+      await this.whatsapp.kirim(nomor, pesan);
+    }
   }
 
   async ubahJadwal(id: number, dto: UbahJadwalDto) {
