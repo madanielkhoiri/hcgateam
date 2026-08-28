@@ -218,7 +218,27 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log('Akun superadmin, admin, fa, karyawan, tamu, owner, vendor, dan driver berhasil dibuat dengan password universal');
+  await prisma.user.upsert({
+    where: {
+      username: 'elektrik',
+    },
+    update: {
+      role: UserRole.ELEKTRIK,
+      isActive: true,
+      accessKeys: [],
+      passwordHash: universalPasswordHash,
+    },
+    create: {
+      name: 'Elektrik Demo',
+      username: 'elektrik',
+      passwordHash: universalPasswordHash,
+      role: UserRole.ELEKTRIK,
+      isActive: true,
+      accessKeys: [],
+    },
+  });
+
+  console.log('Akun superadmin, admin, fa, karyawan, tamu, owner, vendor, driver, dan elektrik berhasil dibuat dengan password universal');
 }
 
 main()

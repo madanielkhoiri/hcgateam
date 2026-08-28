@@ -33,6 +33,9 @@ enum UserRole {
   // Peran khusus modul Transport ▸ Travel: checkin/checkout perjalanan
   // shuttle karyawan, tidak terikat ke tabel Karyawan (profil dikelola GA).
   DRIVER
+  // Tim Elektrik GA MEP — satu-satunya (selain Admin) yang boleh ceklis
+  // checklist bulanan KIP (Kartu Inspeksi Peralatan).
+  ELEKTRIK
 }
 
 model User {
@@ -104,6 +107,9 @@ model User {
   transportTiketDikirim TransportTiket[]
   travelJadwalDibuat    TravelJadwal[]
   housekeepingIndoorDibuat HousekeepingIndoor[]
+
+  kipDibuat    Kip[]
+  kipDiperiksa KipChecklistBulan[]
 
   dokumenIrDiupload        DokumenIr[]          @relation("DokumenIrUploader")
   aspirasiPertanyaanDibuat AspirasiPertanyaan[] @relation("AspirasiPertanyaanCreator")
@@ -2457,6 +2463,52 @@ model HousekeepingIndoorFoto {
 
 // ==================================================
 // SELESAI: GA ▸ HOUSEKEEPING INDOOR
+// ==================================================
+
+// ==================================================
+// CIVIL ▸ GA MEP ▸ ELECTRIC ▸ KIP (Kartu Inspeksi Peralatan)
+// Scan barcode lokasi -> kartu 3D + checklist 12 bulan per alat.
+// ==================================================
+
+enum StatusChecklistKip {
+  BELUM
+  SUDAH
+}
+
+model Kip {
+  id             Int                      @id @default(autoincrement())
+  noKip          String                   @unique @map("no_kip")
+  jenisPeralatan String                   @map("jenis_peralatan")
+  departemen     String
+  tahun          Int
+  lokasi         LokasiHousekeepingIndoor
+  createdBy      Int                      @map("created_by")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  pengirim  User                @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  checklist KipChecklistBulan[]
+
+  @@index([lokasi])
+  @@map("civil_kip")
+}
+
+model KipChecklistBulan {
+  id             Int                @id @default(autoincrement())
+  kipId          Int                @map("kip_id")
+  bulan          Int
+  status         StatusChecklistKip @default(BELUM)
+  diperiksaOleh  Int?               @map("diperiksa_oleh")
+  tanggalPeriksa DateTime?          @map("tanggal_periksa")
+
+  kip       Kip   @relation(fields: [kipId], references: [id], onDelete: Cascade)
+  pemeriksa User? @relation(fields: [diperiksaOleh], references: [id], onDelete: SetNull)
+
+  @@unique([kipId, bulan])
+  @@map("civil_kip_checklist_bulan")
+}
+
+// ==================================================
+// SELESAI: CIVIL ▸ GA MEP ▸ ELECTRIC ▸ KIP
 // ==================================================
 
 // ==================================================
