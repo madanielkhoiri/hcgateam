@@ -7,12 +7,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { TiketFileService } from './tiket-file.service';
 import { BuatTiketDto } from './dto/tiket.dto';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class TiketService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly file: TiketFileService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   /** Daftar ringkas karyawan aktif untuk dropdown pencarian di form admin. */
@@ -54,7 +56,10 @@ export class TiketService {
   }
 
   async kirim(dto: BuatTiketDto, files: Express.Multer.File[] = [], aktorId: number) {
-    const karyawan = await this.prisma.karyawan.findUnique({ where: { id: dto.karyawanId } });
+    const karyawan = await this.prisma.karyawan.findUnique({
+      where: { id: dto.karyawanId },
+      include: { akun: { select: { phoneNumber: true } } },
+    });
 
     if (!karyawan) {
       throw new NotFoundException('Karyawan tidak ditemukan');
@@ -78,7 +83,7 @@ export class TiketService {
     const disimpan = files.map((f) => this.file.simpan(f, karyawan.id));
 
     try {
-      return await this.prisma.transportTiket.create({
+      const tiket = await this.prisma.transportTiket.create({
         data: {
           karyawanId: karyawan.id,
           tanggalMulai: mulai,
@@ -89,10 +94,40 @@ export class TiketService {
         },
         include: { karyawan: true, files: true },
       });
+
+      await this.notifikasiTiketBaru(karyawan, mulai, selesai);
+
+      return tiket;
     } catch (error) {
       disimpan.forEach((item) => this.file.hapus(item.fileUrl));
       throw error;
     }
+  }
+
+  /** Notifikasi WA ke akun karyawan penerima tiket, pakai nomor dari data akunnya. */
+  private async notifikasiTiketBaru(
+    karyawan: { nama: string; noTelepon: string | null; akun: { phoneNumber: string | null } | null },
+    mulai: Date,
+    selesai: Date,
+  ) {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
+
+    if (!nomor) {
+      return;
+    }
+
+    const formatTanggal = (tanggal: Date) =>
+      tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    const pesan =
+      `Halo ${karyawan.nama}, ada tiket cuti baru untuk Anda periode ${formatTanggal(mulai)} - ${formatTanggal(selesai)}. ` +
+      `Silakan download filenya di Portal HCGA TEAM ya.`;
+
+    await this.whatsapp.kirim(nomor, pesan);
   }
 
   async hapus(id: number) {

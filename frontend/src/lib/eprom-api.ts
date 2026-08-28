@@ -28,12 +28,6 @@ export type Vendor = {
   _count?: { kontrak: number };
 };
 
-export type TenderUndanganFile = {
-  id: number;
-  namaFile: string;
-  urlFile: string;
-};
-
 export type TenderUndangan = {
   id: number;
   tenderId: number;
@@ -41,14 +35,6 @@ export type TenderUndangan = {
   fileUndangan: string | null;
   tanggalKirim: string | null;
   vendor: Vendor;
-  files: TenderUndanganFile[];
-};
-
-export type RingkasanEmailUndangan = {
-  mailAktif: boolean;
-  terkirim: string[];
-  gagal: string[];
-  tanpaEmail: string[];
 };
 
 export type TenderSPH = {
@@ -78,7 +64,6 @@ export type TenderProcess = {
 export type TenderDetail = TenderProcess & {
   undangan: TenderUndangan[];
   sph: TenderSPH[];
-  ringkasanEmail?: RingkasanEmailUndangan;
 };
 
 export type KategoriEvaluasiVendor =
@@ -677,17 +662,11 @@ export const epromApi = {
     ubah: (id: number, data: Partial<{ namaTender: string; tanggalMulai: string; tanggalSelesai: string }>) =>
       request<TenderProcess>(`/tender/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     /** Kirim undangan ke beberapa vendor sekaligus — file lampiran per vendor berbeda-beda. */
-    kirimUndangan: (id: number, filesPerVendor: Record<number, File[]>) => {
-      const form = new FormData();
-      const vendorIds = Object.keys(filesPerVendor).map(Number);
-      form.append('vendorIds', vendorIds.join(','));
-      for (const vendorId of vendorIds) {
-        for (const file of filesPerVendor[vendorId]) {
-          form.append(`files_${vendorId}`, file);
-        }
-      }
-      return request<TenderDetail>(`/tender/${id}/undangan`, { method: 'POST', body: form });
-    },
+    kirimUndangan: (id: number, vendorIds: number[]) =>
+      request<TenderDetail>(`/tender/${id}/undangan`, {
+        method: 'POST',
+        body: JSON.stringify({ vendorIds }),
+      }),
     hapus: (id: number) => request<{ message: string }>(`/tender/${id}`, { method: 'DELETE' }),
     hapusUndangan: (tenderId: number, vendorId: number) =>
       request<{ message: string }>(`/tender/${tenderId}/undangan/${vendorId}`, { method: 'DELETE' }),

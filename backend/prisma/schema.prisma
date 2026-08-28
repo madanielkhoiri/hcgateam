@@ -1685,24 +1685,11 @@ model TenderUndangan {
   tanggalKirim DateTime? @map("tanggal_kirim")
   createdAt    DateTime  @default(now()) @map("created_at")
 
-  tender TenderProcess        @relation(fields: [tenderId], references: [id], onDelete: Cascade)
-  vendor Vendor                @relation(fields: [vendorId], references: [id], onDelete: Restrict)
-  files  TenderUndanganFile[]
+  tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
 
   @@unique([tenderId, vendorId])
   @@map("eprom_tender_undangan")
-}
-
-model TenderUndanganFile {
-  id         Int      @id @default(autoincrement())
-  undanganId Int      @map("undangan_id")
-  namaFile   String   @map("nama_file")
-  urlFile    String   @map("url_file")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  undangan TenderUndangan @relation(fields: [undanganId], references: [id], onDelete: Cascade)
-
-  @@map("eprom_tender_undangan_file")
 }
 
 model TenderSPH {
