@@ -10,7 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
-import { MailModule } from './mail/mail.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 
@@ -57,7 +57,7 @@ import { AlbumModule } from './album/album.module';
 @Module({
   imports: [
     InventoryModule,
-    MailModule,
+    WhatsappModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
