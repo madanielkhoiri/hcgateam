@@ -30,6 +30,7 @@ import { EpromAksesService } from '../common/eprom-akses.service';
 import { EpromFileService } from '../common/eprom-file.service';
 import { AktorEprom } from '../common/eprom-aktor';
 import { EpromEngineerSigningService } from './eprom-engineer-signing.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 
 export const TIPE_ENGINEER = [
   'shop-drawing',
@@ -124,6 +125,7 @@ export class EpromEngineerService {
     private readonly akses: EpromAksesService,
     private readonly file: EpromFileService,
     private readonly signing: EpromEngineerSigningService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   validasiTipe(tipe: string): TipeEngineer {
@@ -202,7 +204,7 @@ export class EpromEngineerService {
       ? this.file.simpanDokumen(file, `project/${projectId}/engineer/${tipe}`)
       : null;
 
-    return this.delegate(tipe).create({
+    const hasil = await this.delegate(tipe).create({
       data: {
         projectId,
         fileUrl,
@@ -210,6 +212,40 @@ export class EpromEngineerService {
         ...(namaField ? { [namaField]: dto.nama!.trim() } : {}),
       },
     });
+
+    await this.notifikasiUpload(tipe, projectId, aktor.id);
+
+    return hasil;
+  }
+
+  /** Notifikasi WA ke Owner setiap ada upload baru di salah satu sub-menu Engineer. */
+  private async notifikasiUpload(tipe: TipeEngineer, projectId: number, aktorId: number) {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    const nomorOwner = process.env.WA_OWNER_NUMBER;
+
+    if (!nomorOwner) {
+      return;
+    }
+
+    const [project, pengunggah] = await Promise.all([
+      this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { namaProject: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: aktorId },
+        select: { name: true },
+      }),
+    ]);
+
+    const pesan =
+      `Ada upload ${LABEL_TIPE[tipe]} baru di project ${project?.namaProject ?? '-'} oleh ${pengunggah?.name ?? '-'}. ` +
+      `Cek di Portal HCGA TEAM ya.`;
+
+    await this.whatsapp.kirim(nomorOwner, pesan);
   }
 
   /** Owner meninjau (approve/reject) — item PENDING dianggap final setelahnya (bagian 3.1). */

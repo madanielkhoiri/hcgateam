@@ -14,17 +14,21 @@ import {
   Patch,
   Post,
   UploadedFile,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { EpromAksesService } from '../common/eprom-akses.service';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
-import { BuatTenderDto, EpromTenderService, UbahTenderDto } from './eprom-tender.service';
+import {
+  BuatTenderDto,
+  EpromTenderService,
+  KirimUndanganDto,
+  UbahTenderDto,
+} from './eprom-tender.service';
 
 @Controller('eprom/tender')
 @UseGuards(JwtAuthGuard)
@@ -67,38 +71,13 @@ export class EpromTenderController {
   }
 
   @Post(':id/undangan')
-  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
   kirimUndangan(
     @Aktor() aktor: AktorEprom,
     @Param('id', ParseIntPipe) id: number,
-    @Body('vendorIds') vendorIdsRaw: string,
-    @UploadedFiles() files?: Express.Multer.File[],
+    @Body() dto: KirimUndanganDto,
   ) {
     this.akses.wajibOwner(aktor);
-
-    const vendorIds = (vendorIdsRaw ?? '')
-      .split(',')
-      .map((value) => Number(value.trim()))
-      .filter((value) => Number.isInteger(value) && value > 0);
-
-    if (vendorIds.length === 0) {
-      throw new BadRequestException('Pilih minimal satu vendor untuk diundang');
-    }
-
-    // Tiap vendor punya lampirannya sendiri — dikirim via field terpisah
-    // "files_<vendorId>" agar tidak tercampur dengan vendor lain.
-    const filesPerVendor = new Map<number, Express.Multer.File[]>();
-    for (const file of files ?? []) {
-      const match = /^files_(\d+)$/.exec(file.fieldname);
-      if (!match) continue;
-
-      const vendorId = Number(match[1]);
-      const list = filesPerVendor.get(vendorId) ?? [];
-      list.push(file);
-      filesPerVendor.set(vendorId, list);
-    }
-
-    return this.service.kirimUndangan(id, { vendorIds }, filesPerVendor);
+    return this.service.kirimUndangan(id, dto);
   }
 
   @Delete(':id/undangan/:vendorId')
