@@ -85,6 +85,8 @@ export default function HandoversPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -162,24 +164,54 @@ export default function HandoversPage() {
     void loadData();
   }, [loadData]);
 
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+
+    return Array.from({ length: 7 }, (_, index) => current - 5 + index);
+  }, []);
+
   const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    if (!keyword) {
-      return rows;
-    }
+    return rows
+      .filter((row) => {
+        if (!keyword) {
+          return true;
+        }
 
-    return rows.filter((row) =>
-      [
-        row.stpNumber,
-        row.workOrder.workOrderNumber,
-        row.workOrder.workOrderName,
-        row.receiverName ?? "",
-        row.receiverDepartment ?? "",
-        row.location ?? "",
-      ].some((value) => String(value).toLowerCase().includes(keyword)),
-    );
-  }, [rows, search]);
+        return [
+          row.stpNumber,
+          row.workOrder.workOrderNumber,
+          row.workOrder.workOrderName,
+          row.receiverName ?? "",
+          row.receiverDepartment ?? "",
+          row.location ?? "",
+        ].some((value) => String(value).toLowerCase().includes(keyword));
+      })
+      .filter((row) => {
+        if (!month && !year) {
+          return true;
+        }
+
+        const rowDate = new Date(row.handoverDate);
+
+        if (year && rowDate.getFullYear() !== Number(year)) {
+          return false;
+        }
+
+        if (month && rowDate.getMonth() + 1 !== Number(month)) {
+          return false;
+        }
+
+        return true;
+      });
+  }, [rows, search, month, year]);
+
+  function resetFilters() {
+    setSearch("");
+    setMonth("");
+    setYear("");
+  }
 
   function openCreate() {
     setEditingId(null);
@@ -486,6 +518,42 @@ export default function HandoversPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Cari nomor STP, WO, pekerjaan..."
           />
+
+          <div className={styles.tableFilters}>
+            <select
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+            >
+              <option value="">Semua Bulan</option>
+              {Array.from({ length: 12 }, (_, index) => (
+                <option key={index + 1} value={index + 1}>
+                  {new Intl.DateTimeFormat("id-ID", {
+                    month: "long",
+                  }).format(new Date(2026, index, 1))}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+            >
+              <option value="">Semua Tahun</option>
+              {availableYears.map((item) => (
+                <option value={item} key={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className={styles.resetFilterButton}
+              onClick={resetFilters}
+            >
+              Reset
+            </button>
+          </div>
 
           <span>{filteredRows.length} data</span>
         </div>

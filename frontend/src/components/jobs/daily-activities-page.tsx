@@ -209,6 +209,10 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [approvalFilter, setApprovalFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -278,19 +282,61 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
     void loadRows();
   }, [loadRows]);
 
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+
+    return Array.from({ length: 7 }, (_, index) => current - 5 + index);
+  }, []);
+
   const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    if (!keyword) {
-      return rows;
-    }
+    return rows
+      .filter((row) => {
+        if (!keyword) {
+          return true;
+        }
 
-    return rows.filter((row) =>
-      [row.workName, row.location, row.lastPic, row.status, row.approvalStatus]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword)),
-    );
-  }, [rows, search]);
+        return [
+          row.workName,
+          row.location,
+          row.lastPic,
+          row.status,
+          row.approvalStatus,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(keyword));
+      })
+      .filter((row) => {
+        if (!month && !year) {
+          return true;
+        }
+
+        const rowDate = new Date(row.startDate);
+
+        if (year && rowDate.getUTCFullYear() !== Number(year)) {
+          return false;
+        }
+
+        if (month && rowDate.getUTCMonth() + 1 !== Number(month)) {
+          return false;
+        }
+
+        return true;
+      })
+      .filter((row) => !statusFilter || row.status === statusFilter)
+      .filter(
+        (row) => !approvalFilter || row.approvalStatus === approvalFilter,
+      );
+  }, [rows, search, month, year, statusFilter, approvalFilter]);
+
+  function resetFilters() {
+    setSearch("");
+    setMonth("");
+    setYear("");
+    setStatusFilter("");
+    setApprovalFilter("");
+  }
 
   const canApprove =
     user?.role === "SECTION_HEAD" ||
@@ -669,6 +715,59 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
+
+        <select
+          value={month}
+          onChange={(event) => setMonth(event.target.value)}
+        >
+          <option value="">Semua Bulan</option>
+          {Array.from({ length: 12 }, (_, index) => (
+            <option key={index + 1} value={index + 1}>
+              {new Intl.DateTimeFormat("id-ID", {
+                month: "long",
+              }).format(new Date(2026, index, 1))}
+            </option>
+          ))}
+        </select>
+
+        <select value={year} onChange={(event) => setYear(event.target.value)}>
+          <option value="">Semua Tahun</option>
+          {availableYears.map((item) => (
+            <option value={item} key={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="">Semua Status</option>
+          <option value="OPEN">Open</option>
+          <option value="ON_PROGRESS">On Progress</option>
+          <option value="WAITING_APPROVAL">Menunggu Approval</option>
+          <option value="CLOSE">Close</option>
+        </select>
+
+        <select
+          value={approvalFilter}
+          onChange={(event) => setApprovalFilter(event.target.value)}
+        >
+          <option value="">Semua Approval</option>
+          <option value="NONE">-</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+
+        <button
+          type="button"
+          className={styles.toolbarResetButton}
+          onClick={resetFilters}
+        >
+          Reset
+        </button>
       </div>
 
       <div className={styles.tableCard}>

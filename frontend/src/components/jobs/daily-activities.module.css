@@ -52,6 +52,10 @@
 }
 
 .toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 12px;
 }
 
@@ -62,6 +66,47 @@
   border: 1px solid #d5e0ea;
   border-radius: 8px;
   outline: none;
+}
+
+.toolbar select {
+  height: 38px;
+  padding: 0 10px;
+  color: #183b60;
+  background: #fbfdff;
+  border: 1px solid #d5e0ea;
+  border-radius: 8px;
+  outline: none;
+  font: inherit;
+  font-size: 11px;
+}
+
+.toolbarResetButton {
+  height: 38px;
+  padding: 0 14px;
+  color: #587087;
+  background: #f6f9fb;
+  border: 1px solid #d4e0ea;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toolbarResetButton:hover {
+  background: #eef2f6;
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar input,
+  .toolbar select,
+  .toolbarResetButton {
+    width: 100%;
+  }
 }
 
 .tableCard {

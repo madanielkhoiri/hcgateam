@@ -97,6 +97,10 @@ model User {
   suratTugasDisetujuiSh  SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
   suratTugasDisetujuiPjo SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
 
+  workOrderDisetujuiGl  WorkOrder[] @relation("PenyetujuGlWorkOrder")
+  workOrderDisetujuiSh  WorkOrder[] @relation("PenyetujuShWorkOrder")
+  workOrderDisetujuiPjo WorkOrder[] @relation("PenyetujuPjoWorkOrder")
+
   suratBalasanMagangDibuat   SuratBalasanMagang[]   @relation("PembuatSuratBalasanMagang")
   suratPenolakanMagangDibuat SuratPenolakanMagang[] @relation("PembuatSuratPenolakanMagang")
 
@@ -283,6 +287,14 @@ enum WorkOrderPic {
   GA_ELECTRIC
 }
 
+enum StatusApprovalWorkOrder {
+  MENUNGGU_GL
+  MENUNGGU_SH
+  MENUNGGU_PJO
+  DISETUJUI
+  DITOLAK
+}
+
 model WorkOrder {
   id                 Int               @id @default(autoincrement())
   workOrderNumber    String            @unique @map("work_order_number")
@@ -305,10 +317,24 @@ model WorkOrder {
   createdAt          DateTime          @default(now()) @map("created_at")
   updatedAt          DateTime          @updatedAt @map("updated_at")
 
+  statusApproval      StatusApprovalWorkOrder @default(MENUNGGU_GL) @map("status_approval")
+  disetujuiGlOlehId   Int?                    @map("disetujui_gl_oleh_id")
+  disetujuiGlPada     DateTime?               @map("disetujui_gl_pada")
+  disetujuiShOlehId   Int?                    @map("disetujui_sh_oleh_id")
+  disetujuiShPada     DateTime?               @map("disetujui_sh_pada")
+  disetujuiPjoOlehId  Int?                    @map("disetujui_pjo_oleh_id")
+  disetujuiPjoPada    DateTime?               @map("disetujui_pjo_pada")
+  alasanTolakApproval String?                 @map("alasan_tolak_approval") @db.Text
+
   creator  User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   handover Handover?
 
+  disetujuiGlOleh  User? @relation("PenyetujuGlWorkOrder", fields: [disetujuiGlOlehId], references: [id], onDelete: SetNull)
+  disetujuiShOleh  User? @relation("PenyetujuShWorkOrder", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
+  disetujuiPjoOleh User? @relation("PenyetujuPjoWorkOrder", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
+
   @@index([status])
+  @@index([statusApproval])
   @@index([requestedAt])
   @@index([department])
   @@index([pic])

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileText, FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { getStoredUser } from "@/lib/access-control";
 import {
@@ -21,6 +21,8 @@ export default function KontrakPage() {
   const [kontrakList, setKontrakList] = useState<Kontrak[]>([]);
   const [tenderSiap, setTenderSiap] = useState<TenderProcess[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [bulan, setBulan] = useState("");
+  const [tahun, setTahun] = useState("");
 
   const [tenderId, setTenderId] = useState("");
   const [nomorKontrak, setNomorKontrak] = useState("");
@@ -50,6 +52,29 @@ export default function KontrakPage() {
   useEffect(muatUlang, []);
 
   const tenderTerpilih = tenderSiap.find((t) => String(t.id) === tenderId);
+
+  const tahunTersedia = useMemo(() => {
+    const sekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => sekarang - 5 + index);
+  }, []);
+
+  const kontrakTampil = useMemo(() => {
+    if (!bulan && !tahun) {
+      return kontrakList;
+    }
+
+    return kontrakList.filter((kontrak) => {
+      const tanggal = new Date(kontrak.tanggalMulai);
+      if (bulan && tanggal.getMonth() + 1 !== Number(bulan)) return false;
+      if (tahun && tanggal.getFullYear() !== Number(tahun)) return false;
+      return true;
+    });
+  }, [kontrakList, bulan, tahun]);
+
+  function resetFilter() {
+    setBulan("");
+    setTahun("");
+  }
 
   async function buatKontrak(event: React.FormEvent) {
     event.preventDefault();
@@ -137,6 +162,30 @@ export default function KontrakPage() {
           )}
         </div>
 
+        <div className={styles.filterRow}>
+          <select value={bulan} onChange={(e) => setBulan(e.target.value)}>
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select value={tahun} onChange={(e) => setTahun(e.target.value)}>
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+
+          <button type="button" className={styles.secondaryButton} onClick={resetFilter}>
+            Reset
+          </button>
+        </div>
+
         {showKontrakForm && (
           <form className={styles.formCard} onSubmit={buatKontrak}>
             <label>
@@ -210,7 +259,7 @@ export default function KontrakPage() {
               </tr>
             </thead>
             <tbody>
-              {kontrakList.map((kontrak) => (
+              {kontrakTampil.map((kontrak) => (
                 <tr key={kontrak.id}>
                   {editingId === kontrak.id ? (
                     <>
@@ -346,7 +395,7 @@ export default function KontrakPage() {
                   )}
                 </tr>
               ))}
-              {kontrakList.length === 0 && (
+              {kontrakTampil.length === 0 && (
                 <tr>
                   <td colSpan={boleh ? 8 : 7} className={styles.emptyText}>
                     Belum ada kontrak.

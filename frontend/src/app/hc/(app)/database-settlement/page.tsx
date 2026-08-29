@@ -71,9 +71,33 @@ export default function DatabaseSettlementPage() {
  const [sedangMemuat, setSedangMemuat] = useState(true);
  const [pesanError, setPesanError] = useState("");
 
+ const [filterBulan, setFilterBulan] = useState("");
+ const [filterTahun, setFilterTahun] = useState("");
+
+ const tahunTersedia = useMemo(() => {
+ const tahunSekarang = new Date().getFullYear();
+ return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+ }, []);
+
+ const daftarDataTampil = useMemo(() => {
+ return daftarData.filter((item) => {
+ const tanggal = new Date(item.tanggal_pembuatan);
+
+ if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+ return false;
+ }
+
+ if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+ return false;
+ }
+
+ return true;
+ });
+ }, [daftarData, filterBulan, filterTahun]);
+
  const totalNominal = useMemo(() => {
- return daftarData.reduce((total, item) => total + normalisasiAngka(item.total), 0);
- }, [daftarData]);
+ return daftarDataTampil.reduce((total, item) => total + normalisasiAngka(item.total), 0);
+ }, [daftarDataTampil]);
 
  async function ambilData(idPengguna: number) {
  setSedangMemuat(true);
@@ -178,7 +202,7 @@ export default function DatabaseSettlementPage() {
  Total Item
  </p>
  <p className="mt-2 text-3xl font-black text-slate-950">
- {daftarData.length}
+ {daftarDataTampil.length}
  </p>
  </div>
 
@@ -215,6 +239,36 @@ export default function DatabaseSettlementPage() {
  <p className="text-sm font-bold text-slate-500 print:text-xs">
  Format mengikuti sheet Excel Database Settlement
  </p>
+
+ <div className="mt-4 flex flex-wrap items-center justify-center gap-2 print:hidden">
+ <select
+ value={filterBulan}
+ onChange={(event) => setFilterBulan(event.target.value)}
+ className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-cyan-300 focus:bg-white"
+ >
+ <option value="">Semua Bulan</option>
+ {Array.from({ length: 12 }, (_, index) => (
+ <option key={index + 1} value={index + 1}>
+ {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(
+ new Date(2026, index, 1)
+ )}
+ </option>
+ ))}
+ </select>
+
+ <select
+ value={filterTahun}
+ onChange={(event) => setFilterTahun(event.target.value)}
+ className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-cyan-300 focus:bg-white"
+ >
+ <option value="">Semua Tahun</option>
+ {tahunTersedia.map((tahun) => (
+ <option key={tahun} value={tahun}>
+ {tahun}
+ </option>
+ ))}
+ </select>
+ </div>
  </div>
 
  <div className="overflow-x-auto">
@@ -246,14 +300,14 @@ export default function DatabaseSettlementPage() {
  Memuat database settlement...
  </td>
  </tr>
- ) : daftarData.length === 0 ? (
+ ) : daftarDataTampil.length === 0 ? (
  <tr>
  <td colSpan={15} className="border border-slate-300 px-3 py-8 text-center font-black text-slate-500">
  Belum ada data settlement.
  </td>
  </tr>
  ) : (
- daftarData.map((item, index) => (
+ daftarDataTampil.map((item, index) => (
  <tr key={item.id} className={index % 2 === 0 ? "bg-[#d9eaf7]" : "bg-white"}>
  <td className="border border-slate-400 bg-yellow-100 px-2 py-2 text-center font-bold">{item.kode_jangan_diubah}</td>
  <td className="border border-slate-400 px-2 py-2 text-center">{item.nomor_settlement}</td>
@@ -275,7 +329,7 @@ export default function DatabaseSettlementPage() {
  )}
  </tbody>
 
- {daftarData.length > 0 && (
+ {daftarDataTampil.length > 0 && (
  <tfoot>
  <tr className="bg-slate-200 font-black">
  <td colSpan={10} className="border border-slate-500 px-2 py-3 text-right">

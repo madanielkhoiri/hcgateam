@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
   Dialog,
@@ -68,6 +68,10 @@ export default function InduksiUlangPage() {
   const [inputTanggal, setInputTanggal] = useState('');
   const [inputCatatan, setInputCatatan] = useState('');
 
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -92,6 +96,31 @@ export default function InduksiUlangPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const induksiTampil = useMemo(() => {
+    return induksi.filter((item) => {
+      if (filterStatus && item.status !== filterStatus) {
+        return false;
+      }
+
+      const tanggal = new Date(item.tanggalDaftar);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [induksi, filterStatus, filterBulan, filterTahun]);
 
   async function daftarkan() {
     if (!dialogDaftar) {
@@ -277,11 +306,55 @@ export default function InduksiUlangPage() {
 
       <Panel
         judul="Daftar Induksi Ulang"
-        keterangan={`${induksi.length} pendaftaran tercatat.`}
+        keterangan={`${induksiTampil.length} dari ${induksi.length} pendaftaran tercatat.`}
       >
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 170 }}
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="MENUNGGU">Menunggu</option>
+            <option value="TERJADWAL">Terjadwal</option>
+            <option value="SELESAI">Selesai</option>
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : induksi.length === 0 ? (
+        ) : induksiTampil.length === 0 ? (
           <Kosong
             judul="Belum ada induksi ulang"
             keterangan="Pendaftaran induksi ulang akan muncul di sini setelah didaftarkan Admin Dept."
@@ -302,7 +375,7 @@ export default function InduksiUlangPage() {
               </thead>
 
               <tbody>
-                {induksi.map((item) => (
+                {induksiTampil.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className={styles.tableNama}>

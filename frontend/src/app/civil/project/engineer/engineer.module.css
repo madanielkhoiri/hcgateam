@@ -149,6 +149,24 @@
   font-family: inherit;
 }
 
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.filterRow select {
+  min-width: 140px;
+  padding: 9px 11px;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 9px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
 .errorText {
   margin: 0;
   padding: 10px 14px;

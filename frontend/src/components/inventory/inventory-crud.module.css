@@ -93,6 +93,58 @@
   font-size: 10px;
 }
 
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filterSelect {
+  height: 41px;
+  padding: 0 10px;
+  color: #294564;
+  background: #f8fafc;
+  border: 1px solid #d8e3ee;
+  border-radius: 10px;
+  outline: 0;
+  font: inherit;
+  font-size: 11px;
+}
+
+.filterSelect:focus {
+  border-color: #55ab7d;
+  box-shadow: 0 0 0 3px rgba(9, 143, 77, 0.1);
+}
+
+.resetButton {
+  height: 41px;
+  padding: 0 14px;
+  color: #526a85;
+  background: #f4f7fa;
+  border: 1px solid #dce4ed;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resetButton:hover {
+  background: #e9eef4;
+}
+
+@media (max-width: 650px) {
+  .filters {
+    width: 100%;
+  }
+
+  .filterSelect,
+  .resetButton {
+    width: 100%;
+  }
+}
+
 .tableWrapper {
   width: 100%;
   overflow-x: auto;

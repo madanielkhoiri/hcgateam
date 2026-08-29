@@ -11,13 +11,19 @@ import { join } from 'node:path';
 import { AppModule } from './app.module';
 
 // ==================================================
-// HTTPS LOKAL (opsional, dev) — kalau backend\..\certs\dev-{key,cert}.pem
-// ada, backend jalan pakai HTTPS self-signed supaya bisa dites di HP
-// (kamera cuma boleh diakses browser dari secure context). Tidak wajib
-// ada — kalau filenya tidak ditemukan, backend tetap jalan HTTP biasa.
+// HTTPS LOKAL (opsional, dev) — HANYA nyala kalau env HTTPS_LOKAL=1 di-set
+// secara eksplisit (bukan otomatis walau file sertifikatnya ada), supaya
+// `npm run start:dev` biasa tetap HTTP seperti biasa dan tidak bentrok
+// dengan frontend. Dipakai khusus saat mau tes kamera dari HP (kamera
+// cuma boleh diakses browser dari secure context). Aktifkan dengan:
+//   HTTPS_LOKAL=1 npm run start:dev
 // ==================================================
 
 function muatHttpsOptionsLokal() {
+  if (process.env.HTTPS_LOKAL !== '1') {
+    return undefined;
+  }
+
   const keyPath = join(process.cwd(), '..', 'certs', 'dev-key.pem');
   const certPath = join(process.cwd(), '..', 'certs', 'dev-cert.pem');
 
