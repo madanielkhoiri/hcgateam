@@ -334,10 +334,12 @@ export class EpromEngineerService {
         orderBy: { approvedAt: 'desc' },
       });
     const sourceFilePath = approvalTerakhir?.signedFilePath ?? item.fileUrl;
+    const tanggalApproval = new Date();
     const signedFilePath = await this.signing.buatPdfSigned(
       sourceFilePath,
       dto.placements,
       `project/${item.projectId}/engineer/${tipe}`,
+      tanggalApproval,
     );
     const penempatanPertama = dto.placements[0];
     const penempatanAudit = dto.placements.map((placement) => ({
@@ -364,6 +366,8 @@ export class EpromEngineerService {
             documentType,
             projectId: item.projectId,
             approvedById: aktor.id,
+            approvedAt: tanggalApproval,
+            adaTandaTangan: true,
             // Kolom tunggal dipertahankan agar data approval lama tetap kompatibel.
             signatureFile: basename(penempatanPertama.signatureFile),
             signaturePage: penempatanPertama.signaturePage,
@@ -395,6 +399,59 @@ export class EpromEngineerService {
       this.file.hapus(signedFilePath);
       throw error;
     }
+  }
+
+  /** Approve tanpa menempel tanda tangan — dipakai untuk dokumen non-PDF atau saat tanda tangan memang tidak diperlukan. */
+  async approveTanpaTandaTangan(aktor: AktorEprom, tipe: TipeEngineer, id: number) {
+    this.akses.wajibOwner(aktor);
+
+    const item = await this.itemAtauThrow(tipe, id);
+
+    if (item.status !== StatusApprovalEprom.PENDING) {
+      throw new BadRequestException('Item ini sudah direview sebelumnya');
+    }
+
+    if (!item.fileUrl) {
+      throw new BadRequestException('Dokumen belum diunggah');
+    }
+
+    const documentType = DOCUMENT_TYPE[tipe];
+
+    const hasil = await this.prisma.$transaction(async (tx) => {
+      const itemSekarang = await this.delegate(tipe, tx).findUnique({
+        where: { id },
+      });
+
+      if (!itemSekarang || itemSekarang.status !== StatusApprovalEprom.PENDING) {
+        throw new BadRequestException('Item ini sudah direview sebelumnya');
+      }
+
+      const approval = await tx.engineerDocumentApproval.create({
+        data: {
+          documentId: id,
+          documentType,
+          projectId: item.projectId,
+          approvedById: aktor.id,
+          adaTandaTangan: false,
+          originalFilePath: item.fileUrl!,
+          sourceFilePath: item.fileUrl!,
+          signedFilePath: item.fileUrl!,
+        },
+        include: { approvedBy: { select: { id: true, name: true } } },
+      });
+      const updated = await this.delegate(tipe, tx).update({
+        where: { id },
+        data: { status: StatusApprovalEprom.APPROVED, komentar: null },
+      });
+
+      return { updated, approval };
+    });
+
+    return {
+      ...hasil.updated,
+      effectiveFileUrl: hasil.approval.signedFilePath,
+      latestApproval: hasil.approval,
+    };
   }
 
   /** Hapus item yang masih PENDING (salah unggah) — Owner atau Vendor pemilik project. */
