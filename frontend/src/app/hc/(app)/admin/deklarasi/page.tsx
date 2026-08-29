@@ -90,6 +90,8 @@ function HalamanAdminDeklarasiKonten() {
  const [sedangRefresh, setSedangRefresh] = useState(false);
  const [pesanError, setPesanError] = useState("");
  const [terakhirUpdate, setTerakhirUpdate] = useState<Date | null>(null);
+ const [filterBulan, setFilterBulan] = useState("");
+ const [filterTahun, setFilterTahun] = useState("");
 
  const apakahAdmin = (role: string) => {
  return (
@@ -305,6 +307,11 @@ function HalamanAdminDeklarasiKonten() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [apiUrl]);
 
+ const tahunTersedia = useMemo(() => {
+ const tahunSekarang = new Date().getFullYear();
+ return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+ }, []);
+
  const daftarDeklarasiTampil = useMemo(() => {
  const daftar = ringkasan?.daftar_deklarasi || [];
  const kunci = kataKunci.trim().toLowerCase();
@@ -312,6 +319,16 @@ function HalamanAdminDeklarasiKonten() {
  return daftar
  .filter((deklarasi) => {
  if (statusFilter !== "SEMUA" && deklarasi.status !== statusFilter) {
+ return false;
+ }
+
+ const tanggal = new Date(deklarasi.tanggal_kegiatan);
+
+ if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+ return false;
+ }
+
+ if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
  return false;
  }
 
@@ -337,7 +354,7 @@ function HalamanAdminDeklarasiKonten() {
  new Date(a.diperbarui_pada).getTime()
  );
  });
- }, [kataKunci, ringkasan, statusFilter]);
+ }, [kataKunci, ringkasan, statusFilter, filterBulan, filterTahun]);
 
  const daftarFilter: {
  value: StatusDeklarasi;
@@ -483,7 +500,8 @@ function HalamanAdminDeklarasiKonten() {
  </p>
  </div>
 
- <div className="relative w-full lg:w-[360px]">
+ <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+ <div className="relative w-full lg:w-[280px]">
  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
  <input
  value={kataKunci}
@@ -491,6 +509,35 @@ function HalamanAdminDeklarasiKonten() {
  placeholder="Cari kode / nama / NRP / lokasi"
  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-bold outline-none focus:border-red-300 focus:bg-white focus:ring-4 focus:ring-red-50"
  />
+ </div>
+
+ <select
+ value={filterBulan}
+ onChange={(event) => setFilterBulan(event.target.value)}
+ className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-red-300 focus:bg-white focus:ring-4 focus:ring-red-50"
+ >
+ <option value="">Semua Bulan</option>
+ {Array.from({ length: 12 }, (_, index) => (
+ <option key={index + 1} value={index + 1}>
+ {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(
+ new Date(2026, index, 1)
+ )}
+ </option>
+ ))}
+ </select>
+
+ <select
+ value={filterTahun}
+ onChange={(event) => setFilterTahun(event.target.value)}
+ className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-red-300 focus:bg-white focus:ring-4 focus:ring-red-50"
+ >
+ <option value="">Semua Tahun</option>
+ {tahunTersedia.map((tahun) => (
+ <option key={tahun} value={tahun}>
+ {tahun}
+ </option>
+ ))}
+ </select>
  </div>
  </div>
 

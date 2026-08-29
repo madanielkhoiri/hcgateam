@@ -8,6 +8,7 @@ import {
   Post,
   UploadedFile,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -22,6 +23,7 @@ import { BuatPengajuanDto } from './dto/buat-pengajuan.dto';
 import { UpdateStatusPengajuanDto } from './dto/update-status-pengajuan.dto';
 import { PengajuanService } from './pengajuan.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 
 function pastikanFolderPengajuanAda() {
@@ -75,6 +77,7 @@ function filterFileDokumenDanGambar(
 // <--- fitur controller pengajuan STD, RAB, dan bukti transfer --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('pengajuan')
+@UseGuards(JwtAuthGuard)
 export class PengajuanController {
   constructor(private readonly pengajuanService: PengajuanService) {}
 

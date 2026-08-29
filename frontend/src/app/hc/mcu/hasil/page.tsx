@@ -9,7 +9,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, Download, FlaskConical, Upload } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
   Dialog,
@@ -56,6 +56,9 @@ export default function HasilMcuPage() {
   );
   const [berkas, setBerkas] = useState<File | null>(null);
 
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -78,6 +81,27 @@ export default function HasilMcuPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const hasilTampil = useMemo(() => {
+    return hasil.filter((item) => {
+      const tanggal = new Date(item.tanggalUpload);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [hasil, filterBulan, filterTahun]);
 
   async function unggah() {
     if (!jadwalDipilih || !berkas) {
@@ -216,11 +240,43 @@ export default function HasilMcuPage() {
 
       <Panel
         judul="Hasil MCU Tersimpan"
-        keterangan={`${hasil.length} hasil MCU tercatat.`}
+        keterangan={`${hasilTampil.length} dari ${hasil.length} hasil MCU tercatat.`}
       >
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : hasil.length === 0 ? (
+        ) : hasilTampil.length === 0 ? (
           <Kosong
             judul="Belum ada hasil MCU"
             keterangan="Hasil MCU akan muncul setelah klinik atau HC mengunggahnya."
@@ -242,7 +298,7 @@ export default function HasilMcuPage() {
               </thead>
 
               <tbody>
-                {hasil.map((item) => {
+                {hasilTampil.map((item) => {
                   const rekomTerakhir =
                     item.rekomendasi[item.rekomendasi.length - 1] ?? null;
 

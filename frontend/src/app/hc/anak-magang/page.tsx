@@ -22,7 +22,7 @@ import {
   Plus,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   anakMagangApi,
   formatTanggalSingkat,
@@ -187,6 +187,8 @@ export default function AnakMagangPage() {
 
   const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
 
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
   const [idDiedit, setIdDiedit] = useState<number | null>(null);
@@ -229,6 +231,31 @@ export default function AnakMagangPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const daftarTampil = useMemo(() => {
+    return daftar.filter((item) => {
+      if (!item.tanggalMulai) {
+        return !filterBulan && !filterTahun;
+      }
+
+      const tanggal = new Date(item.tanggalMulai);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [daftar, filterBulan, filterTahun]);
 
   function bukaTambah() {
     setIdDiedit(null);
@@ -405,7 +432,7 @@ export default function AnakMagangPage() {
         <div className={styles.panelHead}>
           <div>
             <h2>Daftar Anak Magang</h2>
-            <p>{daftar.length} data ditampilkan.</p>
+            <p>{daftarTampil.length} dari {daftar.length} data ditampilkan.</p>
           </div>
         </div>
 
@@ -428,11 +455,41 @@ export default function AnakMagangPage() {
             <option value="AKTIF">Aktif</option>
             <option value="NONAKTIF">Non Aktif</option>
           </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </div>
 
         {memuat ? (
           <div className={styles.memuat}>Memuat data...</div>
-        ) : daftar.length === 0 ? (
+        ) : daftarTampil.length === 0 ? (
           <div className={styles.kosong}>
             <Inbox size={30} />
             <strong>Belum ada data anak magang</strong>
@@ -454,7 +511,7 @@ export default function AnakMagangPage() {
               </thead>
 
               <tbody>
-                {daftar.map((item) => (
+                {daftarTampil.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className={styles.tableNama}>

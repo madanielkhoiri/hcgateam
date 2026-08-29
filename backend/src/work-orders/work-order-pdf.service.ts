@@ -11,6 +11,21 @@ type ResolvedImage = {
   path: string;
 };
 
+/** Tahap GL bisa disetujui salah satu dari 2 orang - file ttd mengikuti siapa yang benar-benar menyetujui. */
+function fileTandaTanganGl(nama: string | null | undefined): string | null {
+  const n = (nama ?? '').trim().toLowerCase();
+
+  if (n.startsWith('arief')) {
+    return 'arief-rahman.png';
+  }
+
+  if (n.startsWith('herfit')) {
+    return 'herfit-almiya.png';
+  }
+
+  return null;
+}
+
 @Injectable()
 export class WorkOrderPdfService {
   private readonly signatureDirectory = join(
@@ -44,6 +59,9 @@ export class WorkOrderPdfService {
           },
         },
         handover: true,
+        disetujuiGlOleh: { select: { name: true } },
+        disetujuiShOleh: { select: { name: true } },
+        disetujuiPjoOleh: { select: { name: true } },
       },
     });
 
@@ -655,30 +673,62 @@ export class WorkOrderPdfService {
 
     const userPosition = String(workOrder.position ?? '-').toUpperCase();
 
-    const signers = [
+    const glApproved = Boolean(workOrder.disetujuiGlOleh);
+    const shApproved = Boolean(workOrder.disetujuiShOleh);
+    const pjoApproved = Boolean(workOrder.disetujuiPjoOleh);
+    const ditolak = workOrder.statusApproval === 'DITOLAK';
+
+    // Kalau ditolak, tahap yang sedang berjalan saat itu adalah tahap pertama yang belum disetujui.
+    const tahapDitolak = !glApproved ? 'gl' : !shApproved ? 'sh' : 'pjo';
+
+    const glSignatureFile = fileTandaTanganGl(workOrder.disetujuiGlOleh?.name);
+
+    const signers: Array<{
+      name: string;
+      position: string;
+      signature: string | null;
+      showDate: boolean;
+      pending: string | null;
+      ditolakDiSini: boolean;
+    }> = [
       {
         name: userName,
         position: userPosition,
         signature: null,
         showDate: false,
+        pending: null,
+        ditolakDiSini: false,
       },
       {
-        name: 'ARIEF RAHMAN HAKIM',
+        name: glApproved ? String(workOrder.disetujuiGlOleh?.name ?? '').toUpperCase() : '',
         position: '(GL GA)',
-        signature: join(this.signatureDirectory, 'arief-rahman.png'),
+        signature:
+          glApproved && glSignatureFile
+            ? join(this.signatureDirectory, glSignatureFile)
+            : null,
         showDate: true,
+        pending: glApproved ? null : '(Menunggu Persetujuan GL)',
+        ditolakDiSini: ditolak && tahapDitolak === 'gl',
       },
       {
         name: 'SINGGIEH PRANANDA',
         position: '(HCGA SH)',
-        signature: join(this.signatureDirectory, 'singgieh-prananda.png'),
+        signature: shApproved
+          ? join(this.signatureDirectory, 'singgieh-prananda.png')
+          : null,
         showDate: true,
+        pending: shApproved ? null : '(Menunggu Persetujuan SH)',
+        ditolakDiSini: ditolak && tahapDitolak === 'sh',
       },
       {
         name: 'WAHYU BINUKO',
         position: '(Project Manager)',
-        signature: join(this.signatureDirectory, 'wahyu-binuko.png'),
+        signature: pjoApproved
+          ? join(this.signatureDirectory, 'wahyu-binuko.png')
+          : null,
         showDate: true,
+        pending: pjoApproved ? null : '(Menunggu Persetujuan PJO)',
+        ditolakDiSini: ditolak && tahapDitolak === 'pjo',
       },
     ];
 
@@ -697,6 +747,26 @@ export class WorkOrderPdfService {
         } catch {
           // Abaikan file tanda tangan rusak.
         }
+      } else if (signer.ditolakDiSini) {
+        document
+          .font('Helvetica-Bold')
+          .fontSize(9)
+          .fillColor('#b62b22')
+          .text('DITOLAK', x + 4, top + headerHeight + signatureHeight / 2 - 5, {
+            width: columnWidth - 8,
+            align: 'center',
+          })
+          .fillColor('#000000');
+      } else if (signer.pending) {
+        document
+          .font('Helvetica-Oblique')
+          .fontSize(6.5)
+          .fillColor('#8a6a12')
+          .text(signer.pending, x + 4, top + headerHeight + signatureHeight / 2 - 5, {
+            width: columnWidth - 8,
+            align: 'center',
+          })
+          .fillColor('#000000');
       }
 
       document
@@ -723,7 +793,7 @@ export class WorkOrderPdfService {
           },
         );
 
-      if (signer.showDate) {
+      if (signer.showDate && !signer.pending && !signer.ditolakDiSini) {
         document
           .font('Helvetica')
           .fontSize(6.4)
@@ -736,7 +806,24 @@ export class WorkOrderPdfService {
       x += columnWidth;
     });
 
-    return top + totalHeight;
+    let bottom = top + totalHeight;
+
+    if (ditolak && workOrder.alasanTolakApproval) {
+      bottom += 4;
+
+      document
+        .font('Helvetica-Oblique')
+        .fontSize(7.5)
+        .fillColor('#b62b22')
+        .text(`Alasan ditolak: ${workOrder.alasanTolakApproval}`, left, bottom, {
+          width,
+        })
+        .fillColor('#000000');
+
+      bottom += 16;
+    }
+
+    return bottom;
   }
 
   private drawAttachmentPages(

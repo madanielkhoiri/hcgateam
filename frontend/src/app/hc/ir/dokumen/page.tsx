@@ -21,7 +21,7 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
 import { getStoredUser } from '@/lib/access-control';
 import {
@@ -73,6 +73,9 @@ export default function DokumenIrPage() {
 
   const [preview, setPreview] = useState<DokumenIr | null>(null);
 
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -89,6 +92,27 @@ export default function DokumenIrPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const daftarTampil = useMemo(() => {
+    return daftar.filter((item) => {
+      const tanggal = new Date(item.createdAt);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [daftar, filterBulan, filterTahun]);
 
   function bukaForm() {
     setKategoriBaru('SK');
@@ -193,9 +217,41 @@ export default function DokumenIrPage() {
         ))}
       </div>
 
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+        <select
+          className={styles.formSelect}
+          style={{ maxWidth: 160 }}
+          value={filterBulan}
+          onChange={(event) => setFilterBulan(event.target.value)}
+        >
+          <option value="">Semua Bulan</option>
+          {Array.from({ length: 12 }, (_, index) => (
+            <option key={index + 1} value={index + 1}>
+              {new Intl.DateTimeFormat('id-ID', {
+                month: 'long',
+              }).format(new Date(2026, index, 1))}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className={styles.formSelect}
+          style={{ maxWidth: 130 }}
+          value={filterTahun}
+          onChange={(event) => setFilterTahun(event.target.value)}
+        >
+          <option value="">Semua Tahun</option>
+          {tahunTersedia.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {memuat ? (
         <div className={styles.loadingState}>Memuat dokumen...</div>
-      ) : daftar.length === 0 ? (
+      ) : daftarTampil.length === 0 ? (
         <div className={styles.emptyState}>
           <Inbox size={30} />
           <strong>Belum ada dokumen</strong>
@@ -203,7 +259,7 @@ export default function DokumenIrPage() {
         </div>
       ) : (
         <div className={styles.docGrid}>
-          {daftar.map((item) => (
+          {daftarTampil.map((item) => (
             <div key={item.id} className={styles.docCard}>
               <div className={styles.docTop}>
                 <span className={styles.docIcon}>

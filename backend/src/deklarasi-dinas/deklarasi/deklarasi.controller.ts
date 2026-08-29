@@ -1,15 +1,17 @@
-import { UseInterceptors, Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { UseInterceptors, Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 
 import { BuatDeklarasiDto } from './dto/buat-deklarasi.dto';
 import { DeklarasiService } from './deklarasi.service';
 import { EditDeklarasiDto } from './dto/edit-deklarasi.dto';
 import { UbahStatusDeklarasiDto } from './dto/ubah-status-deklarasi.dto';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 
 // <--- fitur controller deklarasi perjalanan dinas --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('deklarasi')
+@UseGuards(JwtAuthGuard)
 export class DeklarasiController {
   constructor(private readonly deklarasiService: DeklarasiService) {}
 

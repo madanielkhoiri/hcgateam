@@ -153,6 +153,8 @@ export default function OrderPackMealPage() {
   const [user, setUser] = useState<LoginUser | null>(null);
   const [orders, setOrders] = useState<PackMealOrder[]>([]);
   const [search, setSearch] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -176,6 +178,38 @@ export default function OrderPackMealPage() {
   const [fileInputKey, setFileInputKey] = useState(0);
 
   const isStaff = Boolean(user && STAFF_ROLES.has(user.role));
+
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+
+    return Array.from({ length: 7 }, (_, index) => current - 5 + index);
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (!month && !year) {
+      return orders;
+    }
+
+    return orders.filter((order) => {
+      const orderDate = new Date(order.neededDate);
+
+      if (year && orderDate.getUTCFullYear() !== Number(year)) {
+        return false;
+      }
+
+      if (month && orderDate.getUTCMonth() + 1 !== Number(month)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [orders, month, year]);
+
+  function resetFilters() {
+    setSearch("");
+    setMonth("");
+    setYear("");
+  }
 
   const totalPacks = useMemo(
     () =>
@@ -794,14 +828,52 @@ export default function OrderPackMealPage() {
               />
             </form>
 
+            <div className={styles.filters}>
+              <select
+                className={styles.filterSelect}
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+              >
+                <option value="">Semua Bulan</option>
+                {Array.from({ length: 12 }, (_, index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {new Intl.DateTimeFormat("id-ID", {
+                      month: "long",
+                    }).format(new Date(2026, index, 1))}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className={styles.filterSelect}
+                value={year}
+                onChange={(event) => setYear(event.target.value)}
+              >
+                <option value="">Semua Tahun</option>
+                {availableYears.map((item) => (
+                  <option value={item} key={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                className={styles.resetFilterButton}
+                onClick={resetFilters}
+              >
+                Reset
+              </button>
+            </div>
+
             <span className={styles.total}>
-              Total {orders.length} order
+              Total {filteredOrders.length} order
             </span>
           </div>
 
           {loading ? (
             <div className={styles.loading}>Memuat data order...</div>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <div className={styles.emptyState}>
               Belum ada data Order Pack Meal.
             </div>
@@ -824,7 +896,7 @@ export default function OrderPackMealPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order, index) => (
+                  {filteredOrders.map((order, index) => (
                     <tr key={order.id}>
                       <td>{index + 1}</td>
                       <td>

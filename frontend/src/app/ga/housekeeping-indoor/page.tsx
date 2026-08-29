@@ -52,6 +52,8 @@ export default function HousekeepingIndoorPage() {
   const [data, setData] = useState<HousekeepingIndoorLaporan[]>([]);
   const [error, setError] = useState('');
   const [filterLokasi, setFilterLokasi] = useState<LokasiHousekeepingIndoor | ''>('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
 
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(blankForm);
@@ -93,9 +95,23 @@ export default function HousekeepingIndoorPage() {
     if (siap) void muat();
   }, [siap]);
 
+  const tahunTersedia = useMemo(() => {
+    const sekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, i) => sekarang - 5 + i);
+  }, []);
+
   const dataTampil = useMemo(
-    () => (filterLokasi ? data.filter((item) => item.lokasi === filterLokasi) : data),
-    [data, filterLokasi],
+    () =>
+      data
+        .filter((item) => !filterLokasi || item.lokasi === filterLokasi)
+        .filter((item) => {
+          if (!filterBulan && !filterTahun) return true;
+          const tanggal = new Date(item.createdAt);
+          if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) return false;
+          if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) return false;
+          return true;
+        }),
+    [data, filterLokasi, filterBulan, filterTahun],
   );
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
@@ -230,6 +246,46 @@ export default function HousekeepingIndoorPage() {
             {LABEL_LOKASI_HOUSEKEEPING_INDOOR[l]}
           </button>
         ))}
+      </div>
+
+      <div className={styles.dateFilterRow}>
+        <select
+          className={styles.dateSelect}
+          value={filterBulan}
+          onChange={(e) => setFilterBulan(e.target.value)}
+        >
+          <option value="">Semua Bulan</option>
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(2026, i, 1))}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className={styles.dateSelect}
+          value={filterTahun}
+          onChange={(e) => setFilterTahun(e.target.value)}
+        >
+          <option value="">Semua Tahun</option>
+          {tahunTersedia.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          className={styles.resetChip}
+          onClick={() => {
+            setFilterLokasi('');
+            setFilterBulan('');
+            setFilterTahun('');
+          }}
+        >
+          Reset
+        </button>
       </div>
 
       {error && <p className={styles.pageError}>{error}</p>}
