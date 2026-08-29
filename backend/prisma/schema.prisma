@@ -1933,12 +1933,13 @@ model EngineerDocumentApproval {
   projectId            Int                  @map("project_id")
   approvedById         Int                  @map("approved_by")
   approvedAt           DateTime             @default(now()) @map("approved_at")
-  signatureFile        String               @map("signature_file")
-  signaturePage        Int                  @map("signature_page")
-  signatureXRatio      Float                @map("signature_x_ratio")
-  signatureYRatio      Float                @map("signature_y_ratio")
-  signatureWidthRatio  Float                @map("signature_width_ratio")
-  signatureHeightRatio Float                @map("signature_height_ratio")
+  adaTandaTangan       Boolean              @default(true) @map("ada_tanda_tangan")
+  signatureFile        String?              @map("signature_file")
+  signaturePage        Int?                 @map("signature_page")
+  signatureXRatio      Float?               @map("signature_x_ratio")
+  signatureYRatio      Float?               @map("signature_y_ratio")
+  signatureWidthRatio  Float?               @map("signature_width_ratio")
+  signatureHeightRatio Float?               @map("signature_height_ratio")
   signaturePlacements  Json?                @map("signature_placements")
   originalFilePath     String               @map("original_file_path")
   sourceFilePath       String               @map("source_file_path")
@@ -2482,6 +2483,8 @@ model Kip {
   departemen     String
   tahun          Int
   lokasi         LokasiHousekeepingIndoor
+  /** Daftar parameter checklist inspeksi khusus KIP ini (ditentukan admin saat dibuat) — dipakai tiap ceklis bulanan. */
+  parameterChecklist String[]            @default([]) @map("parameter_checklist")
   createdBy      Int                      @map("created_by")
   createdAt      DateTime                 @default(now()) @map("created_at")
 
@@ -2493,12 +2496,16 @@ model Kip {
 }
 
 model KipChecklistBulan {
-  id             Int                @id @default(autoincrement())
-  kipId          Int                @map("kip_id")
-  bulan          Int
-  status         StatusChecklistKip @default(BELUM)
-  diperiksaOleh  Int?               @map("diperiksa_oleh")
-  tanggalPeriksa DateTime?          @map("tanggal_periksa")
+  id              Int                @id @default(autoincrement())
+  kipId           Int                @map("kip_id")
+  bulan           Int
+  status          StatusChecklistKip @default(BELUM)
+  diperiksaOleh   Int?               @map("diperiksa_oleh")
+  tanggalPeriksa  DateTime?          @map("tanggal_periksa")
+  /** Foto dokumentasi bukti inspeksi (diambil saat ceklis). */
+  fotoBukti       String?            @map("foto_bukti")
+  /** Hasil checklist parameter inspeksi (mis. 5 item standar) - array {label, checked} apa adanya saat diceklis. */
+  parameterCeklis Json?              @map("parameter_ceklis")
 
   kip       Kip   @relation(fields: [kipId], references: [id], onDelete: Cascade)
   pemeriksa User? @relation(fields: [diperiksaOleh], references: [id], onDelete: SetNull)

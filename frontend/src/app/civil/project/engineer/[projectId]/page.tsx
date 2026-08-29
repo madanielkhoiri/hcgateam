@@ -281,7 +281,9 @@ export default function EngineerDetailPage() {
                   Approved by: {item.latestApproval.approvedBy.name}
                   <span>
                     Signature:{" "}
-                    {namaTandaTangan(item.latestApproval.signatureFile)}
+                    {item.latestApproval.signatureFile
+                      ? namaTandaTangan(item.latestApproval.signatureFile)
+                      : "Tanpa tanda tangan"}
                   </span>
                 </div>
               )}

@@ -85,6 +85,58 @@ const ownerAreaGroups = [
   },
 ];
 
+/** Hitung naik dari 0 ke target (persen) selama sekian ms, dipakai buat animasi angka & progress bar. */
+function useCountUp(target: number, durasiMs = 1000): number {
+  const [nilai, setNilai] = useState(0);
+
+  useEffect(() => {
+    let frame: number;
+    const mulai = performance.now();
+    const dari = 0;
+
+    function tick(sekarang: number) {
+      const t = Math.min(1, (sekarang - mulai) / durasiMs);
+      const easeOut = 1 - Math.pow(1 - t, 3);
+      setNilai(dari + (target - dari) * easeOut);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    }
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, durasiMs]);
+
+  return nilai;
+}
+
+function ProgressPerProjectRow({
+  namaProject,
+  href,
+  persen,
+}: {
+  namaProject: string;
+  href: string;
+  persen: number;
+}) {
+  const persenTampil = useCountUp(Math.min(100, Math.max(0, persen)));
+
+  return (
+    <li className={styles.progressRow}>
+      <div className={styles.progressRowTop}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className={styles.progressIconBox}>
+            <Building size={14} />
+          </span>
+          <Link href={href}>{namaProject}</Link>
+        </span>
+        <strong>{Math.round(persenTampil)}%</strong>
+      </div>
+      <div className={styles.progressBarTrack}>
+        <div className={styles.progressBarFill} style={{ width: `${persenTampil}%` }} />
+      </div>
+    </li>
+  );
+}
+
 export default function CivilProjectDashboardPage() {
   const router = useRouter();
   const [boleh, setBoleh] = useState<boolean | null>(null);
@@ -273,25 +325,12 @@ export default function CivilProjectDashboardPage() {
 
           <ul className={styles.progressList}>
             {ringkasan?.progressPerProject.map((item) => (
-              <li key={item.id} className={styles.progressRow}>
-                <div className={styles.progressRowTop}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span className={styles.progressIconBox}>
-                      <Building size={14} />
-                    </span>
-                    <Link href={`/civil/project/konstruksi/${item.id}?tab=progress-mingguan`}>
-                      {item.namaProject}
-                    </Link>
-                  </span>
-                  <strong>{item.progressPersen}%</strong>
-                </div>
-                <div className={styles.progressBarTrack}>
-                  <div
-                    className={styles.progressBarFill}
-                    style={{ width: `${Math.min(100, Math.max(0, item.progressPersen))}%` }}
-                  />
-                </div>
-              </li>
+              <ProgressPerProjectRow
+                key={item.id}
+                namaProject={item.namaProject}
+                href={`/civil/project/konstruksi/${item.id}?tab=progress-mingguan`}
+                persen={item.progressPersen}
+              />
             ))}
           </ul>
         </div>

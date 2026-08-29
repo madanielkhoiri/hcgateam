@@ -19,6 +19,8 @@ const API_URL =
 
 export type StatusChecklistKip = 'BELUM' | 'SUDAH';
 
+export type ParameterCeklisHasil = { label: string; checked: boolean };
+
 export type KipChecklistBulan = {
   id: number;
   kipId: number;
@@ -26,6 +28,8 @@ export type KipChecklistBulan = {
   status: StatusChecklistKip;
   diperiksaOleh: number | null;
   tanggalPeriksa: string | null;
+  fotoBukti: string | null;
+  parameterCeklis: ParameterCeklisHasil[] | null;
   pemeriksa?: { id: number; name: string } | null;
 };
 
@@ -36,6 +40,7 @@ export type Kip = {
   departemen: string;
   tahun: number;
   lokasi: LokasiHousekeepingIndoor;
+  parameterChecklist: string[];
   createdAt: string;
   checklist: KipChecklistBulan[];
 };
@@ -119,17 +124,45 @@ export const kipApi = {
     departemen: string;
     tahun: number;
     lokasi: LokasiHousekeepingIndoor;
+    parameterChecklist: string[];
   }) => request<Kip>('/kip/admin/kip', { method: 'POST', body: JSON.stringify(data) }),
+  ubahKip: (
+    id: number,
+    data: {
+      noKip: string;
+      jenisPeralatan: string;
+      departemen: string;
+      tahun: number;
+      lokasi: LokasiHousekeepingIndoor;
+      parameterChecklist: string[];
+    },
+  ) => request<Kip>(`/kip/admin/kip/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   hapusKip: (id: number) => request<{ message: string }>(`/kip/admin/kip/${id}`, { method: 'DELETE' }),
 
   /** Endpoint publik — dipakai halaman scan, tidak wajib login. */
   statusByKode: (kode: string) => request<StatusLokasi>(`/kip/publik/${encodeURIComponent(kode)}`, {}, false),
 
-  ceklis: (kipId: number, bulan: number, lokasiSekarang?: { latitude: number; longitude: number }) =>
-    request<KipChecklistBulan>(`/kip/${kipId}/checklist/${bulan}`, {
+  ceklis: (
+    kipId: number,
+    bulan: number,
+    data: {
+      foto: File;
+      parameterChecked: boolean[];
+      lokasiSekarang?: { latitude: number; longitude: number };
+    },
+  ) => {
+    const form = new FormData();
+    form.append('foto', data.foto);
+    form.append('parameterChecked', JSON.stringify(data.parameterChecked));
+    if (data.lokasiSekarang) {
+      form.append('latitude', String(data.lokasiSekarang.latitude));
+      form.append('longitude', String(data.lokasiSekarang.longitude));
+    }
+    return request<KipChecklistBulan>(`/kip/${kipId}/checklist/${bulan}`, {
       method: 'POST',
-      body: JSON.stringify(lokasiSekarang ?? {}),
-    }),
+      body: form,
+    });
+  },
 
   /** Simpan titik GPS acuan lokasi — dipanggil sekali saat admin cetak barcode sambil berdiri di lokasi tsb. */
   simpanGpsLokasi: (lokasi: LokasiHousekeepingIndoor, latitude: number, longitude: number) =>
@@ -152,3 +185,8 @@ export const kipApi = {
     return response.text();
   },
 };
+
+/** URL publik foto bukti inspeksi yang disimpan lewat KipFileService, disajikan statis lewat /api/uploads/. */
+export function urlFotoKip(pathRelatif: string): string {
+  return `${API_URL}/uploads/${pathRelatif}`;
+}

@@ -4,6 +4,7 @@
 // ==================================================
 
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,14 +12,19 @@ import {
   Header,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KipService } from './kip.service';
-import { BuatKipDto, CeklisDto, SimpanGpsLokasiDto } from './dto/kip.dto';
+import { BuatKipDto, SimpanGpsLokasiDto } from './dto/kip.dto';
 
 @Controller('kip')
 export class KipController {
@@ -36,6 +42,12 @@ export class KipController {
   @UseGuards(JwtAuthGuard)
   buatKip(@Body() dto: BuatKipDto, @Req() req: any) {
     return this.service.buatKip(dto, req.user.id);
+  }
+
+  @Patch('admin/kip/:id')
+  @UseGuards(JwtAuthGuard)
+  ubahKip(@Param('id', ParseIntPipe) id: number, @Body() dto: BuatKipDto) {
+    return this.service.ubahKip(id, dto);
   }
 
   @Delete('admin/kip/:id')
@@ -69,17 +81,38 @@ export class KipController {
 
   @Post(':kipId/checklist/:bulan')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('foto', { storage: memoryStorage() }))
   ceklis(
     @Param('kipId', ParseIntPipe) kipId: number,
     @Param('bulan', ParseIntPipe) bulan: number,
-    @Body() dto: CeklisDto,
+    @Body('latitude') latitudeRaw: string | undefined,
+    @Body('longitude') longitudeRaw: string | undefined,
+    @Body('parameterChecked') parameterCheckedRaw: string | undefined,
+    @UploadedFile() foto: Express.Multer.File | undefined,
     @Req() req: any,
   ) {
     const lokasiSekarang =
-      dto.latitude !== undefined && dto.longitude !== undefined
-        ? { latitude: dto.latitude, longitude: dto.longitude }
+      latitudeRaw !== undefined && longitudeRaw !== undefined
+        ? { latitude: Number(latitudeRaw), longitude: Number(longitudeRaw) }
         : undefined;
 
-    return this.service.ceklis(req.user.role, req.user.id, kipId, bulan, lokasiSekarang);
+    let parameterChecked: boolean[] | undefined;
+    if (parameterCheckedRaw) {
+      try {
+        parameterChecked = JSON.parse(parameterCheckedRaw);
+      } catch {
+        throw new BadRequestException('Format checklist parameter tidak valid');
+      }
+    }
+
+    return this.service.ceklis(
+      req.user.role,
+      req.user.id,
+      kipId,
+      bulan,
+      foto,
+      parameterChecked,
+      lokasiSekarang,
+    );
   }
 }
