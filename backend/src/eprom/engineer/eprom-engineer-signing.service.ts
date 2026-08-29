@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PDFDocument, PDFImage } from 'pdf-lib';
+import { PDFDocument, PDFImage, StandardFonts } from 'pdf-lib';
 import sharp from 'sharp';
 import {
   existsSync,
@@ -68,6 +68,7 @@ export class EpromEngineerSigningService {
     sourceFilePath: string,
     placements: PosisiTandaTangan[],
     scope: string,
+    tanggalApproval: Date = new Date(),
   ): Promise<string> {
     if (placements.length < 1) {
       throw new BadRequestException('Minimal satu tanda tangan diperlukan.');
@@ -110,6 +111,14 @@ export class EpromEngineerSigningService {
           );
         }
       }
+
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      const teksTanggal = `Disetujui: ${tanggalApproval.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })}`;
+      const ukuranFontTanggal = 8;
 
       const gambarTandaTangan = new Map<string, PDFImage>();
       for (const namaFile of namaTandaTangan) {
@@ -155,6 +164,18 @@ export class EpromEngineerSigningService {
           y: boxY + (boxHeight - height) / 2,
           width,
           height,
+        });
+
+        // Tanggal approval dicetak kecil, rata tengah, tepat di bawah kotak tanda tangan.
+        const lebarTeksTanggal = font.widthOfTextAtSize(
+          teksTanggal,
+          ukuranFontTanggal,
+        );
+        page.drawText(teksTanggal, {
+          x: boxX + (boxWidth - lebarTeksTanggal) / 2,
+          y: Math.max(4, boxY - ukuranFontTanggal - 2),
+          size: ukuranFontTanggal,
+          font,
         });
       }
 

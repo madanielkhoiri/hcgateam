@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Camera, CheckCircle2, ScanLine, X } from 'lucide-react';
 import { getStoredUser } from '@/lib/access-control';
-import { Kip, KipApiError, LABEL_LOKASI_KIP, StatusLokasi, kipApi } from '@/lib/kip-api';
+import { ambilLokasiGps, Kip, KipApiError, KipChecklistBulan, LABEL_LOKASI_KIP, StatusLokasi, kipApi } from '@/lib/kip-api';
 import { KipCard3D, statusTampilBulan } from '@/components/kip/kip-card-3d';
+import { KipCeklisForm } from '@/components/kip/kip-ceklis-form';
+import { KipDetailBulan } from '@/components/kip/kip-detail-bulan';
 import styles from './kip-scan.module.css';
 
 const ROLE_BOLEH_CEKLIS = ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'];
@@ -38,6 +40,9 @@ export default function KipScanPage() {
   const [hasilError, setHasilError] = useState('');
   const [mencari, setMencari] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [formTarget, setFormTarget] = useState<number | null>(null);
+  const [ceklisError, setCeklisError] = useState<string | null>(null);
+  const [detailBulan, setDetailBulan] = useState<KipChecklistBulan | null>(null);
 
   const user = typeof window !== 'undefined' ? getStoredUser() : null;
   const bolehCeklis = !!user && ROLE_BOLEH_CEKLIS.includes(user.role);
@@ -101,13 +106,16 @@ export default function KipScanPage() {
     void prosesKode(manual.trim());
   }
 
-  async function ceklis(kip: Kip) {
+  async function ceklis(kip: Kip, payload: { foto: File; parameterChecked: boolean[] }) {
     setBusyId(kip.id);
+    setCeklisError(null);
     try {
-      await kipApi.ceklis(kip.id, bulanIni);
+      const posisi = await ambilLokasiGps().catch(() => undefined);
+      await kipApi.ceklis(kip.id, bulanIni, { ...payload, lokasiSekarang: posisi });
+      setFormTarget(null);
       if (data) setData(await kipApi.statusByKode(data.lokasi));
     } catch (err) {
-      setHasilError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
+      setCeklisError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
     } finally {
       setBusyId(null);
     }
@@ -146,6 +154,7 @@ export default function KipScanPage() {
   }
 
   return (
+    <>
     <div className={styles.arShell}>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video ref={videoRef} muted playsInline className={styles.arVideo} />
@@ -199,26 +208,41 @@ export default function KipScanPage() {
                   </p>
 
                   <span
+                    role={sudahDiceklis ? 'button' : undefined}
+                    onClick={() => {
+                      if (!sudahDiceklis) return;
+                      const baris = kip.checklist.find((c) => c.bulan === bulanIni);
+                      if (baris) setDetailBulan(baris);
+                    }}
                     className={`${styles.pill} ${
                       sudahDiceklis ? styles.pillGreen : statusBulanIni === 'KUNING' ? styles.pillYellow : styles.pillGray
                     }`}
+                    style={sudahDiceklis ? { cursor: 'pointer' } : undefined}
                   >
                     {sudahDiceklis ? <CheckCircle2 size={12} /> : null}
                     {sudahDiceklis
-                      ? `Sudah diceklis bulan ${NAMA_BULAN[bulanIni - 1]}`
+                      ? `Sudah diceklis bulan ${NAMA_BULAN[bulanIni - 1]} — lihat bukti`
                       : `Belum diceklis bulan ${NAMA_BULAN[bulanIni - 1]}`}
                   </span>
 
-                  {bolehCeklis && !sudahDiceklis && (
+                  {bolehCeklis && !sudahDiceklis && formTarget !== kip.id && (
                     <div className={styles.ceklisBar}>
                       <span style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>Login: {user?.name}</span>
-                      <button
-                        className={styles.primaryButton}
-                        disabled={busyId === kip.id}
-                        onClick={() => ceklis(kip)}
-                      >
-                        {busyId === kip.id ? 'Menyimpan...' : 'Ceklis Sekarang'}
+                      <button className={styles.primaryButton} onClick={() => setFormTarget(kip.id)}>
+                        Ceklis Sekarang
                       </button>
+                    </div>
+                  )}
+
+                  {bolehCeklis && !sudahDiceklis && formTarget === kip.id && (
+                    <div style={{ marginTop: 10 }}>
+                      <KipCeklisForm
+                        parameterChecklist={kip.parameterChecklist}
+                        submitting={busyId === kip.id}
+                        error={ceklisError}
+                        gelap
+                        onSubmit={(payload) => ceklis(kip, payload)}
+                      />
                     </div>
                   )}
                 </div>
@@ -230,5 +254,7 @@ export default function KipScanPage() {
         </>
       )}
     </div>
+    {detailBulan && <KipDetailBulan baris={detailBulan} onTutup={() => setDetailBulan(null)} />}
+    </>
   );
 }

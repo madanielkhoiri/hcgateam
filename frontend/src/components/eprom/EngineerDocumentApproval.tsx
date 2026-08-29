@@ -399,6 +399,22 @@ export function EngineerDocumentApproval({
     }
   }
 
+  async function approveTanpaTtd() {
+    if (!confirm("Approve dokumen ini tanpa menempel tanda tangan?")) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await epromApi.engineer.approveTanpaTandaTangan(tipe, documentId);
+      window.dispatchEvent(new Event("eprom-engineer-updated"));
+      router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Approval gagal diproses");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const selectedPlacement = placements.find(
     (item) => item.id === selectedPlacementId,
   );
@@ -469,7 +485,7 @@ export function EngineerDocumentApproval({
       {!detail.canSign ? (
         <section className={styles.unsupported}>
           <h2>Dokumen tidak dapat ditandatangani</h2>
-          <p>Tanda tangan hanya dapat ditempatkan pada dokumen PDF.</p>
+          <p>Tanda tangan hanya dapat ditempatkan pada dokumen PDF. Dokumen ini tetap bisa di-approve tanpa tanda tangan lewat tombol di bawah.</p>
           {pdfUrl && (
             <a href={urlFileEprom(pdfUrl)} target="_blank" rel="noreferrer">
               Lihat / unduh file
@@ -637,6 +653,14 @@ export function EngineerDocumentApproval({
         <Link href={backUrl} className={styles.secondaryButton}>
           Kembali
         </Link>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          onClick={approveTanpaTtd}
+          disabled={submitting || detail.item.status !== "PENDING"}
+        >
+          {submitting ? "Memproses..." : "Approve Tanpa Tanda Tangan"}
+        </button>
         <button
           type="button"
           className={styles.approveButton}

@@ -121,6 +121,19 @@ export class EpromEngineerController {
     );
   }
 
+  @Post(':tipe/:id/approve-tanpa-ttd')
+  approveTanpaTandaTangan(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.service.approveTanpaTandaTangan(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      id,
+    );
+  }
+
   @Delete(':tipe/:id')
   hapus(
     @Aktor() aktor: AktorEprom,
