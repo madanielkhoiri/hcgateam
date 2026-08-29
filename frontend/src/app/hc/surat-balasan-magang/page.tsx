@@ -6,7 +6,7 @@
 // ==================================================
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowLeft, Download, Mail, Plus } from 'lucide-react';
 import {
   formatTanggal,
@@ -19,6 +19,9 @@ export default function SuratBalasanMagangPage() {
   const [daftar, setDaftar] = useState<SuratBalasanMagang[]>([]);
   const [memuat, setMemuat] = useState(true);
   const [galat, setGalat] = useState<string | null>(null);
+
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
 
   const muat = useCallback(async () => {
     setMemuat(true);
@@ -37,6 +40,27 @@ export default function SuratBalasanMagangPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const daftarTampil = useMemo(() => {
+    return daftar.filter((item) => {
+      const tanggal = new Date(item.createdAt);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [daftar, filterBulan, filterTahun]);
 
   return (
     <>
@@ -79,13 +103,45 @@ export default function SuratBalasanMagangPage() {
         <div className={styles.panelHead}>
           <div>
             <h2>Daftar Surat Balasan</h2>
-            <p>{daftar.length} surat ditampilkan.</p>
+            <p>{daftarTampil.length} dari {daftar.length} surat ditampilkan.</p>
           </div>
+        </div>
+
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </div>
 
         {memuat ? (
           <div className={styles.memuat}>Memuat data...</div>
-        ) : daftar.length === 0 ? (
+        ) : daftarTampil.length === 0 ? (
           <div className={styles.kosong}>
             <Mail size={30} />
             <strong>Belum ada surat balasan</strong>
@@ -106,7 +162,7 @@ export default function SuratBalasanMagangPage() {
               </thead>
 
               <tbody>
-                {daftar.map((item) => (
+                {daftarTampil.map((item) => (
                   <tr key={item.id}>
                     <td>{item.nomor}</td>
                     <td>{item.tujuanJurusan}</td>

@@ -77,6 +77,9 @@ export default function AccountManagementPage() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [accessOptions, setAccessOptions] = useState<AccessOption[]>([]);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -257,6 +260,32 @@ export default function AccountManagementPage() {
     () => accessOptions.filter((option) => option.level === 'department'),
     [accessOptions],
   );
+
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => current - 5 + index);
+  }, []);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      if (statusFilter === 'AKTIF' && !user.isActive) return false;
+      if (statusFilter === 'NONAKTIF' && user.isActive) return false;
+
+      if (month || year) {
+        const created = new Date(user.createdAt);
+        if (month && created.getMonth() + 1 !== Number(month)) return false;
+        if (year && created.getFullYear() !== Number(year)) return false;
+      }
+
+      return true;
+    });
+  }, [users, statusFilter, month, year]);
+
+  function resetFilters() {
+    setStatusFilter('');
+    setMonth('');
+    setYear('');
+  }
 
   function openCreate() {
     setEditingUser(null);
@@ -508,12 +537,57 @@ export default function AccountManagementPage() {
               onChange={(event) => setSearch(event.target.value)}
             />
           </form>
-          <span className={styles.total}>Total {users.length} akun</span>
+
+          <div className={styles.filters}>
+            <select
+              className={styles.filterSelect}
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="">Semua Status</option>
+              <option value="AKTIF">Aktif</option>
+              <option value="NONAKTIF">Nonaktif</option>
+            </select>
+
+            <select
+              className={styles.filterSelect}
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+            >
+              <option value="">Semua Bulan</option>
+              {Array.from({ length: 12 }, (_, index) => (
+                <option key={index + 1} value={index + 1}>
+                  {new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(
+                    new Date(2026, index, 1),
+                  )}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={styles.filterSelect}
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+            >
+              <option value="">Semua Tahun</option>
+              {availableYears.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+
+            <button type="button" className={styles.resetButton} onClick={resetFilters}>
+              Reset
+            </button>
+          </div>
+
+          <span className={styles.total}>Total {filteredUsers.length} akun</span>
         </div>
 
         {loading ? (
           <div className={styles.loading}>Memuat data akun...</div>
-        ) : users.length === 0 ? (
+        ) : filteredUsers.length === 0 ? (
           <div className={styles.empty}>Belum ada data akun.</div>
         ) : (
           <div className={styles.tableWrapper}>
@@ -530,7 +604,7 @@ export default function AccountManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user, index) => (
+                {filteredUsers.map((user, index) => (
                   <tr key={user.id}>
                     <td>{index + 1}</td>
                     <td>

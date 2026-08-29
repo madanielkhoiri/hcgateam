@@ -81,6 +81,56 @@
   font-size: 11px;
 }
 
+.tableFilters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tableFilters select {
+  height: 42px;
+  padding: 0 12px;
+  color: #183b60;
+  background: #fbfdff;
+  border: 1px solid #cad9e7;
+  border-radius: 10px;
+  outline: none;
+  font: inherit;
+  font-size: 11px;
+}
+
+.tableFilters select:focus {
+  border-color: #079653;
+}
+
+.resetFilterButton {
+  height: 42px;
+  padding: 0 14px;
+  color: #587087;
+  background: #f6f9fb;
+  border: 1px solid #d4e0ea;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resetFilterButton:hover {
+  background: #eef2f6;
+}
+
+@media (max-width: 760px) {
+  .tableFilters {
+    width: 100%;
+  }
+
+  .tableFilters select,
+  .resetFilterButton {
+    width: 100%;
+  }
+}
+
 .tableScroll {
   overflow-x: auto;
 }
@@ -831,6 +881,84 @@
   color: #24628f;
   background-color: #eaf4fc;
   border-color: #d3e8f7;
+}
+
+.approvalBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.approvalMenunggu {
+  color: #946200;
+  background-color: #fff4d2;
+  border-color: #eed995;
+}
+
+.approvalDisetujui {
+  color: #087a4d;
+  background-color: #e2f7ed;
+  border-color: #c8eedc;
+}
+
+.approvalDitolak {
+  color: #c81e3a;
+  background-color: #fff0f3;
+  border-color: #fecdd6;
+  cursor: help;
+}
+
+.approvalActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.approveButton,
+.rejectButton {
+  display: inline-flex;
+  min-width: 48px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.approveButton {
+  color: #087a4d;
+  background-color: #ffffff;
+  border: 1px solid #c8eedc;
+}
+
+.rejectButton {
+  color: #c81e3a;
+  background-color: #ffffff;
+  border: 1px solid #fecdd6;
+}
+
+.approvalHint {
+  margin-top: 4px;
+  font-size: 9px;
+  font-style: italic;
+  color: #946200;
+  white-space: nowrap;
 }
 
 .centerCell,

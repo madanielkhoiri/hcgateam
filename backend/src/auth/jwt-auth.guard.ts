@@ -23,6 +23,10 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string | string[] }> =
   { pattern: /\/api\/inventory-area(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
   { pattern: /\/api\/inventory(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
   { pattern: /\/api\/work-orders(?:\/|\?|$)/, accessKey: 'GA_PEKERJAAN' },
+  {
+    pattern: /\/api\/work-order-images(?:\/|\?|$)/,
+    accessKey: 'GA_PEKERJAAN',
+  },
   { pattern: /\/api\/handovers(?:\/|\?|$)/, accessKey: 'GA_PEKERJAAN' },
   {
     pattern: /\/api\/daily-activities(?:\/|\?|$)/,
@@ -59,6 +63,10 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string | string[] }> =
   {
     pattern: /\/api\/surat-penolakan-magang(?:\/|\?|$)/,
     accessKey: 'HC_SURAT_PENOLAKAN_MAGANG',
+  },
+  {
+    pattern: /\/api\/(database-settlement|saldo|nota|pengajuan|deklarasi|karyawan|pengguna)(?:\/|\?|$)/,
+    accessKey: 'HC_DEKLARASI',
   },
   { pattern: /\/api\/eprom(?:\/|\?|$)/, accessKey: 'CIVIL_PROJECT' },
   { pattern: /\/api\/civil-tps3r(?:\/|\?|$)/, accessKey: 'CIVIL_TPS3R' },

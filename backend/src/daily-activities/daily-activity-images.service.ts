@@ -12,6 +12,8 @@ export type DailyImageCategory = 'profiles' | 'pre-activities' | 'progresses';
 
 export type DailyImageScope = 'daily-activities' | 'grass-cutting';
 
+const UKURAN_MAKS_BYTE = 15 * 1024 * 1024;
+
 @Injectable()
 export class DailyActivityImagesService {
   private readonly uploadsDirectory = join(process.cwd(), 'uploads');
@@ -27,6 +29,10 @@ export class DailyActivityImagesService {
 
     if (!file.mimetype?.startsWith('image/')) {
       throw new BadRequestException('File yang diunggah wajib berupa gambar');
+    }
+
+    if (file.size > UKURAN_MAKS_BYTE) {
+      throw new BadRequestException('Ukuran file maksimal 15 MB');
     }
 
     const destination = join(this.uploadsDirectory, scope, category);
