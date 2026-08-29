@@ -21,9 +21,11 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { diskStorage } from 'multer';
+import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { TolakWorkOrderDto } from './dto/tolak-work-order.dto';
 import { WorkOrdersService } from './work-orders.service';
 import { WorkOrderPdfService } from './work-order-pdf.service';
 
@@ -31,7 +33,7 @@ type AuthenticatedRequest = Request & {
   user: {
     id: number;
     username: string;
-    role: string;
+    role: UserRole;
   };
 };
 
@@ -159,6 +161,23 @@ export class WorkOrdersController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.service.update(id, dto, request.user.id);
+  }
+
+  @Patch(':id/setujui')
+  setujui(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.service.setujui(id, request.user);
+  }
+
+  @Patch(':id/tolak')
+  tolak(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: TolakWorkOrderDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.service.tolak(id, dto, request.user);
   }
 
   @Delete(':id/images/:filename')

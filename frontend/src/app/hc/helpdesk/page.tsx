@@ -6,7 +6,7 @@
 // ==================================================
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ClipboardList,
@@ -61,6 +61,9 @@ export default function HelpdeskPage() {
   const [formDeskripsi, setFormDeskripsi] = useState('');
   const [formLampiran, setFormLampiran] = useState<File | null>(null);
 
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const daftarSubKategori = formKategori
     ? Object.keys(pohonKategori[formKategori] ?? {})
     : [];
@@ -94,6 +97,27 @@ export default function HelpdeskPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const tiketTampil = useMemo(() => {
+    return tiket.filter((item) => {
+      const tanggal = new Date(item.dibuatPada);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [tiket, filterBulan, filterTahun]);
 
   function bukaBuat() {
     setFormKategori('');
@@ -212,11 +236,43 @@ export default function HelpdeskPage() {
       </div>
 
       <Panel
-        judul={`Daftar Laporan - ${TAB_STATUS.find((item) => item.key === tab)?.label} (${tiket.length})`}
+        judul={`Daftar Laporan - ${TAB_STATUS.find((item) => item.key === tab)?.label} (${tiketTampil.length} dari ${tiket.length})`}
       >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : tiket.length === 0 ? (
+        ) : tiketTampil.length === 0 ? (
           <Kosong
             judul="Belum ada tiket"
             keterangan="Tiket pada status ini akan tampil di sini."
@@ -240,7 +296,7 @@ export default function HelpdeskPage() {
               </thead>
 
               <tbody>
-                {tiket.map((item) => (
+                {tiketTampil.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <Link

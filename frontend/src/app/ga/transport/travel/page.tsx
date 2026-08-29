@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bus, Eye, Pencil, Plus, Trash2, UserRound, X } from 'lucide-react';
@@ -45,6 +45,10 @@ export default function TravelPage() {
   const [driverList, setDriverList] = useState<Driver[]>([]);
   const [jadwalList, setJadwalList] = useState<TravelJadwal[]>([]);
   const [error, setError] = useState('');
+  const [driverStatusFilter, setDriverStatusFilter] = useState('');
+  const [jadwalBulan, setJadwalBulan] = useState('');
+  const [jadwalTahun, setJadwalTahun] = useState('');
+  const [jadwalStatusFilter, setJadwalStatusFilter] = useState('');
 
   const [modalDriver, setModalDriver] = useState(false);
   const [editDriver, setEditDriver] = useState<Driver | null>(null);
@@ -130,6 +134,34 @@ export default function TravelPage() {
       setSavingDriver(false);
     }
   }
+
+  const tahunTersedia = useMemo(() => {
+    const sekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, i) => sekarang - 5 + i);
+  }, []);
+
+  const driverTampil = useMemo(
+    () =>
+      driverList.filter((d) => {
+        if (!driverStatusFilter) return true;
+        return driverStatusFilter === 'aktif' ? d.statusAktif : !d.statusAktif;
+      }),
+    [driverList, driverStatusFilter],
+  );
+
+  const jadwalTampil = useMemo(
+    () =>
+      jadwalList
+        .filter((j) => !jadwalStatusFilter || j.status === jadwalStatusFilter)
+        .filter((j) => {
+          if (!jadwalBulan && !jadwalTahun) return true;
+          const tanggal = new Date(j.waktuBerangkatRencana);
+          if (jadwalTahun && tanggal.getFullYear() !== Number(jadwalTahun)) return false;
+          if (jadwalBulan && tanggal.getMonth() + 1 !== Number(jadwalBulan)) return false;
+          return true;
+        }),
+    [jadwalList, jadwalStatusFilter, jadwalBulan, jadwalTahun],
+  );
 
   async function hapusDriver(id: number) {
     if (!confirm('Hapus driver ini?')) return;
@@ -246,9 +278,20 @@ export default function TravelPage() {
       {error && <p className={styles.pageError}>{error}</p>}
 
       <div className={styles.tablePanel} style={{ marginBottom: 18 }}>
-        <div className={styles.tableTitle}>
-          <h3>Driver</h3>
-          <span>Total {driverList.length} driver</span>
+        <div className={styles.tableTitle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h3>Driver</h3>
+            <span>Total {driverTampil.length} driver</span>
+          </div>
+          <select
+            className={styles.inlineFilterSelect}
+            value={driverStatusFilter}
+            onChange={(e) => setDriverStatusFilter(e.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="aktif">Aktif</option>
+            <option value="nonaktif">Nonaktif</option>
+          </select>
         </div>
         <div className={styles.tableScroll}>
           <table>
@@ -264,7 +307,7 @@ export default function TravelPage() {
               </tr>
             </thead>
             <tbody>
-              {driverList.map((d, index) => (
+              {driverTampil.map((d, index) => (
                 <tr key={d.id}>
                   <td>{index + 1}</td>
                   <td>
@@ -290,7 +333,7 @@ export default function TravelPage() {
                   </td>
                 </tr>
               ))}
-              {!driverList.length && (
+              {!driverTampil.length && (
                 <tr>
                   <td colSpan={7} className={styles.empty}>
                     Belum ada driver.
@@ -303,9 +346,67 @@ export default function TravelPage() {
       </div>
 
       <div className={styles.tablePanel}>
-        <div className={styles.tableTitle}>
-          <h3>Jadwal Travel</h3>
-          <span>Total {jadwalList.length} jadwal</span>
+        <div
+          className={styles.tableTitle}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}
+        >
+          <div>
+            <h3>Jadwal Travel</h3>
+            <span>Total {jadwalTampil.length} jadwal</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <select
+              className={styles.inlineFilterSelect}
+              value={jadwalBulan}
+              onChange={(e) => setJadwalBulan(e.target.value)}
+            >
+              <option value="">Semua Bulan</option>
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(2026, i, 1))}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={styles.inlineFilterSelect}
+              value={jadwalTahun}
+              onChange={(e) => setJadwalTahun(e.target.value)}
+            >
+              <option value="">Semua Tahun</option>
+              {tahunTersedia.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={styles.inlineFilterSelect}
+              value={jadwalStatusFilter}
+              onChange={(e) => setJadwalStatusFilter(e.target.value)}
+            >
+              <option value="">Semua Status</option>
+              {Object.entries(LABEL_STATUS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className={styles.inlineFilterButton}
+              onClick={() => {
+                setJadwalBulan('');
+                setJadwalTahun('');
+                setJadwalStatusFilter('');
+              }}
+            >
+              Reset
+            </button>
+          </div>
         </div>
         <div className={styles.tableScroll}>
           <table>
@@ -322,7 +423,7 @@ export default function TravelPage() {
               </tr>
             </thead>
             <tbody>
-              {jadwalList.map((j, index) => (
+              {jadwalTampil.map((j, index) => (
                 <tr key={j.id}>
                   <td>{index + 1}</td>
                   <td>
@@ -351,7 +452,7 @@ export default function TravelPage() {
                   </td>
                 </tr>
               ))}
-              {!jadwalList.length && (
+              {!jadwalTampil.length && (
                 <tr>
                   <td colSpan={8} className={styles.empty}>
                     Belum ada jadwal Travel.

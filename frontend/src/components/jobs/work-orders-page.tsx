@@ -19,6 +19,25 @@ type WorkOrderPriority = "P1" | "P2";
 
 type WorkOrderPic = "GA_INFRAS" | "GA_ELECTRIC";
 
+type StatusApprovalWorkOrder =
+  | "MENUNGGU_GL"
+  | "MENUNGGU_SH"
+  | "MENUNGGU_PJO"
+  | "DISETUJUI"
+  | "DITOLAK";
+
+type LoginUser = {
+  id: number;
+  name: string;
+  username: string;
+  role: string;
+};
+
+type Penyetuju = {
+  id: number;
+  name: string;
+} | null;
+
 type WorkOrder = {
   id: number;
   workOrderNumber: string;
@@ -36,6 +55,11 @@ type WorkOrder = {
   closedAt: string | null;
   closedDurationDays: number | null;
   imagePaths: string[];
+  statusApproval: StatusApprovalWorkOrder;
+  disetujuiGlOleh?: Penyetuju;
+  disetujuiShOleh?: Penyetuju;
+  disetujuiPjoOleh?: Penyetuju;
+  alasanTolakApproval?: string | null;
   handover?: {
     id: number;
     stpNumber: string;
@@ -82,6 +106,38 @@ function getToken(): string {
   );
 }
 
+function getCurrentUser(): LoginUser | null {
+  const raw =
+    localStorage.getItem("hcga_user") || sessionStorage.getItem("hcga_user");
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as LoginUser;
+  } catch {
+    return null;
+  }
+}
+
+function approvalLabel(status: StatusApprovalWorkOrder): string {
+  if (status === "MENUNGGU_GL") return "Menunggu GL";
+  if (status === "MENUNGGU_SH") return "Menunggu SH";
+  if (status === "MENUNGGU_PJO") return "Menunggu PJO";
+  if (status === "DISETUJUI") return "Disetujui";
+  return "Ditolak";
+}
+
+function bisaMenyetujuiTahap(row: WorkOrder, user: LoginUser | null): boolean {
+  if (!user) return false;
+  if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") return true;
+  if (row.statusApproval === "MENUNGGU_GL") return user.role === "GRUP_LEADER";
+  if (row.statusApproval === "MENUNGGU_SH") return user.role === "SECTION_HEAD";
+  if (row.statusApproval === "MENUNGGU_PJO") return user.role === "PJO";
+  return false;
+}
+
 function formatDate(value: string | null): string {
   if (!value) {
     return "-";
@@ -120,6 +176,8 @@ export default function WorkOrdersPage() {
   const [form, setForm] = useState<WorkOrderForm>(initialForm());
 
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingApprovalStatus, setEditingApprovalStatus] =
+    useState<StatusApprovalWorkOrder>("MENUNGGU_GL");
 
   const [existingImages, setExistingImages] = useState<string[]>([]);
 
@@ -132,12 +190,17 @@ export default function WorkOrdersPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [message, setMessage] = useState("");
+  const [user, setUser] = useState<LoginUser | null>(null);
 
   const request = useCallback(
     async (endpoint: string, options: RequestInit = {}) => {
@@ -205,6 +268,7 @@ export default function WorkOrdersPage() {
   }, [request]);
 
   useEffect(() => {
+    setUser(getCurrentUser());
     void loadRows();
   }, [loadRows]);
 
@@ -218,30 +282,65 @@ export default function WorkOrdersPage() {
     };
   }, [newFiles]);
 
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+
+    return Array.from({ length: 7 }, (_, index) => current - 5 + index);
+  }, []);
+
   const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    if (!keyword) {
-      return rows;
-    }
+    return rows
+      .filter((row) => {
+        if (!keyword) {
+          return true;
+        }
 
-    return rows.filter((row) =>
-      [
-        row.workOrderNumber,
-        row.workOrderName,
-        row.department,
-        row.description,
-        row.userDepartmentName,
-        row.status,
-        row.priority,
-        row.pic,
-      ].some((value) => String(value).toLowerCase().includes(keyword)),
-    );
-  }, [rows, search]);
+        return [
+          row.workOrderNumber,
+          row.workOrderName,
+          row.department,
+          row.description,
+          row.userDepartmentName,
+          row.status,
+          row.priority,
+          row.pic,
+        ].some((value) => String(value).toLowerCase().includes(keyword));
+      })
+      .filter((row) => {
+        if (!month && !year) {
+          return true;
+        }
+
+        const rowDate = new Date(row.requestedAt);
+
+        if (year && rowDate.getFullYear() !== Number(year)) {
+          return false;
+        }
+
+        if (month && rowDate.getMonth() + 1 !== Number(month)) {
+          return false;
+        }
+
+        return true;
+      })
+      .filter((row) => !statusFilter || row.status === statusFilter)
+      .filter((row) => !priorityFilter || row.priority === priorityFilter);
+  }, [rows, search, month, year, statusFilter, priorityFilter]);
+
+  function resetFilters() {
+    setSearch("");
+    setMonth("");
+    setYear("");
+    setStatusFilter("");
+    setPriorityFilter("");
+  }
 
   function resetModalState() {
     setForm(initialForm());
     setEditingId(null);
+    setEditingApprovalStatus("MENUNGGU_GL");
     setExistingImages([]);
     setNewFiles([]);
     setError("");
@@ -326,6 +425,7 @@ export default function WorkOrdersPage() {
 
   function openEdit(row: WorkOrder) {
     setEditingId(row.id);
+    setEditingApprovalStatus(row.statusApproval);
 
     setForm({
       workOrderName: row.workOrderName,
@@ -562,6 +662,64 @@ export default function WorkOrdersPage() {
       );
     }
   }
+  async function setujuiWorkOrder(row: WorkOrder) {
+    const confirmed = window.confirm(
+      `Setujui Work Order ${row.workOrderNumber} pada tahap ${approvalLabel(row.statusApproval)}?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      await request(`work-orders/${row.id}/setujui`, {
+        method: "PATCH",
+      });
+
+      setMessage("Work Order berhasil disetujui");
+      await loadRows();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Approval Work Order gagal",
+      );
+    }
+  }
+
+  async function tolakWorkOrder(row: WorkOrder) {
+    const alasan = window.prompt("Masukkan alasan penolakan:");
+
+    if (!alasan?.trim()) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      await request(`work-orders/${row.id}/tolak`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ alasan }),
+      });
+
+      setMessage("Work Order ditolak");
+      await loadRows();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Penolakan Work Order gagal",
+      );
+    }
+  }
+
   async function remove(row: WorkOrder) {
     const confirmed = window.confirm(
       `Hapus Work Order ${row.workOrderNumber}?`,
@@ -623,6 +781,61 @@ export default function WorkOrdersPage() {
             placeholder="Cari nomor WO, nama WO, departemen..."
           />
 
+          <div className={styles.tableFilters}>
+            <select
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+            >
+              <option value="">Semua Bulan</option>
+              {Array.from({ length: 12 }, (_, index) => (
+                <option key={index + 1} value={index + 1}>
+                  {new Intl.DateTimeFormat("id-ID", {
+                    month: "long",
+                  }).format(new Date(2026, index, 1))}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+            >
+              <option value="">Semua Tahun</option>
+              {availableYears.map((item) => (
+                <option value={item} key={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="">Semua Status</option>
+              <option value="OPEN">Open</option>
+              <option value="ON_PROGRESS">On Progress</option>
+              <option value="CLOSE">Close</option>
+            </select>
+
+            <select
+              value={priorityFilter}
+              onChange={(event) => setPriorityFilter(event.target.value)}
+            >
+              <option value="">Semua Prioritas</option>
+              <option value="P1">P1 - Urgent</option>
+              <option value="P2">P2 - Tidak Urgent</option>
+            </select>
+
+            <button
+              type="button"
+              className={styles.resetFilterButton}
+              onClick={resetFilters}
+            >
+              Reset
+            </button>
+          </div>
+
           <span>{filteredRows.length} data</span>
         </div>
 
@@ -639,6 +852,7 @@ export default function WorkOrdersPage() {
                 <th>Gambar</th>
                 <th>Durasi</th>
                 <th>Status</th>
+                <th>Persetujuan</th>
                 <th>Prioritas</th>
                 <th>PIC</th>
                 <th>Aksi</th>
@@ -648,13 +862,13 @@ export default function WorkOrdersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={12}>
+                  <td colSpan={13}>
                     <div className={styles.emptyState}>Memuat data...</div>
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={12}>
+                  <td colSpan={13}>
                     <div className={styles.emptyState}>
                       Data Work Order belum ada.
                     </div>
@@ -724,9 +938,62 @@ export default function WorkOrdersPage() {
                         aria-label={`Ubah status ${row.workOrderNumber}`}
                       >
                         <option value="OPEN">Open</option>
-                        <option value="ON_PROGRESS">On Progress</option>
-                        <option value="CLOSE">Close</option>
+                        <option
+                          value="ON_PROGRESS"
+                          disabled={row.statusApproval !== "DISETUJUI"}
+                        >
+                          On Progress
+                        </option>
+                        <option
+                          value="CLOSE"
+                          disabled={row.statusApproval !== "DISETUJUI"}
+                        >
+                          Close
+                        </option>
                       </select>
+                      {row.statusApproval !== "DISETUJUI" && (
+                        <div className={styles.approvalHint}>
+                          Menunggu approval GL/SH/PJO
+                        </div>
+                      )}
+                    </td>
+
+                    <td className={styles.centerCell}>
+                      <span
+                        className={`${styles.approvalBadge} ${
+                          row.statusApproval === "DISETUJUI"
+                            ? styles.approvalDisetujui
+                            : row.statusApproval === "DITOLAK"
+                              ? styles.approvalDitolak
+                              : styles.approvalMenunggu
+                        }`}
+                        title={
+                          row.statusApproval === "DITOLAK" && row.alasanTolakApproval
+                            ? `Alasan: ${row.alasanTolakApproval}`
+                            : undefined
+                        }
+                      >
+                        {approvalLabel(row.statusApproval)}
+                      </span>
+
+                      {bisaMenyetujuiTahap(row, user) && (
+                        <div className={styles.approvalActions}>
+                          <button
+                            type="button"
+                            className={styles.approveButton}
+                            onClick={() => void setujuiWorkOrder(row)}
+                          >
+                            Setujui
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.rejectButton}
+                            onClick={() => void tolakWorkOrder(row)}
+                          >
+                            Tolak
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td className={styles.centerCell}>
@@ -932,10 +1199,25 @@ export default function WorkOrdersPage() {
                   >
                     <option value="OPEN">Open</option>
 
-                    <option value="ON_PROGRESS">On Progress</option>
+                    <option
+                      value="ON_PROGRESS"
+                      disabled={editingApprovalStatus !== "DISETUJUI"}
+                    >
+                      On Progress
+                    </option>
 
-                    <option value="CLOSE">Close</option>
+                    <option
+                      value="CLOSE"
+                      disabled={editingApprovalStatus !== "DISETUJUI"}
+                    >
+                      Close
+                    </option>
                   </select>
+                  {editingApprovalStatus !== "DISETUJUI" && (
+                    <span className={styles.approvalHint}>
+                      Menunggu approval GL/SH/PJO
+                    </span>
+                  )}
                 </label>
 
                 <label>
