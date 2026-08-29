@@ -330,6 +330,7 @@
   height: 100%;
   background: #07984c;
   border-radius: 999px;
+  transition: width 1s ease;
 }
 
 .progressIconBox {
