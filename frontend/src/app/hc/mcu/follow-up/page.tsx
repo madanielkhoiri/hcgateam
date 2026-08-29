@@ -52,6 +52,8 @@ export default function FollowUpPage() {
   const [galat, setGalat] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
 
   const [dialogBatas, setDialogBatas] = useState<FollowUp | null>(null);
   const [dialogTanggal, setDialogTanggal] = useState<FollowUp | null>(null);
@@ -92,6 +94,29 @@ export default function FollowUpPage() {
     () => daftar.filter((item) => item.melewatiBatas).length,
     [daftar],
   );
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const daftarTampil = useMemo(() => {
+    return daftar.filter((item) => {
+      const tanggal = new Date(
+        item.rekomendasi.hasilMcu.jadwalMcu.tanggalMcu,
+      );
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [daftar, filterBulan, filterTahun]);
 
   async function simpanBatas() {
     if (!dialogBatas) {
@@ -279,7 +304,7 @@ export default function FollowUpPage() {
 
       <Panel
         judul="Daftar Kasus Follow Up"
-        keterangan={`${daftar.length} kasus, ${jumlahTerlambat} melewati batas waktu.`}
+        keterangan={`${daftarTampil.length} dari ${daftar.length} kasus, ${jumlahTerlambat} melewati batas waktu.`}
       >
         <div className={styles.filterBar}>
           <select
@@ -297,11 +322,41 @@ export default function FollowUpPage() {
             </option>
             <option value="SELESAI">Selesai</option>
           </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </div>
 
         {memuat ? (
           <Memuat />
-        ) : daftar.length === 0 ? (
+        ) : daftarTampil.length === 0 ? (
           <Kosong
             judul="Belum ada kasus Follow Up"
             keterangan="Kasus FU dibuat otomatis saat Dokter menerbitkan rekomendasi Follow Up."
@@ -324,7 +379,7 @@ export default function FollowUpPage() {
               </thead>
 
               <tbody>
-                {daftar.map((item) => {
+                {daftarTampil.map((item) => {
                   const hasilTerakhir =
                     item.hasilFollowUp[0] ?? null;
 

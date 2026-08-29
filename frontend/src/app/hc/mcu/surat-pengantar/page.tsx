@@ -67,6 +67,10 @@ export default function SuratPengantarPage() {
   const [dipilih, setDipilih] = useState<Record<number, BarisPilihan>>({});
   const [catatan, setCatatan] = useState('');
 
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -91,6 +95,31 @@ export default function SuratPengantarPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const suratTampil = useMemo(() => {
+    return surat.filter((item) => {
+      if (filterStatus && item.status !== filterStatus) {
+        return false;
+      }
+
+      const tanggal = new Date(item.tanggalTerbit);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [surat, filterStatus, filterBulan, filterTahun]);
 
   function bukaDialog() {
     setKlinikId('');
@@ -318,11 +347,54 @@ export default function SuratPengantarPage() {
 
       <Panel
         judul="Surat Pengantar Terbit"
-        keterangan={`${surat.length} surat tercatat.`}
+        keterangan={`${suratTampil.length} dari ${surat.length} surat tercatat.`}
       >
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 170 }}
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="DRAFT">Draft</option>
+            <option value="TERKIRIM">Terkirim</option>
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : surat.length === 0 ? (
+        ) : suratTampil.length === 0 ? (
           <Kosong
             judul="Belum ada surat pengantar"
             keterangan="Surat pengantar akan muncul di sini setelah diterbitkan HC."
@@ -342,7 +414,7 @@ export default function SuratPengantarPage() {
               </thead>
 
               <tbody>
-                {surat.map((item) => (
+                {suratTampil.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <strong>{item.nomorSurat}</strong>

@@ -56,6 +56,8 @@ function KontenRiwayatDeklarasi() {
  const [kataKunci, setKataKunci] = useState("");
  const [filterJenis, setFilterJenis] = useState("SEMUA");
  const [filterStatus, setFilterStatus] = useState(statusDariUrl);
+ const [filterBulan, setFilterBulan] = useState("");
+ const [filterTahun, setFilterTahun] = useState("");
 
  const formatJenisDeklarasi = (jenis: string) => {
  if (jenis === "PERJALANAN_DINAS") return "Perjalanan Dinas";
@@ -170,6 +172,11 @@ function KontenRiwayatDeklarasi() {
  ambilRiwayat();
  }, [apiUrl, router]);
 
+ const tahunTersedia = useMemo(() => {
+ const tahunSekarang = new Date().getFullYear();
+ return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+ }, []);
+
  const daftarDeklarasiTersaring = useMemo(() => {
  const keyword = kataKunci.toLowerCase();
 
@@ -185,9 +192,30 @@ function KontenRiwayatDeklarasi() {
  const cocokStatus =
  filterStatus === "SEMUA" || deklarasi.status === filterStatus;
 
- return cocokKataKunci && cocokJenis && cocokStatus;
+ const tanggal = new Date(deklarasi.tanggal_kegiatan);
+
+ const cocokBulan =
+ !filterBulan || tanggal.getMonth() + 1 === Number(filterBulan);
+
+ const cocokTahun =
+ !filterTahun || tanggal.getFullYear() === Number(filterTahun);
+
+ return (
+ cocokKataKunci &&
+ cocokJenis &&
+ cocokStatus &&
+ cocokBulan &&
+ cocokTahun
+ );
  });
- }, [daftarDeklarasi, kataKunci, filterJenis, filterStatus]);
+ }, [
+ daftarDeklarasi,
+ kataKunci,
+ filterJenis,
+ filterStatus,
+ filterBulan,
+ filterTahun,
+ ]);
 
  if (sedangMemuat) {
  return (
@@ -293,7 +321,7 @@ function KontenRiwayatDeklarasi() {
  </div>
  </div>
 
- <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_220px_220px] md:items-end">
+ <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_180px_180px_160px_140px] md:items-end">
  <div>
  <label
  htmlFor="pencarianRiwayat"
@@ -359,6 +387,56 @@ function KontenRiwayatDeklarasi() {
  <option value="DIVERIFIKASI">DIVERIFIKASI</option>
  <option value="DISETUJUI">DISETUJUI</option>
  <option value="DITOLAK">DITOLAK</option>
+ </select>
+ </div>
+
+ <div>
+ <label
+ htmlFor="filterBulanRiwayat"
+ className="mb-2 block text-xs font-bold text-slate-500"
+ >
+ Bulan
+ </label>
+
+ <select
+ id="filterBulanRiwayat"
+ name="filterBulanRiwayat"
+ value={filterBulan}
+ onChange={(event) => setFilterBulan(event.target.value)}
+ className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-50"
+ >
+ <option value="">Semua Bulan</option>
+ {Array.from({ length: 12 }, (_, index) => (
+ <option key={index + 1} value={index + 1}>
+ {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(
+ new Date(2026, index, 1)
+ )}
+ </option>
+ ))}
+ </select>
+ </div>
+
+ <div>
+ <label
+ htmlFor="filterTahunRiwayat"
+ className="mb-2 block text-xs font-bold text-slate-500"
+ >
+ Tahun
+ </label>
+
+ <select
+ id="filterTahunRiwayat"
+ name="filterTahunRiwayat"
+ value={filterTahun}
+ onChange={(event) => setFilterTahun(event.target.value)}
+ className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-50"
+ >
+ <option value="">Semua Tahun</option>
+ {tahunTersedia.map((tahun) => (
+ <option key={tahun} value={tahun}>
+ {tahun}
+ </option>
+ ))}
  </select>
  </div>
  </div>

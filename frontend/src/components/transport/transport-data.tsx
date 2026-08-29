@@ -284,6 +284,12 @@ export default function TransportData() {
   const [year, setYear] =
     useState("");
 
+  const [vehicleTypeFilter, setVehicleTypeFilter] =
+    useState("");
+
+  const [statusFilter, setStatusFilter] =
+    useState("");
+
   const [modal, setModal] =
     useState(false);
 
@@ -423,7 +429,15 @@ export default function TransportData() {
 
           (!year ||
             date.getFullYear() ===
-              Number(year))
+              Number(year)) &&
+
+          (!vehicleTypeFilter ||
+            row.vehicleType ===
+              vehicleTypeFilter) &&
+
+          (!statusFilter ||
+            row.unitStatus ===
+              statusFilter)
         );
       }),
     [
@@ -431,6 +445,8 @@ export default function TransportData() {
       search,
       month,
       year,
+      vehicleTypeFilter,
+      statusFilter,
     ],
   );
 
@@ -1174,11 +1190,53 @@ export default function TransportData() {
           ))}
         </select>
 
+        <select
+          value={vehicleTypeFilter}
+          onChange={(event) =>
+            setVehicleTypeFilter(
+              event.target.value,
+            )
+          }
+        >
+          <option value="">
+            Semua Jenis
+          </option>
+
+          <option value="LV">LV</option>
+
+          <option value="BUS">
+            BUS
+          </option>
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(
+              event.target.value,
+            )
+          }
+        >
+          <option value="">
+            Semua Status
+          </option>
+
+          <option value="READY">
+            READY
+          </option>
+
+          <option value="BREAKDOWN">
+            BREAKDOWN
+          </option>
+        </select>
+
         <button
           onClick={() => {
             setSearch("");
             setMonth("");
             setYear("");
+            setVehicleTypeFilter("");
+            setStatusFilter("");
           }}
         >
           Reset

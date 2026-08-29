@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { getStoredUser, refreshStoredUser, type PortalUser } from "@/lib/access-control";
 import {
@@ -9,6 +9,7 @@ import {
   isEpromOwner,
   isEpromVendor,
   LABEL_LEGALITAS_VENDOR,
+  type StatusLegalitasVendor,
   type Vendor,
 } from "@/lib/eprom-api";
 import { FolderExplorer } from "@/components/civil-project/folder-explorer";
@@ -21,6 +22,7 @@ export default function LegalitasVendorPage() {
   const [error, setError] = useState<string | null>(null);
   const [vendorPilihan, setVendorPilihan] = useState("");
   const [mengklaim, setMengklaim] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNama, setEditNama] = useState("");
@@ -43,11 +45,19 @@ export default function LegalitasVendorPage() {
   const vendorSaya = isEpromVendor(user);
   const sudahTertaut = Boolean(user?.vendorId);
 
-  const daftarTampil = boleh
-    ? vendorList
-    : vendorSaya && sudahTertaut
-      ? vendorList.filter((v) => v.id === user?.vendorId)
-      : [];
+  const daftarTampil = useMemo(() => {
+    const dasar = boleh
+      ? vendorList
+      : vendorSaya && sudahTertaut
+        ? vendorList.filter((v) => v.id === user?.vendorId)
+        : [];
+
+    if (!statusFilter) {
+      return dasar;
+    }
+
+    return dasar.filter((v) => v.legalitasStatus === statusFilter);
+  }, [vendorList, boleh, vendorSaya, sudahTertaut, user?.vendorId, statusFilter]);
 
   function bolehUbah(vendor: Vendor) {
     return boleh || vendor.id === user?.vendorId;
@@ -131,6 +141,19 @@ export default function LegalitasVendorPage() {
             </Link>
           )}
         </div>
+
+        {(boleh || sudahTertaut) && (
+          <div className={styles.filterRow}>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="">Semua Legalitas</option>
+              {(Object.keys(LABEL_LEGALITAS_VENDOR) as StatusLegalitasVendor[]).map((status) => (
+                <option key={status} value={status}>
+                  {LABEL_LEGALITAS_VENDOR[status]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {vendorSaya && !sudahTertaut && (
           <form className={styles.formCard} onSubmit={klaimVendor}>

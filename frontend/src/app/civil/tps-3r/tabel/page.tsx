@@ -43,8 +43,8 @@ const FORM_KOSONG: LaporanTps3rInput = {
 
 export default function Tps3rTabelPage() {
   const sekarang = new Date();
-  const [bulan, setBulan] = useState(sekarang.getMonth() + 1);
-  const [tahun, setTahun] = useState(sekarang.getFullYear());
+  const [bulan, setBulan] = useState('');
+  const [tahun, setTahun] = useState('');
 
   const [laporanList, setLaporanList] = useState<LaporanTps3r[]>([]);
   const [memuat, setMemuat] = useState(true);
@@ -59,7 +59,7 @@ export default function Tps3rTabelPage() {
     setMemuat(true);
     setError(null);
     tps3rApi
-      .daftar(bulan, tahun)
+      .daftar(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined)
       .then(setLaporanList)
       .catch((err) => setError(err instanceof Error ? err.message : 'Gagal memuat data'))
       .finally(() => setMemuat(false));
@@ -133,9 +133,10 @@ export default function Tps3rTabelPage() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <select
             value={bulan}
-            onChange={(e) => setBulan(Number(e.target.value))}
+            onChange={(e) => setBulan(e.target.value)}
             style={{ minWidth: 130, padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12 }}
           >
+            <option value="">Semua Bulan</option>
             {NAMA_BULAN.map((nama, index) => (
               <option key={nama} value={index + 1}>{nama}</option>
             ))}
@@ -143,10 +144,11 @@ export default function Tps3rTabelPage() {
 
           <select
             value={tahun}
-            onChange={(e) => setTahun(Number(e.target.value))}
+            onChange={(e) => setTahun(e.target.value)}
             style={{ minWidth: 100, padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12 }}
           >
-            {Array.from({ length: 5 }, (_, i) => sekarang.getFullYear() - 2 + i).map((th) => (
+            <option value="">Semua Tahun</option>
+            {Array.from({ length: 7 }, (_, i) => sekarang.getFullYear() - 5 + i).map((th) => (
               <option key={th} value={th}>{th}</option>
             ))}
           </select>

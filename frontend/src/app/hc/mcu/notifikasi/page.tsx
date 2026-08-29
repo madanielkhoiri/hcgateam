@@ -11,7 +11,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, BellRing, Building2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
   Dialog,
@@ -47,6 +47,10 @@ export default function NotifikasiMcuPage() {
   const [namaDept, setNamaDept] = useState('');
   const [adminDeptId, setAdminDeptId] = useState('');
 
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -69,6 +73,31 @@ export default function NotifikasiMcuPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const notifikasiTampil = useMemo(() => {
+    return notifikasi.filter((item) => {
+      if (filterStatus && item.statusKirim !== filterStatus) {
+        return false;
+      }
+
+      const tanggal = new Date(item.createdAt);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [notifikasi, filterStatus, filterBulan, filterTahun]);
 
   async function tambahDepartemen() {
     setProses(true);
@@ -228,11 +257,55 @@ export default function NotifikasiMcuPage() {
 
       <Panel
         judul="Log Notifikasi"
-        keterangan={`${notifikasi.length} notifikasi tercatat (100 terbaru).`}
+        keterangan={`${notifikasiTampil.length} dari ${notifikasi.length} notifikasi tercatat (100 terbaru).`}
       >
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 170 }}
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="MENUNGGU">Menunggu</option>
+            <option value="TERKIRIM">Terkirim</option>
+            <option value="GAGAL">Gagal</option>
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : notifikasi.length === 0 ? (
+        ) : notifikasiTampil.length === 0 ? (
           <Kosong
             judul="Belum ada notifikasi"
             keterangan="Notifikasi akan tercatat seiring berjalannya alur MCU."
@@ -252,7 +325,7 @@ export default function NotifikasiMcuPage() {
               </thead>
 
               <tbody>
-                {notifikasi.map((item) => (
+                {notifikasiTampil.map((item) => (
                   <tr key={item.id}>
                     <td>{formatWaktu(item.createdAt)}</td>
                     <td>{labelStatus(item.tipe)}</td>

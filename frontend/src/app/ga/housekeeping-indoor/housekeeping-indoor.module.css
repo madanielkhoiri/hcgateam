@@ -191,6 +191,50 @@
   color: #fff;
 }
 
+.dateFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dateSelect {
+  height: 36px;
+  padding: 0 14px;
+  color: #385675;
+  background: #fff;
+  border: 1px solid #d8e4f1;
+  border-radius: 999px;
+  outline: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.dateSelect:focus {
+  border-color: #0d9488;
+}
+
+.resetChip {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  color: #385675;
+  background: #f1f5f9;
+  border: 1px solid #d8e4f1;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resetChip:hover {
+  color: #0d7d75;
+  border-color: #0d9488;
+}
+
 /* ---------- Report grid ---------- */
 
 .grid {

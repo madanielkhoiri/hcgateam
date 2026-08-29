@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { epromApi, formatTanggal, type Project } from "@/lib/eprom-api";
 import styles from "./engineer.module.css";
 
@@ -9,6 +9,8 @@ export default function EngineerProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bulan, setBulan] = useState("");
+  const [tahun, setTahun] = useState("");
 
   useEffect(() => {
     epromApi.project
@@ -17,6 +19,27 @@ export default function EngineerProjectListPage() {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Gagal memuat project"))
       .finally(() => setLoading(false));
   }, []);
+
+  const tahunTersedia = useMemo(() => {
+    const sekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => sekarang - 5 + index);
+  }, []);
+
+  const projectsTampil = useMemo(() => {
+    if (!bulan && !tahun) return projects;
+
+    return projects.filter((project) => {
+      const tanggal = new Date(project.kontrak.tanggalMulai);
+      if (bulan && tanggal.getMonth() + 1 !== Number(bulan)) return false;
+      if (tahun && tanggal.getFullYear() !== Number(tahun)) return false;
+      return true;
+    });
+  }, [projects, bulan, tahun]);
+
+  function resetFilter() {
+    setBulan("");
+    setTahun("");
+  }
 
   return (
     <div className={styles.page}>
@@ -30,16 +53,40 @@ export default function EngineerProjectListPage() {
         </div>
       </div>
 
+      <div className={styles.filterRow}>
+        <select value={bulan} onChange={(e) => setBulan(e.target.value)}>
+          <option value="">Semua Bulan</option>
+          {Array.from({ length: 12 }, (_, index) => (
+            <option key={index + 1} value={index + 1}>
+              {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date(2026, index, 1))}
+            </option>
+          ))}
+        </select>
+
+        <select value={tahun} onChange={(e) => setTahun(e.target.value)}>
+          <option value="">Semua Tahun</option>
+          {tahunTersedia.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+
+        <button type="button" className={styles.secondaryButton} onClick={resetFilter}>
+          Reset
+        </button>
+      </div>
+
       {error && <p className={styles.errorText}>{error}</p>}
       {loading && <p className={styles.emptyText}>Memuat...</p>}
-      {!loading && projects.length === 0 && (
+      {!loading && projectsTampil.length === 0 && (
         <p className={styles.emptyText}>
           Belum ada Project. Buka Project dulu dari menu Kontrak setelah Kontrak dibuat.
         </p>
       )}
 
       <div className={styles.tableWrap}>
-        {projects.length > 0 && (
+        {projectsTampil.length > 0 && (
           <table className={styles.table}>
             <thead>
               <tr>
@@ -50,7 +97,7 @@ export default function EngineerProjectListPage() {
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => {
+              {projectsTampil.map((project) => {
                 const pending = project._count
                   ? Object.values(project._count).reduce((a, b) => a + b, 0)
                   : 0;

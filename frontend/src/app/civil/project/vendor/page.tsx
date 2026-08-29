@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { getStoredUser } from "@/lib/access-control";
 import { epromApi, isEpromOwner, type Vendor } from "@/lib/eprom-api";
@@ -12,6 +12,7 @@ export default function MasterVendorPage() {
 
   const [vendorList, setVendorList] = useState<Vendor[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
 
   const [namaVendorBaru, setNamaVendorBaru] = useState("");
   const [emailBaru, setEmailBaru] = useState("");
@@ -34,7 +35,17 @@ export default function MasterVendorPage() {
   }
 
   // Akun Vendor cuma boleh lihat datanya sendiri; vendor lain tidak ditampilkan.
-  const daftarTampil = boleh ? vendorList : vendorList.filter((v) => v.id === user?.vendorId);
+  const daftarTampil = useMemo(() => {
+    const dasar = boleh ? vendorList : vendorList.filter((v) => v.id === user?.vendorId);
+
+    if (!statusFilter) {
+      return dasar;
+    }
+
+    return dasar.filter((v) =>
+      statusFilter === "AKTIF" ? v.statusAktif : !v.statusAktif,
+    );
+  }, [vendorList, boleh, user?.vendorId, statusFilter]);
 
   async function buatVendor(event: React.FormEvent) {
     event.preventDefault();
@@ -112,6 +123,14 @@ export default function MasterVendorPage() {
               <Plus size={16} /> Vendor Baru
             </button>
           )}
+        </div>
+
+        <div className={styles.filterRow}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">Semua Status</option>
+            <option value="AKTIF">Aktif</option>
+            <option value="NONAKTIF">Non Aktif</option>
+          </select>
         </div>
 
         {showVendorForm && (

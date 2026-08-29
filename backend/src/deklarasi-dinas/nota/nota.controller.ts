@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -16,6 +17,7 @@ import { extname } from 'path';
 
 import { NotaService } from './nota.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 
 function pastikanFolderNotaAda() {
@@ -33,6 +35,7 @@ function pastikanFolderNotaAda() {
 // <--- fitur controller upload nota deklarasi + koreksi per nota --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('nota')
+@UseGuards(JwtAuthGuard)
 export class NotaController {
   constructor(private readonly notaService: NotaService) {}
 

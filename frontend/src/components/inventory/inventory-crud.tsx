@@ -56,6 +56,14 @@ type Mode =
   | "stock-ins"
   | "stock-outs";
 
+const categories = [
+  "ATK",
+  "HOUSEKEEPING",
+  "BAJU",
+  "ELEKTRONIK",
+  "FURNITURE",
+];
+
 type Item = {
   id: number;
   code: string;
@@ -254,6 +262,10 @@ export default function InventoryCrud({
   >([]);
 
   const [search, setSearch] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -290,6 +302,12 @@ export default function InventoryCrud({
   const [batchRows, setBatchRows] = useState<BatchRow[]>([
     createBatchRow(),
   ]);
+
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+
+    return Array.from({ length: 7 }, (_, index) => current - 5 + index);
+  }, []);
 
   const inventoryApiPath = `inventory-area/${scope}`;
 
@@ -919,24 +937,66 @@ export default function InventoryCrud({
 
   const keyword = search.trim().toLowerCase();
 
-  const filteredItems = items.filter((item) =>
-    `${item.code} ${item.name} ${item.category} ${item.unit}`
-      .toLowerCase()
-      .includes(keyword),
-  );
-
-  const filteredStocks = stocks.filter((stock) =>
-    `${stock.item.code} ${stock.item.name} ${stock.item.category} ${stock.item.unit}`
-      .toLowerCase()
-      .includes(keyword),
-  );
-
-  const filteredTransactions = transactions.filter(
-    (row) =>
-      `${row.item.code} ${row.item.name} ${row.category} ${row.unit} ${row.taker ?? ""} ${row.department ?? ""} ${row.description ?? ""}`
+  const filteredItems = items
+    .filter((item) =>
+      `${item.code} ${item.name} ${item.category} ${item.unit}`
         .toLowerCase()
         .includes(keyword),
-  );
+    )
+    .filter((item) => !categoryFilter || item.category === categoryFilter)
+    .filter((item) => {
+      if (!statusFilter) {
+        return true;
+      }
+
+      return statusFilter === "active"
+        ? item.isActive
+        : !item.isActive;
+    });
+
+  const filteredStocks = stocks
+    .filter((stock) =>
+      `${stock.item.code} ${stock.item.name} ${stock.item.category} ${stock.item.unit}`
+        .toLowerCase()
+        .includes(keyword),
+    )
+    .filter(
+      (stock) =>
+        !categoryFilter || stock.item.category === categoryFilter,
+    );
+
+  const filteredTransactions = transactions
+    .filter(
+      (row) =>
+        `${row.item.code} ${row.item.name} ${row.category} ${row.unit} ${row.taker ?? ""} ${row.department ?? ""} ${row.description ?? ""}`
+          .toLowerCase()
+          .includes(keyword),
+    )
+    .filter((row) => {
+      if (!month && !year) {
+        return true;
+      }
+
+      const rowDate = new Date(row.date);
+
+      if (year && rowDate.getUTCFullYear() !== Number(year)) {
+        return false;
+      }
+
+      if (month && rowDate.getUTCMonth() + 1 !== Number(month)) {
+        return false;
+      }
+
+      return true;
+    });
+
+  function resetFilters() {
+    setSearch("");
+    setMonth("");
+    setYear("");
+    setCategoryFilter("");
+    setStatusFilter("");
+  }
 
   return (
     <main className={styles.page}>
@@ -982,6 +1042,84 @@ export default function InventoryCrud({
               }
               placeholder="Cari data..."
             />
+          </div>
+
+          <div className={styles.filters}>
+            {(mode === "stock-ins" ||
+              mode === "stock-outs") && (
+              <>
+                <select
+                  className={styles.filterSelect}
+                  value={month}
+                  onChange={(event) =>
+                    setMonth(event.target.value)
+                  }
+                >
+                  <option value="">Semua Bulan</option>
+                  {Array.from({ length: 12 }, (_, index) => (
+                    <option key={index + 1} value={index + 1}>
+                      {new Intl.DateTimeFormat("id-ID", {
+                        month: "long",
+                      }).format(new Date(2026, index, 1))}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className={styles.filterSelect}
+                  value={year}
+                  onChange={(event) =>
+                    setYear(event.target.value)
+                  }
+                >
+                  <option value="">Semua Tahun</option>
+                  {availableYears.map((item) => (
+                    <option value={item} key={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            {(mode === "items" || mode === "stocks") && (
+              <select
+                className={styles.filterSelect}
+                value={categoryFilter}
+                onChange={(event) =>
+                  setCategoryFilter(event.target.value)
+                }
+              >
+                <option value="">Semua Jenis</option>
+                {categories.map((item) => (
+                  <option value={item} key={item}>
+                    {categoryLabel(item)}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {mode === "items" && (
+              <select
+                className={styles.filterSelect}
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value)
+                }
+              >
+                <option value="">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+              </select>
+            )}
+
+            <button
+              type="button"
+              className={styles.resetButton}
+              onClick={resetFilters}
+            >
+              Reset
+            </button>
           </div>
 
           <span className={styles.total}>

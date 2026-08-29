@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { getStoredUser } from "@/lib/access-control";
 import {
@@ -9,6 +9,7 @@ import {
   formatTanggal,
   isEpromOwner,
   LABEL_STATUS_TENDER,
+  type StatusTender,
   type TenderProcess,
 } from "@/lib/eprom-api";
 import styles from "./tender.module.css";
@@ -18,6 +19,9 @@ export default function TenderListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [bulan, setBulan] = useState("");
+  const [tahun, setTahun] = useState("");
   const [namaTender, setNamaTender] = useState("");
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [tanggalSelesai, setTanggalSelesai] = useState("");
@@ -29,6 +33,32 @@ export default function TenderListPage() {
   const [editSelesai, setEditSelesai] = useState("");
 
   const boleh = isEpromOwner(getStoredUser());
+
+  const tahunTersedia = useMemo(() => {
+    const sekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => sekarang - 5 + index);
+  }, []);
+
+  const daftarTampil = useMemo(() => {
+    return daftar.filter((tender) => {
+      if (statusFilter && tender.status !== statusFilter) return false;
+
+      if (bulan || tahun) {
+        if (!tender.tanggalMulai) return false;
+        const tanggal = new Date(tender.tanggalMulai);
+        if (bulan && tanggal.getMonth() + 1 !== Number(bulan)) return false;
+        if (tahun && tanggal.getFullYear() !== Number(tahun)) return false;
+      }
+
+      return true;
+    });
+  }, [daftar, statusFilter, bulan, tahun]);
+
+  function resetFilter() {
+    setStatusFilter("");
+    setBulan("");
+    setTahun("");
+  }
 
   function muatUlang() {
     setLoading(true);
@@ -131,12 +161,45 @@ export default function TenderListPage() {
         </form>
       )}
 
+      <div className={styles.filterRow}>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Semua Status</option>
+          {(Object.keys(LABEL_STATUS_TENDER) as StatusTender[]).map((status) => (
+            <option key={status} value={status}>
+              {LABEL_STATUS_TENDER[status]}
+            </option>
+          ))}
+        </select>
+
+        <select value={bulan} onChange={(e) => setBulan(e.target.value)}>
+          <option value="">Semua Bulan</option>
+          {Array.from({ length: 12 }, (_, index) => (
+            <option key={index + 1} value={index + 1}>
+              {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date(2026, index, 1))}
+            </option>
+          ))}
+        </select>
+
+        <select value={tahun} onChange={(e) => setTahun(e.target.value)}>
+          <option value="">Semua Tahun</option>
+          {tahunTersedia.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+
+        <button type="button" className={styles.secondaryButton} onClick={resetFilter}>
+          Reset
+        </button>
+      </div>
+
       {error && <p className={styles.errorText}>{error}</p>}
       {loading && <p className={styles.emptyText}>Memuat...</p>}
-      {!loading && daftar.length === 0 && <p className={styles.emptyText}>Belum ada tender.</p>}
+      {!loading && daftarTampil.length === 0 && <p className={styles.emptyText}>Belum ada tender.</p>}
 
       <div className={styles.tableWrap}>
-        {daftar.length > 0 && (
+        {daftarTampil.length > 0 && (
           <table className={styles.table}>
             <thead>
               <tr>
@@ -149,7 +212,7 @@ export default function TenderListPage() {
               </tr>
             </thead>
             <tbody>
-              {daftar.map((tender) =>
+              {daftarTampil.map((tender) =>
                 editingId === tender.id ? (
                   <tr key={tender.id}>
                     <td>

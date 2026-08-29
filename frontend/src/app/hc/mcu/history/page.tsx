@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, History, Search } from 'lucide-react';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   BadgeStatus,
@@ -112,6 +112,9 @@ function HistoryMcuContent() {
   const [memuatHistory, setMemuatHistory] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
 
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   useEffect(() => {
     mcuApi
       .ambil<Karyawan[]>('/karyawan')
@@ -147,6 +150,27 @@ function HistoryMcuContent() {
   useEffect(() => {
     void muatHistory(karyawanId);
   }, [karyawanId, muatHistory]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const durasiTampil = useMemo(() => {
+    return durasi.filter((item) => {
+      const tanggal = new Date(item.tanggalMcu);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [durasi, filterBulan, filterTahun]);
 
   return (
     <>
@@ -353,7 +377,39 @@ function HistoryMcuContent() {
         judul="Durasi Tiap Tahapan Proses"
         keterangan="50 kasus terakhir - satuan hari, dihitung antar tanggal tiap tahapan."
       >
-        {durasi.length === 0 ? (
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {durasiTampil.length === 0 ? (
           <Kosong
             judul="Belum ada data durasi"
             keterangan="Data akan muncul setelah ada hasil MCU yang diproses."
@@ -375,7 +431,7 @@ function HistoryMcuContent() {
               </thead>
 
               <tbody>
-                {durasi.map((item) => (
+                {durasiTampil.map((item) => (
                   <tr key={item.jadwalId}>
                     <td>
                       <div className={styles.tableNama}>

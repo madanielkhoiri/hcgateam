@@ -44,6 +44,7 @@ export default function PerformanceVendorPage() {
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusKewajibanUpload | "">("");
 
   useEffect(() => {
     let active = true;
@@ -88,6 +89,11 @@ export default function PerformanceVendorPage() {
     })),
     [items],
   );
+
+  const kewajibanTampil = useMemo(() => {
+    const daftar = detail?.upload.kewajiban ?? [];
+    return statusFilter ? daftar.filter((item) => item.status === statusFilter) : daftar;
+  }, [detail, statusFilter]);
 
   return (
     <div className={styles.page}>
@@ -181,6 +187,23 @@ export default function PerformanceVendorPage() {
                 ))}
               </div>
             </div>
+            <div className={styles.uploadHeader}>
+              <label className={styles.field}>
+                Filter status
+                <select
+                  className={styles.select}
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as StatusKewajibanUpload | "")}
+                >
+                  <option value="">Semua Status</option>
+                  {(Object.keys(TAMPILAN_STATUS) as StatusKewajibanUpload[]).map((status) => (
+                    <option key={status} value={status}>
+                      {TAMPILAN_STATUS[status].label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -194,7 +217,7 @@ export default function PerformanceVendorPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(detail.upload.kewajiban ?? []).map((item, index) => (
+                  {kewajibanTampil.map((item, index) => (
                     <tr key={`${item.tipe}-${item.tanggal}-${index}`}>
                       <td>{formatTanggal(item.tanggal)}</td>
                       <td>{item.label}</td>
@@ -204,7 +227,7 @@ export default function PerformanceVendorPage() {
                       <td>{item.uploadedAt ? formatWaktuWITA(item.uploadedAt) : "—"}</td>
                     </tr>
                   ))}
-                  {detail.upload.total === 0 && (
+                  {kewajibanTampil.length === 0 && (
                     <tr><td colSpan={6} className={styles.empty}>Tidak ada kewajiban upload pada periode ini.</td></tr>
                   )}
                 </tbody>

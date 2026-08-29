@@ -15,7 +15,7 @@ import {
   Stethoscope,
   UploadCloud,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
   Dialog,
@@ -92,6 +92,10 @@ export default function RekomendasiPage() {
   const [suratRujukanFu, setSuratRujukanFu] = useState<string | null>(null);
   const [mengunggah, setMengunggah] = useState<string | null>(null);
 
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterTahun, setFilterTahun] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -116,6 +120,31 @@ export default function RekomendasiPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const tahunTersedia = useMemo(() => {
+    const tahunSekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+  }, []);
+
+  const rekomendasiTampil = useMemo(() => {
+    return rekomendasi.filter((item) => {
+      if (filterStatus && item.status !== filterStatus) {
+        return false;
+      }
+
+      const tanggal = new Date(item.tanggalSubmit);
+
+      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
+        return false;
+      }
+
+      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [rekomendasi, filterStatus, filterBulan, filterTahun]);
 
   function bukaReview(
     idHasilMcu: number,
@@ -396,11 +425,54 @@ export default function RekomendasiPage() {
 
       <Panel
         judul="Rekomendasi Terbit"
-        keterangan={`${rekomendasi.length} rekomendasi tercatat.`}
+        keterangan={`${rekomendasiTampil.length} dari ${rekomendasi.length} rekomendasi tercatat.`}
       >
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 170 }}
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="FIT">FIT</option>
+            <option value="FOLLOW_UP">Follow Up</option>
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 160 }}
+            value={filterBulan}
+            onChange={(event) => setFilterBulan(event.target.value)}
+          >
+            <option value="">Semua Bulan</option>
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Intl.DateTimeFormat('id-ID', {
+                  month: 'long',
+                }).format(new Date(2026, index, 1))}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 130 }}
+            value={filterTahun}
+            onChange={(event) => setFilterTahun(event.target.value)}
+          >
+            <option value="">Semua Tahun</option>
+            {tahunTersedia.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : rekomendasi.length === 0 ? (
+        ) : rekomendasiTampil.length === 0 ? (
           <Kosong
             judul="Belum ada rekomendasi"
             keterangan="Rekomendasi muncul setelah Dokter menyelesaikan review hasil MCU."
@@ -421,7 +493,7 @@ export default function RekomendasiPage() {
               </thead>
 
               <tbody>
-                {rekomendasi.map((item) => (
+                {rekomendasiTampil.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className={styles.tableNama}>

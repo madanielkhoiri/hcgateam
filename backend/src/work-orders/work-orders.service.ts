@@ -1,13 +1,39 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, WorkOrderStatus } from '@prisma/client';
+import {
+  Prisma,
+  StatusApprovalWorkOrder,
+  UserRole,
+  WorkOrderStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { TolakWorkOrderDto } from './dto/tolak-work-order.dto';
 import { DocumentNumberService } from './document-number.service';
+
+type AktorWorkOrder = {
+  id: number;
+  role: UserRole;
+};
+
+const PENYETUJU_INCLUDE = {
+  creator: {
+    select: {
+      id: true,
+      name: true,
+      username: true,
+    },
+  },
+  handover: true,
+  disetujuiGlOleh: { select: { id: true, name: true } },
+  disetujuiShOleh: { select: { id: true, name: true } },
+  disetujuiPjoOleh: { select: { id: true, name: true } },
+} satisfies Prisma.WorkOrderInclude;
 
 @Injectable()
 export class WorkOrdersService {
@@ -15,6 +41,68 @@ export class WorkOrdersService {
     private readonly prisma: PrismaService,
     private readonly documentNumber: DocumentNumberService,
   ) {}
+
+  private isAdmin(aktor: AktorWorkOrder): boolean {
+    return aktor.role === UserRole.ADMIN || aktor.role === UserRole.SUPER_ADMIN;
+  }
+
+  /** Tahap GL: role Grup Leader. Tahap SH: Section Head. Tahap PJO: role PJO. */
+  private bolehSetujuiTahap(
+    aktor: AktorWorkOrder,
+    statusApproval: StatusApprovalWorkOrder,
+  ): boolean {
+    if (this.isAdmin(aktor)) {
+      return true;
+    }
+
+    if (statusApproval === StatusApprovalWorkOrder.MENUNGGU_GL) {
+      return aktor.role === UserRole.GRUP_LEADER;
+    }
+
+    if (statusApproval === StatusApprovalWorkOrder.MENUNGGU_SH) {
+      return aktor.role === UserRole.SECTION_HEAD;
+    }
+
+    if (statusApproval === StatusApprovalWorkOrder.MENUNGGU_PJO) {
+      return aktor.role === UserRole.PJO;
+    }
+
+    return false;
+  }
+
+  private wajibBolehSetujuiTahap(
+    aktor: AktorWorkOrder,
+    statusApproval: StatusApprovalWorkOrder,
+  ): void {
+    if (!this.bolehSetujuiTahap(aktor, statusApproval)) {
+      const tahap =
+        statusApproval === StatusApprovalWorkOrder.MENUNGGU_GL
+          ? 'GL'
+          : statusApproval === StatusApprovalWorkOrder.MENUNGGU_SH
+            ? 'Section Head (SH)'
+            : 'PJO';
+
+      throw new ForbiddenException(
+        `Hanya ${tahap} yang dapat memproses Work Order pada tahap ini`,
+      );
+    }
+  }
+
+  /** ON_PROGRESS/CLOSE hanya boleh setelah lolos approval GL -> SH -> PJO. OPEN selalu bebas. */
+  private wajibStatusApprovalUntukStatus(
+    status: WorkOrderStatus,
+    statusApproval: StatusApprovalWorkOrder,
+  ): void {
+    if (
+      (status === WorkOrderStatus.ON_PROGRESS ||
+        status === WorkOrderStatus.CLOSE) &&
+      statusApproval !== StatusApprovalWorkOrder.DISETUJUI
+    ) {
+      throw new BadRequestException(
+        'Work Order belum disetujui GL/SH/PJO, tidak bisa diubah ke status ini',
+      );
+    }
+  }
 
   private parseDate(value: string): Date {
     return new Date(`${value}T00:00:00.000Z`);
@@ -282,16 +370,7 @@ export class WorkOrdersService {
   }
   async findAll() {
     return this.prisma.workOrder.findMany({
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        handover: true,
-      },
+      include: PENYETUJU_INCLUDE,
       orderBy: [
         {
           priority: 'asc',
@@ -330,16 +409,7 @@ export class WorkOrdersService {
       where: {
         id,
       },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        handover: true,
-      },
+      include: PENYETUJU_INCLUDE,
     });
 
     if (!workOrder) {
@@ -350,6 +420,11 @@ export class WorkOrdersService {
   }
 
   async create(dto: CreateWorkOrderDto, createdBy: number) {
+    this.wajibStatusApprovalUntukStatus(
+      dto.status,
+      StatusApprovalWorkOrder.MENUNGGU_GL,
+    );
+
     const requestedAt = this.parseDate(dto.requestedAt);
 
     return this.prisma.$transaction(async (tx) => {
@@ -385,16 +460,7 @@ export class WorkOrdersService {
           imagePaths: dto.imagePaths ?? [],
           createdBy,
         },
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          handover: true,
-        },
+        include: PENYETUJU_INCLUDE,
       });
 
       if (isClosed) {
@@ -405,16 +471,7 @@ export class WorkOrdersService {
         where: {
           id: workOrder.id,
         },
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          handover: true,
-        },
+        include: PENYETUJU_INCLUDE,
       });
     });
   }
@@ -422,9 +479,11 @@ export class WorkOrdersService {
   async update(id: number, dto: UpdateWorkOrderDto, updatedBy: number) {
     const existing = await this.findOne(id);
 
-    return this.prisma.$transaction(async (tx) => {
-      const nextStatus = dto.status ?? existing.status;
+    const nextStatus = dto.status ?? existing.status;
 
+    this.wajibStatusApprovalUntukStatus(nextStatus, existing.statusApproval);
+
+    return this.prisma.$transaction(async (tx) => {
       const becomesClosed =
         existing.status !== WorkOrderStatus.CLOSE &&
         nextStatus === WorkOrderStatus.CLOSE;
@@ -526,16 +585,7 @@ export class WorkOrdersService {
         where: {
           id,
         },
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          handover: true,
-        },
+        include: PENYETUJU_INCLUDE,
       });
     });
   }
@@ -568,16 +618,7 @@ export class WorkOrdersService {
       data: {
         imagePaths,
       },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        handover: true,
-      },
+      include: PENYETUJU_INCLUDE,
     });
   }
 
@@ -595,16 +636,72 @@ export class WorkOrdersService {
       data: {
         imagePaths,
       },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
+      include: PENYETUJU_INCLUDE,
+    });
+  }
+
+  async setujui(id: number, aktor: AktorWorkOrder) {
+    const workOrder = await this.findOne(id);
+    this.wajibBolehSetujuiTahap(aktor, workOrder.statusApproval);
+
+    if (workOrder.statusApproval === StatusApprovalWorkOrder.MENUNGGU_GL) {
+      return this.prisma.workOrder.update({
+        where: { id },
+        data: {
+          statusApproval: StatusApprovalWorkOrder.MENUNGGU_SH,
+          disetujuiGlOlehId: aktor.id,
+          disetujuiGlPada: new Date(),
         },
-        handover: true,
+        include: PENYETUJU_INCLUDE,
+      });
+    }
+
+    if (workOrder.statusApproval === StatusApprovalWorkOrder.MENUNGGU_SH) {
+      return this.prisma.workOrder.update({
+        where: { id },
+        data: {
+          statusApproval: StatusApprovalWorkOrder.MENUNGGU_PJO,
+          disetujuiShOlehId: aktor.id,
+          disetujuiShPada: new Date(),
+        },
+        include: PENYETUJU_INCLUDE,
+      });
+    }
+
+    if (workOrder.statusApproval === StatusApprovalWorkOrder.MENUNGGU_PJO) {
+      return this.prisma.workOrder.update({
+        where: { id },
+        data: {
+          statusApproval: StatusApprovalWorkOrder.DISETUJUI,
+          disetujuiPjoOlehId: aktor.id,
+          disetujuiPjoPada: new Date(),
+        },
+        include: PENYETUJU_INCLUDE,
+      });
+    }
+
+    throw new BadRequestException('Work Order sudah diproses sebelumnya');
+  }
+
+  async tolak(id: number, dto: TolakWorkOrderDto, aktor: AktorWorkOrder) {
+    const workOrder = await this.findOne(id);
+    this.wajibBolehSetujuiTahap(aktor, workOrder.statusApproval);
+
+    if (
+      workOrder.statusApproval !== StatusApprovalWorkOrder.MENUNGGU_GL &&
+      workOrder.statusApproval !== StatusApprovalWorkOrder.MENUNGGU_SH &&
+      workOrder.statusApproval !== StatusApprovalWorkOrder.MENUNGGU_PJO
+    ) {
+      throw new BadRequestException('Work Order sudah diproses sebelumnya');
+    }
+
+    return this.prisma.workOrder.update({
+      where: { id },
+      data: {
+        statusApproval: StatusApprovalWorkOrder.DITOLAK,
+        alasanTolakApproval: dto.alasan.trim(),
       },
+      include: PENYETUJU_INCLUDE,
     });
   }
 }
