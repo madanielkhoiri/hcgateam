@@ -10,6 +10,7 @@ import { LokasiHousekeepingIndoor, Prisma, StatusChecklistKip, UserRole } from '
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { KipAksesService } from './kip-akses.service';
+import { KipFileService } from './kip-file.service';
 import { BuatKipDto, LOKASI_HOUSEKEEPING_INDOOR, SimpanGpsLokasiDto } from './dto/kip.dto';
 
 /** Radius toleransi jarak dari titik GPS acuan lokasi (meter). */
@@ -40,6 +41,7 @@ export class KipService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly akses: KipAksesService,
+    private readonly file: KipFileService,
   ) {}
 
   private validasiLokasi(kode: string): LokasiHousekeepingIndoor {
@@ -74,12 +76,41 @@ export class KipService {
           departemen: dto.departemen.trim(),
           tahun: dto.tahun,
           lokasi: dto.lokasi,
+          parameterChecklist: dto.parameterChecklist.map((p) => p.trim()).filter(Boolean),
           createdBy: aktorId,
           checklist: {
             createMany: {
               data: Array.from({ length: 12 }, (_, i) => ({ bulan: i + 1 })),
             },
           },
+        },
+        include: KIP_INCLUDE,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('No. KIP sudah terdaftar');
+      }
+      throw error;
+    }
+  }
+
+  async ubahKip(id: number, dto: BuatKipDto) {
+    const ada = await this.prisma.kip.findUnique({ where: { id } });
+
+    if (!ada) {
+      throw new NotFoundException('KIP tidak ditemukan');
+    }
+
+    try {
+      return await this.prisma.kip.update({
+        where: { id },
+        data: {
+          noKip: dto.noKip.trim(),
+          jenisPeralatan: dto.jenisPeralatan.trim(),
+          departemen: dto.departemen.trim(),
+          tahun: dto.tahun,
+          lokasi: dto.lokasi,
+          parameterChecklist: dto.parameterChecklist.map((p) => p.trim()).filter(Boolean),
         },
         include: KIP_INCLUDE,
       });
@@ -154,6 +185,8 @@ export class KipService {
     aktorId: number,
     kipId: number,
     bulan: number,
+    foto: Express.Multer.File | undefined,
+    parameterChecked: boolean[] | undefined,
     lokasiSekarang?: { latitude: number; longitude: number },
   ) {
     this.akses.wajibElektrik(role);
@@ -162,13 +195,21 @@ export class KipService {
       throw new BadRequestException('Bulan tidak valid');
     }
 
+    if (!foto) {
+      throw new BadRequestException('Foto dokumentasi bukti inspeksi wajib diunggah');
+    }
+
     const baris = await this.prisma.kipChecklistBulan.findUnique({
       where: { kipId_bulan: { kipId, bulan } },
-      include: { kip: { select: { lokasi: true } } },
+      include: { kip: { select: { lokasi: true, parameterChecklist: true } } },
     });
 
     if (!baris) {
       throw new NotFoundException('Checklist bulan ini tidak ditemukan');
+    }
+
+    if (!parameterChecked || parameterChecked.length !== baris.kip.parameterChecklist.length) {
+      throw new BadRequestException('Checklist parameter inspeksi wajib diisi lengkap');
     }
 
     if (baris.status === StatusChecklistKip.SUDAH) {
@@ -201,12 +242,20 @@ export class KipService {
       }
     }
 
+    const fotoBukti = this.file.simpanFoto(foto, kipId, bulan);
+    const parameterCeklis = baris.kip.parameterChecklist.map((label, index) => ({
+      label,
+      checked: Boolean(parameterChecked[index]),
+    }));
+
     return this.prisma.kipChecklistBulan.update({
       where: { id: baris.id },
       data: {
         status: StatusChecklistKip.SUDAH,
         diperiksaOleh: aktorId,
         tanggalPeriksa: new Date(),
+        fotoBukti,
+        parameterCeklis,
       },
     });
   }

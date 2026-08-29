@@ -2483,6 +2483,8 @@ model Kip {
   departemen     String
   tahun          Int
   lokasi         LokasiHousekeepingIndoor
+  /** Daftar parameter checklist inspeksi khusus KIP ini (ditentukan admin saat dibuat) — dipakai tiap ceklis bulanan. */
+  parameterChecklist String[]            @default([]) @map("parameter_checklist")
   createdBy      Int                      @map("created_by")
   createdAt      DateTime                 @default(now()) @map("created_at")
 
@@ -2494,12 +2496,16 @@ model Kip {
 }
 
 model KipChecklistBulan {
-  id             Int                @id @default(autoincrement())
-  kipId          Int                @map("kip_id")
-  bulan          Int
-  status         StatusChecklistKip @default(BELUM)
-  diperiksaOleh  Int?               @map("diperiksa_oleh")
-  tanggalPeriksa DateTime?          @map("tanggal_periksa")
+  id              Int                @id @default(autoincrement())
+  kipId           Int                @map("kip_id")
+  bulan           Int
+  status          StatusChecklistKip @default(BELUM)
+  diperiksaOleh   Int?               @map("diperiksa_oleh")
+  tanggalPeriksa  DateTime?          @map("tanggal_periksa")
+  /** Foto dokumentasi bukti inspeksi (diambil saat ceklis). */
+  fotoBukti       String?            @map("foto_bukti")
+  /** Hasil checklist parameter inspeksi (mis. 5 item standar) - array {label, checked} apa adanya saat diceklis. */
+  parameterCeklis Json?              @map("parameter_ceklis")
 
   kip       Kip   @relation(fields: [kipId], references: [id], onDelete: Cascade)
   pemeriksa User? @relation(fields: [diperiksaOleh], references: [id], onDelete: SetNull)

@@ -10,7 +10,7 @@ const BULAN_LABEL = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGS', 'SE
 
 // Aset statis frontend (frontend/public/logos/) — ikut ter-commit ke repo,
 // beda dari backend/uploads/ yang isinya upload runtime (tidak di-commit).
-const LOGO_PPA_URL = '/logos/ppa.png';
+const LOGO_PPA_URL = '/logos/Logo_PPA_Official_nw.png';
 const LOGO_K3_URL = '/logos/k3.png';
 
 /** Preload satu gambar sekali saja, dipakai ulang tiap render kartu. */
@@ -45,7 +45,7 @@ export function statusTampilBulan(kip: Kip, bulan: number): StatusTampil {
 }
 
 /** Warna latar cell berdasarkan status ceklis bulan itu — bukan lagi per-kuartal. */
-function warnaStatus(status: StatusTampil): string {
+export function warnaStatus(status: StatusTampil): string {
   if (status === 'SUDAH') return '#bbf7d0'; // hijau — sudah diinspeksi (baik tepat waktu maupun setelah lewat)
   if (status === 'KUNING') return '#bbf7d0'; // hijau — bulan ini sudah masuk jadwalnya
   if (status === 'MERAH') return '#fecaca'; // merah — sudah lewat, belum diinspeksi
@@ -67,28 +67,18 @@ function gambarLogoBulat(ctx: CanvasRenderingContext2D, x: number, y: number, r:
   ctx.stroke();
 }
 
-/** Logo dari gambar asli (logo PPA), dipotong bundar + garis tepi putih. */
-function gambarLogoGambar(ctx: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, cy: number, r: number) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
-  ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
-  ctx.restore();
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#ffffff';
-  ctx.stroke();
-}
-
 /** Logo dari gambar asli berlatar transparan (mis. gir K3) — pas ke kotak, tanpa dipotong bundar. */
 function gambarLogoTransparan(ctx: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, cy: number, r: number) {
   const skala = 0.92; // sedikit lebih kecil dari diameter penuh biar tidak mepet
   const ukuran = r * 2 * skala;
   ctx.drawImage(img, cx - ukuran / 2, cy - ukuran / 2, ukuran, ukuran);
+}
+
+/** Logo lengkap (mis. logo PPA + tulisan "PPA" di bawahnya) — digambar utuh sesuai rasio asli, tanpa dipotong bundar agar tulisannya tidak terpotong. */
+function gambarLogoUtuh(ctx: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, top: number, tinggi: number) {
+  const rasio = img.naturalWidth / img.naturalHeight;
+  const lebar = tinggi * rasio;
+  ctx.drawImage(img, cx - lebar / 2, top, lebar, tinggi);
 }
 
 /** Logo kiri (cadangan bila logo PPA belum termuat): lingkaran merah + siluet orang. */
@@ -183,9 +173,9 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
   ctx.lineWidth = 4;
   ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
 
-  // Logo kiri (siluet petugas, merah) & kanan (gir, hijau) mengapit judul, seperti kop kartu fisik.
+  // Logo kiri (PPA, lengkap dengan tulisan di bawahnya) & kanan (gir, hijau) mengapit judul, seperti kop kartu fisik.
   if (logoPpa) {
-    gambarLogoGambar(ctx, logoPpa, 65, 60, 30);
+    gambarLogoUtuh(ctx, logoPpa, 65, 10, 94);
   } else {
     gambarIkonPetugas(ctx, 65, 60, 30);
   }
@@ -199,8 +189,8 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
   ctx.textAlign = 'center';
   ctx.font = 'bold 24px Arial';
   ctx.fillText('KARTU INSPEKSI PERALATAN', canvas.width / 2, 50);
-  ctx.font = 'bold 22px Arial';
-  ctx.fillText('HCGA TEAM', canvas.width / 2, 80);
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText('PT PUTRA PERKASA ABADI', canvas.width / 2, 80);
 
   ctx.strokeStyle = '#d1d5db';
   ctx.lineWidth = 2;
