@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bus, Eye, Pencil, Plus, Trash2, UserRound, X } from 'lucide-react';
+import { ArrowLeft, Bus, Eye, Pencil, Plus, Trash2, UserRound, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import { Driver, KaryawanRingkas, TransportApiError, TravelJadwal, transportApi } from '@/lib/transport-api';
 import styles from '@/components/transport/transport.module.css';
@@ -214,6 +214,13 @@ export default function TravelPage() {
 
   return (
     <section>
+      <Link
+        href="/ga/transport/dashboard"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 14, color: '#385675', fontSize: 13, fontWeight: 700 }}
+      >
+        <ArrowLeft size={16} /> Kembali ke Dashboard Transportasi
+      </Link>
+
       <div className={styles.hero}>
         <div>
           <span className={styles.heroIcon}>

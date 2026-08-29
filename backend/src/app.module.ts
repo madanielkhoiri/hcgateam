@@ -53,6 +53,7 @@ import { AktivitasModule } from './aktivitas/aktivitas.module';
 import { CivilTps3rModule } from './civil-tps3r/civil-tps3r.module';
 import { DriveModule } from './drive/drive.module';
 import { AlbumModule } from './album/album.module';
+import { KipModule } from './kip/kip.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { AlbumModule } from './album/album.module';
     CivilTps3rModule,
     DriveModule,
     AlbumModule,
+    KipModule,
   ],
   controllers: [AppController],
   providers: [AppService],

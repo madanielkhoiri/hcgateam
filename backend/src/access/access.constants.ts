@@ -245,6 +245,14 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'section',
   },
   {
+    key: 'CIVIL_ELECTRIC_KIP',
+    title: 'KIP',
+    description:
+      'Kartu Inspeksi Peralatan: kelola Barcode lokasi dan data KIP, scan publik + ceklis bulanan oleh Tim Elektrik.',
+    parentKey: 'CIVIL_ELECTRIC',
+    level: 'card',
+  },
+  {
     key: 'CIVIL_AIR',
     title: 'Air',
     description: 'Belum tersedia, pembatas untuk pengembangan berikutnya.',
