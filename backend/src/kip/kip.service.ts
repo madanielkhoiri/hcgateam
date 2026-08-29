@@ -12,8 +12,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KipAksesService } from './kip-akses.service';
 import { BuatKipDto, LOKASI_HOUSEKEEPING_INDOOR, SimpanGpsLokasiDto } from './dto/kip.dto';
 
-/** Radius toleransi jarak dari titik GPS acuan lokasi (meter) — akurasi GPS ponsel di dalam gedung cukup longgar. */
-const RADIUS_TOLERANSI_METER = 200;
+/** Radius toleransi jarak dari titik GPS acuan lokasi (meter). */
+const RADIUS_TOLERANSI_METER = 10;
 
 /** Jarak antar dua titik GPS pakai formula Haversine (meter). */
 function jarakMeter(lat1: number, lon1: number, lat2: number, lon2: number): number {
