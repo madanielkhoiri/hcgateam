@@ -289,12 +289,13 @@ export type EngineerDocumentApproval = {
     | 'DAFTAR_PERALATAN'
     | 'KOMISIONING_ALAT_BERAT';
   approvedAt: string;
-  signatureFile: string;
-  signaturePage: number;
-  signatureXRatio: number;
-  signatureYRatio: number;
-  signatureWidthRatio: number;
-  signatureHeightRatio: number;
+  adaTandaTangan: boolean;
+  signatureFile: string | null;
+  signaturePage: number | null;
+  signatureXRatio: number | null;
+  signatureYRatio: number | null;
+  signatureWidthRatio: number | null;
+  signatureHeightRatio: number | null;
   signaturePlacements: EngineerSignaturePosition[] | null;
   originalFilePath: string;
   sourceFilePath: string;
@@ -863,6 +864,10 @@ export const epromApi = {
       request<EngineerItem>(`/engineer/${tipe}/${id}/approve`, {
         method: 'POST',
         body: JSON.stringify(payload),
+      }),
+    approveTanpaTandaTangan: (tipe: TipeEngineer, id: number) =>
+      request<EngineerItem>(`/engineer/${tipe}/${id}/approve-tanpa-ttd`, {
+        method: 'POST',
       }),
     hapus: (tipe: TipeEngineer, id: number) =>
       request<{ message: string }>(`/engineer/${tipe}/${id}`, { method: 'DELETE' }),
