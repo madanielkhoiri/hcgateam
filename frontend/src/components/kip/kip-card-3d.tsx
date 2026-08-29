@@ -44,12 +44,17 @@ export function statusTampilBulan(kip: Kip, bulan: number): StatusTampil {
   return 'MERAH';
 }
 
-/** Warna latar per kuartal — meniru kartu KIP fisik (Jan-Mar biru, Apr-Jun kuning, Jul-Sep putih, Okt-Des merah). */
-function warnaKuartal(bulan: number): string {
-  if (bulan <= 3) return '#bfdbfe';
-  if (bulan <= 6) return '#fef08a';
-  if (bulan <= 9) return '#f8fafc';
-  return '#fecaca';
+/** Warna latar cell berdasarkan status ceklis bulan itu — bukan lagi per-kuartal. */
+function warnaStatus(status: StatusTampil): string {
+  if (status === 'SUDAH') return '#bbf7d0'; // hijau — sudah diinspeksi (baik tepat waktu maupun setelah lewat)
+  if (status === 'KUNING') return '#bbf7d0'; // hijau — bulan ini sudah masuk jadwalnya
+  if (status === 'MERAH') return '#fecaca'; // merah — sudah lewat, belum diinspeksi
+  return '#e2e8f0'; // abu-abu — bulan belum sampai jadwalnya
+}
+
+function formatTanggalPendek(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
 function gambarLogoBulat(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, warna: string) {
@@ -249,7 +254,7 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
   ctx.font = 'bold 26px Arial';
   ctx.fillText(String(kip.tahun), tahunBoxX + 14, boxTop + 50);
 
-  // Grid 12 bulan, 2 baris x 6 kolom, warna latar per kuartal seperti kartu fisik.
+  // Grid 12 bulan, 2 baris x 6 kolom, warna latar mengikuti status ceklis tiap bulan.
   const gridTop = 320;
   const gridLeft = 30;
   const gridWidth = canvas.width - 60;
@@ -264,8 +269,9 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
     const x = gridLeft + col * cellW;
     const yCell = gridTop + row * (cellH + rowGap);
     const status = statusTampilBulan(kip, bulan);
+    const baris = kip.checklist.find((c) => c.bulan === bulan);
 
-    ctx.fillStyle = warnaKuartal(bulan);
+    ctx.fillStyle = warnaStatus(status);
     ctx.fillRect(x + 3, yCell, cellW - 6, cellH);
     ctx.strokeStyle = '#1f2937';
     ctx.lineWidth = 1.5;
@@ -278,10 +284,16 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
 
     if (status === 'SUDAH') {
       ctx.fillStyle = '#0b9d4d';
-      ctx.font = 'bold 58px Arial';
-      ctx.fillText('✓', x + cellW / 2, yCell + 112);
+      ctx.font = 'bold 50px Arial';
+      ctx.fillText('✓', x + cellW / 2, yCell + 100);
+
+      if (baris?.tanggalPeriksa) {
+        ctx.fillStyle = 'rgba(6,95,70,0.9)';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText(formatTanggalPendek(baris.tanggalPeriksa), x + cellW / 2, yCell + 128);
+      }
     } else if (status === 'KUNING') {
-      ctx.fillStyle = 'rgba(180,131,0,0.9)';
+      ctx.fillStyle = 'rgba(6,95,70,0.9)';
       ctx.font = 'bold 13px Arial';
       ctx.fillText('BULAN INI', x + cellW / 2, yCell + 100);
     } else if (status === 'MERAH') {

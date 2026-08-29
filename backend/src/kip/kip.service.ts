@@ -10,7 +10,23 @@ import { LokasiHousekeepingIndoor, Prisma, StatusChecklistKip, UserRole } from '
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { KipAksesService } from './kip-akses.service';
-import { BuatKipDto, LOKASI_HOUSEKEEPING_INDOOR } from './dto/kip.dto';
+import { BuatKipDto, LOKASI_HOUSEKEEPING_INDOOR, SimpanGpsLokasiDto } from './dto/kip.dto';
+
+/** Radius toleransi jarak dari titik GPS acuan lokasi (meter) — akurasi GPS ponsel di dalam gedung cukup longgar. */
+const RADIUS_TOLERANSI_METER = 200;
+
+/** Jarak antar dua titik GPS pakai formula Haversine (meter). */
+function jarakMeter(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 const KIP_INCLUDE = {
   checklist: {
@@ -94,6 +110,22 @@ export class KipService {
     return QRCode.toString(target, { type: 'svg', margin: 1, width: 400 });
   }
 
+  /** Simpan/perbarui titik GPS acuan satu lokasi — diisi admin sekali saat cetak barcode di lokasi tsb. */
+  async simpanGpsLokasi(lokasi: string, dto: SimpanGpsLokasiDto) {
+    const lok = this.validasiLokasi(lokasi);
+
+    return this.prisma.kipLokasiGps.upsert({
+      where: { lokasi: lok },
+      update: { latitude: dto.latitude, longitude: dto.longitude },
+      create: { lokasi: lok, latitude: dto.latitude, longitude: dto.longitude },
+    });
+  }
+
+  async gpsLokasi(lokasi: string) {
+    const lok = this.validasiLokasi(lokasi);
+    return this.prisma.kipLokasiGps.findUnique({ where: { lokasi: lok } });
+  }
+
   // ==================================================
   // PUBLIK — scan lokasi
   // ==================================================
@@ -101,20 +133,29 @@ export class KipService {
   async statusByKode(kode: string) {
     const lokasi = this.validasiLokasi(kode.trim());
 
-    const kip = await this.prisma.kip.findMany({
-      where: { lokasi },
-      include: KIP_INCLUDE,
-      orderBy: { createdAt: 'desc' },
-    });
+    const [kip, gps] = await Promise.all([
+      this.prisma.kip.findMany({
+        where: { lokasi },
+        include: KIP_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.kipLokasiGps.findUnique({ where: { lokasi } }),
+    ]);
 
-    return { lokasi, kip };
+    return { lokasi, kip, gps };
   }
 
   // ==================================================
   // CEKLIS BULANAN (Tim Elektrik / Admin)
   // ==================================================
 
-  async ceklis(role: UserRole, aktorId: number, kipId: number, bulan: number) {
+  async ceklis(
+    role: UserRole,
+    aktorId: number,
+    kipId: number,
+    bulan: number,
+    lokasiSekarang?: { latitude: number; longitude: number },
+  ) {
     this.akses.wajibElektrik(role);
 
     if (bulan < 1 || bulan > 12) {
@@ -123,6 +164,7 @@ export class KipService {
 
     const baris = await this.prisma.kipChecklistBulan.findUnique({
       where: { kipId_bulan: { kipId, bulan } },
+      include: { kip: { select: { lokasi: true } } },
     });
 
     if (!baris) {
@@ -131,6 +173,32 @@ export class KipService {
 
     if (baris.status === StatusChecklistKip.SUDAH) {
       throw new BadRequestException('Bulan ini sudah diceklis sebelumnya');
+    }
+
+    const gps = await this.prisma.kipLokasiGps.findUnique({
+      where: { lokasi: baris.kip.lokasi },
+    });
+
+    // Lokasi sudah punya titik GPS acuan — wajib berada di sana untuk ceklis.
+    if (gps) {
+      if (!lokasiSekarang) {
+        throw new BadRequestException(
+          'Lokasi GPS Anda tidak terdeteksi. Aktifkan akses lokasi lalu coba lagi.',
+        );
+      }
+
+      const jarak = jarakMeter(
+        gps.latitude,
+        gps.longitude,
+        lokasiSekarang.latitude,
+        lokasiSekarang.longitude,
+      );
+
+      if (jarak > RADIUS_TOLERANSI_METER) {
+        throw new BadRequestException(
+          `Anda berada ${Math.round(jarak)} m dari lokasi. Ceklis hanya bisa dilakukan di lokasi peralatan.`,
+        );
+      }
     }
 
     return this.prisma.kipChecklistBulan.update({
