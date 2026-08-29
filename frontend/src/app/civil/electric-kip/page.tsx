@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Eye, Plus, Printer, ShieldCheck, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
-import { Kip, KipApiError, LABEL_LOKASI_KIP, LOKASI_KIP, LokasiHousekeepingIndoor, kipApi } from '@/lib/kip-api';
+import { ambilLokasiGps, Kip, KipApiError, LABEL_LOKASI_KIP, LOKASI_KIP, LokasiHousekeepingIndoor, kipApi } from '@/lib/kip-api';
 import { KipCard3D, statusTampilBulan } from '@/components/kip/kip-card-3d';
 import styles from '@/components/transport/transport.module.css';
 
@@ -33,6 +33,8 @@ export default function KipListPage() {
   const [qrSvg, setQrSvg] = useState('');
   const [qrError, setQrError] = useState('');
   const [busyCeklis, setBusyCeklis] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<'memuat' | 'sukses' | 'gagal' | null>(null);
+  const [gpsPesan, setGpsPesan] = useState('');
 
   const user = getStoredUser();
   const bolehCeklis = !!user && ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'].includes(user.role);
@@ -115,11 +117,24 @@ export default function KipListPage() {
     setCetak(lokasi);
     setQrSvg('');
     setQrError('');
+    setGpsStatus('memuat');
+    setGpsPesan('');
     try {
       const target = `${window.location.origin}/kip-scan/${lokasi}`;
       setQrSvg(await kipApi.qrSvg(lokasi, target));
     } catch (err) {
       setQrError(err instanceof KipApiError ? err.message : 'QR gagal dibuat');
+    }
+
+    // Rekam titik GPS lokasi ini sekali (dipakai validasi jarak saat ceklis nanti).
+    try {
+      const posisi = await ambilLokasiGps();
+      await kipApi.simpanGpsLokasi(lokasi, posisi.latitude, posisi.longitude);
+      setGpsStatus('sukses');
+      setGpsPesan('Titik GPS lokasi ini tersimpan sebagai acuan ceklis.');
+    } catch (err) {
+      setGpsStatus('gagal');
+      setGpsPesan(err instanceof Error ? err.message : 'GPS lokasi gagal disimpan');
     }
   }
 
@@ -131,7 +146,8 @@ export default function KipListPage() {
     const bulanIni = new Date().getMonth() + 1;
     setBusyCeklis(true);
     try {
-      await kipApi.ceklis(kip.id, bulanIni);
+      const posisi = await ambilLokasiGps().catch(() => undefined);
+      await kipApi.ceklis(kip.id, bulanIni, posisi);
       const segar = await kipApi.daftarKip();
       setData(segar);
       setPreview(segar.find((k) => k.id === kip.id) ?? null);
@@ -385,6 +401,16 @@ export default function KipListPage() {
               {!qrError && !qrSvg && <p style={{ color: '#71839d' }}>Membuat QR...</p>}
               <h3 style={{ margin: '16px 0 2px', fontSize: 17 }}>{LABEL_LOKASI_KIP[cetak]}</h3>
               <p style={{ margin: 0, color: '#71839d', fontSize: 12 }}>Scan untuk lihat status KIP di lokasi ini</p>
+
+              {gpsStatus === 'memuat' && (
+                <p style={{ marginTop: 10, fontSize: 11.5, color: '#71839d' }}>Merekam titik GPS lokasi ini...</p>
+              )}
+              {gpsStatus === 'sukses' && (
+                <p style={{ marginTop: 10, fontSize: 11.5, color: '#087848', fontWeight: 700 }}>{gpsPesan}</p>
+              )}
+              {gpsStatus === 'gagal' && (
+                <p style={{ marginTop: 10, fontSize: 11.5, color: '#b3261e', fontWeight: 700 }}>{gpsPesan}</p>
+              )}
             </div>
             <footer>
               <button type="button" onClick={() => setCetak(null)}>

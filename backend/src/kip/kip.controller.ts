@@ -18,7 +18,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KipService } from './kip.service';
-import { BuatKipDto } from './dto/kip.dto';
+import { BuatKipDto, CeklisDto, SimpanGpsLokasiDto } from './dto/kip.dto';
 
 @Controller('kip')
 export class KipController {
@@ -51,6 +51,13 @@ export class KipController {
     return this.service.qrSvg(lokasi, target);
   }
 
+  /** Simpan titik GPS acuan lokasi — dipanggil sekali saat admin cetak barcode sambil berdiri di lokasi tsb. */
+  @Post('admin/lokasi-gps/:lokasi')
+  @UseGuards(JwtAuthGuard)
+  simpanGpsLokasi(@Param('lokasi') lokasi: string, @Body() dto: SimpanGpsLokasiDto) {
+    return this.service.simpanGpsLokasi(lokasi, dto);
+  }
+
   // ---------- Publik (tanpa JWT sama sekali) ----------
 
   @Get('publik/:kode')
@@ -65,8 +72,14 @@ export class KipController {
   ceklis(
     @Param('kipId', ParseIntPipe) kipId: number,
     @Param('bulan', ParseIntPipe) bulan: number,
+    @Body() dto: CeklisDto,
     @Req() req: any,
   ) {
-    return this.service.ceklis(req.user.role, req.user.id, kipId, bulan);
+    const lokasiSekarang =
+      dto.latitude !== undefined && dto.longitude !== undefined
+        ? { latitude: dto.latitude, longitude: dto.longitude }
+        : undefined;
+
+    return this.service.ceklis(req.user.role, req.user.id, kipId, bulan, lokasiSekarang);
   }
 }

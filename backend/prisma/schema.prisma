@@ -2507,6 +2507,16 @@ model KipChecklistBulan {
   @@map("civil_kip_checklist_bulan")
 }
 
+/** Tag GPS acuan per lokasi (diisi admin saat cetak barcode) — dipakai validasi jarak saat ceklis. */
+model KipLokasiGps {
+  lokasi    LokasiHousekeepingIndoor @id
+  latitude  Float
+  longitude Float
+  updatedAt DateTime                 @updatedAt @map("updated_at")
+
+  @@map("civil_kip_lokasi_gps")
+}
+
 // ==================================================
 // SELESAI: CIVIL ▸ GA MEP ▸ ELECTRIC ▸ KIP
 // ==================================================

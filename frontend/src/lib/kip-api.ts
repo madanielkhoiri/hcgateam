@@ -40,7 +40,25 @@ export type Kip = {
   checklist: KipChecklistBulan[];
 };
 
-export type StatusLokasi = { lokasi: LokasiHousekeepingIndoor; kip: Kip[] };
+export type GpsLokasiKip = { lokasi: LokasiHousekeepingIndoor; latitude: number; longitude: number };
+
+export type StatusLokasi = { lokasi: LokasiHousekeepingIndoor; kip: Kip[]; gps: GpsLokasiKip | null };
+
+/** Ambil posisi GPS browser saat ini (promise-based). Gagal/ditolak → reject dengan pesan Indonesia. */
+export function ambilLokasiGps(): Promise<{ latitude: number; longitude: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Perangkat tidak mendukung akses lokasi GPS'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => reject(new Error('Akses lokasi GPS ditolak/gagal — aktifkan izin lokasi lalu coba lagi')),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  });
+}
 
 export class KipApiError extends Error {
   constructor(
@@ -107,8 +125,18 @@ export const kipApi = {
   /** Endpoint publik — dipakai halaman scan, tidak wajib login. */
   statusByKode: (kode: string) => request<StatusLokasi>(`/kip/publik/${encodeURIComponent(kode)}`, {}, false),
 
-  ceklis: (kipId: number, bulan: number) =>
-    request<KipChecklistBulan>(`/kip/${kipId}/checklist/${bulan}`, { method: 'POST' }),
+  ceklis: (kipId: number, bulan: number, lokasiSekarang?: { latitude: number; longitude: number }) =>
+    request<KipChecklistBulan>(`/kip/${kipId}/checklist/${bulan}`, {
+      method: 'POST',
+      body: JSON.stringify(lokasiSekarang ?? {}),
+    }),
+
+  /** Simpan titik GPS acuan lokasi — dipanggil sekali saat admin cetak barcode sambil berdiri di lokasi tsb. */
+  simpanGpsLokasi: (lokasi: LokasiHousekeepingIndoor, latitude: number, longitude: number) =>
+    request<GpsLokasiKip>(`/kip/admin/lokasi-gps/${lokasi}`, {
+      method: 'POST',
+      body: JSON.stringify({ latitude, longitude }),
+    }),
 
   /** SVG mentah (bukan JSON) — untuk ditampilkan/dicetak langsung sebagai label barcode lokasi. */
   qrSvg: async (lokasi: LokasiHousekeepingIndoor, target: string) => {
