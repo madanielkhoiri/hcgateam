@@ -55,8 +55,9 @@ export function ProgressTrendChart({ seri }: Props) {
               x2={LEBAR - PAD_KANAN}
               y1={y(p)}
               y2={y(p)}
-              stroke="#eef2f7"
+              stroke="#dbe6f2"
               strokeWidth={1}
+              strokeDasharray={p === 0 ? undefined : "5 7"}
             />
             <text x={PAD_KIRI - 8} y={y(p) + 3} textAnchor="end" fontSize={9} fill="#93a2b8">
               {p}%
@@ -82,14 +83,40 @@ export function ProgressTrendChart({ seri }: Props) {
           const urut = s.data.slice().sort((a, b) => a.bulan.localeCompare(b.bulan));
           const titik = urut.map((d) => `${x(d.bulan)},${y(d.actual)}`);
           const akhir = urut[urut.length - 1];
+          const delaySeri = i * 0.25;
 
           return (
             <g key={s.id}>
               {titik.length > 1 && (
-                <polyline points={titik.join(" ")} fill="none" stroke={warna} strokeWidth={2} />
+                <polyline
+                  points={titik.join(" ")}
+                  fill="none"
+                  stroke={warna}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  pathLength="1"
+                  style={{
+                    strokeDasharray: 1,
+                    strokeDashoffset: 1,
+                    animation: `trendLineDraw 1.4s ease ${delaySeri}s forwards`,
+                  }}
+                />
               )}
-              {urut.map((d) => (
-                <circle key={d.bulan} cx={x(d.bulan)} cy={y(d.actual)} r={3} fill={warna} />
+              {urut.map((d, idx) => (
+                <circle
+                  key={d.bulan}
+                  cx={x(d.bulan)}
+                  cy={y(d.actual)}
+                  r={3.5}
+                  fill={warna}
+                  stroke="#ffffff"
+                  strokeWidth={1.5}
+                  style={{
+                    opacity: 0,
+                    animation: `trendPointShow 0.3s ease ${delaySeri + 0.3 + idx * 0.12}s forwards`,
+                  }}
+                />
               ))}
               {akhir && (
                 <text
@@ -98,6 +125,10 @@ export function ProgressTrendChart({ seri }: Props) {
                   fontSize={11}
                   fontWeight={800}
                   fill={warna}
+                  style={{
+                    opacity: 0,
+                    animation: `trendPointShow 0.3s ease ${delaySeri + 0.3 + (urut.length - 1) * 0.12 + 0.1}s forwards`,
+                  }}
                 >
                   {akhir.actual}%
                 </text>
@@ -126,6 +157,30 @@ export function ProgressTrendChart({ seri }: Props) {
           </span>
         ))}
       </div>
+
+      <style jsx>{`
+        @keyframes trendLineDraw {
+          from {
+            stroke-dashoffset: 1;
+          }
+
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes trendPointShow {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
