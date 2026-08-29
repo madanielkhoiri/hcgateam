@@ -4,7 +4,18 @@
 // ==================================================
 
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { LokasiHousekeepingIndoor } from '@prisma/client';
 import { LOKASI_HOUSEKEEPING_INDOOR } from '../../housekeeping-indoor/dto/housekeeping-indoor.dto';
 
@@ -31,6 +42,12 @@ export class BuatKipDto {
 
   @IsIn(LOKASI_HOUSEKEEPING_INDOOR)
   lokasi: LokasiHousekeepingIndoor;
+
+  /** Parameter checklist inspeksi khusus KIP ini — ditentukan admin sendiri saat membuat (mis. 5 item, meniru form hardcopy). */
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  parameterChecklist: string[];
 }
 
 export class SimpanGpsLokasiDto {
