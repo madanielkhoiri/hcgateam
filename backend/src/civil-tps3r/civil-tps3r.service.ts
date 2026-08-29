@@ -133,12 +133,15 @@ export class CivilTps3rService {
 }
 
 function rentangTanggal(bulan?: number, tahun?: number) {
-  if (!bulan || !tahun) {
+  if (!tahun) {
     return undefined;
   }
 
-  const awal = new Date(Date.UTC(tahun, bulan - 1, 1));
-  const akhir = new Date(Date.UTC(tahun, bulan, 1));
+  const startMonth = bulan ? bulan - 1 : 0;
+  const awal = new Date(Date.UTC(tahun, startMonth, 1));
+  const akhir = bulan
+    ? new Date(Date.UTC(tahun, bulan, 1))
+    : new Date(Date.UTC(tahun + 1, 0, 1));
 
   return { gte: awal, lt: akhir };
 }

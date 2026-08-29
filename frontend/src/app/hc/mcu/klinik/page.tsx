@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, Building2, Pencil, Plus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
   Dialog,
@@ -54,6 +54,9 @@ export default function KlinikMcuPage() {
   const [idDiedit, setIdDiedit] = useState<number | null>(null);
   const [form, setForm] = useState<FormKlinik>(formKosong);
 
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterTipe, setFilterTipe] = useState('');
+
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
@@ -70,6 +73,28 @@ export default function KlinikMcuPage() {
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  const klinikTampil = useMemo(() => {
+    return klinik.filter((item) => {
+      if (filterStatus === 'AKTIF' && !item.statusAktif) {
+        return false;
+      }
+
+      if (filterStatus === 'NONAKTIF' && item.statusAktif) {
+        return false;
+      }
+
+      if (filterTipe === 'TERKONEKSI' && !item.terkoneksi) {
+        return false;
+      }
+
+      if (filterTipe === 'NON_TERKONEKSI' && item.terkoneksi) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [klinik, filterStatus, filterTipe]);
 
   function bukaTambah() {
     setIdDiedit(null);
@@ -172,11 +197,35 @@ export default function KlinikMcuPage() {
 
       <Panel
         judul="Daftar Klinik"
-        keterangan={`${klinik.length} klinik terdaftar.`}
+        keterangan={`${klinikTampil.length} dari ${klinik.length} klinik terdaftar.`}
       >
+        <div className={styles.filterBar}>
+          <select
+            className={styles.select}
+            style={{ maxWidth: 170 }}
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="AKTIF">Aktif</option>
+            <option value="NONAKTIF">Nonaktif</option>
+          </select>
+
+          <select
+            className={styles.select}
+            style={{ maxWidth: 190 }}
+            value={filterTipe}
+            onChange={(event) => setFilterTipe(event.target.value)}
+          >
+            <option value="">Semua Tipe</option>
+            <option value="TERKONEKSI">Terkoneksi</option>
+            <option value="NON_TERKONEKSI">Non-terkoneksi</option>
+          </select>
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : klinik.length === 0 ? (
+        ) : klinikTampil.length === 0 ? (
           <Kosong
             judul="Belum ada klinik"
             keterangan="Tambahkan klinik agar dapat dipilih saat penjadwalan MCU."
@@ -197,7 +246,7 @@ export default function KlinikMcuPage() {
               </thead>
 
               <tbody>
-                {klinik.map((item) => (
+                {klinikTampil.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <strong>{item.namaKlinik}</strong>

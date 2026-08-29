@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -16,6 +17,7 @@ import { extname } from 'path';
 import { BuatSaldoDto } from './buat-saldo.dto';
 import { SaldoService } from './saldo.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 
 function pastikanFolderPengembalianAda() {
@@ -60,6 +62,7 @@ function filterFileGambar(
 // <--- fitur controller saldo karyawan + bukti pengembalian --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('saldo')
+@UseGuards(JwtAuthGuard)
 export class SaldoController {
   constructor(private readonly saldoService: SaldoService) {}
 

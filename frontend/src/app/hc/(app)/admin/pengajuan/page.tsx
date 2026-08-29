@@ -148,6 +148,8 @@ export default function HalamanPengajuanAdmin() {
  const [filterJenis, setFilterJenis] = useState<"SEMUA" | JenisPengajuan>(
  "SEMUA"
  );
+ const [filterBulan, setFilterBulan] = useState("");
+ const [filterTahun, setFilterTahun] = useState("");
  const [tampilkanForm, setTampilkanForm] = useState(true);
 
  const apakahAdmin =
@@ -394,6 +396,11 @@ export default function HalamanPengajuanAdmin() {
  .sort((a, b) => a.nama.localeCompare(b.nama));
  }, [daftarPengguna]);
 
+ const tahunTersedia = useMemo(() => {
+ const tahunSekarang = new Date().getFullYear();
+ return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
+ }, []);
+
  const daftarPengajuanTersaring = useMemo(() => {
  const keyword = kataKunci.trim().toLowerCase();
 
@@ -413,9 +420,26 @@ export default function HalamanPengajuanAdmin() {
  const cocokJenis =
  filterJenis === "SEMUA" || pengajuan.jenis_pengajuan === filterJenis;
 
- return cocokKeyword && cocokStatus && cocokJenis;
+ const tanggal = new Date(pengajuan.tanggal_pengajuan);
+
+ const cocokBulan =
+ !filterBulan || tanggal.getMonth() + 1 === Number(filterBulan);
+
+ const cocokTahun =
+ !filterTahun || tanggal.getFullYear() === Number(filterTahun);
+
+ return (
+ cocokKeyword && cocokStatus && cocokJenis && cocokBulan && cocokTahun
+ );
  });
- }, [daftarPengajuan, kataKunci, filterStatus, filterJenis]);
+ }, [
+ daftarPengajuan,
+ kataKunci,
+ filterStatus,
+ filterJenis,
+ filterBulan,
+ filterTahun,
+ ]);
 
  const totalPengajuan = daftarPengajuan.length;
  const totalDiajukan = daftarPengajuan.filter(
@@ -1264,7 +1288,7 @@ export default function HalamanPengajuanAdmin() {
  </button>
  </div>
 
- <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_220px_220px]">
+ <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_180px_180px_160px_140px]">
  <div className="relative">
  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
@@ -1301,6 +1325,34 @@ export default function HalamanPengajuanAdmin() {
  <option value="MENUNGGU_TRANSFER">Menunggu Transfer</option>
  <option value="SELESAI">Selesai</option>
  <option value="DITOLAK">Ditolak</option>
+ </select>
+
+ <select
+ value={filterBulan}
+ onChange={(event) => setFilterBulan(event.target.value)}
+ className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-red-300 focus:bg-white focus:ring-4 focus:ring-red-50"
+ >
+ <option value="">Semua Bulan</option>
+ {Array.from({ length: 12 }, (_, index) => (
+ <option key={index + 1} value={index + 1}>
+ {new Intl.DateTimeFormat("id-ID", { month: "long" }).format(
+ new Date(2026, index, 1)
+ )}
+ </option>
+ ))}
+ </select>
+
+ <select
+ value={filterTahun}
+ onChange={(event) => setFilterTahun(event.target.value)}
+ className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-red-300 focus:bg-white focus:ring-4 focus:ring-red-50"
+ >
+ <option value="">Semua Tahun</option>
+ {tahunTersedia.map((tahun) => (
+ <option key={tahun} value={tahun}>
+ {tahun}
+ </option>
+ ))}
  </select>
  </div>
 

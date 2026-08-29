@@ -1,9 +1,11 @@
-﻿import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
+﻿import { Controller, Get, NotFoundException, Param, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('work-order-images')
+@UseGuards(JwtAuthGuard)
 export class WorkOrderImagesController {
   @Get(':filename')
   getImage(@Param('filename') filename: string, @Res() response: Response) {

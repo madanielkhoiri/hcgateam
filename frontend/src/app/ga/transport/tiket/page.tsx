@@ -1,9 +1,9 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Plus, Ticket, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Download, Plus, Search, Ticket, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import {
   KaryawanRingkas,
@@ -35,6 +35,9 @@ export default function TiketPage() {
   const [siap, setSiap] = useState(false);
   const [data, setData] = useState<TransportTiket[]>([]);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [bulan, setBulan] = useState('');
+  const [tahun, setTahun] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(blankForm);
   const [files, setFiles] = useState<File[]>([]);
@@ -124,6 +127,33 @@ export default function TiketPage() {
     }
   }
 
+  const tahunTersedia = useMemo(() => {
+    const sekarang = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, i) => sekarang - 5 + i);
+  }, []);
+
+  const dataTampil = useMemo(
+    () =>
+      data
+        .filter((item) => {
+          if (!search.trim()) return true;
+          const keyword = search.trim().toLowerCase();
+          return `${item.karyawan?.nama ?? ''} ${item.karyawan?.nik ?? ''} ${
+            item.karyawan?.departemen?.namaDepartemen ?? ''
+          }`
+            .toLowerCase()
+            .includes(keyword);
+        })
+        .filter((item) => {
+          if (!bulan && !tahun) return true;
+          const tanggal = new Date(`${item.tanggalMulai.slice(0, 10)}T00:00:00`);
+          if (tahun && tanggal.getFullYear() !== Number(tahun)) return false;
+          if (bulan && tanggal.getMonth() + 1 !== Number(bulan)) return false;
+          return true;
+        }),
+    [data, search, bulan, tahun],
+  );
+
   async function hapus(id: number) {
     if (!confirm('Hapus tiket ini?')) return;
     try {
@@ -165,10 +195,50 @@ export default function TiketPage() {
 
       {error && <p className={styles.pageError}>{error}</p>}
 
+      <div className={styles.filterPanel}>
+        <label>
+          <Search />
+          <input
+            placeholder="Cari nama, NIK, atau departemen karyawan..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+
+        <select value={bulan} onChange={(e) => setBulan(e.target.value)}>
+          <option value="">Semua Bulan</option>
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(2026, i, 1))}
+            </option>
+          ))}
+        </select>
+
+        <select value={tahun} onChange={(e) => setTahun(e.target.value)}>
+          <option value="">Semua Tahun</option>
+          {tahunTersedia.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSearch('');
+            setBulan('');
+            setTahun('');
+          }}
+        >
+          Reset
+        </button>
+      </div>
+
       <div className={styles.tablePanel}>
         <div className={styles.tableTitle}>
           <h3>Daftar Tiket Terkirim</h3>
-          <span>Total {data.length} data</span>
+          <span>Total {dataTampil.length} data</span>
         </div>
         <div className={styles.tableScroll}>
           <table>
@@ -185,7 +255,7 @@ export default function TiketPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((item, index) => (
+              {dataTampil.map((item, index) => (
                 <tr key={item.id}>
                   <td>{index + 1}</td>
                   <td>
@@ -220,7 +290,7 @@ export default function TiketPage() {
                   </td>
                 </tr>
               ))}
-              {!data.length && (
+              {!dataTampil.length && (
                 <tr>
                   <td colSpan={8} className={styles.empty}>
                     Belum ada tiket yang dikirim.

@@ -93,12 +93,18 @@ export type LaporanTps3rInput = {
 
 export const tps3rApi = {
   daftar: (bulan?: number, tahun?: number) => {
-    const query = bulan && tahun ? `?bulan=${bulan}&tahun=${tahun}` : '';
-    return request<LaporanTps3r[]>(query);
+    const params = new URLSearchParams();
+    if (bulan) params.set('bulan', String(bulan));
+    if (tahun) params.set('tahun', String(tahun));
+    const query = params.toString();
+    return request<LaporanTps3r[]>(query ? `?${query}` : '');
   },
   ringkasan: (bulan?: number, tahun?: number) => {
-    const query = bulan && tahun ? `?bulan=${bulan}&tahun=${tahun}` : '';
-    return request<RingkasanTps3r>(`/ringkasan${query}`);
+    const params = new URLSearchParams();
+    if (bulan) params.set('bulan', String(bulan));
+    if (tahun) params.set('tahun', String(tahun));
+    const query = params.toString();
+    return request<RingkasanTps3r>(`/ringkasan${query ? `?${query}` : ''}`);
   },
   tren: (tahun: number) => request<TrenBulananTps3r[]>(`/tren?tahun=${tahun}`),
   buat: (data: LaporanTps3rInput) =>
