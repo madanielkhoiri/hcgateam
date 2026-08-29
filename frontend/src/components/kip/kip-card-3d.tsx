@@ -288,9 +288,9 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
       ctx.fillText('✓', x + cellW / 2, yCell + 100);
 
       if (baris?.tanggalPeriksa) {
-        ctx.fillStyle = 'rgba(6,95,70,0.9)';
-        ctx.font = 'bold 10.5px Arial';
-        ctx.fillText(formatTanggalPendek(baris.tanggalPeriksa), x + cellW / 2, yCell + 128);
+        ctx.fillStyle = '#065f46';
+        ctx.font = 'bold 13px Arial';
+        ctx.fillText(formatTanggalPendek(baris.tanggalPeriksa), x + cellW / 2, yCell + 130);
       }
     } else if (status === 'KUNING') {
       ctx.fillStyle = 'rgba(6,95,70,0.9)';
