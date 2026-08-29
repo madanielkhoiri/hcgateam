@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, X } from 'lucide-react';
 import { getStoredUser } from '@/lib/access-control';
-import { Kip, KipApiError, LABEL_LOKASI_KIP, StatusLokasi, kipApi } from '@/lib/kip-api';
+import { ambilLokasiGps, Kip, KipApiError, LABEL_LOKASI_KIP, StatusLokasi, kipApi } from '@/lib/kip-api';
 import { KipCard3D, statusTampilBulan } from '@/components/kip/kip-card-3d';
 import styles from '../kip-scan.module.css';
 
@@ -89,8 +89,10 @@ export default function KipScanDetailPage() {
 
   async function ceklis(kip: Kip) {
     setBusyId(kip.id);
+    setError('');
     try {
-      await kipApi.ceklis(kip.id, bulanIni);
+      const posisi = await ambilLokasiGps().catch(() => undefined);
+      await kipApi.ceklis(kip.id, bulanIni, posisi);
       await muat();
     } catch (err) {
       setError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
