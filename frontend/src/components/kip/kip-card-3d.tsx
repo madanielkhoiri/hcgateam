@@ -54,7 +54,7 @@ function warnaStatus(status: StatusTampil): string {
 
 function formatTanggalPendek(iso: string): string {
   const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function gambarLogoBulat(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, warna: string) {
@@ -289,7 +289,7 @@ function buatCanvasKip(kip: Kip, logoPpa: HTMLImageElement | null, logoK3: HTMLI
 
       if (baris?.tanggalPeriksa) {
         ctx.fillStyle = 'rgba(6,95,70,0.9)';
-        ctx.font = 'bold 12px Arial';
+        ctx.font = 'bold 10.5px Arial';
         ctx.fillText(formatTanggalPendek(baris.tanggalPeriksa), x + cellW / 2, yCell + 128);
       }
     } else if (status === 'KUNING') {
