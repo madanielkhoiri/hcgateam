@@ -74,6 +74,10 @@ const routeAccessMap: Array<{ pattern: RegExp; accessKey: string | string[] }> =
     pattern: /\/api\/housekeeping-indoor(?:\/|\?|$)/,
     accessKey: 'GA_GS_HOUSEKEEPING_INDOOR',
   },
+  {
+    pattern: /\/api\/kip\/admin(?:\/|\?|$)/,
+    accessKey: 'CIVIL_ELECTRIC_KIP',
+  },
   { pattern: /\/api\/ir(?:\/|\?|$)/, accessKey: 'HC_IR' },
 ];
 
