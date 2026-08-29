@@ -45,6 +45,7 @@ export const ACCESS_KEYS = {
   CIVIL: 'CIVIL',
   CIVIL_GA_MEP: 'CIVIL_GA_MEP',
   CIVIL_ELECTRIC: 'CIVIL_ELECTRIC',
+  CIVIL_ELECTRIC_KIP: 'CIVIL_ELECTRIC_KIP',
   CIVIL_AIR: 'CIVIL_AIR',
   CIVIL_INVENTORY_ELECTRIC: 'CIVIL_INVENTORY_ELECTRIC',
   CIVIL_INFRAS: 'CIVIL_INFRAS',
@@ -213,6 +214,10 @@ export function formatRole(role?: string): string {
 
   if (role === 'DRIVER') {
     return 'Driver';
+  }
+
+  if (role === 'ELEKTRIK') {
+    return 'Elektrik';
   }
 
   return role

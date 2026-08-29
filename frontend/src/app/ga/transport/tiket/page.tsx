@@ -1,8 +1,9 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Download, Plus, Ticket, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Download, Plus, Ticket, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import {
   KaryawanRingkas,
@@ -137,6 +138,13 @@ export default function TiketPage() {
 
   return (
     <section>
+      <Link
+        href="/ga/transport/dashboard"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 14, color: '#385675', fontSize: 13, fontWeight: 700 }}
+      >
+        <ArrowLeft size={16} /> Kembali ke Dashboard Transportasi
+      </Link>
+
       <div className={styles.hero}>
         <div>
           <span className={styles.heroIcon}>
