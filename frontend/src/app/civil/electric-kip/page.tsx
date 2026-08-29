@@ -3,11 +3,17 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Eye, Plus, Printer, ShieldCheck, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Eye, Pencil, Plus, Printer, ShieldCheck, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
-import { ambilLokasiGps, Kip, KipApiError, LABEL_LOKASI_KIP, LOKASI_KIP, LokasiHousekeepingIndoor, kipApi } from '@/lib/kip-api';
-import { KipCard3D, statusTampilBulan } from '@/components/kip/kip-card-3d';
+import { ambilLokasiGps, Kip, KipApiError, KipChecklistBulan, LABEL_LOKASI_KIP, LOKASI_KIP, LokasiHousekeepingIndoor, kipApi } from '@/lib/kip-api';
+import { KipCard3D, statusTampilBulan, warnaStatus } from '@/components/kip/kip-card-3d';
+import { KipCeklisForm } from '@/components/kip/kip-ceklis-form';
+import { KipDetailBulan } from '@/components/kip/kip-detail-bulan';
 import styles from '@/components/transport/transport.module.css';
+
+const NAMA_BULAN_SINGKAT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+];
 
 const blankForm = {
   noKip: '',
@@ -15,6 +21,7 @@ const blankForm = {
   departemen: '',
   tahun: new Date().getFullYear(),
   lokasi: '' as LokasiHousekeepingIndoor | '',
+  parameterChecklist: [''],
 };
 
 export default function KipListPage() {
@@ -24,6 +31,7 @@ export default function KipListPage() {
   const [error, setError] = useState('');
 
   const [modal, setModal] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState(blankForm);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -35,6 +43,9 @@ export default function KipListPage() {
   const [busyCeklis, setBusyCeklis] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'memuat' | 'sukses' | 'gagal' | null>(null);
   const [gpsPesan, setGpsPesan] = useState('');
+  const [formCeklisTampil, setFormCeklisTampil] = useState(false);
+  const [ceklisError, setCeklisError] = useState<string | null>(null);
+  const [detailBulan, setDetailBulan] = useState<KipChecklistBulan | null>(null);
 
   const user = getStoredUser();
   const bolehCeklis = !!user && ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'].includes(user.role);
@@ -70,9 +81,42 @@ export default function KipListPage() {
   }, [siap]);
 
   function bukaModal() {
-    setForm({ ...blankForm, tahun: new Date().getFullYear() });
+    setEditId(null);
+    setForm({ ...blankForm, tahun: new Date().getFullYear(), parameterChecklist: [''] });
     setFormError('');
     setModal(true);
+  }
+
+  function bukaModalEdit(kip: Kip) {
+    setEditId(kip.id);
+    setForm({
+      noKip: kip.noKip,
+      jenisPeralatan: kip.jenisPeralatan,
+      departemen: kip.departemen,
+      tahun: kip.tahun,
+      lokasi: kip.lokasi,
+      parameterChecklist: kip.parameterChecklist.length ? [...kip.parameterChecklist] : [''],
+    });
+    setFormError('');
+    setModal(true);
+  }
+
+  function ubahParameter(index: number, nilai: string) {
+    setForm((cur) => ({
+      ...cur,
+      parameterChecklist: cur.parameterChecklist.map((p, i) => (i === index ? nilai : p)),
+    }));
+  }
+
+  function tambahParameter() {
+    setForm((cur) => ({ ...cur, parameterChecklist: [...cur.parameterChecklist, ''] }));
+  }
+
+  function hapusParameter(index: number) {
+    setForm((cur) => ({
+      ...cur,
+      parameterChecklist: cur.parameterChecklist.filter((_, i) => i !== index),
+    }));
   }
 
   async function submit(event: FormEvent) {
@@ -84,15 +128,27 @@ export default function KipListPage() {
       return;
     }
 
+    const parameterChecklist = form.parameterChecklist.map((p) => p.trim()).filter(Boolean);
+    if (!parameterChecklist.length) {
+      setFormError('Isi minimal 1 parameter checklist inspeksi');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await kipApi.buatKip({
+      const payload = {
         noKip: form.noKip,
         jenisPeralatan: form.jenisPeralatan,
         departemen: form.departemen,
         tahun: form.tahun,
         lokasi: form.lokasi,
-      });
+        parameterChecklist,
+      };
+      if (editId != null) {
+        await kipApi.ubahKip(editId, payload);
+      } else {
+        await kipApi.buatKip(payload);
+      }
       setModal(false);
       await muat();
     } catch (err) {
@@ -142,23 +198,50 @@ export default function KipListPage() {
     window.print();
   }
 
-  async function ceklisSekarang(kip: Kip) {
+  async function ceklisSekarang(kip: Kip, payload: { foto: File; parameterChecked: boolean[] }) {
     const bulanIni = new Date().getMonth() + 1;
     setBusyCeklis(true);
+    setCeklisError(null);
     try {
       const posisi = await ambilLokasiGps().catch(() => undefined);
-      await kipApi.ceklis(kip.id, bulanIni, posisi);
+      await kipApi.ceklis(kip.id, bulanIni, { ...payload, lokasiSekarang: posisi });
       const segar = await kipApi.daftarKip();
       setData(segar);
       setPreview(segar.find((k) => k.id === kip.id) ?? null);
+      setFormCeklisTampil(false);
     } catch (err) {
-      setError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
+      setCeklisError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
     } finally {
       setBusyCeklis(false);
     }
   }
 
+  function lihatBuktiBulan(baris: KipChecklistBulan) {
+    setPreview(null);
+    setFormCeklisTampil(false);
+    setCeklisError(null);
+    setDetailBulan(baris);
+  }
+
+  function tutupPreview() {
+    setPreview(null);
+    setFormCeklisTampil(false);
+    setCeklisError(null);
+  }
+
+  function pakaiChecklistSejenis(kip: Kip) {
+    setForm((cur) => ({ ...cur, parameterChecklist: [...kip.parameterChecklist] }));
+  }
+
   if (!siap) return null;
+
+  const jenisPeralatanUnik = Array.from(new Set(data.map((k) => k.jenisPeralatan))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const jenisDicariNormal = form.jenisPeralatan.trim().toLowerCase();
+  const templateSejenis = jenisDicariNormal
+    ? data.find((k) => k.id !== editId && k.jenisPeralatan.trim().toLowerCase() === jenisDicariNormal)
+    : undefined;
 
   return (
     <section>
@@ -232,6 +315,9 @@ export default function KipListPage() {
                         <button onClick={() => setPreview(item)} title="Lihat Kartu 3D">
                           <Eye size={16} />
                         </button>
+                        <button onClick={() => bukaModalEdit(item)} title="Edit KIP">
+                          <Pencil size={16} />
+                        </button>
                         <button onClick={() => bukaCetak(item.lokasi)} title="Cetak Barcode Lokasi">
                           <Printer size={16} />
                         </button>
@@ -260,8 +346,12 @@ export default function KipListPage() {
           <form className={styles.modal} onSubmit={submit}>
             <header>
               <div>
-                <h2>Buat KIP Baru</h2>
-                <p>Isi lokasi & data alat — barcode lokasi otomatis siap dicetak, checklist 12 bulan langsung tersedia.</p>
+                <h2>{editId != null ? 'Edit KIP' : 'Buat KIP Baru'}</h2>
+                <p>
+                  {editId != null
+                    ? 'Ubah data alat & parameter checklist — perubahan berlaku untuk ceklis berikutnya.'
+                    : 'Isi lokasi & data alat — barcode lokasi otomatis siap dicetak, checklist 12 bulan langsung tersedia.'}
+                </p>
               </div>
               <button type="button" onClick={() => setModal(false)}>
                 <X />
@@ -281,10 +371,16 @@ export default function KipListPage() {
                 Jenis Peralatan
                 <input
                   required
+                  list="daftar-jenis-peralatan"
                   placeholder="Contoh: Stop Kontak"
                   value={form.jenisPeralatan}
                   onChange={(e) => setForm((cur) => ({ ...cur, jenisPeralatan: e.target.value }))}
                 />
+                <datalist id="daftar-jenis-peralatan">
+                  {jenisPeralatanUnik.map((j) => (
+                    <option key={j} value={j} />
+                  ))}
+                </datalist>
               </label>
               <label>
                 Departemen
@@ -324,6 +420,66 @@ export default function KipListPage() {
                   Barcode lokasi ini otomatis tersedia untuk dicetak — tidak perlu isi kode manual.
                 </span>
               </label>
+              <label style={{ gridColumn: '1/-1' }}>
+                Parameter Checklist Inspeksi
+                <span style={{ fontSize: 11, color: '#71839d', display: 'block', marginBottom: 8 }}>
+                  Item yang wajib dicek Tim Elektrik tiap ceklis bulanan — sesuaikan dengan jenis peralatan ini.
+                </span>
+                {templateSejenis && (
+                  <div
+                    style={{
+                      background: '#eef6ff',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: 8,
+                      padding: '8px 10px',
+                      marginBottom: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                    }}
+                  >
+                    <span style={{ fontSize: 11.5, color: '#12355f' }}>
+                      KIP lain jenis &quot;{templateSejenis.jenisPeralatan}&quot; (No. {templateSejenis.noKip}) sudah punya {templateSejenis.parameterChecklist.length} parameter checklist tersimpan. Form ini masih kosong — klik untuk menyalin ke sini.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => pakaiChecklistSejenis(templateSejenis)}
+                      style={{ fontSize: 11.5, fontWeight: 700, color: '#0b71c9', background: 'none', border: 0, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Pakai Checklist Ini
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {form.parameterChecklist.map((p, index) => (
+                    <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        placeholder={`Parameter ${index + 1}`}
+                        value={p}
+                        onChange={(e) => ubahParameter(index, e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => hapusParameter(index)}
+                        disabled={form.parameterChecklist.length <= 1}
+                        title="Hapus parameter ini"
+                        style={{ flexShrink: 0, padding: 6 }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={tambahParameter}
+                  style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: '#0b71c9', background: 'none', border: 0, cursor: 'pointer', padding: 0 }}
+                >
+                  + Tambah Parameter
+                </button>
+              </label>
             </div>
             {formError && <p className={styles.error}>{formError}</p>}
             <footer>
@@ -331,7 +487,7 @@ export default function KipListPage() {
                 Batal
               </button>
               <button className={styles.primary} disabled={submitting}>
-                {submitting ? 'Menyimpan...' : 'Simpan'}
+                {submitting ? 'Menyimpan...' : editId != null ? 'Simpan Perubahan' : 'Simpan'}
               </button>
             </footer>
           </form>
@@ -339,7 +495,7 @@ export default function KipListPage() {
       )}
 
       {preview && (
-        <div className={styles.modalBack} onClick={() => setPreview(null)}>
+        <div className={styles.modalBack} onClick={tutupPreview}>
           <div className={styles.modal} style={{ width: 'min(700px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <header>
               <div>
@@ -348,28 +504,70 @@ export default function KipListPage() {
                   {preview.jenisPeralatan} — {preview.departemen}
                 </p>
               </div>
-              <button type="button" onClick={() => setPreview(null)}>
+              <button type="button" onClick={tutupPreview}>
                 <X />
               </button>
             </header>
             <div style={{ padding: 20 }}>
               <KipCard3D kip={preview} />
+
+              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
+                {NAMA_BULAN_SINGKAT.map((label, index) => {
+                  const bulan = index + 1;
+                  const status = statusTampilBulan(preview, bulan);
+                  const baris = preview.checklist.find((c) => c.bulan === bulan);
+                  const bisaKlik = status === 'SUDAH' && !!baris;
+                  return (
+                    <button
+                      key={bulan}
+                      type="button"
+                      disabled={!bisaKlik}
+                      onClick={() => baris && lihatBuktiBulan(baris)}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(0,0,0,.08)',
+                        background: warnaStatus(status),
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        color: '#12355f',
+                        cursor: bisaKlik ? 'pointer' : 'default',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
               {bolehCeklis && (() => {
                 const bulanIni = new Date().getMonth() + 1;
                 const status = statusTampilBulan(preview, bulanIni);
                 if (status === 'SUDAH') {
                   return (
                     <p style={{ marginTop: 14, fontSize: 13, color: '#087848', fontWeight: 700 }}>
-                      Bulan ini sudah diceklis.
+                      Bulan ini sudah diceklis. Klik bulan berwarna hijau di atas untuk lihat buktinya.
                     </p>
                   );
                 }
+                if (!formCeklisTampil) {
+                  return (
+                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <span style={{ fontSize: 12, color: '#71839d' }}>Login sebagai {user?.name} ({user?.role})</span>
+                      <button className={styles.primary} onClick={() => setFormCeklisTampil(true)}>
+                        Ceklis Sekarang
+                      </button>
+                    </div>
+                  );
+                }
                 return (
-                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <span style={{ fontSize: 12, color: '#71839d' }}>Login sebagai {user?.name} ({user?.role})</span>
-                    <button className={styles.primary} disabled={busyCeklis} onClick={() => ceklisSekarang(preview)}>
-                      {busyCeklis ? 'Menyimpan...' : 'Ceklis Sekarang'}
-                    </button>
+                  <div style={{ marginTop: 16 }}>
+                    <KipCeklisForm
+                      parameterChecklist={preview.parameterChecklist}
+                      submitting={busyCeklis}
+                      error={ceklisError}
+                      onSubmit={(payload) => ceklisSekarang(preview, payload)}
+                    />
                   </div>
                 );
               })()}
@@ -377,6 +575,8 @@ export default function KipListPage() {
           </div>
         </div>
       )}
+
+      {detailBulan && <KipDetailBulan baris={detailBulan} onTutup={() => setDetailBulan(null)} />}
 
       {cetak && (
         <div className={styles.modalBack} onClick={() => setCetak(null)}>

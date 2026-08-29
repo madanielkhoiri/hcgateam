@@ -5,8 +5,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, X } from 'lucide-react';
 import { getStoredUser } from '@/lib/access-control';
-import { ambilLokasiGps, Kip, KipApiError, LABEL_LOKASI_KIP, StatusLokasi, kipApi } from '@/lib/kip-api';
+import { ambilLokasiGps, Kip, KipApiError, KipChecklistBulan, LABEL_LOKASI_KIP, StatusLokasi, kipApi } from '@/lib/kip-api';
 import { KipCard3D, statusTampilBulan } from '@/components/kip/kip-card-3d';
+import { KipCeklisForm } from '@/components/kip/kip-ceklis-form';
+import { KipDetailBulan } from '@/components/kip/kip-detail-bulan';
 import styles from '../kip-scan.module.css';
 
 const ROLE_BOLEH_CEKLIS = ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'];
@@ -26,6 +28,9 @@ export default function KipScanDetailPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [kameraSiap, setKameraSiap] = useState(false);
+  const [formTarget, setFormTarget] = useState<number | null>(null);
+  const [ceklisError, setCeklisError] = useState<string | null>(null);
+  const [detailBulan, setDetailBulan] = useState<KipChecklistBulan | null>(null);
 
   const user = typeof window !== 'undefined' ? getStoredUser() : null;
   const bolehCeklis = !!user && ROLE_BOLEH_CEKLIS.includes(user.role);
@@ -87,15 +92,16 @@ export default function KipScanDetailPage() {
     };
   }, []);
 
-  async function ceklis(kip: Kip) {
+  async function ceklis(kip: Kip, payload: { foto: File; parameterChecked: boolean[] }) {
     setBusyId(kip.id);
-    setError('');
+    setCeklisError(null);
     try {
       const posisi = await ambilLokasiGps().catch(() => undefined);
-      await kipApi.ceklis(kip.id, bulanIni, posisi);
+      await kipApi.ceklis(kip.id, bulanIni, { ...payload, lokasiSekarang: posisi });
+      setFormTarget(null);
       await muat();
     } catch (err) {
-      setError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
+      setCeklisError(err instanceof KipApiError ? err.message : 'Ceklis gagal disimpan');
     } finally {
       setBusyId(null);
     }
@@ -135,20 +141,39 @@ export default function KipScanDetailPage() {
             </p>
 
             <span
+              role={sudahDiceklis ? 'button' : undefined}
+              onClick={() => {
+                if (!sudahDiceklis) return;
+                const baris = kip.checklist.find((c) => c.bulan === bulanIni);
+                if (baris) setDetailBulan(baris);
+              }}
               className={`${styles.pill} ${
                 sudahDiceklis ? styles.pillGreen : statusBulanIni === 'KUNING' ? styles.pillYellow : styles.pillGray
               }`}
+              style={sudahDiceklis ? { cursor: 'pointer' } : undefined}
             >
               {sudahDiceklis ? <CheckCircle2 size={12} /> : null}
-              {sudahDiceklis ? `Sudah diceklis bulan ${NAMA_BULAN[bulanIni - 1]}` : `Belum diceklis bulan ${NAMA_BULAN[bulanIni - 1]}`}
+              {sudahDiceklis ? `Sudah diceklis bulan ${NAMA_BULAN[bulanIni - 1]} — lihat bukti` : `Belum diceklis bulan ${NAMA_BULAN[bulanIni - 1]}`}
             </span>
 
-            {bolehCeklis && !sudahDiceklis && (
+            {bolehCeklis && !sudahDiceklis && formTarget !== kip.id && (
               <div className={styles.ceklisBar}>
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>Login: {user?.name}</span>
-                <button className={styles.primaryButton} disabled={busyId === kip.id} onClick={() => ceklis(kip)}>
-                  {busyId === kip.id ? 'Menyimpan...' : 'Ceklis Sekarang'}
+                <button className={styles.primaryButton} onClick={() => setFormTarget(kip.id)}>
+                  Ceklis Sekarang
                 </button>
+              </div>
+            )}
+
+            {bolehCeklis && !sudahDiceklis && formTarget === kip.id && (
+              <div style={{ marginTop: 10 }}>
+                <KipCeklisForm
+                  parameterChecklist={kip.parameterChecklist}
+                  submitting={busyId === kip.id}
+                  error={ceklisError}
+                  gelap
+                  onSubmit={(payload) => ceklis(kip, payload)}
+                />
               </div>
             )}
           </div>
@@ -162,49 +187,55 @@ export default function KipScanDetailPage() {
   // Kamera jalan — tampilan AR, sama seperti hasil scan lewat halaman /kip-scan.
   if (kameraSiap) {
     return (
-      <div className={styles.arShell}>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video ref={videoRef} muted playsInline className={styles.arVideo} />
+      <>
+        <div className={styles.arShell}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video ref={videoRef} muted playsInline className={styles.arVideo} />
 
-        <div className={styles.arTopBar}>
-          <Link href="/">
-            <X size={20} /> Tutup
-          </Link>
-          <strong style={{ fontSize: 13 }}>KIP</strong>
-          <span style={{ width: 20 }} />
-        </div>
-
-        {data && (
-          <div className={styles.arCardLayer}>
-            {data.kip[0] && <KipCard3D kip={data.kip[0]} tinggi="100%" transparan />}
+          <div className={styles.arTopBar}>
+            <Link href="/">
+              <X size={20} /> Tutup
+            </Link>
+            <strong style={{ fontSize: 13 }}>KIP</strong>
+            <span style={{ width: 20 }} />
           </div>
-        )}
 
-        <div className={styles.arSheet}>
-          <div className={styles.arSheetHandle} />
-          {isiSheet}
+          {data && (
+            <div className={styles.arCardLayer}>
+              {data.kip[0] && <KipCard3D kip={data.kip[0]} tinggi="100%" transparan />}
+            </div>
+          )}
+
+          <div className={styles.arSheet}>
+            <div className={styles.arSheetHandle} />
+            {isiSheet}
+          </div>
         </div>
-      </div>
+        {detailBulan && <KipDetailBulan baris={detailBulan} onTutup={() => setDetailBulan(null)} />}
+      </>
     );
   }
 
   // Kamera tidak tersedia/ditolak — tetap berfungsi penuh, tanpa latar kamera.
   return (
-    <div className={styles.shell}>
-      <div className={styles.topbar}>
-        <Link href="/kip-scan" style={{ color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
-          Scan Lagi
-        </Link>
-        <strong>{kode}</strong>
+    <>
+      <div className={styles.shell}>
+        <div className={styles.topbar}>
+          <Link href="/kip-scan" style={{ color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
+            Scan Lagi
+          </Link>
+          <strong>{kode}</strong>
+        </div>
+        <div className={styles.main}>
+          {data?.kip[0] && (
+            <div className={styles.scanCard}>
+              <KipCard3D kip={data.kip[0]} tinggi={320} />
+            </div>
+          )}
+          <div className={styles.statusCard}>{isiSheet}</div>
+        </div>
       </div>
-      <div className={styles.main}>
-        {data?.kip[0] && (
-          <div className={styles.scanCard}>
-            <KipCard3D kip={data.kip[0]} tinggi={320} />
-          </div>
-        )}
-        <div className={styles.statusCard}>{isiSheet}</div>
-      </div>
-    </div>
+      {detailBulan && <KipDetailBulan baris={detailBulan} onTutup={() => setDetailBulan(null)} />}
+    </>
   );
 }
