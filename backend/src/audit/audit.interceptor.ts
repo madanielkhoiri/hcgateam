@@ -36,15 +36,19 @@ const AKSI_PER_METODE: Record<string, string> = {
   DELETE: 'DIHAPUS',
 };
 
-/** Ambil sampai 2 segmen rute pertama (bukan angka) sebagai nama entitas generik. */
+/**
+ * Ambil sampai 2 segmen rute pertama yang "bermakna" sebagai nama entitas
+ * generik — buang segmen angka (ID) DAN segmen HURUF-BESAR-SEMUA (biasanya
+ * scope/enum seperti /inventory-area/GENERAL/..., bukan nama resource).
+ */
 function ambilEntitas(path: string): { entitas: string; entitasId?: number } {
   const bersih = path.split('?')[0].replace(/^\/api\//, '');
   const segmen = bersih.split('/').filter(Boolean);
-  const nonNumerik = segmen.filter((s) => !/^\d+$/.test(s));
   const idSegmen = segmen.find((s) => /^\d+$/.test(s));
+  const bermakna = segmen.filter((s) => !/^\d+$/.test(s) && !/^[A-Z_]+$/.test(s));
 
   return {
-    entitas: nonNumerik.slice(0, 2).join('/') || 'unknown',
+    entitas: bermakna.slice(0, 2).join('/') || segmen[0] || 'unknown',
     entitasId: idSegmen ? Number(idSegmen) : undefined,
   };
 }
