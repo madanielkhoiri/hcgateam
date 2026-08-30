@@ -55,6 +55,12 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  // Percaya header X-Forwarded-For dari reverse proxy (mis. Nginx di VPS
+  // production) — supaya rate limiting membaca IP asli pengunjung, bukan
+  // IP proxy-nya sendiri (yang kalau tidak di-set, semua orang akan
+  // dianggap 1 IP yang sama dan saling mengunci rate limit-nya).
+  app.set('trust proxy', 1);
+
   // ==================================================
   // IZINKAN FRONTEND NEXT.JS
   // ==================================================

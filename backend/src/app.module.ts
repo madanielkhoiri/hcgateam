@@ -4,6 +4,8 @@
 // ==================================================
 
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { HandoversModule } from './handovers/handovers.module';
 import { ConfigModule } from '@nestjs/config';
@@ -13,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { HcgaThrottlerGuard } from './common/hcga-throttler.guard';
 
 // ==================================================
 // APP MODULE
@@ -63,6 +66,18 @@ import { KipModule } from './kip/kip.module';
       isGlobal: true,
     }),
 
+    // Rate limiting global — default longgar (aman untuk kantor yang
+    // berbagi 1 IP publik). Endpoint login dibatasi lebih ketat lewat
+    // decorator @Throttle di AuthController, dilacak per (IP + username)
+    // lewat HcgaThrottlerGuard supaya tidak mengunci karyawan lain.
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 300,
+      },
+    ]),
+
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -102,7 +117,10 @@ import { KipModule } from './kip/kip.module';
     KipModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: HcgaThrottlerGuard },
+  ],
 })
 export class AppModule {}
 
