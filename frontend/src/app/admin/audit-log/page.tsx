@@ -170,9 +170,11 @@ export default function AuditLogPage() {
                       {entry.actorName || entry.actorUsername ? (
                         <>
                           <b>{entry.actorName ?? entry.actorUsername}</b>
-                          {entry.actorUsername && entry.actorName && (
-                            <div style={{ fontSize: 11, color: '#71839d' }}>@{entry.actorUsername}</div>
-                          )}
+                          <div style={{ fontSize: 11, color: '#71839d' }}>
+                            {[entry.actorUsername && `@${entry.actorUsername}`, entry.actorNrp && `NRP ${entry.actorNrp}`]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </div>
                         </>
                       ) : (
                         <span style={{ color: '#71839d' }}>—</span>

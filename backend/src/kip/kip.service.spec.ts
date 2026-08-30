@@ -8,6 +8,9 @@ import { KipService } from './kip.service';
 
 const FOTO = { buffer: Buffer.from('x'), size: 1, originalname: 'a.jpg' } as Express.Multer.File;
 
+const AKTOR = { id: 1, username: 'test', nama: 'Test User', nrp: '00000' };
+const AKTOR9 = { id: 9, username: 'budi', nama: 'Budi', nrp: '99999' };
+
 function buatService(overrides: {
   findUniqueBaris?: unknown;
   findUniqueGps?: unknown;
@@ -68,7 +71,7 @@ describe('KipService.ceklis', () => {
     const { service } = buatService({});
 
     await expect(
-      service.ceklis(UserRole.KARYAWAN, 1, 1, 3, FOTO, [true, true]),
+      service.ceklis(UserRole.KARYAWAN, AKTOR, 1, 3, FOTO, [true, true]),
     ).rejects.toThrow('Ceklis KIP hanya boleh dilakukan oleh Tim Elektrik atau Admin');
   });
 
@@ -76,7 +79,7 @@ describe('KipService.ceklis', () => {
     const { service } = buatService({});
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, bulan, FOTO, [true, true]),
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, bulan, FOTO, [true, true]),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -84,7 +87,7 @@ describe('KipService.ceklis', () => {
     const { service } = buatService({});
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, 3, undefined, [true, true]),
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, undefined, [true, true]),
     ).rejects.toThrow('Foto dokumentasi bukti inspeksi wajib diunggah');
   });
 
@@ -92,7 +95,7 @@ describe('KipService.ceklis', () => {
     const { service } = buatService({ findUniqueBaris: null });
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, 3, FOTO, [true, true]),
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, FOTO, [true, true]),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -102,7 +105,7 @@ describe('KipService.ceklis', () => {
     });
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, 3, FOTO, [true, true]),
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, FOTO, [true, true]),
     ).rejects.toThrow('Checklist parameter inspeksi wajib diisi lengkap');
   });
 
@@ -112,7 +115,7 @@ describe('KipService.ceklis', () => {
     });
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, 3, FOTO, [true, true]),
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, FOTO, [true, true]),
     ).rejects.toThrow('Bulan ini sudah diceklis sebelumnya');
   });
 
@@ -123,7 +126,7 @@ describe('KipService.ceklis', () => {
     });
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, 3, FOTO, [true, true]),
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, FOTO, [true, true]),
     ).rejects.toThrow('Lokasi GPS Anda tidak terdeteksi');
   });
 
@@ -134,7 +137,7 @@ describe('KipService.ceklis', () => {
     });
 
     await expect(
-      service.ceklis(UserRole.ELEKTRIK, 1, 1, 3, FOTO, [true, true], {
+      service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, FOTO, [true, true], {
         latitude: -6.201, // ~111 m dari titik acuan, jauh di atas radius 10 m
         longitude: 106.8,
       }),
@@ -147,7 +150,7 @@ describe('KipService.ceklis', () => {
       findUniqueGps: { lokasi: 'Office', latitude: -6.2, longitude: 106.8 },
     });
 
-    const hasil = await service.ceklis(UserRole.ELEKTRIK, 9, 1, 3, FOTO, [true, false], {
+    const hasil = await service.ceklis(UserRole.ELEKTRIK, AKTOR9, 1, 3, FOTO, [true, false], {
       latitude: -6.2,
       longitude: 106.8,
     });
@@ -167,7 +170,15 @@ describe('KipService.ceklis', () => {
     });
     expect(hasil).toMatchObject({ status: StatusChecklistKip.SUDAH });
     expect(auditLog.catat).toHaveBeenCalledWith(
-      expect.objectContaining({ actorId: 9, aksi: 'KIP_CEKLIS', entitas: 'Kip', entitasId: 1 }),
+      expect.objectContaining({
+        actorId: 9,
+        actorUsername: 'budi',
+        actorName: 'Budi',
+        actorNrp: '99999',
+        aksi: 'KIP_CEKLIS',
+        entitas: 'Kip',
+        entitasId: 1,
+      }),
     );
   });
 
@@ -177,7 +188,7 @@ describe('KipService.ceklis', () => {
       findUniqueGps: null,
     });
 
-    await service.ceklis(UserRole.ELEKTRIK, 9, 1, 3, FOTO, [true, true]);
+    await service.ceklis(UserRole.ELEKTRIK, AKTOR9, 1, 3, FOTO, [true, true]);
 
     expect(file.simpanFoto).toHaveBeenCalled();
   });
@@ -187,11 +198,18 @@ describe('KipService.buatKip', () => {
   it('mencatat audit log KIP_DIBUAT setelah berhasil dibuat', async () => {
     const { service, auditLog } = buatService({});
 
-    const hasil = await service.buatKip(DTO_KIP, 9);
+    const hasil = await service.buatKip(DTO_KIP, AKTOR9);
 
     expect(hasil).toMatchObject({ noKip: 'KIP-001' });
     expect(auditLog.catat).toHaveBeenCalledWith(
-      expect.objectContaining({ actorId: 9, aksi: 'KIP_DIBUAT', entitas: 'Kip' }),
+      expect.objectContaining({
+        actorId: 9,
+        actorUsername: 'budi',
+        actorName: 'Budi',
+        actorNrp: '99999',
+        aksi: 'KIP_DIBUAT',
+        entitas: 'Kip',
+      }),
     );
   });
 });
@@ -200,7 +218,7 @@ describe('KipService.ubahKip', () => {
   it('melempar NotFoundException kalau KIP tidak ada', async () => {
     const { service } = buatService({ kipFindUnique: null });
 
-    await expect(service.ubahKip(1, DTO_KIP, 9)).rejects.toThrow(NotFoundException);
+    await expect(service.ubahKip(1, DTO_KIP, AKTOR9)).rejects.toThrow(NotFoundException);
   });
 
   it('mencatat audit log KIP_DIUBAH dengan data sebelum & sesudah', async () => {
@@ -208,11 +226,14 @@ describe('KipService.ubahKip', () => {
       kipFindUnique: { id: 1, noKip: 'LAMA', jenisPeralatan: 'AC', lokasi: 'Office' },
     });
 
-    await service.ubahKip(1, DTO_KIP, 9);
+    await service.ubahKip(1, DTO_KIP, AKTOR9);
 
     expect(auditLog.catat).toHaveBeenCalledWith(
       expect.objectContaining({
         actorId: 9,
+        actorUsername: 'budi',
+        actorName: 'Budi',
+        actorNrp: '99999',
         aksi: 'KIP_DIUBAH',
         entitas: 'Kip',
         entitasId: 1,
@@ -229,7 +250,7 @@ describe('KipService.hapusKip', () => {
   it('melempar NotFoundException kalau KIP tidak ada', async () => {
     const { service } = buatService({ kipFindUnique: null });
 
-    await expect(service.hapusKip(1, 9)).rejects.toThrow(NotFoundException);
+    await expect(service.hapusKip(1, AKTOR9)).rejects.toThrow(NotFoundException);
   });
 
   it('mencatat audit log KIP_DIHAPUS setelah berhasil dihapus', async () => {
@@ -237,10 +258,18 @@ describe('KipService.hapusKip', () => {
       kipFindUnique: { id: 1, noKip: 'KIP-001', jenisPeralatan: 'AC', lokasi: 'Office' },
     });
 
-    await service.hapusKip(1, 9);
+    await service.hapusKip(1, AKTOR9);
 
     expect(auditLog.catat).toHaveBeenCalledWith(
-      expect.objectContaining({ actorId: 9, aksi: 'KIP_DIHAPUS', entitas: 'Kip', entitasId: 1 }),
+      expect.objectContaining({
+        actorId: 9,
+        actorUsername: 'budi',
+        actorName: 'Budi',
+        actorNrp: '99999',
+        aksi: 'KIP_DIHAPUS',
+        entitas: 'Kip',
+        entitasId: 1,
+      }),
     );
   });
 });

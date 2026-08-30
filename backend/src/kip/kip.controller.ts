@@ -23,8 +23,18 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { KipService } from './kip.service';
+import { AktorKip, KipService } from './kip.service';
 import { BuatKipDto, SimpanGpsLokasiDto } from './dto/kip.dto';
+
+/** Ambil info pelaku dari payload JWT (req.user) untuk audit log — bukan cuma ID. */
+function ambilAktor(req: any): AktorKip {
+  return {
+    id: req.user.id,
+    username: req.user.username,
+    nama: req.user.nama,
+    nrp: req.user.nrp,
+  };
+}
 
 @Controller('kip')
 export class KipController {
@@ -41,19 +51,19 @@ export class KipController {
   @Post('admin/kip')
   @UseGuards(JwtAuthGuard)
   buatKip(@Body() dto: BuatKipDto, @Req() req: any) {
-    return this.service.buatKip(dto, req.user.id);
+    return this.service.buatKip(dto, ambilAktor(req));
   }
 
   @Patch('admin/kip/:id')
   @UseGuards(JwtAuthGuard)
   ubahKip(@Param('id', ParseIntPipe) id: number, @Body() dto: BuatKipDto, @Req() req: any) {
-    return this.service.ubahKip(id, dto, req.user.id);
+    return this.service.ubahKip(id, dto, ambilAktor(req));
   }
 
   @Delete('admin/kip/:id')
   @UseGuards(JwtAuthGuard)
   hapusKip(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.service.hapusKip(id, req.user.id);
+    return this.service.hapusKip(id, ambilAktor(req));
   }
 
   @Get('admin/qr/:lokasi')
@@ -107,7 +117,7 @@ export class KipController {
 
     return this.service.ceklis(
       req.user.role,
-      req.user.id,
+      ambilAktor(req),
       kipId,
       bulan,
       foto,

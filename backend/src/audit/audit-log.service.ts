@@ -13,6 +13,7 @@ export type CatatAuditLog = {
   actorId?: number | null;
   actorUsername?: string | null;
   actorName?: string | null;
+  actorNrp?: string | null;
   aksi: string;
   entitas: string;
   entitasId?: number | null;
@@ -33,6 +34,7 @@ export class AuditLogService {
           actorId: data.actorId ?? null,
           actorUsername: data.actorUsername ?? null,
           actorName: data.actorName ?? null,
+          actorNrp: data.actorNrp ?? null,
           aksi: data.aksi,
           entitas: data.entitas,
           entitasId: data.entitasId ?? null,

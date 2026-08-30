@@ -24,6 +24,7 @@ type AuthRequest = {
     role: UserRole;
     username?: string;
     nama?: string;
+    nrp?: string;
   };
 };
 
