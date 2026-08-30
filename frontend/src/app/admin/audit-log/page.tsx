@@ -58,7 +58,7 @@ export default function AuditLogPage() {
       return;
     }
 
-    if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'SECTION_HEAD') {
       router.replace('/dashboard');
       return;
     }
@@ -109,7 +109,7 @@ export default function AuditLogPage() {
           </span>
           <div>
             <h1>Audit Log</h1>
-            <p>Jejak siapa mengubah/menghapus apa dan kapan — khusus Admin/Super Admin.</p>
+            <p>Jejak siapa mengubah/menghapus apa dan kapan — khusus Admin/Super Admin/Section Head.</p>
           </div>
         </div>
       </div>
