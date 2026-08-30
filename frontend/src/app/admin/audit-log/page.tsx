@@ -6,20 +6,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ScrollText } from 'lucide-react';
 import { getAccessToken, getStoredUser } from '@/lib/access-control';
 import { auditLogApi, AuditLogApiError, type AuditLogEntry } from '@/lib/audit-log-api';
+import { labelEntitas, terjemahkanAksi } from '@/lib/audit-log-labels';
 import styles from '@/components/transport/transport.module.css';
-
-const LABEL_AKSI: Record<string, string> = {
-  LOGIN_BERHASIL: 'Login berhasil',
-  LOGIN_GAGAL: 'Login gagal',
-  USER_DIBUAT: 'Akun dibuat',
-  USER_DIUBAH: 'Akun diubah',
-  USER_AKSES_DIUBAH: 'Akses akun diubah',
-  USER_DIHAPUS: 'Akun dihapus',
-  KIP_DIBUAT: 'KIP dibuat',
-  KIP_DIUBAH: 'KIP diubah',
-  KIP_DIHAPUS: 'KIP dihapus',
-  KIP_CEKLIS: 'KIP diceklis',
-};
 
 function warnaAksi(aksi: string): string {
   if (aksi.includes('GAGAL') || aksi.includes('DIHAPUS')) return styles.breakdown;
@@ -116,7 +104,7 @@ export default function AuditLogPage() {
 
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', margin: '16px 0' }}>
         <label style={{ fontSize: 12.5, color: '#385675', fontWeight: 700 }}>
-          Entitas:{' '}
+          Jenis Aktivitas:{' '}
           <select
             value={filterEntitas}
             onChange={(e) => {
@@ -128,7 +116,7 @@ export default function AuditLogPage() {
             <option value="">Semua</option>
             {entitasList.map((e) => (
               <option key={e} value={e}>
-                {e}
+                {labelEntitas(e)}
               </option>
             ))}
           </select>
@@ -149,15 +137,13 @@ export default function AuditLogPage() {
                 <th>Waktu</th>
                 <th>Pelaku</th>
                 <th>Aksi</th>
-                <th>Entitas</th>
-                <th>Detail</th>
                 <th>IP</th>
               </tr>
             </thead>
             <tbody>
               {memuat && (
                 <tr>
-                  <td colSpan={6} className={styles.empty}>
+                  <td colSpan={4} className={styles.empty}>
                     Memuat...
                   </td>
                 </tr>
@@ -181,28 +167,15 @@ export default function AuditLogPage() {
                       )}
                     </td>
                     <td>
-                      <span className={warnaAksi(entry.aksi)}>{LABEL_AKSI[entry.aksi] ?? entry.aksi}</span>
-                    </td>
-                    <td>
-                      {entry.entitas}
-                      {entry.entitasId ? ` #${entry.entitasId}` : ''}
-                    </td>
-                    <td style={{ maxWidth: 320 }}>
-                      {entry.detail ? (
-                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 11, color: '#385675', fontFamily: 'inherit' }}>
-                          {JSON.stringify(entry.detail, null, 0)}
-                        </pre>
-                      ) : (
-                        <span style={{ color: '#71839d' }}>—</span>
-                      )}
+                      <span className={warnaAksi(entry.aksi)}>{terjemahkanAksi(entry.aksi)}</span>
                     </td>
                     <td style={{ fontSize: 11.5, color: '#71839d' }}>{entry.alamatIp ?? '—'}</td>
                   </tr>
                 ))}
               {!memuat && !data.length && (
                 <tr>
-                  <td colSpan={6} className={styles.empty}>
-                    Belum ada catatan audit log{filterEntitas ? ` untuk entitas "${filterEntitas}"` : ''}.
+                  <td colSpan={4} className={styles.empty}>
+                    Belum ada catatan audit log{filterEntitas ? ` untuk jenis aktivitas "${labelEntitas(filterEntitas)}"` : ''}.
                   </td>
                 </tr>
               )}
