@@ -4,7 +4,7 @@
 // ==================================================
 
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { HandoversModule } from './handovers/handovers.module';
@@ -17,6 +17,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { HcgaThrottlerGuard } from './common/hcga-throttler.guard';
 import { AuditModule } from './audit/audit.module';
+import { AuditInterceptor } from './audit/audit.interceptor';
 
 // ==================================================
 // APP MODULE
@@ -122,6 +123,10 @@ import { KipModule } from './kip/kip.module';
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: HcgaThrottlerGuard },
+    // Jaring pengaman audit trail generik untuk SEMUA modul lain (di luar
+    // Auth/User/Kip yang sudah punya pencatatan manual lebih detail) —
+    // lihat komentar di audit.interceptor.ts.
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
 export class AppModule {}
