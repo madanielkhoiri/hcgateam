@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -57,12 +58,14 @@ export class NotaController {
   ubahStatusNota(
     @Param('idNota') idNota: string,
     @Body('status_verifikasi') statusVerifikasi: string,
-    @Body('alasan_koreksi') alasanKoreksi?: string,
+    @Body('alasan_koreksi') alasanKoreksi: string | undefined,
+    @Req() req: any,
   ) {
     return this.notaService.ubahStatusNota(
       Number(idNota),
       statusVerifikasi,
       alasanKoreksi,
+      req.user,
     );
   }
   // <--- end --->

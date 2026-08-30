@@ -6,10 +6,16 @@ function buatService(overrides: {
   workOrderCount?: jest.Mock;
   suratCount?: jest.Mock;
   epromCounts?: jest.Mock;
+  deklarasiCount?: jest.Mock;
+  notaCount?: jest.Mock;
+  saldoCount?: jest.Mock;
 } = {}) {
   const workOrderCount = overrides.workOrderCount ?? jest.fn().mockResolvedValue(0);
   const suratCount = overrides.suratCount ?? jest.fn().mockResolvedValue(0);
   const epromCounts = overrides.epromCounts ?? jest.fn().mockResolvedValue(0);
+  const deklarasiCount = overrides.deklarasiCount ?? jest.fn().mockResolvedValue(0);
+  const notaCount = overrides.notaCount ?? jest.fn().mockResolvedValue(0);
+  const saldoCount = overrides.saldoCount ?? jest.fn().mockResolvedValue(0);
   const prisma = {
     workOrder: { count: workOrderCount },
     suratTugasDinas: { count: suratCount },
@@ -27,10 +33,13 @@ function buatService(overrides: {
     serahTerima: { count: epromCounts },
     masaPemeliharaanChecklist: { count: epromCounts },
     bASerahTerima: { count: epromCounts },
+    deklarasi: { count: deklarasiCount },
+    nota: { count: notaCount },
+    saldo: { count: saldoCount },
   } as unknown as PrismaService;
   const service = new ApprovalSummaryService(prisma);
 
-  return { service, workOrderCount, suratCount, epromCounts };
+  return { service, workOrderCount, suratCount, epromCounts, deklarasiCount, notaCount, saldoCount };
 }
 
 describe('ApprovalSummaryService.ringkasan — Work Order', () => {
@@ -119,5 +128,42 @@ describe('ApprovalSummaryService.ringkasan — e-ProM', () => {
 
     expect(epromCounts).not.toHaveBeenCalled();
     expect(hasil.eprom).toBe(0);
+  });
+});
+
+describe('ApprovalSummaryService.ringkasan — Deklarasi Dinas (pengajuan/nota/saldo)', () => {
+  it.each([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+    'role %s ikut dihitung dari deklarasi DIAJUKAN, nota OCR_SELESAI, dan saldo DIAJUKAN',
+    async (role) => {
+      const { service, deklarasiCount, notaCount, saldoCount } = buatService();
+
+      await service.ringkasan({ role });
+
+      expect(deklarasiCount).toHaveBeenCalledWith({ where: { status: 'DIAJUKAN' } });
+      expect(notaCount).toHaveBeenCalledWith({ where: { statusVerifikasi: 'OCR_SELESAI' } });
+      expect(saldoCount).toHaveBeenCalledWith({ where: { statusBuktiPengembalian: 'DIAJUKAN' } });
+    },
+  );
+
+  it('role tanpa wewenang approve (mis. KARYAWAN) tidak memicu query, hasilnya 0', async () => {
+    const { service, deklarasiCount, notaCount, saldoCount } = buatService();
+
+    const hasil = await service.ringkasan({ role: UserRole.KARYAWAN });
+
+    expect(deklarasiCount).not.toHaveBeenCalled();
+    expect(notaCount).not.toHaveBeenCalled();
+    expect(saldoCount).not.toHaveBeenCalled();
+    expect(hasil.deklarasiPengajuan).toBe(0);
+    expect(hasil.deklarasiNota).toBe(0);
+    expect(hasil.deklarasiSaldo).toBe(0);
+  });
+
+  it('role Admin Comben TIDAK ikut hitung (sesuai keputusan: hanya Admin/Admin HC/Section Head)', async () => {
+    const { service, deklarasiCount } = buatService();
+
+    const hasil = await service.ringkasan({ role: UserRole.ADMIN_COMBEN });
+
+    expect(deklarasiCount).not.toHaveBeenCalled();
+    expect(hasil.deklarasiPengajuan).toBe(0);
   });
 });
