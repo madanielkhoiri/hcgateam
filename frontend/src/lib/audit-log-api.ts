@@ -12,6 +12,7 @@ export type AuditLogEntry = {
   actorId: number | null;
   actorUsername: string | null;
   actorName: string | null;
+  actorNrp: string | null;
   aksi: string;
   entitas: string;
   entitasId: number | null;
