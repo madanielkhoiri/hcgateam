@@ -25,6 +25,8 @@ export type MenuTreeNode = {
   accessKey: string;
   accent?: string;
   soft?: string;
+  /** Jumlah item yang menunggu approval dari akun yang sedang login (misal Work Order menunggu SH). Badge cuma tampil kalau > 0. */
+  pendingCount?: number;
   children?: MenuTreeNode[];
 };
 
@@ -141,6 +143,12 @@ function LeafCard({ node }: { node: MenuTreeNode }) {
       </div>
 
       {bisaDiklik ? <ArrowRight className={styles.cardArrow} size={17} /> : null}
+
+      {node.pendingCount ? (
+        <span className={styles.pendingBadge} title={`${node.pendingCount} menunggu approval Anda`}>
+          {node.pendingCount > 99 ? '99+' : node.pendingCount}
+        </span>
+      ) : null}
     </>
   );
 

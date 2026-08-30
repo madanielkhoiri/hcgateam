@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -35,9 +36,12 @@ export class AuthController {
   // POST /api/auth/login
   // ==================================================
 
+  // Percobaan login dibatasi ketat per (IP + username) — lihat HcgaThrottlerGuard.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Req() request: Request) {
+    const ip = (request.ips?.length ? request.ips[0] : request.ip) ?? undefined;
+    return this.authService.login(loginDto, ip);
   }
 
   // ==================================================

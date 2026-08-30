@@ -9,6 +9,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { LokasiHousekeepingIndoor, Prisma, StatusChecklistKip, UserRole } from '@prisma/client';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { KipAksesService } from './kip-akses.service';
 import { KipFileService } from './kip-file.service';
 import { BuatKipDto, LOKASI_HOUSEKEEPING_INDOOR, SimpanGpsLokasiDto } from './dto/kip.dto';
@@ -29,6 +30,14 @@ function jarakMeter(lat1: number, lon1: number, lat2: number, lon2: number): num
   return R * c;
 }
 
+/** Info pelaku ringkas — dikirim controller dari req.user (payload JWT) supaya audit log tercatat lengkap (nama/username/NRP), bukan cuma ID. */
+export type AktorKip = {
+  id: number;
+  username?: string;
+  nama?: string;
+  nrp?: string;
+};
+
 const KIP_INCLUDE = {
   checklist: {
     orderBy: { bulan: 'asc' as const },
@@ -42,6 +51,7 @@ export class KipService {
     private readonly prisma: PrismaService,
     private readonly akses: KipAksesService,
     private readonly file: KipFileService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   private validasiLokasi(kode: string): LokasiHousekeepingIndoor {
@@ -67,9 +77,9 @@ export class KipService {
     });
   }
 
-  async buatKip(dto: BuatKipDto, aktorId: number) {
+  async buatKip(dto: BuatKipDto, aktor: AktorKip) {
     try {
-      return await this.prisma.kip.create({
+      const kip = await this.prisma.kip.create({
         data: {
           noKip: dto.noKip.trim(),
           jenisPeralatan: dto.jenisPeralatan.trim(),
@@ -77,7 +87,7 @@ export class KipService {
           tahun: dto.tahun,
           lokasi: dto.lokasi,
           parameterChecklist: dto.parameterChecklist.map((p) => p.trim()).filter(Boolean),
-          createdBy: aktorId,
+          createdBy: aktor.id,
           checklist: {
             createMany: {
               data: Array.from({ length: 12 }, (_, i) => ({ bulan: i + 1 })),
@@ -86,6 +96,19 @@ export class KipService {
         },
         include: KIP_INCLUDE,
       });
+
+      await this.auditLog.catat({
+        actorId: aktor.id,
+        actorUsername: aktor.username,
+        actorName: aktor.nama,
+        actorNrp: aktor.nrp,
+        aksi: 'KIP_DIBUAT',
+        entitas: 'Kip',
+        entitasId: kip.id,
+        detail: { noKip: kip.noKip, jenisPeralatan: kip.jenisPeralatan, lokasi: kip.lokasi },
+      });
+
+      return kip;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new BadRequestException('No. KIP sudah terdaftar');
@@ -94,7 +117,7 @@ export class KipService {
     }
   }
 
-  async ubahKip(id: number, dto: BuatKipDto) {
+  async ubahKip(id: number, dto: BuatKipDto, aktor: AktorKip) {
     const ada = await this.prisma.kip.findUnique({ where: { id } });
 
     if (!ada) {
@@ -102,7 +125,7 @@ export class KipService {
     }
 
     try {
-      return await this.prisma.kip.update({
+      const kip = await this.prisma.kip.update({
         where: { id },
         data: {
           noKip: dto.noKip.trim(),
@@ -114,6 +137,22 @@ export class KipService {
         },
         include: KIP_INCLUDE,
       });
+
+      await this.auditLog.catat({
+        actorId: aktor.id,
+        actorUsername: aktor.username,
+        actorName: aktor.nama,
+        actorNrp: aktor.nrp,
+        aksi: 'KIP_DIUBAH',
+        entitas: 'Kip',
+        entitasId: id,
+        detail: {
+          sebelum: { noKip: ada.noKip, jenisPeralatan: ada.jenisPeralatan, lokasi: ada.lokasi },
+          sesudah: { noKip: kip.noKip, jenisPeralatan: kip.jenisPeralatan, lokasi: kip.lokasi },
+        },
+      });
+
+      return kip;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new BadRequestException('No. KIP sudah terdaftar');
@@ -122,7 +161,7 @@ export class KipService {
     }
   }
 
-  async hapusKip(id: number) {
+  async hapusKip(id: number, aktor: AktorKip) {
     const kip = await this.prisma.kip.findUnique({ where: { id } });
 
     if (!kip) {
@@ -130,6 +169,17 @@ export class KipService {
     }
 
     await this.prisma.kip.delete({ where: { id } });
+
+    await this.auditLog.catat({
+      actorId: aktor.id,
+      actorUsername: aktor.username,
+      actorName: aktor.nama,
+      actorNrp: aktor.nrp,
+      aksi: 'KIP_DIHAPUS',
+      entitas: 'Kip',
+      entitasId: id,
+      detail: { noKip: kip.noKip, jenisPeralatan: kip.jenisPeralatan, lokasi: kip.lokasi },
+    });
 
     return { message: 'KIP berhasil dihapus' };
   }
@@ -182,7 +232,7 @@ export class KipService {
 
   async ceklis(
     role: UserRole,
-    aktorId: number,
+    aktor: AktorKip,
     kipId: number,
     bulan: number,
     foto: Express.Multer.File | undefined,
@@ -248,15 +298,28 @@ export class KipService {
       checked: Boolean(parameterChecked[index]),
     }));
 
-    return this.prisma.kipChecklistBulan.update({
+    const hasil = await this.prisma.kipChecklistBulan.update({
       where: { id: baris.id },
       data: {
         status: StatusChecklistKip.SUDAH,
-        diperiksaOleh: aktorId,
+        diperiksaOleh: aktor.id,
         tanggalPeriksa: new Date(),
         fotoBukti,
         parameterCeklis,
       },
     });
+
+    await this.auditLog.catat({
+      actorId: aktor.id,
+      actorUsername: aktor.username,
+      actorName: aktor.nama,
+      actorNrp: aktor.nrp,
+      aksi: 'KIP_CEKLIS',
+      entitas: 'Kip',
+      entitasId: kipId,
+      detail: { bulan, parameterCeklis },
+    });
+
+    return hasil;
   }
 }

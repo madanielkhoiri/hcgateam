@@ -9,7 +9,8 @@ import * as path from 'path';
 import { SaldoService } from '../saldo/saldo.service';
 import { OcrSpaceService } from './ocr-space.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Deklarasi, KategoriNota, Prisma } from '@prisma/client';
+import { wajibPenyetujuDeklarasi } from '../bantuan/deklarasi-akses.bantuan';
+import { Deklarasi, KategoriNota, Prisma, UserRole } from '@prisma/client';
 
 declare const require: any;
 const sharpModule = require('sharp');
@@ -436,12 +437,15 @@ export class NotaService {
   }
   // <--- end --->
 
-  // <--- admin / FA setujui atau tolak nota per gambar --->
+  // <--- khusus Admin/Admin HC/Section Head setujui atau tolak nota per gambar --->
   async ubahStatusNota(
     idNota: number,
     statusVerifikasi: string,
-    alasanKoreksi?: string,
+    alasanKoreksi: string | undefined,
+    aktor: { role: UserRole },
   ) {
+    wajibPenyetujuDeklarasi(aktor.role);
+
     let nota = await this.ambilNotaAtauGagal(idNota);
 
     const deklarasi = await this.ambilDeklarasiAtauGagal(nota.idDeklarasi);
