@@ -30,6 +30,14 @@ function jarakMeter(lat1: number, lon1: number, lat2: number, lon2: number): num
   return R * c;
 }
 
+/** Info pelaku ringkas — dikirim controller dari req.user (payload JWT) supaya audit log tercatat lengkap (nama/username/NRP), bukan cuma ID. */
+export type AktorKip = {
+  id: number;
+  username?: string;
+  nama?: string;
+  nrp?: string;
+};
+
 const KIP_INCLUDE = {
   checklist: {
     orderBy: { bulan: 'asc' as const },
@@ -69,7 +77,7 @@ export class KipService {
     });
   }
 
-  async buatKip(dto: BuatKipDto, aktorId: number) {
+  async buatKip(dto: BuatKipDto, aktor: AktorKip) {
     try {
       const kip = await this.prisma.kip.create({
         data: {
@@ -79,7 +87,7 @@ export class KipService {
           tahun: dto.tahun,
           lokasi: dto.lokasi,
           parameterChecklist: dto.parameterChecklist.map((p) => p.trim()).filter(Boolean),
-          createdBy: aktorId,
+          createdBy: aktor.id,
           checklist: {
             createMany: {
               data: Array.from({ length: 12 }, (_, i) => ({ bulan: i + 1 })),
@@ -90,7 +98,10 @@ export class KipService {
       });
 
       await this.auditLog.catat({
-        actorId: aktorId,
+        actorId: aktor.id,
+        actorUsername: aktor.username,
+        actorName: aktor.nama,
+        actorNrp: aktor.nrp,
         aksi: 'KIP_DIBUAT',
         entitas: 'Kip',
         entitasId: kip.id,
@@ -106,7 +117,7 @@ export class KipService {
     }
   }
 
-  async ubahKip(id: number, dto: BuatKipDto, aktorId: number) {
+  async ubahKip(id: number, dto: BuatKipDto, aktor: AktorKip) {
     const ada = await this.prisma.kip.findUnique({ where: { id } });
 
     if (!ada) {
@@ -128,7 +139,10 @@ export class KipService {
       });
 
       await this.auditLog.catat({
-        actorId: aktorId,
+        actorId: aktor.id,
+        actorUsername: aktor.username,
+        actorName: aktor.nama,
+        actorNrp: aktor.nrp,
         aksi: 'KIP_DIUBAH',
         entitas: 'Kip',
         entitasId: id,
@@ -147,7 +161,7 @@ export class KipService {
     }
   }
 
-  async hapusKip(id: number, aktorId: number) {
+  async hapusKip(id: number, aktor: AktorKip) {
     const kip = await this.prisma.kip.findUnique({ where: { id } });
 
     if (!kip) {
@@ -157,7 +171,10 @@ export class KipService {
     await this.prisma.kip.delete({ where: { id } });
 
     await this.auditLog.catat({
-      actorId: aktorId,
+      actorId: aktor.id,
+      actorUsername: aktor.username,
+      actorName: aktor.nama,
+      actorNrp: aktor.nrp,
       aksi: 'KIP_DIHAPUS',
       entitas: 'Kip',
       entitasId: id,
@@ -215,7 +232,7 @@ export class KipService {
 
   async ceklis(
     role: UserRole,
-    aktorId: number,
+    aktor: AktorKip,
     kipId: number,
     bulan: number,
     foto: Express.Multer.File | undefined,
@@ -285,7 +302,7 @@ export class KipService {
       where: { id: baris.id },
       data: {
         status: StatusChecklistKip.SUDAH,
-        diperiksaOleh: aktorId,
+        diperiksaOleh: aktor.id,
         tanggalPeriksa: new Date(),
         fotoBukti,
         parameterCeklis,
@@ -293,7 +310,10 @@ export class KipService {
     });
 
     await this.auditLog.catat({
-      actorId: aktorId,
+      actorId: aktor.id,
+      actorUsername: aktor.username,
+      actorName: aktor.nama,
+      actorNrp: aktor.nrp,
       aksi: 'KIP_CEKLIS',
       entitas: 'Kip',
       entitasId: kipId,

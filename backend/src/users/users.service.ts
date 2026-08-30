@@ -28,6 +28,7 @@ type AdminActor = {
   role: UserRole;
   username?: string;
   nama?: string;
+  nrp?: string;
 };
 
 const publicUserSelect = {
@@ -209,6 +210,7 @@ export class UsersService {
         actorId: actor.id,
         actorUsername: actor.username,
         actorName: actor.nama,
+        actorNrp: actor.nrp,
         aksi: 'USER_DIBUAT',
         entitas: 'User',
         entitasId: user.id,
@@ -284,6 +286,7 @@ export class UsersService {
         actorId: actor.id,
         actorUsername: actor.username,
         actorName: actor.nama,
+        actorNrp: actor.nrp,
         aksi: 'USER_DIUBAH',
         entitas: 'User',
         entitasId: id,
@@ -318,6 +321,7 @@ export class UsersService {
         actorId: actor.id,
         actorUsername: actor.username,
         actorName: actor.nama,
+        actorNrp: actor.nrp,
         aksi: 'USER_AKSES_DIUBAH',
         entitas: 'User',
         entitasId: id,
@@ -344,6 +348,7 @@ export class UsersService {
         actorId: actor.id,
         actorUsername: actor.username,
         actorName: actor.nama,
+        actorNrp: actor.nrp,
         aksi: 'USER_DIHAPUS',
         entitas: 'User',
         entitasId: id,

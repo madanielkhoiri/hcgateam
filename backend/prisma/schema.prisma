@@ -2823,6 +2823,7 @@ model AuditLog {
   actorId       Int?     @map("actor_id")
   actorUsername String?  @map("actor_username")
   actorName     String?  @map("actor_name")
+  actorNrp      String?  @map("actor_nrp")
   aksi          String
   entitas       String
   entitasId     Int?     @map("entitas_id")
