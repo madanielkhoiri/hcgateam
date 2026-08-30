@@ -87,6 +87,7 @@
 .card {
   --accent: #0868f6;
   --soft: #eaf2ff;
+  position: relative;
   min-height: 128px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -100,6 +101,26 @@
   border-radius: 14px;
   box-shadow: 0 10px 22px rgba(36, 73, 116, 0.06);
   text-decoration: none;
+}
+
+.pendingBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d53535;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(213, 53, 53, 0.4);
 }
 
 a.card {
