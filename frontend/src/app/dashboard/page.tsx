@@ -24,6 +24,7 @@ import {
   PlayCircle,
   Save,
   Scale,
+  ScrollText,
   Ticket,
   UserCog,
   UsersRound,
@@ -635,6 +636,23 @@ export default function DashboardPage() {
                     </button>
                   )}
 
+                  {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        router.push('/admin/audit-log');
+                      }}
+                    >
+                      <ScrollText size={19} />
+
+                      <span>
+                        <strong>Audit Log</strong>
+                        <small>Riwayat siapa mengubah apa</small>
+                      </span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={openPasswordModal}
@@ -974,6 +992,19 @@ export default function DashboardPage() {
                   <span>
                     <strong>Manajemen Akun</strong>
                     <small>Atur role dan akses menu pengguna</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
+              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/admin/audit-log')}
+                >
+                  <ScrollText />
+                  <span>
+                    <strong>Audit Log</strong>
+                    <small>Riwayat siapa mengubah apa dan kapan</small>
                   </span>
                   <ChevronRight />
                 </button>

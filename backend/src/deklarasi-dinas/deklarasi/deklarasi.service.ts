@@ -6,11 +6,12 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { buatKodeDeklarasi } from '../bantuan/kode-deklarasi.bantuan';
+import { wajibPenyetujuDeklarasi } from '../bantuan/deklarasi-akses.bantuan';
 import { DatabaseSettlementService } from '../database-settlement/database-settlement.service';
 import { BuatDeklarasiDto } from './dto/buat-deklarasi.dto';
 import { EditDeklarasiDto } from './dto/edit-deklarasi.dto';
 import { UbahStatusDeklarasiDto } from './dto/ubah-status-deklarasi.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 
 // <--- fitur service deklarasi perjalanan dinas --->
 @Injectable()
@@ -360,8 +361,14 @@ export class DeklarasiService {
   }
   // <--- end --->
 
-  // <--- mengubah status deklarasi oleh admin / admin FA --->
-  async ubahStatusDeklarasi(idDeklarasi: number, data: UbahStatusDeklarasiDto) {
+  // <--- mengubah status deklarasi: khusus Admin/Admin HC/Section Head --->
+  async ubahStatusDeklarasi(
+    idDeklarasi: number,
+    data: UbahStatusDeklarasiDto,
+    aktor: { role: UserRole },
+  ) {
+    wajibPenyetujuDeklarasi(aktor.role);
+
     let deklarasi = await this.prisma.deklarasi.findUnique({
       where: {
         id: idDeklarasi,

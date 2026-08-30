@@ -9,6 +9,8 @@ export interface JwtPayload {
   nrp?: string;
   nama?: string;
   role: string;
+  /** Diisi otomatis oleh @nestjs/jwt saat token diterbitkan (detik sejak epoch) — dipakai untuk cek "cabut sesi". */
+  iat?: number;
 }
 
 // ==================================================

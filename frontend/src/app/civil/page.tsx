@@ -27,12 +27,14 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
+import { ambilRingkasanApproval, type RingkasanApproval } from '@/lib/approval-summary-api';
 import styles from './civil.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-const civilTree: MenuTreeNode[] = [
+function buatCivilTree(approval: RingkasanApproval | null): MenuTreeNode[] {
+  return [
   {
     key: 'CIVIL_GA_MEP',
     title: 'GA MEP',
@@ -107,6 +109,7 @@ const civilTree: MenuTreeNode[] = [
         accessKey: ACCESS_KEYS.CIVIL_PROJECT,
         accent: '#7a4ce0',
         soft: '#f0ebff',
+        pendingCount: approval?.eprom,
       },
       {
         key: 'CIVIL_WO_INFRAS',
@@ -128,6 +131,7 @@ const civilTree: MenuTreeNode[] = [
             accessKey: ACCESS_KEYS.GA_PEKERJAAN,
             accent: '#d53535',
             soft: '#ffeded',
+            pendingCount: approval?.workOrders,
           },
         ],
       },
@@ -145,11 +149,17 @@ const civilTree: MenuTreeNode[] = [
       },
     ],
   },
-];
+  ];
+}
 
 export default function CivilPage() {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
+  const [approval, setApproval] = useState<RingkasanApproval | null>(null);
+
+  useEffect(() => {
+    void ambilRingkasanApproval().then(setApproval);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -207,6 +217,8 @@ export default function CivilPage() {
     () => (accessKey: string) => hasAccess(user, accessKey),
     [user],
   );
+
+  const civilTree = useMemo(() => buatCivilTree(approval), [approval]);
 
   if (!user) {
     return <main className={styles.page}>Memuat pilihan CIVIL...</main>;
