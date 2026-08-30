@@ -73,6 +73,75 @@ describe('UsersService.update — proteksi akun sendiri', () => {
   });
 });
 
+describe('UsersService.update — cabut sesi otomatis', () => {
+  it('mencabut sesi (set tokenValidAfter) kalau password diganti admin', async () => {
+    const { service, prisma } = buatService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, role: UserRole.KARYAWAN, isActive: true });
+
+    await service.update(2, { password: 'passwordbaru123' } as any, AKTOR_ADMIN);
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tokenValidAfter: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it('mencabut sesi kalau akun (bukan diri sendiri) dinonaktifkan', async () => {
+    const { service, prisma } = buatService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, role: UserRole.KARYAWAN, isActive: true });
+
+    await service.update(2, { isActive: false } as any, AKTOR_ADMIN);
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tokenValidAfter: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it('TIDAK mencabut sesi untuk perubahan biasa (mis. ganti nama saja)', async () => {
+    const { service, prisma } = buatService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, role: UserRole.KARYAWAN, isActive: true });
+
+    await service.update(2, { name: 'Nama Baru' } as any, AKTOR_ADMIN);
+
+    const dataDikirim = (prisma.user.update as jest.Mock).mock.calls[0][0].data;
+    expect(dataDikirim).not.toHaveProperty('tokenValidAfter');
+  });
+});
+
+describe('UsersService.cabutSesi', () => {
+  it('menolak aktor yang bukan Admin/Section Head', async () => {
+    const { service } = buatService();
+
+    await expect(service.cabutSesi(2, AKTOR_KARYAWAN)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('melempar NotFoundException kalau akun tidak ada', async () => {
+    const { service, prisma } = buatService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.cabutSesi(99, AKTOR_ADMIN)).rejects.toThrow('Pengguna tidak ditemukan');
+  });
+
+  it('berhasil mencabut sesi dan mencatat audit log USER_SESI_DICABUT', async () => {
+    const { service, prisma, auditLog } = buatService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, name: 'Budi', username: 'budi' });
+
+    const hasil = await service.cabutSesi(2, AKTOR_ADMIN);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 2 },
+      data: { tokenValidAfter: expect.any(Date) },
+    });
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ aksi: 'USER_SESI_DICABUT', entitas: 'User', entitasId: 2 }),
+    );
+    expect(hasil.message).toMatch(/berhasil dicabut/i);
+  });
+});
+
 describe('UsersService.remove — proteksi akun sendiri & error mapping', () => {
   it('menolak admin menghapus akun sendiri', async () => {
     const { service } = buatService();

@@ -24,10 +24,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const user = await this.usersService.findById(payload.sub);
+    const user = await this.usersService.findByIdForAuth(payload.sub);
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Akun tidak ditemukan atau tidak aktif');
+    }
+
+    if (user.tokenValidAfter && payload.iat && payload.iat * 1000 < user.tokenValidAfter.getTime()) {
+      throw new UnauthorizedException('Sesi ini sudah tidak berlaku — silakan login ulang');
     }
 
     return {

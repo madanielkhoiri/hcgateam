@@ -49,6 +49,12 @@ const publicUserSelect = {
   updatedAt: true,
 } satisfies Prisma.UserSelect;
 
+/** Dipakai khusus JwtStrategy — sama seperti publicUserSelect + tokenValidAfter (metadata internal, tidak perlu bocor ke response API biasa). */
+const authUserSelect = {
+  ...publicUserSelect,
+  tokenValidAfter: true,
+} satisfies Prisma.UserSelect;
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -140,6 +146,14 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { id },
       select: publicUserSelect,
+    });
+  }
+
+  /** Khusus JwtStrategy — ikut ambil tokenValidAfter untuk cek validitas sesi. */
+  async findByIdForAuth(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: authUserSelect,
     });
   }
 
@@ -250,6 +264,12 @@ export class UsersService {
         ? this.defaultAccessKeys(nextRole)
         : undefined;
 
+    // Password diganti admin atau akun dinonaktifkan -> cabut semua sesi yang
+    // sedang aktif (token lama langsung ditolak di request berikutnya, tidak
+    // perlu nunggu expired 8 jam sendiri).
+    const perluCabutSesi =
+      Boolean(passwordHash) || (dto.isActive === false && current.isActive !== false);
+
     try {
       const user = await this.prisma.user.update({
         where: { id },
@@ -262,6 +282,7 @@ export class UsersService {
           ...(dto.role !== undefined ? { role: dto.role } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
           ...(accessKeys ? { accessKeys } : {}),
+          ...(perluCabutSesi ? { tokenValidAfter: new Date() } : {}),
           ...(dto.nrp !== undefined ? { nrp: dto.nrp?.trim() || null } : {}),
           ...(dto.email !== undefined
             ? { email: dto.email?.trim() || null }
@@ -293,6 +314,7 @@ export class UsersService {
         detail: {
           perubahan: dtoTanpaPassword,
           passwordDiubah: Boolean(passwordHash),
+          sesiIkutDicabut: perluCabutSesi,
         },
       });
 
@@ -300,6 +322,34 @@ export class UsersService {
     } catch (error: unknown) {
       this.handlePrismaError(error);
     }
+  }
+
+  /** Cabut paksa semua sesi (token) yang sedang aktif milik satu akun — tanpa mengubah password/status apa pun. */
+  async cabutSesi(id: number, actor: AdminActor) {
+    this.assertAdmin(actor);
+
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new NotFoundException('Pengguna tidak ditemukan');
+    }
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { tokenValidAfter: new Date() },
+    });
+
+    await this.auditLog.catat({
+      actorId: actor.id,
+      actorUsername: actor.username,
+      actorName: actor.nama,
+      actorNrp: actor.nrp,
+      aksi: 'USER_SESI_DICABUT',
+      entitas: 'User',
+      entitasId: id,
+      detail: { name: target.name, username: target.username },
+    });
+
+    return { message: 'Semua sesi akun ini berhasil dicabut. Perangkat yang masih login akan otomatis diminta login ulang.' };
   }
 
   async updateAccess(
