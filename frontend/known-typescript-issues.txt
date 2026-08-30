@@ -3,9 +3,3 @@
 # Dipakai oleh scripts/check-typescript.mjs supaya CI tidak gagal karena ini,
 # tapi tetap gagal kalau ada error BARU di file lain / kode error lain.
 # Kalau salah satu baris ini sudah diperbaiki, hapus barisnya dari sini.
-
-src/app/hc/(app)/admin/pengajuan/page.tsx::TS2769
-src/app/hc/(app)/deklarasi-dinas/page.tsx::TS2769
-src/app/hc/(app)/deklarasi-dinas/page.tsx::TS2367
-src/app/hc/(app)/deklarasi/detail/[id]/page.tsx::TS2769
-src/app/hc/(app)/deklarasi/detail/[id]/page.tsx::TS2345

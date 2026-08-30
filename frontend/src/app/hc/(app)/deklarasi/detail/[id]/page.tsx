@@ -202,7 +202,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi?.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear();
 
  return [
  "<tr>",
@@ -352,7 +352,7 @@ export default function HalamanDetailDeklarasi() {
  const nomorSettlementDb = nomorSettlementDasarPdf || 1;
  const nomorItemDb = index + 1;
  const itemSettDb = nomorSettlementDb + "-" + nomorItemDb;
- const tahun = new Date(deklarasi?.tanggal_kegiatan).getFullYear();
+ const tahun = new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear();
 
  const nomorRabPb =
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
@@ -1204,7 +1204,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi?.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear();
 
  return [
  "<tr>",
@@ -1362,7 +1362,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi?.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear();
 
  return [
  "<tr>",
@@ -1582,7 +1582,7 @@ export default function HalamanDetailDeklarasi() {
  const nomorSettlementUrutPdf = String(nomorSettlementDasarPdf).padStart(3, "0");
 
  const bulanRomawiPdf = (() => {
- const bulan = new Date(deklarasi?.tanggal_kegiatan).getMonth() + 1;
+ const bulan = new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getMonth() + 1;
  const daftar = [
  "",
  "I",
@@ -1607,7 +1607,7 @@ export default function HalamanDetailDeklarasi() {
  "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi?.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear();
 
  const barisPdfDeklarasi = daftarNotaUrut.map((nota) => {
  const nominal = normalisasiAngka(nota.nominal_final);
@@ -1674,6 +1674,7 @@ export default function HalamanDetailDeklarasi() {
  harga: 0,
  jumlah: 0,
  keterangan: "",
+ pic: "",
  });
  }
  /* PDF_TEMPLATE_END */
@@ -1721,7 +1722,7 @@ export default function HalamanDetailDeklarasi() {
  nomorSettlementDb + "/HCGA/PPA-ADRO/" +
  bulanRomawiPdf +
  "/" +
- new Date(deklarasi?.tanggal_kegiatan).getFullYear();
+ new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear();
 
  return [
  "<tr>",
@@ -3019,7 +3020,7 @@ export default function HalamanDetailDeklarasi() {
  <td>{baris.keterangan}</td>
  <td className="pdf-db-center">HCGA</td>
  <td className="pdf-db-center">
- {nomorSettlementDb + "/HCGA/PPA-ADRO/" + bulanRomawiPdf + "/" + new Date(deklarasi?.tanggal_kegiatan).getFullYear()}
+ {nomorSettlementDb + "/HCGA/PPA-ADRO/" + bulanRomawiPdf + "/" + new Date(deklarasi?.tanggal_kegiatan ?? Date.now()).getFullYear()}
  </td>
  </tr>
  );

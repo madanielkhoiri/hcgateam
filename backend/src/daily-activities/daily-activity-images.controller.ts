@@ -99,6 +99,7 @@ export class DailyActivityImagesController {
   }
 
   @Get(':scope/:category/:filename')
+  @UseGuards(JwtAuthGuard)
   viewImage(
     @Param('scope') scopeValue: string,
     @Param('category') categoryValue: string,
