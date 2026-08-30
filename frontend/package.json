@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck:ci": "node scripts/check-typescript.mjs",
     "postinstall": "patch-package"
   },
   "dependencies": {

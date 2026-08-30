@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -134,12 +135,14 @@ export class SaldoController {
     @Param('idSaldo') idSaldo: string,
     @Body('status_bukti_pengembalian') statusBuktiPengembalian: string,
     @Body('alasan_bukti_pengembalian_ditolak')
-    alasanBuktiPengembalianDitolak?: string,
+    alasanBuktiPengembalianDitolak: string | undefined,
+    @Req() req: any,
   ) {
     return this.saldoService.ubahStatusBuktiPengembalian(
       Number(idSaldo),
       statusBuktiPengembalian,
       alasanBuktiPengembalianDitolak,
+      req.user,
     );
   }
   // <--- end --->

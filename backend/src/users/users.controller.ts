@@ -22,6 +22,9 @@ type AuthRequest = {
   user: {
     id: number;
     role: UserRole;
+    username?: string;
+    nama?: string;
+    nrp?: string;
   };
 };
 
@@ -51,6 +54,12 @@ export class UsersController {
   @Post()
   create(@Body() dto: CreateUserDto, @Req() request: AuthRequest) {
     return this.usersService.create(dto, request.user);
+  }
+
+  /** Cabut paksa semua sesi (token) yang sedang aktif milik satu akun. */
+  @Post(':id/cabut-sesi')
+  cabutSesi(@Param('id', ParseIntPipe) id: number, @Req() request: AuthRequest) {
+    return this.usersService.cabutSesi(id, request.user);
   }
 
   @Patch(':id/access')

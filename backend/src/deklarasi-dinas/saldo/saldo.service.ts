@@ -7,9 +7,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import { buatKodeDeklarasi } from '../bantuan/kode-deklarasi.bantuan';
+import { wajibPenyetujuDeklarasi } from '../bantuan/deklarasi-akses.bantuan';
 import { BuatSaldoDto } from './buat-saldo.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, Saldo, Deklarasi } from '@prisma/client';
+import { Prisma, Saldo, Deklarasi, UserRole } from '@prisma/client';
 
 declare const require: any;
 const sharpModule = require('sharp');
@@ -384,12 +385,15 @@ export class SaldoService {
   }
   // <--- end --->
 
-  // <--- admin / FA setujui atau tolak bukti pengembalian --->
+  // <--- khusus Admin/Admin HC/Section Head setujui atau tolak bukti pengembalian --->
   async ubahStatusBuktiPengembalian(
     idSaldo: number,
     statusBukti: string,
-    alasanDitolak?: string,
+    alasanDitolak: string | undefined,
+    aktor: { role: UserRole },
   ) {
+    wajibPenyetujuDeklarasi(aktor.role);
+
     const saldo = await this.ambilSaldoBerdasarkanId(idSaldo);
 
     const statusFinal = String(statusBukti || '')
