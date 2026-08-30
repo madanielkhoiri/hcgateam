@@ -48,6 +48,8 @@ model User {
   passwordHash       String   @map("password_hash")
   role               UserRole @default(KARYAWAN)
   isActive           Boolean  @default(true) @map("is_active")
+  /** Token yang diterbitkan SEBELUM waktu ini dianggap tidak berlaku lagi — buat "cabut sesi" tanpa nunggu token expired sendiri (8 jam). */
+  tokenValidAfter    DateTime? @map("token_valid_after")
   accessKeys         String[] @default([]) @map("access_keys")
   signatureImage     String?  @map("signature_image")
   twoFactorSecret    String?  @map("two_factor_secret")
