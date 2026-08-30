@@ -636,7 +636,7 @@ export default function DashboardPage() {
                     </button>
                   )}
 
-                  {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && (
+                  {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && (
                     <button
                       type="button"
                       onClick={() => {
@@ -996,7 +996,7 @@ export default function DashboardPage() {
                   <ChevronRight />
                 </button>
               )}
-              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && (
+              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && (
                 <button
                   type="button"
                   onClick={() => router.push('/admin/audit-log')}
