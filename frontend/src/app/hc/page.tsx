@@ -32,12 +32,14 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
+import { ambilRingkasanApproval, type RingkasanApproval } from '@/lib/approval-summary-api';
 import styles from './hc.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-const hcTree: MenuTreeNode[] = [
+function buatHcTree(approval: RingkasanApproval | null): MenuTreeNode[] {
+  return [
   {
     key: 'HC_KARYAWAN',
     title: 'Database Karyawan',
@@ -140,6 +142,7 @@ const hcTree: MenuTreeNode[] = [
         accessKey: ACCESS_KEYS.HC_TUGAS_DINAS,
         accent: '#d97706',
         soft: '#fff2df',
+        pendingCount: approval?.suratTugasDinas,
       },
       {
         key: 'HC_ANAK_MAGANG',
@@ -214,11 +217,17 @@ const hcTree: MenuTreeNode[] = [
       },
     ],
   },
-];
+  ];
+}
 
 export default function HcPage() {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
+  const [approval, setApproval] = useState<RingkasanApproval | null>(null);
+
+  useEffect(() => {
+    void ambilRingkasanApproval().then(setApproval);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -276,6 +285,8 @@ export default function HcPage() {
     () => (accessKey: string) => hasAccess(user, accessKey),
     [user],
   );
+
+  const hcTree = useMemo(() => buatHcTree(approval), [approval]);
 
   if (!user) {
     return <main className={styles.page}>Memuat pilihan HC...</main>;
