@@ -67,6 +67,26 @@ describe('AuditInterceptor', () => {
     );
   });
 
+  it('melewati segmen HURUF-BESAR (scope/enum, bukan nama resource) saat menentukan entitas', async () => {
+    const auditLog = { catat: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogService;
+    const interceptor = new AuditInterceptor(auditLog);
+    const req = {
+      method: 'POST',
+      originalUrl: '/api/inventory-area/GENERAL/stock-outs/batch',
+      ip: '10.0.0.5',
+      user: { id: 7 },
+    };
+
+    await new Promise<void>((resolve) => {
+      interceptor.intercept(buatContext(req), buatHandler({})).subscribe({ complete: resolve });
+    });
+    await tunggu();
+
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ entitas: 'inventory-area/stock-outs', aksi: 'INVENTORY-AREA/STOCK-OUTS_DIBUAT' }),
+    );
+  });
+
   it('TIDAK mencatat apa pun untuk rute yang sudah diaudit manual (auth/users/kip)', async () => {
     const auditLog = { catat: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogService;
     const interceptor = new AuditInterceptor(auditLog);
