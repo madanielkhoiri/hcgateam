@@ -80,9 +80,23 @@ async function bootstrap() {
   // server lewat IP LAN komputer saat testing.
   const ORIGIN_LAN_REGEX = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):\d{2,5}$/;
 
+  // Domain production (mis. https://portal.ppa.co.id) — isi lewat FRONTEND_ORIGIN
+  // di .env server (boleh lebih dari satu, dipisah koma) begitu domainnya sudah
+  // ditentukan. Tanpa ini, situs production TIDAK BISA diakses sama sekali
+  // (browser memblokir CORS-nya), walau backend & database-nya sehat.
+  const ORIGIN_PRODUCTION = (process.env.FRONTEND_ORIGIN ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || ORIGIN_DEV_TETAP.includes(origin) || ORIGIN_LAN_REGEX.test(origin)) {
+      if (
+        !origin ||
+        ORIGIN_DEV_TETAP.includes(origin) ||
+        ORIGIN_LAN_REGEX.test(origin) ||
+        ORIGIN_PRODUCTION.includes(origin)
+      ) {
         callback(null, true);
         return;
       }
