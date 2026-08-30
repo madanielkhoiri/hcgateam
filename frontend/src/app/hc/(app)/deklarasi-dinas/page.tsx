@@ -1032,7 +1032,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  const formData = new FormData();
  formData.append(
  "kategori_nota",
- kategoriRevisiBatch[nota.id] || nota.kategori_nota
+ kategoriRevisiBatch[nota.id] || nota.kategori_nota || ""
  );
  formData.append("id_nota_revisi", String(nota.id));
 
@@ -1334,7 +1334,6 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  const adaBelumOcr = daftarNotaAktif.some((nota) => {
  return (
  nota.status_verifikasi === "BELUM_OCR" ||
- nota.status_verifikasi === "OCR_GAGAL" ||
  Number(nota.nominal_final || 0) <= 0
  );
  });
@@ -2030,11 +2029,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white !text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
  >
  <UploadCloud className="h-4 w-4" />
- {saldo.status_deklarasi_aktif === "DITOLAK"
- ? "Upload Nota Revisi"
- : saldoDipilih?.status_deklarasi_aktif === "DITOLAK"
- ? "Upload Nota Revisi"
- : saldoDipilih?.status_deklarasi_aktif === "DITOLAK"
+ {saldo.status_deklarasi_aktif === "DITOLAK" ||
+ saldoDipilih?.status_deklarasi_aktif === "DITOLAK"
  ? "Upload Nota Revisi"
  : "Upload Nota"}
  </button>
@@ -2174,10 +2170,6 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-600">
  <UploadCloud className="h-3.5 w-3.5" />
  {saldoDipilih.status_deklarasi_aktif === "DITOLAK"
- ? "Upload Nota Revisi"
- : saldoDipilih?.status_deklarasi_aktif === "DITOLAK"
- ? "Upload Nota Revisi"
- : saldoDipilih?.status_deklarasi_aktif === "DITOLAK"
  ? "Upload Nota Revisi"
  : "Upload Nota"}
  </div>
