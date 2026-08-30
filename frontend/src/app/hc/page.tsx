@@ -33,12 +33,27 @@ import {
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
 import { ambilRingkasanApproval, type RingkasanApproval } from '@/lib/approval-summary-api';
+import { mcuApi, type RingkasanMcu } from '@/lib/mcu-api';
 import styles from './hc.module.css';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-function buatHcTree(approval: RingkasanApproval | null): MenuTreeNode[] {
+/** Total item yang perlu ditindaklanjuti di MCU, dari ringkasan yang sama dipakai halaman /hc/mcu sendiri. */
+function totalPendingMcu(r: RingkasanMcu | null): number | undefined {
+  if (!r) return undefined;
+  return (
+    r.reminderJatuhTempo +
+    r.jadwalDraft +
+    r.suratMenungguKirim +
+    r.hasilMenungguReview +
+    r.rekomendasiBelumDiteruskan +
+    r.followUpTerlambat +
+    r.induksiMenunggu
+  );
+}
+
+function buatHcTree(approval: RingkasanApproval | null, mcuRingkasan: RingkasanMcu | null): MenuTreeNode[] {
   return [
   {
     key: 'HC_KARYAWAN',
@@ -130,6 +145,9 @@ function buatHcTree(approval: RingkasanApproval | null): MenuTreeNode[] {
         accessKey: ACCESS_KEYS.HC_DEKLARASI,
         accent: '#d97706',
         soft: '#fff2df',
+        pendingCount: approval
+          ? approval.deklarasiPengajuan + approval.deklarasiNota + approval.deklarasiSaldo
+          : undefined,
       },
       {
         key: 'HC_TUGAS_DINAS',
@@ -202,6 +220,7 @@ function buatHcTree(approval: RingkasanApproval | null): MenuTreeNode[] {
         accessKey: ACCESS_KEYS.HC_MCU,
         accent: '#07984c',
         soft: '#e4f7ec',
+        pendingCount: totalPendingMcu(mcuRingkasan),
       },
       {
         key: 'HC_HELPDESK',
@@ -224,9 +243,11 @@ export default function HcPage() {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
   const [approval, setApproval] = useState<RingkasanApproval | null>(null);
+  const [mcuRingkasan, setMcuRingkasan] = useState<RingkasanMcu | null>(null);
 
   useEffect(() => {
     void ambilRingkasanApproval().then(setApproval);
+    mcuApi.ambil<RingkasanMcu>('/ringkasan').then(setMcuRingkasan).catch(() => setMcuRingkasan(null));
   }, []);
 
   useEffect(() => {
@@ -286,7 +307,7 @@ export default function HcPage() {
     [user],
   );
 
-  const hcTree = useMemo(() => buatHcTree(approval), [approval]);
+  const hcTree = useMemo(() => buatHcTree(approval, mcuRingkasan), [approval, mcuRingkasan]);
 
   if (!user) {
     return <main className={styles.page}>Memuat pilihan HC...</main>;

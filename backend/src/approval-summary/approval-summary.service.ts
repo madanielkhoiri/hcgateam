@@ -5,16 +5,20 @@
 // (GA/HC/CIVIL), supaya penyetuju langsung tahu di kartu mana ada yang
 // perlu ditindaklanjuti tanpa harus buka satu-satu.
 //
-// Baru mencakup modul yang aturan approval-nya sudah saya pahami betul:
-// Work Order (GL->SH->PJO), Surat Tugas Dinas (SH->PJO), dan e-ProM
-// (menggunakan logic yang sama persis dengan EpromDashboardService).
-// Modul lain (Deklarasi Dinas, MCU) akan menyusul setelah alur
-// approval-nya dikonfirmasi — lihat catatan di ringkasan().
+// Mencakup modul yang aturan approval-nya sudah dipahami/dikonfirmasi betul:
+// Work Order (GL->SH->PJO), Surat Tugas Dinas (SH->PJO), e-ProM (memakai
+// logic yang sama persis dengan EpromDashboardService), dan Deklarasi
+// Dinas (pengajuan/nota/saldo — penyetuju dikonfirmasi: Admin/Admin
+// HC/Section Head, lihat deklarasi-akses.bantuan.ts).
+//
+// MCU tidak perlu ditambah di sini — modul itu sudah punya ringkasan
+// sendiri (GET /mcu/ringkasan), dipakai ulang langsung oleh frontend.
 // ==================================================
 
 import { Injectable } from '@nestjs/common';
 import { StatusApprovalEprom, StatusApprovalWorkOrder, StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ROLE_PENYETUJU_DEKLARASI } from '../deklarasi-dinas/bantuan/deklarasi-akses.bantuan';
 
 export type AktorRingkasApproval = { role: UserRole };
 
@@ -32,13 +36,17 @@ export class ApprovalSummaryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async ringkasan(aktor: AktorRingkasApproval) {
-    const [workOrders, suratTugasDinas, eprom] = await Promise.all([
-      this.hitungWorkOrder(aktor),
-      this.hitungSuratTugasDinas(aktor),
-      this.hitungEprom(aktor),
-    ]);
+    const [workOrders, suratTugasDinas, eprom, deklarasiPengajuan, deklarasiNota, deklarasiSaldo] =
+      await Promise.all([
+        this.hitungWorkOrder(aktor),
+        this.hitungSuratTugasDinas(aktor),
+        this.hitungEprom(aktor),
+        this.hitungDeklarasiPengajuan(aktor),
+        this.hitungDeklarasiNota(aktor),
+        this.hitungDeklarasiSaldo(aktor),
+      ]);
 
-    return { workOrders, suratTugasDinas, eprom };
+    return { workOrders, suratTugasDinas, eprom, deklarasiPengajuan, deklarasiNota, deklarasiSaldo };
   }
 
   /** GL lihat MENUNGGU_GL, SH lihat MENUNGGU_SH, PJO lihat MENUNGGU_PJO. Admin lihat semua tahap. */
@@ -117,5 +125,26 @@ export class ApprovalSummaryService {
     ]);
 
     return jumlahPending.reduce((a, b) => a + b, 0);
+  }
+
+  /** Deklarasi berstatus DIAJUKAN menunggu diverifikasi/disetujui. */
+  private async hitungDeklarasiPengajuan(aktor: AktorRingkasApproval): Promise<number> {
+    if (!ROLE_PENYETUJU_DEKLARASI.includes(aktor.role)) return 0;
+
+    return this.prisma.deklarasi.count({ where: { status: 'DIAJUKAN' } });
+  }
+
+  /** Nota yang OCR-nya sudah selesai tapi belum diverifikasi/ditolak manusia. */
+  private async hitungDeklarasiNota(aktor: AktorRingkasApproval): Promise<number> {
+    if (!ROLE_PENYETUJU_DEKLARASI.includes(aktor.role)) return 0;
+
+    return this.prisma.nota.count({ where: { statusVerifikasi: 'OCR_SELESAI' } });
+  }
+
+  /** Bukti pengembalian saldo yang sudah diupload karyawan, menunggu disetujui/ditolak. */
+  private async hitungDeklarasiSaldo(aktor: AktorRingkasApproval): Promise<number> {
+    if (!ROLE_PENYETUJU_DEKLARASI.includes(aktor.role)) return 0;
+
+    return this.prisma.saldo.count({ where: { statusBuktiPengembalian: 'DIAJUKAN' } });
   }
 }
