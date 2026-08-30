@@ -16,6 +16,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { HcgaThrottlerGuard } from './common/hcga-throttler.guard';
+import { AuditModule } from './audit/audit.module';
 
 // ==================================================
 // APP MODULE
@@ -79,6 +80,7 @@ import { KipModule } from './kip/kip.module';
     ]),
 
     PrismaModule,
+    AuditModule,
     UsersModule,
     AuthModule,
     WorkOrdersModule,

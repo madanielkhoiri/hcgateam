@@ -46,14 +46,14 @@ export class KipController {
 
   @Patch('admin/kip/:id')
   @UseGuards(JwtAuthGuard)
-  ubahKip(@Param('id', ParseIntPipe) id: number, @Body() dto: BuatKipDto) {
-    return this.service.ubahKip(id, dto);
+  ubahKip(@Param('id', ParseIntPipe) id: number, @Body() dto: BuatKipDto, @Req() req: any) {
+    return this.service.ubahKip(id, dto, req.user.id);
   }
 
   @Delete('admin/kip/:id')
   @UseGuards(JwtAuthGuard)
-  hapusKip(@Param('id', ParseIntPipe) id: number) {
-    return this.service.hapusKip(id);
+  hapusKip(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.hapusKip(id, req.user.id);
   }
 
   @Get('admin/qr/:lokasi')
