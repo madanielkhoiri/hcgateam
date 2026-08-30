@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { UsersService } from './users.service';
 
 function prismaError(code: string, meta?: Record<string, unknown>) {
@@ -23,9 +24,10 @@ function buatService(prismaOverrides: Record<string, unknown> = {}) {
     },
     ...prismaOverrides,
   } as unknown as PrismaService;
-  const service = new UsersService(prisma);
+  const auditLog = { catat: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogService;
+  const service = new UsersService(prisma, auditLog);
 
-  return { service, prisma };
+  return { service, prisma, auditLog };
 }
 
 const AKTOR_KARYAWAN = { id: 1, role: UserRole.KARYAWAN };

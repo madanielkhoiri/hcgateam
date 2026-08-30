@@ -2,6 +2,7 @@ import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { AuthService } from './auth.service';
 
 function buatUser(overrides: Partial<{ isActive: boolean; passwordHash: string }> = {}) {
@@ -30,21 +31,25 @@ function buatService(usersOverrides: Partial<UsersService> = {}) {
   const jwtService = {
     signAsync: jest.fn().mockResolvedValue('token-palsu'),
   } as unknown as JwtService;
-  const service = new AuthService(usersService, jwtService);
+  const auditLog = { catat: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogService;
+  const service = new AuthService(usersService, jwtService, auditLog);
 
-  return { service, usersService, jwtService };
+  return { service, usersService, jwtService, auditLog };
 }
 
 describe('AuthService.login', () => {
-  it('menolak kalau username tidak ditemukan', async () => {
-    const { service, usersService } = buatService({
+  it('menolak kalau username tidak ditemukan, dan mencatat audit log LOGIN_GAGAL', async () => {
+    const { service, usersService, auditLog } = buatService({
       findByIdentifier: jest.fn().mockResolvedValue(null),
     });
 
     await expect(
-      service.login({ username: 'siapa', password: 'rahasia123' }),
+      service.login({ username: 'siapa', password: 'rahasia123' }, '203.0.113.9'),
     ).rejects.toThrow(UnauthorizedException);
     expect(usersService.findByIdentifier).toHaveBeenCalledWith('siapa');
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ aksi: 'LOGIN_GAGAL', alamatIp: '203.0.113.9' }),
+    );
   });
 
   it('menolak kalau akun tidak aktif', async () => {
@@ -68,18 +73,24 @@ describe('AuthService.login', () => {
     ).rejects.toThrow('Username / NRP / Email atau password salah');
   });
 
-  it('berhasil login dan mengembalikan accessToken kalau password benar', async () => {
+  it('berhasil login, mengembalikan accessToken, dan mencatat audit log LOGIN_BERHASIL', async () => {
     const passwordHash = await bcrypt.hash('password-benar', 4);
-    const { service, jwtService } = buatService({
+    const { service, jwtService, auditLog } = buatService({
       findByIdentifier: jest.fn().mockResolvedValue(buatUser({ passwordHash })),
     });
 
-    const hasil = await service.login({ username: 'budi', password: 'password-benar' });
+    const hasil = await service.login(
+      { username: 'budi', password: 'password-benar' },
+      '203.0.113.9',
+    );
 
     expect(jwtService.signAsync).toHaveBeenCalledWith(
       expect.objectContaining({ sub: 1, username: 'budi' }),
     );
     expect(hasil).toMatchObject({ message: 'Login berhasil', accessToken: 'token-palsu' });
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ aksi: 'LOGIN_BERHASIL', actorId: 1, alamatIp: '203.0.113.9' }),
+    );
   });
 });
 

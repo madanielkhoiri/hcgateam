@@ -18,6 +18,7 @@ import {
   sanitizeAccessKeys,
 } from '../access/access.constants';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserAccessDto } from './dto/update-user-access.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -25,6 +26,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 type AdminActor = {
   id: number;
   role: UserRole;
+  username?: string;
+  nama?: string;
 };
 
 const publicUserSelect = {
@@ -47,7 +50,10 @@ const publicUserSelect = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   // ==================================================
   // CARI USER BERDASARKAN USERNAME / NRP / EMAIL
@@ -182,7 +188,7 @@ export class UsersService {
     );
 
     try {
-      return await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           name: dto.name.trim(),
           username: dto.username.trim(),
@@ -198,6 +204,18 @@ export class UsersService {
         },
         select: publicUserSelect,
       });
+
+      await this.auditLog.catat({
+        actorId: actor.id,
+        actorUsername: actor.username,
+        actorName: actor.nama,
+        aksi: 'USER_DIBUAT',
+        entitas: 'User',
+        entitasId: user.id,
+        detail: { name: user.name, username: user.username, role: user.role },
+      });
+
+      return user;
     } catch (error: unknown) {
       this.handlePrismaError(error);
     }
@@ -231,7 +249,7 @@ export class UsersService {
         : undefined;
 
     try {
-      return await this.prisma.user.update({
+      const user = await this.prisma.user.update({
         where: { id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
@@ -258,6 +276,24 @@ export class UsersService {
         },
         select: publicUserSelect,
       });
+
+      // Tidak pernah catat password (hashed sekalipun) ke audit log.
+      const { password: _abaikan, ...dtoTanpaPassword } = dto;
+
+      await this.auditLog.catat({
+        actorId: actor.id,
+        actorUsername: actor.username,
+        actorName: actor.nama,
+        aksi: 'USER_DIUBAH',
+        entitas: 'User',
+        entitasId: id,
+        detail: {
+          perubahan: dtoTanpaPassword,
+          passwordDiubah: Boolean(passwordHash),
+        },
+      });
+
+      return user;
     } catch (error: unknown) {
       this.handlePrismaError(error);
     }
@@ -271,11 +307,24 @@ export class UsersService {
     this.assertAdmin(actor);
 
     try {
-      return await this.prisma.user.update({
+      const accessKeys = sanitizeAccessKeys(dto.accessKeys);
+      const user = await this.prisma.user.update({
         where: { id },
-        data: { accessKeys: sanitizeAccessKeys(dto.accessKeys) },
+        data: { accessKeys },
         select: publicUserSelect,
       });
+
+      await this.auditLog.catat({
+        actorId: actor.id,
+        actorUsername: actor.username,
+        actorName: actor.nama,
+        aksi: 'USER_AKSES_DIUBAH',
+        entitas: 'User',
+        entitasId: id,
+        detail: { accessKeysBaru: accessKeys },
+      });
+
+      return user;
     } catch (error: unknown) {
       this.handlePrismaError(error);
     }
@@ -289,7 +338,18 @@ export class UsersService {
     }
 
     try {
-      await this.prisma.user.delete({ where: { id } });
+      const dihapus = await this.prisma.user.delete({ where: { id } });
+
+      await this.auditLog.catat({
+        actorId: actor.id,
+        actorUsername: actor.username,
+        actorName: actor.nama,
+        aksi: 'USER_DIHAPUS',
+        entitas: 'User',
+        entitasId: id,
+        detail: { name: dihapus.name, username: dihapus.username, role: dihapus.role },
+      });
+
       return { message: 'Akun berhasil dihapus' };
     } catch (error: unknown) {
       if (

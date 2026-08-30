@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusChecklistKip, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { KipAksesService } from './kip-akses.service';
 import { KipFileService } from './kip-file.service';
 import { KipService } from './kip.service';
@@ -11,6 +12,10 @@ function buatService(overrides: {
   findUniqueBaris?: unknown;
   findUniqueGps?: unknown;
   update?: jest.Mock;
+  kipFindUnique?: unknown;
+  kipCreate?: jest.Mock;
+  kipUpdate?: jest.Mock;
+  kipDelete?: jest.Mock;
 }) {
   const update =
     overrides.update ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
@@ -22,14 +27,30 @@ function buatService(overrides: {
     kipLokasiGps: {
       findUnique: jest.fn().mockResolvedValue(overrides.findUniqueGps ?? null),
     },
+    kip: {
+      findUnique: jest.fn().mockResolvedValue(overrides.kipFindUnique ?? null),
+      create: overrides.kipCreate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data })),
+      update: overrides.kipUpdate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data })),
+      delete: overrides.kipDelete ?? jest.fn().mockResolvedValue(undefined),
+    },
   } as unknown as PrismaService;
   const file = {
     simpanFoto: jest.fn().mockReturnValue('kip/1/3/bukti.jpg'),
   } as unknown as KipFileService;
-  const service = new KipService(prisma, new KipAksesService(), file);
+  const auditLog = { catat: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogService;
+  const service = new KipService(prisma, new KipAksesService(), file, auditLog);
 
-  return { service, prisma, file, update };
+  return { service, prisma, file, update, auditLog };
 }
+
+const DTO_KIP = {
+  noKip: 'KIP-001',
+  jenisPeralatan: 'Stop Kontak',
+  departemen: 'HCGA',
+  tahun: 2026,
+  lokasi: 'Office' as any,
+  parameterChecklist: ['Kondisi baik'],
+};
 
 function baris(overrides: Partial<{ status: StatusChecklistKip; parameterChecklist: string[]; lokasi: string }> = {}) {
   return {
@@ -120,8 +141,8 @@ describe('KipService.ceklis', () => {
     ).rejects.toThrow('Ceklis hanya bisa dilakukan di lokasi peralatan');
   });
 
-  it('berhasil ceklis kalau berada persis di titik GPS acuan', async () => {
-    const { service, file, update } = buatService({
+  it('berhasil ceklis kalau berada persis di titik GPS acuan, dan mencatat audit log KIP_CEKLIS', async () => {
+    const { service, file, update, auditLog } = buatService({
       findUniqueBaris: baris(),
       findUniqueGps: { lokasi: 'Office', latitude: -6.2, longitude: 106.8 },
     });
@@ -145,6 +166,9 @@ describe('KipService.ceklis', () => {
       }),
     });
     expect(hasil).toMatchObject({ status: StatusChecklistKip.SUDAH });
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: 9, aksi: 'KIP_CEKLIS', entitas: 'Kip', entitasId: 1 }),
+    );
   });
 
   it('berhasil ceklis tanpa validasi GPS kalau lokasi belum punya titik acuan', async () => {
@@ -156,5 +180,67 @@ describe('KipService.ceklis', () => {
     await service.ceklis(UserRole.ELEKTRIK, 9, 1, 3, FOTO, [true, true]);
 
     expect(file.simpanFoto).toHaveBeenCalled();
+  });
+});
+
+describe('KipService.buatKip', () => {
+  it('mencatat audit log KIP_DIBUAT setelah berhasil dibuat', async () => {
+    const { service, auditLog } = buatService({});
+
+    const hasil = await service.buatKip(DTO_KIP, 9);
+
+    expect(hasil).toMatchObject({ noKip: 'KIP-001' });
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: 9, aksi: 'KIP_DIBUAT', entitas: 'Kip' }),
+    );
+  });
+});
+
+describe('KipService.ubahKip', () => {
+  it('melempar NotFoundException kalau KIP tidak ada', async () => {
+    const { service } = buatService({ kipFindUnique: null });
+
+    await expect(service.ubahKip(1, DTO_KIP, 9)).rejects.toThrow(NotFoundException);
+  });
+
+  it('mencatat audit log KIP_DIUBAH dengan data sebelum & sesudah', async () => {
+    const { service, auditLog } = buatService({
+      kipFindUnique: { id: 1, noKip: 'LAMA', jenisPeralatan: 'AC', lokasi: 'Office' },
+    });
+
+    await service.ubahKip(1, DTO_KIP, 9);
+
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: 9,
+        aksi: 'KIP_DIUBAH',
+        entitas: 'Kip',
+        entitasId: 1,
+        detail: expect.objectContaining({
+          sebelum: expect.objectContaining({ noKip: 'LAMA' }),
+          sesudah: expect.objectContaining({ noKip: 'KIP-001' }),
+        }),
+      }),
+    );
+  });
+});
+
+describe('KipService.hapusKip', () => {
+  it('melempar NotFoundException kalau KIP tidak ada', async () => {
+    const { service } = buatService({ kipFindUnique: null });
+
+    await expect(service.hapusKip(1, 9)).rejects.toThrow(NotFoundException);
+  });
+
+  it('mencatat audit log KIP_DIHAPUS setelah berhasil dihapus', async () => {
+    const { service, auditLog } = buatService({
+      kipFindUnique: { id: 1, noKip: 'KIP-001', jenisPeralatan: 'AC', lokasi: 'Office' },
+    });
+
+    await service.hapusKip(1, 9);
+
+    expect(auditLog.catat).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: 9, aksi: 'KIP_DIHAPUS', entitas: 'Kip', entitasId: 1 }),
+    );
   });
 });
