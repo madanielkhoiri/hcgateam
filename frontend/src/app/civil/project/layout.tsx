@@ -48,7 +48,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { Suspense, type ReactNode, useEffect, useState } from "react";
 import {
   ACCESS_KEYS,
   clearSession,
@@ -162,6 +162,14 @@ type ProjectLayoutProps = {
 };
 
 export default function CivilProjectLayout({ children }: ProjectLayoutProps) {
+  return (
+    <Suspense fallback={<main className={styles.loading}>Memuat modul Project...</main>}>
+      <CivilProjectLayoutInner>{children}</CivilProjectLayoutInner>
+    </Suspense>
+  );
+}
+
+function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();

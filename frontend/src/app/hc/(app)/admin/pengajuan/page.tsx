@@ -169,7 +169,7 @@ export default function HalamanPengajuanAdmin() {
  );
  };
 
- const headerJson = () => {
+ const headerJson = (): Record<string, string> => {
  const token = ambilToken();
 
  if (!token) {
