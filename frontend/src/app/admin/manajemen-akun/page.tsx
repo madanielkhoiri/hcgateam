@@ -4,6 +4,7 @@ import {
   Database,
   Eye,
   KeyRound,
+  LogOut,
   Pencil,
   Plus,
   Search,
@@ -499,6 +500,27 @@ export default function AccountManagementPage() {
     }
   }
 
+  async function cabutSesi(user: ManagedUser) {
+    if (
+      !window.confirm(
+        `Cabut semua sesi login akun ${user.name}? Semua perangkat yang sedang login akan otomatis diminta login ulang.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setMessage('');
+      setError('');
+      const hasil = await request(`users/${user.id}/cabut-sesi`, { method: 'POST' });
+      setMessage(hasil.message ?? `Sesi akun ${user.name} berhasil dicabut`);
+    } catch (cabutError) {
+      setError(
+        cabutError instanceof Error ? cabutError.message : 'Sesi gagal dicabut',
+      );
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.heading}>
@@ -664,6 +686,14 @@ export default function AccountManagementPage() {
                           onClick={() => openAccess(user)}
                         >
                           <KeyRound size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.editButton}
+                          title="Cabut semua sesi login (paksa logout dari semua perangkat)"
+                          onClick={() => void cabutSesi(user)}
+                        >
+                          <LogOut size={16} />
                         </button>
                         <button
                           type="button"
