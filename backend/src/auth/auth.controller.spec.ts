@@ -5,16 +5,20 @@ function buatRequest(userId: number) {
   return { user: { id: userId, username: 'budi', role: 'ADMIN' } } as any;
 }
 
+function buatRequestLogin(ip = '203.0.113.9') {
+  return { ip, ips: [] } as any;
+}
+
 describe('AuthController', () => {
-  it('login meneruskan body ke AuthService.login', async () => {
+  it('login meneruskan body & IP pengirim ke AuthService.login', async () => {
     const login = jest.fn().mockResolvedValue({ accessToken: 'token-palsu' });
     const authService = { login } as unknown as AuthService;
     const controller = new AuthController(authService);
     const dto = { username: 'budi', password: 'rahasia123' };
 
-    const hasil = await controller.login(dto as any);
+    const hasil = await controller.login(dto as any, buatRequestLogin());
 
-    expect(login).toHaveBeenCalledWith(dto);
+    expect(login).toHaveBeenCalledWith(dto, '203.0.113.9');
     expect(hasil).toEqual({ accessToken: 'token-palsu' });
   });
 

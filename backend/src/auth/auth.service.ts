@@ -11,6 +11,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -20,22 +21,38 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   // ==================================================
   // LOGIN
   // ==================================================
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, alamatIp?: string) {
     const identifier = loginDto.username.trim();
 
     const user = await this.usersService.findByIdentifier(identifier);
 
     if (!user) {
+      await this.auditLog.catat({
+        aksi: 'LOGIN_GAGAL',
+        entitas: 'Auth',
+        alamatIp,
+        detail: { username: identifier, alasan: 'Akun tidak ditemukan' },
+      });
       throw new UnauthorizedException('Username / NRP / Email atau password salah');
     }
 
     if (!user.isActive) {
+      await this.auditLog.catat({
+        actorId: user.id,
+        actorUsername: user.username,
+        actorName: user.name,
+        aksi: 'LOGIN_GAGAL',
+        entitas: 'Auth',
+        alamatIp,
+        detail: { username: identifier, alasan: 'Akun tidak aktif' },
+      });
       throw new UnauthorizedException('Akun tidak aktif');
     }
 
@@ -45,8 +62,26 @@ export class AuthService {
     );
 
     if (!passwordValid) {
+      await this.auditLog.catat({
+        actorId: user.id,
+        actorUsername: user.username,
+        actorName: user.name,
+        aksi: 'LOGIN_GAGAL',
+        entitas: 'Auth',
+        alamatIp,
+        detail: { username: identifier, alasan: 'Password salah' },
+      });
       throw new UnauthorizedException('Username / NRP / Email atau password salah');
     }
+
+    await this.auditLog.catat({
+      actorId: user.id,
+      actorUsername: user.username,
+      actorName: user.name,
+      aksi: 'LOGIN_BERHASIL',
+      entitas: 'Auth',
+      alamatIp,
+    });
 
     const payload = {
       sub: user.id,

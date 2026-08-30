@@ -39,8 +39,9 @@ export class AuthController {
   // Percobaan login dibatasi ketat per (IP + username) — lihat HcgaThrottlerGuard.
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Req() request: Request) {
+    const ip = (request.ips?.length ? request.ips[0] : request.ip) ?? undefined;
+    return this.authService.login(loginDto, ip);
   }
 
   // ==================================================

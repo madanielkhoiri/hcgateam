@@ -2810,3 +2810,32 @@ model LaporanTps3r {
 // ==================================================
 // SELESAI: TPS 3R
 // ==================================================
+
+// ==================================================
+// AUDIT LOG — jejak siapa-ubah-apa-kapan.
+// Sengaja TIDAK pakai relasi foreign key ke User: actorUsername/actorName
+// disimpan sebagai salinan pada saat kejadian, supaya catatan tetap utuh
+// & terbaca walau akun pelakunya sudah dihapus kemudian.
+// ==================================================
+
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  actorId       Int?     @map("actor_id")
+  actorUsername String?  @map("actor_username")
+  actorName     String?  @map("actor_name")
+  aksi          String
+  entitas       String
+  entitasId     Int?     @map("entitas_id")
+  detail        Json?
+  alamatIp      String?  @map("alamat_ip")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([entitas, entitasId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+// ==================================================
+// SELESAI: AUDIT LOG
+// ==================================================
