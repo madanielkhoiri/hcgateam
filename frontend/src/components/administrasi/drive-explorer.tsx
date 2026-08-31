@@ -30,6 +30,7 @@ import {
   type ScopeDrive,
 } from '@/lib/drive-api';
 import { bolehKelolaPostingan } from '@/lib/postingan-api';
+import { compressImage } from '@/lib/compress-image';
 import styles from '@/app/hc/ir/ir.module.css';
 
 function formatTanggal(iso: string) {
@@ -187,12 +188,16 @@ export function DriveExplorer({ scope }: { scope: ScopeDrive }) {
             <input
               type="file"
               hidden
-              onChange={(event) => {
+              onChange={async (event) => {
                 const file = event.target.files?.[0];
-                if (file) {
-                  setFileBaru(file);
-                }
                 event.target.value = '';
+                if (!file) return;
+
+                if (file.type.startsWith('image/')) {
+                  setFileBaru(await compressImage(file).catch(() => file));
+                  return;
+                }
+                setFileBaru(file);
               }}
             />
           </label>
