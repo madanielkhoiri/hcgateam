@@ -278,6 +278,20 @@ export default function HalamanDashboard() {
 
 const apiUrl = process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3011";
 
+function ambilToken() {
+ if (typeof window === "undefined") return "";
+
+ return (
+ localStorage.getItem("hcga_access_token") ||
+ sessionStorage.getItem("hcga_access_token") ||
+ ""
+ );
+}
+
+function headerAuth(): Record<string, string> {
+ return { Authorization: `Bearer ${ambilToken()}` };
+}
+
 
 
 
@@ -488,8 +502,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setSedangRefresh(true);
  try {
  const [responseDeklarasi, responseSaldo] = await Promise.all([
- fetch(`${apiUrl}/deklarasi/pengguna/${idPengguna}`),
- fetch(`${apiUrl}/saldo/pengguna/${idPengguna}/aktif`),
+ fetch(`${apiUrl}/deklarasi/pengguna/${idPengguna}`, { headers: headerAuth() }),
+ fetch(`${apiUrl}/saldo/pengguna/${idPengguna}/aktif`, { headers: headerAuth() }),
  ]);
  if (!responseDeklarasi.ok) {
  throw new Error("Gagal mengambil data deklarasi.");
@@ -509,7 +523,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  const idDeklarasi = Number(saldo.id_deklarasi_aktif);
  try {
  const responseNota = await fetch(
- `${apiUrl}/nota/deklarasi/${idDeklarasi}`
+ `${apiUrl}/nota/deklarasi/${idDeklarasi}`,
+ { headers: headerAuth() }
  );
  if (responseNota.ok) {
  const dataNota: DataNota[] = await responseNota.json();
@@ -729,6 +744,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  method: "POST",
  headers: {
  "Content-Type": "application/json",
+ ...headerAuth(),
  },
  body: JSON.stringify({
  nominal,
@@ -883,6 +899,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
  {
  method: "POST",
+ headers: headerAuth(),
  body: formData,
  }
  );
@@ -1049,6 +1066,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
  {
  method: "POST",
+ headers: headerAuth(),
  body: formData,
  }
  );
@@ -1163,6 +1181,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
  {
  method: "POST",
+ headers: headerAuth(),
  body: formData,
  }
  );
@@ -1282,6 +1301,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  `${apiUrl}/saldo/${saldoBuktiDipilih.id}/upload-bukti-pengembalian`,
  {
  method: "POST",
+ headers: headerAuth(),
  body: formData,
  }
  );
@@ -1371,6 +1391,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  `${apiUrl}/deklarasi/${saldo.id_deklarasi_aktif}/ajukan`,
  {
  method: "PATCH",
+ headers: headerAuth(),
  }
  );
  const teksResponse = await response.text();

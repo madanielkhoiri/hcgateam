@@ -35,6 +35,16 @@ type DataPenggunaTersimpan = {
 
 const apiUrl = process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3011";
 
+function ambilToken() {
+ if (typeof window === "undefined") return "";
+
+ return (
+ localStorage.getItem("hcga_access_token") ||
+ sessionStorage.getItem("hcga_access_token") ||
+ ""
+ );
+}
+
 function normalisasiAngka(nilai: number | string | null | undefined) {
  const angka = Number(nilai || 0);
  return Number.isFinite(angka) ? angka : 0;
@@ -104,7 +114,11 @@ export default function DatabaseSettlementPage() {
  setPesanError("");
 
  try {
- const response = await fetch(`${apiUrl}/database-settlement/pengguna/${idPengguna}`);
+ const response = await fetch(`${apiUrl}/database-settlement/pengguna/${idPengguna}`, {
+ headers: {
+ Authorization: `Bearer ${ambilToken()}`,
+ },
+ });
 
  if (!response.ok) {
  throw new Error("Gagal mengambil database settlement.");

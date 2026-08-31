@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Database, MessageSquareText, Scale, Video } from 'lucide-react';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import { isIrPengelola } from '@/lib/ir-api';
 import styles from './ir.module.css';
 
@@ -37,7 +37,7 @@ const kartuIr = [
 ];
 
 export default function PortalIrPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = isIrPengelola(user);
 
   return (

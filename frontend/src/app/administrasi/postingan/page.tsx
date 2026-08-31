@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import {
   bolehKelolaPostingan,
   postinganApi,
@@ -41,7 +41,7 @@ function formatTanggal(iso: string) {
 }
 
 export default function PostinganPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = bolehKelolaPostingan(user);
 
   const [daftar, setDaftar] = useState<Postingan[]>([]);

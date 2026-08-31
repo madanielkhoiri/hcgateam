@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import {
   irApi,
   isIrPengelola,
@@ -56,7 +56,7 @@ function formatTanggal(iso: string) {
 }
 
 export default function DokumenIrPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = isIrPengelola(user);
 
   const [tab, setTab] = useState<KategoriDokumenIr | 'SEMUA'>('SEMUA');
