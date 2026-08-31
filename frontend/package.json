@@ -50,7 +50,7 @@
     "jsdom": "^30.0.1",
     "patch-package": "^8.0.1",
     "prettier": "^3.9.5",
-    "typescript": "^5",
+    "typescript": "^7",
     "vitest": "^4.1.11"
   }
 }
