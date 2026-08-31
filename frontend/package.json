@@ -10,6 +10,8 @@
     "lint": "eslint",
     "typecheck:ci": "node scripts/check-typescript.mjs",
     "test:e2e": "playwright test",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -36,13 +38,19 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "jsdom": "^30.0.1",
     "patch-package": "^8.0.1",
     "prettier": "^3.9.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }
