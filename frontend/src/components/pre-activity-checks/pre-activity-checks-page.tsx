@@ -42,7 +42,7 @@ type Creator = {
 
 type PreActivityCheck = {
   id: number;
-  workName: string;
+  workNames: string[];
   activityDate: string;
   location: string;
   heavyEquipmentName: string | null;
@@ -178,6 +178,15 @@ function getToken(): string {
   );
 }
 
+/** Lebih dari satu pekerjaan ditampilkan bernomor: "1) A  2) B". Satu pekerjaan tampil apa adanya. */
+function formatWorkNames(names: string[]): string {
+  if (names.length <= 1) {
+    return names[0] ?? "-";
+  }
+
+  return names.map((name, index) => `${index + 1}) ${name}`).join("  ");
+}
+
 function fileUrl(path: string): string {
   if (!path) {
     return "";
@@ -200,7 +209,12 @@ function normalizePreActivityCheck(
   return {
     id: Number(raw.id ?? 0),
 
-    workName: String(raw.job_name ?? raw.workName ?? ""),
+    workNames: Array.isArray(raw.workNames)
+      ? raw.workNames.map(String)
+      : String(raw.job_name ?? "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
 
     activityDate: String(raw.activityDate ?? raw.activity_date ?? ""),
 
@@ -461,7 +475,7 @@ export default function PreActivityChecksPage() {
   function openEdit(row: PreActivityCheck) {
     setEditingId(row.id);
     setForm({
-      workName: row.workName,
+      workName: row.workNames.join(", "),
       activityDate: row.activityDate.slice(0, 10),
       location: row.location,
       heavyEquipmentName: row.heavyEquipmentName ?? "",
@@ -684,6 +698,15 @@ export default function PreActivityChecksPage() {
     setMessage("");
 
     try {
+      const workNames = form.workName
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (!workNames.length) {
+        throw new Error("Nama pekerjaan wajib diisi.");
+      }
+
       const implementationTeam = form.implementationTeam
         .split(",")
         .map((item) => item.trim())
@@ -694,7 +717,7 @@ export default function PreActivityChecksPage() {
       }
 
       const payload = {
-        workName: form.workName,
+        workNames,
         activityDate: form.activityDate,
         location: form.location,
         heavyEquipmentName: form.heavyEquipmentName,
@@ -975,7 +998,7 @@ export default function PreActivityChecksPage() {
                     <td>{(page - 1) * pageSize + index + 1}</td>
                     <td>{formatDate(row.activityDate)}</td>
                     <td>
-                      <strong>{row.workName}</strong>
+                      <strong>{formatWorkNames(row.workNames)}</strong>
                     </td>
                     <td>
                       <span className={styles.inlineInfo}>
@@ -1116,6 +1139,7 @@ export default function PreActivityChecksPage() {
                       onChange={(event) =>
                         updateField("workName", event.target.value)
                       }
+                      placeholder="Pisahkan dengan koma bila lebih dari satu, mis. Pembangunan, Pengecatan"
                     />
                   </label>
 
@@ -1483,7 +1507,7 @@ export default function PreActivityChecksPage() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Detail Pre-Activity Check</h2>
-                <p>{selected.workName}</p>
+                <p>{formatWorkNames(selected.workNames)}</p>
               </div>
 
               <button
@@ -1578,7 +1602,8 @@ export default function PreActivityChecksPage() {
 
             <h2>Hapus Pre-Activity Check?</h2>
             <p>
-              Data <strong>{deleteTarget.workName}</strong> dan dokumentasinya
+              Data <strong>{formatWorkNames(deleteTarget.workNames)}</strong> dan
+              dokumentasinya
               akan dihapus.
             </p>
 
