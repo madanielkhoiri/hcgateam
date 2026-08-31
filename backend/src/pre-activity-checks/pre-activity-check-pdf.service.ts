@@ -2,9 +2,13 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument = require('pdfkit');
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, normalize } from 'node:path';
+import { siapkanGambarUntukPdfKit } from '../common/pdf-image.util';
 import { PreActivityChecksService } from './pre-activity-checks.service';
 
 type PdfData = Awaited<ReturnType<PreActivityChecksService['findOne']>>;
+
+/** Gambar siap-pakai untuk doc.image(), kunci = path mentah asli dari data. */
+type GambarSiap = Map<string, string | Buffer>;
 
 @Injectable()
 export class PreActivityCheckPdfService {
@@ -12,6 +16,7 @@ export class PreActivityCheckPdfService {
 
   async generate(id: number): Promise<Buffer> {
     const data = await this.service.findOne(id);
+    const gambarSiap = await this.siapkanSemuaGambar(data);
 
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
@@ -31,20 +36,76 @@ export class PreActivityCheckPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      this.drawFirstPage(doc, data);
+      this.drawFirstPage(doc, data, gambarSiap);
 
       doc.addPage({
         size: 'A4',
         margin: 0,
       });
 
-      this.drawAttachmentPage(doc, data);
+      this.drawAttachmentPage(doc, data, gambarSiap);
 
       doc.end();
     });
   }
 
-  private drawFirstPage(doc: PDFKit.PDFDocument, data: PdfData) {
+  /**
+   * Resolve & convert semua gambar (tanda tangan + lampiran) sebelum PDF
+   * mulai digambar. PDFKit hanya baca JPEG/PNG — foto WebP hasil kompresi
+   * frontend dikonversi dulu ke buffer PNG lewat siapkanGambarUntukPdfKit.
+   */
+  private async siapkanSemuaGambar(data: PdfData): Promise<GambarSiap> {
+    const rawPaths = [
+      data.executor_signature,
+      data.supervisor_signature,
+      data.jsa_image,
+      data.checklist_image,
+      ...this.parseStoredPaths(data.socialization_photo),
+    ].filter((path): path is string => Boolean(path?.trim()));
+
+    const gambarSiap: GambarSiap = new Map();
+
+    for (const rawPath of rawPaths) {
+      const absolutePath = this.resolveUploadPath(rawPath);
+
+      if (!absolutePath) {
+        continue;
+      }
+
+      try {
+        gambarSiap.set(rawPath, await siapkanGambarUntukPdfKit(absolutePath));
+      } catch {
+        // Gambar dilewati — kolom akan tampil "gambar tidak ditemukan".
+      }
+    }
+
+    return gambarSiap;
+  }
+
+  /** socialization_photo (dan field sejenis) kadang berupa JSON array path. */
+  private parseStoredPaths(rawPaths: string | null): string[] {
+    if (!rawPaths?.trim()) {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(rawPaths);
+
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      // Path biasa, lanjutkan di bawah.
+    }
+
+    return [rawPaths.trim()];
+  }
+
+  private drawFirstPage(
+    doc: PDFKit.PDFDocument,
+    data: PdfData,
+    gambarSiap: GambarSiap,
+  ) {
     this.drawPageBorder(doc);
     this.drawHeader(doc);
     this.drawIdentity(doc, data);
@@ -58,7 +119,7 @@ export class PreActivityCheckPdfService {
     this.drawRiskSection(doc, data);
     this.drawEquipmentSection(doc, data);
     this.drawDocumentSection(doc, data);
-    this.drawApprovalSection(doc, data);
+    this.drawApprovalSection(doc, data, gambarSiap);
   }
 
   private drawPageBorder(doc: PDFKit.PDFDocument) {
@@ -486,7 +547,11 @@ export class PreActivityCheckPdfService {
     }
   }
 
-  private drawApprovalSection(doc: PDFKit.PDFDocument, data: PdfData) {
+  private drawApprovalSection(
+    doc: PDFKit.PDFDocument,
+    data: PdfData,
+    gambarSiap: GambarSiap,
+  ) {
     const x = 19;
     const width = 557;
 
@@ -531,6 +596,7 @@ export class PreActivityCheckPdfService {
       y,
       width,
       data.executor_signature,
+      gambarSiap,
     );
 
     y = this.drawApprovalNameRow(
@@ -542,7 +608,14 @@ export class PreActivityCheckPdfService {
       data.supervisorName || '-',
     );
 
-    this.drawApprovalSignatureRow(doc, x, y, width, data.supervisor_signature);
+    this.drawApprovalSignatureRow(
+      doc,
+      x,
+      y,
+      width,
+      data.supervisor_signature,
+      gambarSiap,
+    );
   }
 
   private drawApprovalNameRow(
@@ -599,6 +672,7 @@ export class PreActivityCheckPdfService {
     y: number,
     width: number,
     signaturePath: string | null,
+    gambarSiap: GambarSiap,
   ) {
     const height = 35;
     const labelWidth = 145;
@@ -634,7 +708,15 @@ export class PreActivityCheckPdfService {
       align: 'center',
     });
 
-    this.drawSignature(doc, signaturePath, valueX, y, valueWidth, height);
+    this.drawSignature(
+      doc,
+      signaturePath,
+      valueX,
+      y,
+      valueWidth,
+      height,
+      gambarSiap,
+    );
 
     return y + height;
   }
@@ -851,15 +933,16 @@ export class PreActivityCheckPdfService {
     y: number,
     width: number,
     height: number,
+    gambarSiap: GambarSiap,
   ) {
-    const imagePath = this.resolveUploadPath(relativePath);
+    const gambar = relativePath ? gambarSiap.get(relativePath) : undefined;
 
-    if (!imagePath) {
+    if (!gambar) {
       return;
     }
 
     try {
-      doc.image(imagePath, x + 9, y + 3, {
+      doc.image(gambar, x + 9, y + 3, {
         fit: [Math.min(width - 18, 130), height - 6],
       });
     } catch {
@@ -867,7 +950,11 @@ export class PreActivityCheckPdfService {
     }
   }
 
-  private drawAttachmentPage(doc: PDFKit.PDFDocument, data: PdfData) {
+  private drawAttachmentPage(
+    doc: PDFKit.PDFDocument,
+    data: PdfData,
+    gambarSiap: GambarSiap,
+  ) {
     this.drawPageBorder(doc);
 
     const headerX = 20;
@@ -891,58 +978,179 @@ export class PreActivityCheckPdfService {
         align: 'center',
       });
 
+    type Kategori =
+      | { title: string; kind: 'single'; path: string }
+      | { title: string; kind: 'grid'; paths: string[] };
+
+    const kategoriTerisi: Kategori[] = [];
+
+    if (data.jsa_image && gambarSiap.has(data.jsa_image)) {
+      kategoriTerisi.push({ title: 'JSA', kind: 'single', path: data.jsa_image });
+    }
+
+    if (data.checklist_image && gambarSiap.has(data.checklist_image)) {
+      kategoriTerisi.push({
+        title: 'Ceklis',
+        kind: 'single',
+        path: data.checklist_image,
+      });
+    }
+
+    const fotoBriefing = this.parseStoredPaths(data.socialization_photo).filter(
+      (item) => gambarSiap.has(item),
+    );
+
+    if (fotoBriefing.length) {
+      kategoriTerisi.push({
+        title: 'Briefing Pekerjaan',
+        kind: 'grid',
+        paths: fotoBriefing,
+      });
+    }
+
+    if (!kategoriTerisi.length) {
+      doc
+        .fillColor('#777777')
+        .font('Helvetica')
+        .fontSize(10)
+        .text('Belum ada foto lampiran.', 20, 400, {
+          width: 555,
+          align: 'center',
+        });
+
+      return;
+    }
+
     /*
-     * Ketiga kotak memiliki ukuran identik.
+     * Area kosong (kategori tanpa foto) tidak ikut digambar sama sekali —
+     * kotak yang tersisa membesar menyesuaikan: 1 kategori memenuhi
+     * seluruh area, 2 berdampingan, 3 memakai tata letak lama (2 atas + 1
+     * bawah tengah) supaya ukurannya tetap proporsional dengan halaman A4.
      */
-    const boxWidth = 265;
-    const boxHeight = 330;
+    const areaX = 20;
+    const areaTop = 82;
+    const areaBottom = 812;
+    const areaWidth = 555;
     const gap = 9;
 
-    const leftX = 28;
-    const rightX = leftX + boxWidth + gap;
-    const centerX = (595.28 - boxWidth) / 2;
+    if (kategoriTerisi.length === 1) {
+      this.drawKategoriLampiran(
+        doc,
+        kategoriTerisi[0],
+        gambarSiap,
+        areaX,
+        areaTop,
+        areaWidth,
+        areaBottom - areaTop,
+      );
+    } else if (kategoriTerisi.length === 2) {
+      const boxWidth = (areaWidth - gap) / 2;
+      const boxHeight = areaBottom - areaTop;
 
-    const topY = 82;
-    const bottomY = 425;
+      this.drawKategoriLampiran(
+        doc,
+        kategoriTerisi[0],
+        gambarSiap,
+        areaX,
+        areaTop,
+        boxWidth,
+        boxHeight,
+      );
 
-    this.drawAttachmentBox(
-      doc,
-      'Gambar JSA',
-      data.jsa_image,
-      leftX,
-      topY,
-      boxWidth,
-      boxHeight,
-    );
+      this.drawKategoriLampiran(
+        doc,
+        kategoriTerisi[1],
+        gambarSiap,
+        areaX + boxWidth + gap,
+        areaTop,
+        boxWidth,
+        boxHeight,
+      );
+    } else {
+      const boxWidth = 265;
+      const boxHeight = 330;
+      const leftX = 28;
+      const rightX = leftX + boxWidth + gap;
+      const centerX = (595.28 - boxWidth) / 2;
+      const bottomY = 425;
 
-    this.drawAttachmentBox(
-      doc,
-      'Gambar Ceklis',
-      data.checklist_image,
-      rightX,
-      topY,
-      boxWidth,
-      boxHeight,
-    );
+      this.drawKategoriLampiran(
+        doc,
+        kategoriTerisi[0],
+        gambarSiap,
+        leftX,
+        areaTop,
+        boxWidth,
+        boxHeight,
+      );
+
+      this.drawKategoriLampiran(
+        doc,
+        kategoriTerisi[1],
+        gambarSiap,
+        rightX,
+        areaTop,
+        boxWidth,
+        boxHeight,
+      );
+
+      this.drawKategoriLampiran(
+        doc,
+        kategoriTerisi[2],
+        gambarSiap,
+        centerX,
+        bottomY,
+        boxWidth,
+        boxHeight,
+      );
+    }
+  }
+
+  private drawKategoriLampiran(
+    doc: PDFKit.PDFDocument,
+    kategori:
+      | { title: string; kind: 'single'; path: string }
+      | { title: string; kind: 'grid'; paths: string[] },
+    gambarSiap: GambarSiap,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) {
+    if (kategori.kind === 'single') {
+      this.drawAttachmentBox(
+        doc,
+        kategori.title,
+        kategori.path,
+        x,
+        y,
+        width,
+        height,
+        gambarSiap,
+      );
+      return;
+    }
 
     this.drawAttachmentGrid(
       doc,
-      'Foto Briefing Pekerjaan',
-      data.socialization_photo,
-      centerX,
-      bottomY,
-      boxWidth,
-      boxHeight,
+      kategori.title,
+      kategori.paths,
+      x,
+      y,
+      width,
+      height,
+      gambarSiap,
     );
   }
   private drawAttachmentGrid(
     doc: PDFKit.PDFDocument,
     title: string,
-    rawPaths: string | null,
+    paths: string[],
     x: number,
     y: number,
     width: number,
     height: number,
+    gambarSiap: GambarSiap,
   ) {
     const titleHeight = 25;
     const padding = 7;
@@ -977,41 +1185,7 @@ export class PreActivityCheckPdfService {
       .stroke()
       .restore();
 
-    let storedPaths: string[] = [];
-
-    if (rawPaths?.trim()) {
-      try {
-        const parsed: unknown = JSON.parse(rawPaths);
-
-        if (Array.isArray(parsed)) {
-          storedPaths = parsed
-            .map((item) => String(item).trim())
-            .filter(Boolean);
-        } else {
-          storedPaths = [rawPaths.trim()];
-        }
-      } catch {
-        storedPaths = [rawPaths.trim()];
-      }
-    }
-
-    const imagePaths = storedPaths
-      .slice(0, 5)
-      .map((item) => this.resolveUploadPath(item))
-      .filter((item): item is string => Boolean(item));
-
-    if (!imagePaths.length) {
-      doc
-        .fillColor('#777777')
-        .font('Helvetica')
-        .fontSize(8.5)
-        .text('Gambar tidak ditemukan', innerX, innerY + innerHeight / 2 - 4, {
-          width: innerWidth,
-          align: 'center',
-        });
-
-      return;
-    }
+    const imagePaths = paths.slice(0, 5);
 
     const layouts: Array<{
       x: number;
@@ -1105,6 +1279,7 @@ export class PreActivityCheckPdfService {
 
     imagePaths.forEach((imagePath, index) => {
       const layout = layouts[index];
+      const gambar = gambarSiap.get(imagePath);
 
       doc
         .save()
@@ -1114,8 +1289,12 @@ export class PreActivityCheckPdfService {
         .stroke()
         .restore();
 
+      if (!gambar) {
+        return;
+      }
+
       try {
-        doc.image(imagePath, layout.x + 2, layout.y + 2, {
+        doc.image(gambar, layout.x + 2, layout.y + 2, {
           fit: [layout.width - 4, layout.height - 4],
           align: 'center',
           valign: 'center',
@@ -1145,7 +1324,14 @@ export class PreActivityCheckPdfService {
     y: number,
     width: number,
     height: number,
+    gambarSiap: GambarSiap,
   ) {
+    const gambar = path ? gambarSiap.get(path) : undefined;
+
+    if (!gambar) {
+      return;
+    }
+
     const titleHeight = 25;
 
     doc
@@ -1177,23 +1363,8 @@ export class PreActivityCheckPdfService {
       .stroke()
       .restore();
 
-    const imagePath = this.resolveUploadPath(path);
-
-    if (!imagePath) {
-      doc
-        .fillColor('#777777')
-        .font('Helvetica')
-        .fontSize(8.5)
-        .text('Gambar tidak ditemukan', innerX, innerY + innerHeight / 2 - 4, {
-          width: innerWidth,
-          align: 'center',
-        });
-
-      return;
-    }
-
     try {
-      doc.image(imagePath, innerX + 7, innerY + 7, {
+      doc.image(gambar, innerX + 7, innerY + 7, {
         fit: [innerWidth - 14, innerHeight - 14],
       });
     } catch {
