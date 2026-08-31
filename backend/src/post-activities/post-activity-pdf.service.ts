@@ -3,9 +3,11 @@ import PDFDocument = require('pdfkit');
 import QRCode = require('qrcode');
 import { existsSync } from 'node:fs';
 import { basename, join, normalize } from 'node:path';
+import { siapkanGambarUntukPdfKit } from '../common/pdf-image.util';
 import { PostActivitiesService } from './post-activities.service';
 
 type PostActivityData = Awaited<ReturnType<PostActivitiesService['findOne']>>;
+type GambarSiap = Map<string, string | Buffer>;
 
 @Injectable()
 export class PostActivityPdfService {
@@ -13,6 +15,7 @@ export class PostActivityPdfService {
 
   async generate(id: number): Promise<Buffer> {
     const data = await this.postActivitiesService.findOne(id);
+    const gambarSiap = await this.siapkanGambarFoto(data.photoPaths ?? []);
 
     const qrBuffer = await QRCode.toBuffer(
       [
@@ -48,16 +51,38 @@ export class PostActivityPdfService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      this.drawPage(doc, data, qrBuffer);
+      this.drawPage(doc, data, qrBuffer, gambarSiap);
 
       doc.end();
     });
+  }
+
+  /** PDFKit hanya baca JPEG/PNG — foto WebP hasil kompresi frontend dikonversi dulu. */
+  private async siapkanGambarFoto(paths: string[]): Promise<GambarSiap> {
+    const gambarSiap: GambarSiap = new Map();
+
+    for (const rawPath of paths.slice(0, 5)) {
+      const absolutePath = this.resolveUploadPath(rawPath);
+
+      if (!absolutePath) {
+        continue;
+      }
+
+      try {
+        gambarSiap.set(rawPath, await siapkanGambarUntukPdfKit(absolutePath));
+      } catch {
+        // Gambar dilewati — kartu akan tampil placeholder.
+      }
+    }
+
+    return gambarSiap;
   }
 
   private drawPage(
     doc: PDFKit.PDFDocument,
     data: PostActivityData,
     qrBuffer: Buffer,
+    gambarSiap: GambarSiap,
   ) {
     const pageWidth = 595.28;
     const left = 28;
@@ -69,7 +94,7 @@ export class PostActivityPdfService {
 
     this.drawGeneralInformation(doc, data, left);
     this.drawWorkforce(doc, data, left);
-    this.drawWorkTable(doc, data, left, contentWidth);
+    this.drawWorkTable(doc, data, left, contentWidth, gambarSiap);
     this.drawWeatherTable(doc, data, left, contentWidth);
     this.drawApproval(doc, data, qrBuffer);
 
@@ -220,6 +245,7 @@ export class PostActivityPdfService {
     data: PostActivityData,
     x: number,
     width: number,
+    gambarSiap: GambarSiap,
   ) {
     const y = 222;
     const headerHeight = 23;
@@ -334,8 +360,7 @@ export class PostActivityPdfService {
 
     const visiblePhotos = data.photoPaths
       .slice(0, 5)
-      .map((photoPath) => this.resolveUploadPath(photoPath))
-      .filter((photoPath): photoPath is string => Boolean(photoPath));
+      .filter((photoPath) => gambarSiap.has(photoPath));
 
     const areaX = columns[3] + 4;
     const areaY = y + headerHeight + 4;
@@ -448,7 +473,13 @@ export class PostActivityPdfService {
           .restore();
 
         try {
-          doc.image(photoPath, layout.x + 1.5, layout.y + 1.5, {
+          const gambar = gambarSiap.get(photoPath);
+
+          if (!gambar) {
+            throw new Error('Gambar tidak ditemukan');
+          }
+
+          doc.image(gambar, layout.x + 1.5, layout.y + 1.5, {
             fit: [layout.width - 3, layout.height - 3],
             align: 'center',
             valign: 'center',
