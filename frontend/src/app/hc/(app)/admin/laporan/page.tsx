@@ -301,6 +301,16 @@ export default function HalamanLaporanAdmin() {
  const apiUrl =
  process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3011";
 
+ const ambilToken = () => {
+ if (typeof window === "undefined") return "";
+
+ return (
+ localStorage.getItem("hcga_access_token") ||
+ sessionStorage.getItem("hcga_access_token") ||
+ ""
+ );
+ };
+
  const [daftarDeklarasi, setDaftarDeklarasi] =
  useState<Deklarasi[]>([]);
 
@@ -333,9 +343,15 @@ export default function HalamanLaporanAdmin() {
  responsSaldo,
  responsPengguna,
  ] = await Promise.all([
- fetch(`${apiUrl}/deklarasi/admin/ringkasan`),
- fetch(`${apiUrl}/saldo`),
- fetch(`${apiUrl}/pengguna`),
+ fetch(`${apiUrl}/deklarasi/admin/ringkasan`, {
+ headers: { Authorization: `Bearer ${ambilToken()}` },
+ }),
+ fetch(`${apiUrl}/saldo`, {
+ headers: { Authorization: `Bearer ${ambilToken()}` },
+ }),
+ fetch(`${apiUrl}/pengguna`, {
+ headers: { Authorization: `Bearer ${ambilToken()}` },
+ }),
  ]);
 
  if (!responsDeklarasi.ok) {

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import {
   driveApi,
   urlFileDrive,
@@ -41,7 +41,7 @@ function formatTanggal(iso: string) {
 }
 
 export function DriveExplorer({ scope }: { scope: ScopeDrive }) {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = bolehKelolaPostingan(user);
 
   const [path, setPath] = useState<DriveFolder[]>([]);

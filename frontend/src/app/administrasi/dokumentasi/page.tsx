@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import {
   albumApi,
   urlFotoAlbum,
@@ -40,7 +40,7 @@ function formatTanggal(iso: string) {
 }
 
 export default function DokumentasiPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = bolehKelolaPostingan(user);
 
   const [albumList, setAlbumList] = useState<AlbumRingkas[]>([]);

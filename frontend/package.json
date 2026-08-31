@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck:ci": "node scripts/check-typescript.mjs",
+    "test:e2e": "playwright test",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -34,6 +35,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
