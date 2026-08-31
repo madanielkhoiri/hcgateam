@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument = require('pdfkit');
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { siapkanGambarUntukPdfKit } from '../common/pdf-image.util';
 import { P5mService } from './p5m.service';
+
+type GambarSiap = Map<string, string | Buffer>;
 
 @Injectable()
 export class P5mPdfService {
@@ -66,6 +69,32 @@ export class P5mPdfService {
     ];
 
     return candidates.find((file) => fs.existsSync(file)) ?? null;
+  }
+
+  /** PDFKit hanya baca JPEG/PNG — foto WebP hasil kompresi frontend dikonversi dulu. */
+  private async siapkanGambarDokumentasi(
+    paths: string[],
+  ): Promise<GambarSiap> {
+    const gambarSiap: GambarSiap = new Map();
+
+    for (const storedPath of paths.slice(0, 4)) {
+      const absolutePath = this.resolveImage(storedPath);
+
+      if (!absolutePath) {
+        continue;
+      }
+
+      try {
+        gambarSiap.set(
+          storedPath,
+          await siapkanGambarUntukPdfKit(absolutePath),
+        );
+      } catch {
+        // Gambar dilewati — kartu akan tampil "gambar tidak ditemukan".
+      }
+    }
+
+    return gambarSiap;
   }
 
   private fitText(
@@ -255,6 +284,7 @@ export class P5mPdfService {
     x: number,
     y: number,
     width: number,
+    gambarSiap: GambarSiap,
   ) {
     doc
       .font('Helvetica-Bold')
@@ -314,11 +344,11 @@ export class P5mPdfService {
         },
       );
 
-      const imagePath = this.resolveImage(storedPath);
+      const gambar = gambarSiap.get(storedPath);
 
-      if (imagePath) {
+      if (gambar) {
         try {
-          doc.image(imagePath, cardX + 8, cardY + 30, {
+          doc.image(gambar, cardX + 8, cardY + 30, {
             fit: [cardWidth - 16, imageHeight - 6],
             align: 'center',
             valign: 'center',
@@ -377,6 +407,9 @@ export class P5mPdfService {
   }
   async generate(id: number): Promise<Buffer> {
     const data = await this.p5mService.findOne(id);
+    const gambarSiap = await this.siapkanGambarDokumentasi(
+      data.documentationPaths ?? [],
+    );
 
     const supervisors = this.normalizeSupervisors(data.supervisors);
 
@@ -484,6 +517,7 @@ export class P5mPdfService {
         margin,
         442,
         contentWidth,
+        gambarSiap,
       );
 
       /*
