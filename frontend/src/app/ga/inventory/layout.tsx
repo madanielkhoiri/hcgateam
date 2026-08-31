@@ -262,6 +262,20 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     safety: ACCESS_KEYS.GA_SAFETY_MEETING,
   }[activeSection];
 
+  // Tombol "kembali" harus menuju menu tempat section ini SUNGGUHAN terdaftar,
+  // bukan selalu ke "Pilihan GA" (/ga) — beberapa section di layout Inventory
+  // GA ini "dipinjam" oleh modul lain: Safety Meeting (P5M) terdaftar di menu
+  // Administrasi, dan Pekerjaan (Work Order/Serah Terima) terdaftar di menu
+  // Civil (WO Infras), tidak ada entrinya sama sekali di "Pilihan GA".
+  const backTarget =
+    activeSection === "safety"
+      ? { href: "/administrasi", label: "Kembali ke Administrasi" }
+      : activeSection === "pekerjaan"
+        ? { href: "/civil", label: "Kembali ke Civil" }
+        : dalamCivilElectric
+          ? { href: "/civil", label: "Kembali ke Civil" }
+          : { href: "/ga", label: "Pilihan GA" };
+
   const visibleMenuGroups = menuGroups
     .filter((group) => {
       if (group.section !== activeSection) {
@@ -325,7 +339,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
         : hasAccess(storedUser, requiredAccessKey);
 
     if (!bolehMasuk) {
-      router.replace(dalamCivilElectric ? "/civil" : "/ga");
+      router.replace(backTarget.href);
       return;
     }
 
@@ -411,15 +425,10 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             {!sidebarCollapsed && <span>Dashboard</span>}
           </Link>
 
-          <Link
-            href={dalamCivilElectric ? "/civil" : "/ga"}
-            className={styles.mainNavigationItem}
-          >
+          <Link href={backTarget.href} className={styles.mainNavigationItem}>
             <ChevronLeft size={20} />
 
-            {!sidebarCollapsed && (
-              <span>{dalamCivilElectric ? "Kembali ke Civil" : "Pilihan GA"}</span>
-            )}
+            {!sidebarCollapsed && <span>{backTarget.label}</span>}
           </Link>
 
           {!sidebarCollapsed && (
