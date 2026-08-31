@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { compressImage } from "@/lib/compress-image";
 
 /* <--- halaman admin pengajuan STD/RAB dan approval FA ---> */
 
@@ -485,19 +486,23 @@ export default function HalamanPengajuanAdmin() {
  });
  };
 
- const ubahFile = (
+ const ubahFile = async (
  event: ChangeEvent<HTMLInputElement>,
  field: "file_std" | "file_rab"
  ) => {
- const file = event.target.files?.[0] || null;
+ const fileDipilih = event.target.files?.[0] || null;
 
- if (!file) {
+ if (!fileDipilih) {
  setFormPengajuan((sebelumnya) => ({
  ...sebelumnya,
  [field]: null,
  }));
  return;
  }
+
+ const file = fileDipilih.type.startsWith("image/")
+ ? await compressImage(fileDipilih).catch(() => fileDipilih)
+ : fileDipilih;
 
  if (
  field === "file_std" &&
@@ -887,8 +892,13 @@ export default function HalamanPengajuanAdmin() {
  setFormBuktiTransfer(formBuktiTransferAwal);
  };
 
- const ubahFileBuktiTransfer = (event: ChangeEvent<HTMLInputElement>) => {
- const file = event.target.files?.[0] || null;
+ const ubahFileBuktiTransfer = async (event: ChangeEvent<HTMLInputElement>) => {
+ const fileDipilih = event.target.files?.[0] || null;
+
+ const file =
+ fileDipilih && fileDipilih.type.startsWith("image/")
+ ? await compressImage(fileDipilih).catch(() => fileDipilih)
+ : fileDipilih;
 
  setFormBuktiTransfer((sebelumnya) => ({
  ...sebelumnya,

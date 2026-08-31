@@ -65,6 +65,16 @@ export default function HalamanBuatDeklarasi() {
  const router = useRouter();
  const apiUrl = process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3011";
 
+ const ambilToken = () => {
+ if (typeof window === "undefined") return "";
+
+ return (
+ localStorage.getItem("hcga_access_token") ||
+ sessionStorage.getItem("hcga_access_token") ||
+ ""
+ );
+ };
+
  const [pengguna, setPengguna] = useState<DataPenggunaTersimpan | null>(null);
  const [jenisDeklarasi, setJenisDeklarasi] = useState<
  "PERJALANAN_DINAS" | "UANG_OPERASIONAL"
@@ -118,7 +128,12 @@ export default function HalamanBuatDeklarasi() {
 
  try {
  const response = await fetch(
- `${apiUrl}/saldo/pengguna/${idPengguna}/aktif`
+ `${apiUrl}/saldo/pengguna/${idPengguna}/aktif`,
+ {
+ headers: {
+ Authorization: `Bearer ${ambilToken()}`,
+ },
+ }
  );
 
  if (!response.ok) {
@@ -194,6 +209,7 @@ export default function HalamanBuatDeklarasi() {
  method: "POST",
  headers: {
  "Content-Type": "application/json",
+ Authorization: `Bearer ${ambilToken()}`,
  },
  body: JSON.stringify({
  id_pengguna: pengguna.id,

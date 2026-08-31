@@ -149,7 +149,8 @@ function KontenRiwayatDeklarasi() {
  const ambilRiwayat = async () => {
  try {
  const response = await fetch(
- `${apiUrl}/deklarasi/pengguna/${penggunaTersimpan.id}`
+ `${apiUrl}/deklarasi/pengguna/${penggunaTersimpan.id}`,
+ { headers: { Authorization: `Bearer ${token}` } }
  );
 
  if (!response.ok) {

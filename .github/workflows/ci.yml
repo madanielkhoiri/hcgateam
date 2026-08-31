@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend — typecheck & test
+    name: Backend — typecheck, test & build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,8 +39,19 @@ jobs:
       - name: Run tests
         run: npx jest --ci
 
+      - name: Build (nest build) — pastikan benar-benar bisa dikompilasi untuk produksi
+        run: npx nest build
+
+      - name: Audit dependency vulnerabilities (informational)
+        # Non-blocking: prisma CLI (devDependency, ditarik lagi lewat @prisma/client)
+        # membawa deepmerge-ts versi rentan yang cuma dipakai di alur "prisma migrate/
+        # generate" saat development — tidak pernah dijalankan oleh aplikasi produksi,
+        # jadi sengaja tidak di-fix (fix-nya butuh downgrade prisma, regresi besar).
+        # Step ini tetap jalan supaya kerentanan BARU tetap kelihatan di log CI.
+        run: npm audit --audit-level=high || true
+
   frontend:
-    name: Frontend — typecheck
+    name: Frontend — typecheck & build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -59,3 +70,15 @@ jobs:
 
       - name: Type-check (gagal hanya kalau ada error baru — lihat known-typescript-issues.txt)
         run: npm run typecheck:ci
+
+      - name: Unit test (Vitest)
+        run: npm test
+
+      - name: Build (next build) — tsc --noEmit tidak menangkap semua bug produksi
+        # Contoh nyata: bug useSearchParams() tanpa <Suspense> yang bikin build
+        # produksi gagal total di seluruh /civil/project/**, baru ketahuan saat
+        # next build dijalankan penuh — tsc --noEmit saja lolos mulus.
+        run: npm run build
+
+      - name: Audit dependency vulnerabilities (informational)
+        run: npm audit --audit-level=high || true

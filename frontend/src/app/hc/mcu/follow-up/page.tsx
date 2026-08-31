@@ -36,6 +36,7 @@ import {
   type Klinik,
 } from '@/lib/mcu-api';
 import { useMcu } from '../layout';
+import { compressImage } from '@/lib/compress-image';
 import styles from '../mcu.module.css';
 
 export default function FollowUpPage() {
@@ -694,7 +695,14 @@ export default function FollowUpPage() {
               className={styles.input}
               type="file"
               accept=".pdf,.jpg,.jpeg,.png,.webp"
-              onChange={(event) => setBerkas(event.target.files?.[0] ?? null)}
+              onChange={async (event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (file && file.type.startsWith('image/')) {
+                  setBerkas(await compressImage(file).catch(() => file));
+                  return;
+                }
+                setBerkas(file);
+              }}
             />
           </Field>
         </Dialog>

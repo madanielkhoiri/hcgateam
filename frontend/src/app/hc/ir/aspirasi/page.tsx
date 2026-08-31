@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import {
   irApi,
   isIrPengelola,
@@ -35,7 +35,7 @@ import {
 import styles from '../ir.module.css';
 
 export default function AspirasiKaryawanPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = isIrPengelola(user);
 
   const [memuat, setMemuat] = useState(true);

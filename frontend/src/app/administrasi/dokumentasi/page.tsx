@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
 import {
   albumApi,
   urlFotoAlbum,
@@ -29,6 +29,7 @@ import {
   type AlbumRingkas,
 } from '@/lib/album-api';
 import { bolehKelolaPostingan } from '@/lib/postingan-api';
+import { compressImages } from '@/lib/compress-image';
 import styles from '@/app/hc/ir/ir.module.css';
 
 function formatTanggal(iso: string) {
@@ -40,7 +41,7 @@ function formatTanggal(iso: string) {
 }
 
 export default function DokumentasiPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = bolehKelolaPostingan(user);
 
   const [albumList, setAlbumList] = useState<AlbumRingkas[]>([]);
@@ -114,7 +115,8 @@ export default function DokumentasiPage() {
     setGalat(null);
 
     try {
-      const hasil = await albumApi.tambahFoto(albumAktif.id, fotoDipilih);
+      const fotoTerkompres = await compressImages(fotoDipilih);
+      const hasil = await albumApi.tambahFoto(albumAktif.id, fotoTerkompres);
       setAlbumAktif(hasil);
       setFotoDipilih([]);
       setSukses('Foto berhasil ditambahkan');

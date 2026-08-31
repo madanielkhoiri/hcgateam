@@ -13,6 +13,13 @@
 # testing
 /coverage
 
+# Playwright E2E — hasil test run & session login tersimpan (berisi JWT asli,
+# jangan pernah dicommit)
+/e2e/.auth
+/test-results
+/playwright-report
+/blob-report
+
 # next.js
 /.next/
 /out/

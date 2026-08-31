@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
-import { getStoredUser } from '@/lib/access-control';
+import { useStoredUser } from '@/lib/use-stored-user';
+import { compressImage } from '@/lib/compress-image';
 import {
   irApi,
   isIrPengelola,
@@ -56,7 +57,7 @@ function formatTanggal(iso: string) {
 }
 
 export default function DokumenIrPage() {
-  const user = getStoredUser();
+  const user = useStoredUser();
   const boleh = isIrPengelola(user);
 
   const [tab, setTab] = useState<KategoriDokumenIr | 'SEMUA'>('SEMUA');
@@ -379,9 +380,14 @@ export default function DokumenIrPage() {
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  onChange={(event) =>
-                    setFileBaru(event.target.files?.[0] ?? null)
-                  }
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    if (file && file.type.startsWith('image/')) {
+                      setFileBaru(await compressImage(file).catch(() => file));
+                      return;
+                    }
+                    setFileBaru(file);
+                  }}
                 />
                 <UploadCloud size={26} className={styles.dropzoneIcon} />
                 <span className={styles.dropzoneText}>
