@@ -71,6 +71,9 @@ jobs:
       - name: Type-check (gagal hanya kalau ada error baru — lihat known-typescript-issues.txt)
         run: npm run typecheck:ci
 
+      - name: Unit test (Vitest)
+        run: npm test
+
       - name: Build (next build) — tsc --noEmit tidak menangkap semua bug produksi
         # Contoh nyata: bug useSearchParams() tanpa <Suspense> yang bikin build
         # produksi gagal total di seluruh /civil/project/**, baru ketahuan saat
