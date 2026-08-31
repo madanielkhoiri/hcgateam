@@ -55,9 +55,9 @@ export class CreatePreActivityCheckDto {
   @IsDateString()
   activityDate: string;
 
-  @IsString()
-  @IsNotEmpty()
-  workName: string;
+  @Transform(({ value }) => toStringArray(value))
+  @IsArray()
+  workNames: string[];
 
   @IsOptional()
   @IsString()
@@ -197,7 +197,7 @@ export class CreatePreActivityCheckDto {
   @IsString()
   socializationPhoto?: string;
   get jobName(): string {
-    return this.workName;
+    return this.workNames?.join(', ') || '';
   }
 
   get workLocationText(): string | undefined {
