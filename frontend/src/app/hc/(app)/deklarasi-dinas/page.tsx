@@ -17,6 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { compressImage } from "@/lib/compress-image";
 /* <--- dashboard karyawan upload nota + revisi nota + bukti pengembalian saldo ---> */
 type DataPenggunaTersimpan = {
  id: number;
@@ -890,10 +891,14 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setPesanSukses("");
  setSedangUpload(true);
 
+ const fileRevisiTerkompres = await compressImage(fileRevisi).catch(
+ () => fileRevisi
+ );
+
  const formData = new FormData();
  formData.append("kategori_nota", nota.kategori_nota);
  formData.append("id_nota_revisi", String(nota.id));
- formData.append("file_nota", fileRevisi);
+ formData.append("file_nota", fileRevisiTerkompres);
 
  const response = await fetch(
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
@@ -1026,11 +1031,15 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setSedangUpload(true);
 
  for (const nota of daftarDitolak) {
- const fileRevisi = fileRevisiBatch[nota.id];
+ const fileRevisiAsli = fileRevisiBatch[nota.id];
 
- if (!fileRevisi) {
+ if (!fileRevisiAsli) {
  throw new Error(`File revisi untuk Nota #${nota.id} belum dipilih.`);
  }
+
+ const fileRevisi = await compressImage(fileRevisiAsli).catch(
+ () => fileRevisiAsli
+ );
 
  if (saldoDipilih.jenis_saldo === "UANG_OPERASIONAL") {
  if (!(barangJasaRevisiBatch[String(nota.id)] || "").trim()) {
@@ -1176,7 +1185,10 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("keterangan_settlement", keteranganSettlementNota.trim());
  }
 
- formData.append("file_nota", fileNota);
+ const fileNotaTerkompres = await compressImage(fileNota).catch(
+ () => fileNota
+ );
+ formData.append("file_nota", fileNotaTerkompres);
  const response = await fetch(
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
  {
@@ -1295,8 +1307,11 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setPesanError("Nominal pengembalian wajib diisi lebih dari 0.");
  return;
  }
+ const fileBuktiTerkompres = await compressImage(
+ fileBuktiPengembalian
+ ).catch(() => fileBuktiPengembalian);
  formData.append("nominal_pengembalian", String(nominalPengembalian));
- formData.append("file_bukti_pengembalian", fileBuktiPengembalian);
+ formData.append("file_bukti_pengembalian", fileBuktiTerkompres);
  const response = await fetch(
  `${apiUrl}/saldo/${saldoBuktiDipilih.id}/upload-bukti-pengembalian`,
  {

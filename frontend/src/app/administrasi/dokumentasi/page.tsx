@@ -29,6 +29,7 @@ import {
   type AlbumRingkas,
 } from '@/lib/album-api';
 import { bolehKelolaPostingan } from '@/lib/postingan-api';
+import { compressImages } from '@/lib/compress-image';
 import styles from '@/app/hc/ir/ir.module.css';
 
 function formatTanggal(iso: string) {
@@ -114,7 +115,8 @@ export default function DokumentasiPage() {
     setGalat(null);
 
     try {
-      const hasil = await albumApi.tambahFoto(albumAktif.id, fotoDipilih);
+      const fotoTerkompres = await compressImages(fotoDipilih);
+      const hasil = await albumApi.tambahFoto(albumAktif.id, fotoTerkompres);
       setAlbumAktif(hasil);
       setFotoDipilih([]);
       setSukses('Foto berhasil ditambahkan');
