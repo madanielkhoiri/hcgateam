@@ -42,6 +42,14 @@ jobs:
       - name: Build (nest build) — pastikan benar-benar bisa dikompilasi untuk produksi
         run: npx nest build
 
+      - name: Audit dependency vulnerabilities (informational)
+        # Non-blocking: prisma CLI (devDependency, ditarik lagi lewat @prisma/client)
+        # membawa deepmerge-ts versi rentan yang cuma dipakai di alur "prisma migrate/
+        # generate" saat development — tidak pernah dijalankan oleh aplikasi produksi,
+        # jadi sengaja tidak di-fix (fix-nya butuh downgrade prisma, regresi besar).
+        # Step ini tetap jalan supaya kerentanan BARU tetap kelihatan di log CI.
+        run: npm audit --audit-level=high || true
+
   frontend:
     name: Frontend — typecheck & build
     runs-on: ubuntu-latest
@@ -68,3 +76,6 @@ jobs:
         # produksi gagal total di seluruh /civil/project/**, baru ketahuan saat
         # next build dijalankan penuh — tsc --noEmit saja lolos mulus.
         run: npm run build
+
+      - name: Audit dependency vulnerabilities (informational)
+        run: npm audit --audit-level=high || true
