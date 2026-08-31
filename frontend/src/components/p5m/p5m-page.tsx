@@ -21,6 +21,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { compressImages } from "@/lib/compress-image";
 import styles from "./p5m.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -370,9 +371,10 @@ export default function P5mPage() {
     setError("");
 
     try {
+      const filesTerkompres = await compressImages(files);
       const formData = new FormData();
 
-      files.forEach((file) => {
+      filesTerkompres.forEach((file) => {
         formData.append("files", file);
       });
 

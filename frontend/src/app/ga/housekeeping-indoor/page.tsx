@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
+import { compressImages } from '@/lib/compress-image';
 import {
   HousekeepingIndoorApiError,
   HousekeepingIndoorLaporan,
@@ -164,7 +165,8 @@ export default function HousekeepingIndoorPage() {
 
     setSubmitting(true);
     try {
-      await housekeepingIndoorApi.buat({ lokasi: form.lokasi, namaPetugas: form.namaPetugas }, files);
+      const fotoTerkompres = await compressImages(files);
+      await housekeepingIndoorApi.buat({ lokasi: form.lokasi, namaPetugas: form.namaPetugas }, fotoTerkompres);
       setModal(false);
       await muat();
     } catch (err) {

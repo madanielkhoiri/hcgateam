@@ -8,6 +8,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 // ==================================================
@@ -54,6 +55,26 @@ async function bootstrap() {
   // ==================================================
 
   app.setGlobalPrefix('api');
+
+  // ==================================================
+  // SECURITY HEADERS
+  // contentSecurityPolicy & crossOriginEmbedderPolicy dimatikan: backend ini
+  // API JSON + file host, bukan penyaji halaman HTML untuk dibuka langsung
+  // di browser — CSP/COEP browser tidak relevan di sini dan berisiko salah
+  // konfigurasi tanpa manfaat nyata. crossOriginResourcePolicy WAJIB
+  // 'cross-origin' (bukan default helmet 'same-origin') karena file di
+  // uploads/ (PDF, foto) sengaja di-fetch lintas origin oleh frontend
+  // Next.js (lihat komentar di app.useStaticAssets di bawah) — kalau
+  // dibiarkan default, browser akan blokir semua preview dokumen.
+  // ==================================================
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   // Percaya header X-Forwarded-For dari reverse proxy (mis. Nginx di VPS
   // production) — supaya rate limiting membaca IP asli pengunjung, bukan

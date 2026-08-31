@@ -102,6 +102,20 @@ export default function HalamanDetailDeklarasi() {
  const apiUrl = process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3011";
  const idDeklarasi = String(params.id || "");
 
+ const ambilToken = () => {
+ if (typeof window === "undefined") return "";
+
+ return (
+ localStorage.getItem("hcga_access_token") ||
+ sessionStorage.getItem("hcga_access_token") ||
+ ""
+ );
+ };
+
+ const headerAuth = (): Record<string, string> => ({
+ Authorization: `Bearer ${ambilToken()}`,
+ });
+
  const [penggunaLogin, setPenggunaLogin] =
  useState<DataPenggunaTersimpan | null>(null);
 
@@ -663,7 +677,9 @@ export default function HalamanDetailDeklarasi() {
 
  const ambilSaldoDeklarasi = async (idSaldo: number) => {
  try {
- const response = await fetch(`${apiUrl}/saldo/${idSaldo}`);
+ const response = await fetch(`${apiUrl}/saldo/${idSaldo}`, {
+ headers: headerAuth(),
+ });
 
  if (!response.ok) {
  throw new Error("Gagal mengambil data saldo deklarasi?.");
@@ -679,7 +695,9 @@ export default function HalamanDetailDeklarasi() {
  };
 
  const ambilUlangDataDetail = async () => {
- const responseDeklarasi = await fetch(`${apiUrl}/deklarasi/${idDeklarasi}`);
+ const responseDeklarasi = await fetch(`${apiUrl}/deklarasi/${idDeklarasi}`, {
+ headers: headerAuth(),
+ });
 
  if (!responseDeklarasi.ok) {
  throw new Error("Gagal mengambil ulang detail deklarasi?.");
@@ -707,7 +725,9 @@ export default function HalamanDetailDeklarasi() {
  }
  }
 
- const responseNota = await fetch(`${apiUrl}/nota/deklarasi/${idDeklarasi}`);
+ const responseNota = await fetch(`${apiUrl}/nota/deklarasi/${idDeklarasi}`, {
+ headers: headerAuth(),
+ });
 
  const hasilNota = responseNota.ok ? await responseNota.json() : [];
 
@@ -872,6 +892,7 @@ export default function HalamanDetailDeklarasi() {
  method: "PATCH",
  headers: {
  "Content-Type": "application/json",
+ ...headerAuth(),
  },
  body: JSON.stringify({
  status: statusBaru,
@@ -949,6 +970,7 @@ export default function HalamanDetailDeklarasi() {
  method: "PATCH",
  headers: {
  "Content-Type": "application/json",
+ ...headerAuth(),
  },
  body: JSON.stringify({
  status_verifikasi: statusBaru,
@@ -1020,6 +1042,7 @@ export default function HalamanDetailDeklarasi() {
  method: "POST",
  headers: {
  "Content-Type": "application/json",
+ ...headerAuth(),
  },
  body: JSON.stringify({
  nominal,
@@ -1118,6 +1141,7 @@ export default function HalamanDetailDeklarasi() {
  method: "PATCH",
  headers: {
  "Content-Type": "application/json",
+ ...headerAuth(),
  },
  body: JSON.stringify({
  status_bukti_pengembalian: statusBukti,

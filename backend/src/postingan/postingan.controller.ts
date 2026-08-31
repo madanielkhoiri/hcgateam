@@ -39,7 +39,15 @@ export class PostinganController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      // Endpoint ini menerima poster (gambar, sudah dikompres di frontend)
+      // ATAU video (tidak dikompres) — batas ukuran wajib ada supaya upload
+      // video tidak bisa jadi vektor DoS (memoryStorage taruh file di RAM).
+      limits: { fileSize: 100 * 1024 * 1024 },
+    }),
+  )
   unggah(
     @Aktor() aktor: AktorPostingan,
     @UploadedFile() file: Express.Multer.File,
