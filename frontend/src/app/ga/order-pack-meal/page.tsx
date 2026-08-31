@@ -24,6 +24,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { compressImage } from "@/lib/compress-image";
 import styles from "./order-pack-meal.module.css";
 
 const API_URL =
@@ -643,9 +644,14 @@ export default function OrderPackMealPage() {
               key={fileInputKey}
               type="file"
               accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
-              onChange={(event) =>
-                setApprovedForm(event.target.files?.[0] ?? null)
-              }
+              onChange={async (event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (file && file.type.startsWith("image/")) {
+                  setApprovedForm(await compressImage(file).catch(() => file));
+                  return;
+                }
+                setApprovedForm(file);
+              }}
               required={editingId === null}
             />
           </div>

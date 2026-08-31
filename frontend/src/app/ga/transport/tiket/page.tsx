@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Plus, Search, Ticket, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
+import { compressImage } from '@/lib/compress-image';
 import {
   KaryawanRingkas,
   TransportApiError,
@@ -392,7 +393,17 @@ export default function TiketPage() {
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                  onChange={async (e) => {
+                    const dipilih = Array.from(e.target.files ?? []);
+                    const hasil = await Promise.all(
+                      dipilih.map((file) =>
+                        file.type.startsWith('image/')
+                          ? compressImage(file).catch(() => file)
+                          : Promise.resolve(file),
+                      ),
+                    );
+                    setFiles(hasil);
+                  }}
                   className={styles.fileInput}
                 />
                 {files.length > 0 && (
