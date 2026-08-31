@@ -114,9 +114,23 @@ export class PreActivityCheckPdfService {
       .restore();
   }
 
+  /** Lebih dari satu pekerjaan (dipisah koma saat disimpan) ditampilkan bernomor: "1) A  2) B". */
+  private formatJobNames(jobName: string): string {
+    const names = jobName
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (names.length <= 1) {
+      return jobName || '-';
+    }
+
+    return names.map((name, index) => `${index + 1}) ${name}`).join('  ');
+  }
+
   private drawIdentity(doc: PDFKit.PDFDocument, data: PdfData) {
     const rows: Array<[string, string]> = [
-      ['Nama Pekerjaan', data.job_name || '-'],
+      ['Nama Pekerjaan', this.formatJobNames(data.job_name || '')],
       ['Tanggal', this.formatDate(data.activityDate)],
       ['Lokasi Kerja', data.work_location_text || '-'],
       ['Nama Alat Berat', data.heavy_equipment_name_text || '-'],
