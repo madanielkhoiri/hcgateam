@@ -24,6 +24,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog } from '@/components/mcu/mcu-ui';
 import { useStoredUser } from '@/lib/use-stored-user';
+import { compressImage } from '@/lib/compress-image';
 import {
   irApi,
   isIrPengelola,
@@ -379,9 +380,14 @@ export default function DokumenIrPage() {
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  onChange={(event) =>
-                    setFileBaru(event.target.files?.[0] ?? null)
-                  }
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    if (file && file.type.startsWith('image/')) {
+                      setFileBaru(await compressImage(file).catch(() => file));
+                      return;
+                    }
+                    setFileBaru(file);
+                  }}
                 />
                 <UploadCloud size={26} className={styles.dropzoneIcon} />
                 <span className={styles.dropzoneText}>
