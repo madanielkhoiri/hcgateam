@@ -1225,59 +1225,47 @@ export default function PreActivityChecksPage() {
                   <div className={styles.signatureDropdownField}>
                     <span>Tanda Tangan Koordinator</span>
 
-                    <div className={styles.signatureDropdownRow}>
-                      <select
-                        value={form.coordinatorSignPath}
-                        onChange={(event) => {
-                          const selected = coordinatorSignatures.find(
-                            (item) => item.path === event.target.value,
-                          );
+                    {coordinatorSignatures.length === 0 && (
+                      <p className={styles.signatureGalleryEmpty}>
+                        Belum ada tanda tangan tersimpan.
+                      </p>
+                    )}
 
-                          updateField(
-                            "coordinatorSignPath",
-                            selected?.path ?? "",
-                          );
+                    <div className={styles.signatureGallery}>
+                      {coordinatorSignatures.map((item) => {
+                        const aktif = form.coordinatorSignPath === item.path;
 
-                          if (selected) {
-                            updateField("coordinatorName", selected.name);
-                          }
-                        }}
-                      >
-                        <option value="">Pilih tanda tangan koordinator</option>
+                        return (
+                          <button
+                            type="button"
+                            key={item.path}
+                            className={`${styles.signatureThumb} ${
+                              aktif ? styles.signatureThumbActive : ""
+                            }`}
+                            onClick={() => {
+                              if (aktif) {
+                                updateField("coordinatorSignPath", "");
+                                return;
+                              }
 
-                        {coordinatorSignatures.map((item) => (
-                          <option value={item.path} key={item.path}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
+                              updateField("coordinatorSignPath", item.path);
+                              updateField("coordinatorName", item.name);
+                            }}
+                          >
+                            <img src={fileUrl(item.path)} alt={item.name} />
+                            <span>{item.name}</span>
+                          </button>
+                        );
+                      })}
 
                       <button
                         type="button"
                         className={styles.createSignatureButton}
                         onClick={() => setSignaturePickerMode("coordinator")}
                       >
-                        Buat Baru
+                        + Buat Baru
                       </button>
                     </div>
-
-                    {form.coordinatorSignPath && (
-                      <div className={styles.signatureMiniPreview}>
-                        <img
-                          src={fileUrl(form.coordinatorSignPath)}
-                          alt="Tanda tangan koordinator"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateField("coordinatorSignPath", "");
-                          }}
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                    )}
                   </div>
                   <InlineSignatureCanvas
                     open={signaturePickerMode === "coordinator"}
@@ -1307,46 +1295,39 @@ export default function PreActivityChecksPage() {
                   <div className={styles.signatureDropdownField}>
                     <span>Tanda Tangan Pengawas</span>
 
-                    <select
-                      value={form.supervisorSignPath}
-                      onChange={(event) => {
-                        const selected = supervisorSignatures.find(
-                          (item) => item.path === event.target.value,
-                        );
-
-                        updateField("supervisorSignPath", selected?.path ?? "");
-
-                        if (selected) {
-                          updateField("supervisorName", selected.name);
-                        }
-                      }}
-                    >
-                      <option value="">Pilih tanda tangan pengawas</option>
-
-                      {supervisorSignatures.map((item) => (
-                        <option value={item.path} key={item.path}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    {form.supervisorSignPath && (
-                      <div className={styles.signatureMiniPreview}>
-                        <img
-                          src={fileUrl(form.supervisorSignPath)}
-                          alt="Tanda tangan pengawas"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateField("supervisorSignPath", "");
-                          }}
-                        >
-                          Hapus
-                        </button>
-                      </div>
+                    {supervisorSignatures.length === 0 && (
+                      <p className={styles.signatureGalleryEmpty}>
+                        Belum ada tanda tangan tersimpan.
+                      </p>
                     )}
+
+                    <div className={styles.signatureGallery}>
+                      {supervisorSignatures.map((item) => {
+                        const aktif = form.supervisorSignPath === item.path;
+
+                        return (
+                          <button
+                            type="button"
+                            key={item.path}
+                            className={`${styles.signatureThumb} ${
+                              aktif ? styles.signatureThumbActive : ""
+                            }`}
+                            onClick={() => {
+                              if (aktif) {
+                                updateField("supervisorSignPath", "");
+                                return;
+                              }
+
+                              updateField("supervisorSignPath", item.path);
+                              updateField("supervisorName", item.name);
+                            }}
+                          >
+                            <img src={fileUrl(item.path)} alt={item.name} />
+                            <span>{item.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
