@@ -26,6 +26,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { compressImage } from "@/lib/compress-image";
 import styles from "./pre-activity-checks.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -524,10 +525,11 @@ export default function PreActivityChecksPage() {
     setUploadingField(field);
     setError("");
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
+      const fileTerkompres = await compressImage(file);
+      const formData = new FormData();
+      formData.append("file", fileTerkompres);
+
       const response = await fetch(
         `${API_URL}/pre-activity-checks/upload/${category}`,
         {

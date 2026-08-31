@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Camera, CheckCircle2, Circle, RotateCcw, Upload } from 'lucide-react';
 import { TransportApiError, TravelJadwal, transportApi, urlFileTransport } from '@/lib/transport-api';
+import { compressImage } from '@/lib/compress-image';
 import styles from '../../transport-saya.module.css';
 
 function formatWaktu(value: string | null): string {
@@ -58,9 +59,22 @@ export default function DriverTripDetailPage() {
     };
   }, []);
 
-  function pilihFoto(file: File | null) {
-    setFoto(file);
-    setPreviewFoto(file ? URL.createObjectURL(file) : null);
+  async function pilihFoto(file: File | null) {
+    if (!file) {
+      setFoto(null);
+      setPreviewFoto(null);
+      return;
+    }
+
+    let fotoTerkompres = file;
+    try {
+      fotoTerkompres = await compressImage(file);
+    } catch {
+      // Kompresi gagal (jarang terjadi) — tetap pakai file asli daripada memblokir check-in.
+    }
+
+    setFoto(fotoTerkompres);
+    setPreviewFoto(URL.createObjectURL(fotoTerkompres));
   }
 
   async function bukaKamera() {
@@ -102,7 +116,7 @@ export default function DriverTripDetailPage() {
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-        pilihFoto(new File([blob], `checkin-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+        void pilihFoto(new File([blob], `checkin-${Date.now()}.jpg`, { type: 'image/jpeg' }));
         tutupKamera();
       },
       'image/jpeg',
@@ -191,7 +205,7 @@ export default function DriverTripDetailPage() {
                     type="file"
                     accept="image/*"
                     style={{ display: 'none' }}
-                    onChange={(e) => pilihFoto(e.target.files?.[0] ?? null)}
+                    onChange={(e) => void pilihFoto(e.target.files?.[0] ?? null)}
                   />
                 </label>
               </>
@@ -219,7 +233,7 @@ export default function DriverTripDetailPage() {
                     type="button"
                     className={styles.secondaryButton}
                     onClick={() => {
-                      pilihFoto(null);
+                      void pilihFoto(null);
                       void bukaKamera();
                     }}
                   >

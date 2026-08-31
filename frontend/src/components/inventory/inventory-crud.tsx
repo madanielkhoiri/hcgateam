@@ -14,6 +14,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { compressImage } from "@/lib/compress-image";
 import styles from "./inventory-crud.module.css";
 
 const API_URL =
@@ -1939,18 +1940,27 @@ export default function InventoryCrud({
                                 className={
                                   styles.hiddenFileInput
                                 }
-                                onChange={(event) => {
+                                onChange={async (event) => {
                                   const selectedFile =
                                     event.target
                                       .files?.[0] ??
                                     null;
 
+                                  if (!selectedFile) {
+                                    setPhotoFile(null);
+                                    return;
+                                  }
+
+                                  const compressedFile =
+                                    await compressImage(
+                                      selectedFile,
+                                    ).catch(
+                                      () => selectedFile,
+                                    );
+
                                   if (
-                                    selectedFile &&
-                                    selectedFile.size >
-                                      5 *
-                                        1024 *
-                                        1024
+                                    compressedFile.size >
+                                    5 * 1024 * 1024
                                   ) {
                                     setError(
                                       "Ukuran foto maksimal 5 MB",
@@ -1963,7 +1973,7 @@ export default function InventoryCrud({
 
                                   setError("");
                                   setPhotoFile(
-                                    selectedFile,
+                                    compressedFile,
                                   );
                                 }}
                                 required
@@ -2236,13 +2246,21 @@ export default function InventoryCrud({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className={styles.hiddenFileInput}
-            onChange={(event) => {
+            onChange={async (event) => {
               const selectedFile =
                 event.target.files?.[0] ?? null;
 
+              if (!selectedFile) {
+                setPhotoFile(null);
+                return;
+              }
+
+              const compressedFile = await compressImage(
+                selectedFile,
+              ).catch(() => selectedFile);
+
               if (
-                selectedFile &&
-                selectedFile.size > 5 * 1024 * 1024
+                compressedFile.size > 5 * 1024 * 1024
               ) {
                 setError(
                   "Ukuran foto maksimal 5 MB",
@@ -2253,7 +2271,7 @@ export default function InventoryCrud({
               }
 
               setError("");
-              setPhotoFile(selectedFile);
+              setPhotoFile(compressedFile);
             }}
           />
 

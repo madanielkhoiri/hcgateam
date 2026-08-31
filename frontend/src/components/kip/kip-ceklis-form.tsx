@@ -2,6 +2,7 @@
 
 import { Camera } from 'lucide-react';
 import { useState } from 'react';
+import { compressImage } from '@/lib/compress-image';
 
 export function KipCeklisForm({
   parameterChecklist,
@@ -26,15 +27,24 @@ export function KipCeklisForm({
   const warnaTeks = gelap ? '#ffffff' : '#12355f';
   const warnaSub = gelap ? 'rgba(255,255,255,.65)' : '#71839d';
 
-  function handleFotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    setFoto(file);
+    event.target.value = '';
+
+    let fotoTerkompres: File;
+    try {
+      fotoTerkompres = await compressImage(file);
+    } catch {
+      setLocalError('Foto gagal dikompres, coba ambil ulang');
+      return;
+    }
+
+    setFoto(fotoTerkompres);
     setPreview((lama) => {
       if (lama) URL.revokeObjectURL(lama);
-      return URL.createObjectURL(file);
+      return URL.createObjectURL(fotoTerkompres);
     });
-    event.target.value = '';
   }
 
   function submit() {

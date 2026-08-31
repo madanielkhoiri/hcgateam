@@ -20,6 +20,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { compressImages } from "@/lib/compress-image";
 import styles from "./post-activities.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -281,7 +282,8 @@ export default function PostActivitiesPage() {
         body.append(key, value);
       });
 
-      newFiles.forEach((file) => {
+      const newFilesTerkompres = await compressImages(newFiles);
+      newFilesTerkompres.forEach((file) => {
         body.append("photos", file);
       });
 
