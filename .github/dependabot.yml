@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # Backend (NestJS) — npm
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Frontend (Next.js) — npm
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Workflow CI (.github/workflows/*.yml) sendiri
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

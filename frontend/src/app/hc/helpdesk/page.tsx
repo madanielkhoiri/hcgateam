@@ -33,6 +33,7 @@ import {
   type TiketHelpdesk,
 } from '@/lib/helpdesk-api';
 import { useHelpdesk } from './layout';
+import { compressImage } from '@/lib/compress-image';
 import styles from './helpdesk.module.css';
 
 const TAB_STATUS: Array<{ key: StatusTiketHelpdesk; label: string }> = [
@@ -469,9 +470,14 @@ export default function HelpdeskPage() {
                 className={styles.input}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,application/pdf"
-                onChange={(event) =>
-                  setFormLampiran(event.target.files?.[0] ?? null)
-                }
+                onChange={async (event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  if (file && file.type.startsWith('image/')) {
+                    setFormLampiran(await compressImage(file).catch(() => file));
+                    return;
+                  }
+                  setFormLampiran(file);
+                }}
               />
             </Field>
           </div>

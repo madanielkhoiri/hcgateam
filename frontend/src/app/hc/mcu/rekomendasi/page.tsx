@@ -34,6 +34,7 @@ import {
   type StatusRekomendasi,
 } from '@/lib/mcu-api';
 import { useMcu } from '../layout';
+import { compressImage } from '@/lib/compress-image';
 import styles from '../mcu.module.css';
 
 type AntreanHasil = {
@@ -163,12 +164,16 @@ export default function RekomendasiPage() {
 
   async function unggahDokumen(
     kategori: 'rekomendasi' | 'surat-rujukan',
-    file: File,
+    fileDipilih: File,
   ) {
     setMengunggah(kategori);
     setGalat(null);
 
     try {
+      const file = fileDipilih.type.startsWith('image/')
+        ? await compressImage(fileDipilih).catch(() => fileDipilih)
+        : fileDipilih;
+
       const hasil = await mcuApi.unggah<{ path: string }>(
         `/dokumen/${kategori}`,
         file,
