@@ -1,0 +1,378 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(20px, 4vw, 48px);
+  background: #edf4fd;
+  color: #10244a;
+}
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: #4a5b7a;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.backButton:hover {
+  color: #10244a;
+}
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.titleSection h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.titleSection p {
+  margin: 4px 0 0;
+  color: #5b6b8a;
+  font-size: 13px;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: #ef476f;
+  border-radius: 14px;
+}
+
+.rekapButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #10244a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.formCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(24px, 5vw, 40px);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(16, 36, 74, 0.08);
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 800;
+  color: #10244a;
+}
+
+.starRow {
+  display: flex;
+  gap: 6px;
+}
+
+.starButton {
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.starButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.komentar {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d7e2ef;
+  border-radius: 12px;
+  background: #f8fafd;
+  color: #10244a;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.komentar:focus {
+  border-color: #0868f6;
+}
+
+.tombolKirim {
+  width: 100%;
+  max-width: 280px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #0868f6;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tombolKirim:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sukses {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(32px, 6vw, 56px) 24px;
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(16, 36, 74, 0.08);
+}
+
+.sukses h2 {
+  margin: 6px 0 0;
+  font-size: 17px;
+}
+
+.sukses p {
+  margin: 0;
+  color: #5b6b8a;
+  font-size: 13px;
+}
+
+.tombolLagi {
+  margin-top: 10px;
+  padding: 9px 18px;
+  border: 1px solid #0868f6;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0868f6;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error {
+  margin: 0;
+  color: #d92d20;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.memuat,
+.kosong {
+  color: #5b6b8a;
+  font-size: 13px;
+}
+
+.filterRow {
+  display: flex;
+  gap: 10px;
+}
+
+.filterRow select {
+  padding: 9px 12px;
+  border: 1px solid #d7e2ef;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #10244a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ringkasanGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(16, 36, 74, 0.06);
+}
+
+.statLabel {
+  color: #5b6b8a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.statAngka {
+  font-size: 28px;
+  color: #10244a;
+}
+
+.statSub {
+  color: #8493ad;
+  font-size: 12px;
+}
+
+.bintangRingkas {
+  display: flex;
+  gap: 2px;
+}
+
+.distribusiCard {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(16, 36, 74, 0.06);
+}
+
+.distribusiRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #5b6b8a;
+}
+
+.distribusiBarTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: #eef2f8;
+  overflow: hidden;
+}
+
+.distribusiBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #f5b400;
+}
+
+.distribusiJumlah {
+  text-align: right;
+  font-weight: 700;
+  color: #10244a;
+}
+
+.trenCard,
+.daftarCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(16, 36, 74, 0.06);
+}
+
+.trenGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  height: 140px;
+}
+
+.trenBar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.trenBarTrack {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.trenBarFill {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 6px 6px 0 0;
+  background: #0868f6;
+}
+
+.trenAngka {
+  font-size: 11px;
+  font-weight: 800;
+  color: #10244a;
+}
+
+.trenLabel {
+  font-size: 10px;
+  color: #8493ad;
+  text-align: center;
+}
+
+.tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.tabel th {
+  padding: 8px 10px;
+  text-align: left;
+  color: #5b6b8a;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #eef2f8;
+}
+
+.tabel td {
+  padding: 10px;
+  color: #10244a;
+  border-bottom: 1px solid #f3f6fa;
+  vertical-align: top;
+}
+
+@media (max-width: 640px) {
+  .distribusiCard {
+    grid-column: span 1;
+  }
+
+  .trenGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: auto;
+  }
+}

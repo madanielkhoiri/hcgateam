@@ -236,6 +236,17 @@ function buatHcTree(approval: RingkasanApproval | null, mcuRingkasan: RingkasanM
       },
     ],
   },
+  {
+    key: 'HC_PENGADUAN',
+    title: 'Pengaduan Layanan',
+    description: 'Beri rating dan masukan atas pelayanan tim HC.',
+    status: 'Tersedia',
+    href: '/hc/pengaduan',
+    icon: MessageSquareText,
+    accessKey: ACCESS_KEYS.HC,
+    accent: '#ef476f',
+    soft: '#ffe4ec',
+  },
   ];
 }
 

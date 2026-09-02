@@ -39,33 +39,37 @@ enum UserRole {
 }
 
 model User {
-  id                 Int      @id @default(autoincrement())
+  id                 Int       @id @default(autoincrement())
   name               String
-  username           String?  @unique
-  nrp                String?  @unique
-  email              String?  @unique
-  phoneNumber        String?  @map("phone_number")
-  passwordHash       String   @map("password_hash")
-  role               UserRole @default(KARYAWAN)
-  isActive           Boolean  @default(true) @map("is_active")
-  /** Token yang diterbitkan SEBELUM waktu ini dianggap tidak berlaku lagi — buat "cabut sesi" tanpa nunggu token expired sendiri (8 jam). */
+  username           String?   @unique
+  nrp                String?   @unique
+  email              String?   @unique
+  phoneNumber        String?   @map("phone_number")
+  passwordHash       String    @map("password_hash")
+  role               UserRole  @default(KARYAWAN)
+  isActive           Boolean   @default(true) @map("is_active")
+  /**
+   * Token yang diterbitkan SEBELUM waktu ini dianggap tidak berlaku lagi — buat "cabut sesi" tanpa nunggu token expired sendiri (8 jam).
+   */
   tokenValidAfter    DateTime? @map("token_valid_after")
-  accessKeys         String[] @default([]) @map("access_keys")
-  signatureImage     String?  @map("signature_image")
-  twoFactorSecret    String?  @map("two_factor_secret")
-  isTwoFactorEnabled Boolean  @default(false) @map("is_two_factor_enabled")
-  vendorId           Int?     @map("vendor_id")
-  driverId           Int?     @map("driver_id")
-  ticketCode         String?  @map("kode_tiket")
-  vendor             Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  driver             Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  accessKeys         String[]  @default([]) @map("access_keys")
+  signatureImage     String?   @map("signature_image")
+  twoFactorSecret    String?   @map("two_factor_secret")
+  isTwoFactorEnabled Boolean   @default(false) @map("is_two_factor_enabled")
+  vendorId           Int?      @map("vendor_id")
+  driverId           Int?      @map("driver_id")
+  ticketCode         String?   @map("kode_tiket")
+  vendor             Vendor?   @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  driver             Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
   departemen         String?
   jabatan            String?
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   workOrders WorkOrder[]
   handovers  Handover[]
+
+  pengaduanLayanan PengaduanLayanan[]
 
   dailyActivities   DailyActivity[]         @relation("DailyActivityCreator")
   dailyProgresses   DailyActivityProgress[] @relation("DailyProgressCreator")
@@ -110,8 +114,8 @@ model User {
   engineerDocumentApprovals EngineerDocumentApproval[] @relation("EngineerApprovalActor")
   epromSafetyMeetingFiles   EpromSafetyMeetingFile[]   @relation("EpromSafetyMeetingUploader")
 
-  transportTiketDikirim TransportTiket[]
-  travelJadwalDibuat    TravelJadwal[]
+  transportTiketDikirim    TransportTiket[]
+  travelJadwalDibuat       TravelJadwal[]
   housekeepingIndoorDibuat HousekeepingIndoor[]
 
   kipDibuat    Kip[]
@@ -2505,16 +2509,18 @@ enum StatusChecklistKip {
 }
 
 model Kip {
-  id             Int                      @id @default(autoincrement())
-  noKip          String                   @unique @map("no_kip")
-  jenisPeralatan String                   @map("jenis_peralatan")
-  departemen     String
-  tahun          Int
-  lokasi         LokasiHousekeepingIndoor
-  /** Daftar parameter checklist inspeksi khusus KIP ini (ditentukan admin saat dibuat) — dipakai tiap ceklis bulanan. */
-  parameterChecklist String[]            @default([]) @map("parameter_checklist")
-  createdBy      Int                      @map("created_by")
-  createdAt      DateTime                 @default(now()) @map("created_at")
+  id                 Int                      @id @default(autoincrement())
+  noKip              String                   @unique @map("no_kip")
+  jenisPeralatan     String                   @map("jenis_peralatan")
+  departemen         String
+  tahun              Int
+  lokasi             LokasiHousekeepingIndoor
+  /**
+   * Daftar parameter checklist inspeksi khusus KIP ini (ditentukan admin saat dibuat) — dipakai tiap ceklis bulanan.
+   */
+  parameterChecklist String[]                 @default([]) @map("parameter_checklist")
+  createdBy          Int                      @map("created_by")
+  createdAt          DateTime                 @default(now()) @map("created_at")
 
   pengirim  User                @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   checklist KipChecklistBulan[]
@@ -2530,9 +2536,13 @@ model KipChecklistBulan {
   status          StatusChecklistKip @default(BELUM)
   diperiksaOleh   Int?               @map("diperiksa_oleh")
   tanggalPeriksa  DateTime?          @map("tanggal_periksa")
-  /** Foto dokumentasi bukti inspeksi (diambil saat ceklis). */
+  /**
+   * Foto dokumentasi bukti inspeksi (diambil saat ceklis).
+   */
   fotoBukti       String?            @map("foto_bukti")
-  /** Hasil checklist parameter inspeksi (mis. 5 item standar) - array {label, checked} apa adanya saat diceklis. */
+  /**
+   * Hasil checklist parameter inspeksi (mis. 5 item standar) - array {label, checked} apa adanya saat diceklis.
+   */
   parameterCeklis Json?              @map("parameter_ceklis")
 
   kip       Kip   @relation(fields: [kipId], references: [id], onDelete: Cascade)
@@ -2542,7 +2552,9 @@ model KipChecklistBulan {
   @@map("civil_kip_checklist_bulan")
 }
 
-/** Tag GPS acuan per lokasi (diisi admin saat cetak barcode) — dipakai validasi jarak saat ceklis. */
+/**
+ * Tag GPS acuan per lokasi (diisi admin saat cetak barcode) — dipakai validasi jarak saat ceklis.
+ */
 model KipLokasiGps {
   lokasi    LokasiHousekeepingIndoor @id
   latitude  Float
@@ -2603,7 +2615,7 @@ model AspirasiPertanyaan {
   createdById Int                    @map("created_by_id")
   createdAt   DateTime               @default(now()) @map("created_at")
 
-  createdBy User             @relation("AspirasiPertanyaanCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy User              @relation("AspirasiPertanyaanCreator", fields: [createdById], references: [id], onDelete: Restrict)
   opsi      AspirasiOpsi[]
   jawaban   AspirasiJawaban[]
 
@@ -2719,11 +2731,11 @@ enum ScopeDrive {
 }
 
 model DriveFolder {
-  id             Int         @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   scope          ScopeDrive
-  namaFolder     String      @map("nama_folder")
-  parentFolderId Int?        @map("parent_folder_id")
-  createdAt      DateTime    @default(now()) @map("created_at")
+  namaFolder     String     @map("nama_folder")
+  parentFolderId Int?       @map("parent_folder_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
 
   parentFolder DriveFolder?  @relation("DriveFolderChildren", fields: [parentFolderId], references: [id], onDelete: Cascade)
   children     DriveFolder[] @relation("DriveFolderChildren")
@@ -2765,7 +2777,7 @@ model AlbumDokumentasi {
   uploadedById Int      @map("uploaded_by_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  uploadedBy User            @relation("AlbumDokumentasiCreator", fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedBy User        @relation("AlbumDokumentasiCreator", fields: [uploadedById], references: [id], onDelete: Restrict)
   foto       AlbumFoto[]
 
   @@map("album_dokumentasi")
@@ -2841,4 +2853,35 @@ model AuditLog {
 
 // ==================================================
 // SELESAI: AUDIT LOG
+// ==================================================
+
+// ==================================================
+// PENGADUAN LAYANAN — rating bintang 1-5 + komentar bebas untuk kepuasan
+// layanan HC/GA/CIVIL, dipakai sebagai rekap performa tim per bulan.
+// Data tiap divisi terpisah lewat kolom divisi (bukan tabel terpisah,
+// supaya query rekap lintas-divisi tetap mudah kalau dibutuhkan nanti).
+// ==================================================
+
+enum DivisiPengaduan {
+  HC
+  GA
+  CIVIL
+}
+
+model PengaduanLayanan {
+  id         Int             @id @default(autoincrement())
+  divisi     DivisiPengaduan
+  rating     Int
+  komentar   String?
+  pengirimId Int             @map("pengirim_id")
+  pengirim   User            @relation(fields: [pengirimId], references: [id])
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([divisi, createdAt])
+  @@index([pengirimId])
+  @@map("pengaduan_layanan")
+}
+
+// ==================================================
+// SELESAI: PENGADUAN LAYANAN
 // ==================================================
