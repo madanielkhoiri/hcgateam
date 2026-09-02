@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, CalendarClock, Download, Plus, Search, Ticket, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import { compressImage } from '@/lib/compress-image';
+import { TimeInput24 } from '@/components/transport/time-input-24';
 import {
   JenisTiket,
   KaryawanRingkas,
@@ -496,11 +497,10 @@ export default function TiketPage() {
 
                   <label>
                     Jam Keberangkatan (24 jam)
-                    <input
-                      type="time"
+                    <TimeInput24
                       required
                       value={form.jamMulai}
-                      onChange={(e) => setForm((cur) => ({ ...cur, jamMulai: e.target.value }))}
+                      onChange={(v) => setForm((cur) => ({ ...cur, jamMulai: v }))}
                     />
                   </label>
                 </>
@@ -520,11 +520,10 @@ export default function TiketPage() {
 
                   <label>
                     Jam Kepulangan (24 jam)
-                    <input
-                      type="time"
+                    <TimeInput24
                       required
                       value={form.jamSelesai}
-                      onChange={(e) => setForm((cur) => ({ ...cur, jamSelesai: e.target.value }))}
+                      onChange={(v) => setForm((cur) => ({ ...cur, jamSelesai: v }))}
                     />
                   </label>
                 </>
@@ -623,11 +622,10 @@ export default function TiketPage() {
 
                   <label>
                     Jam Keberangkatan Baru (24 jam)
-                    <input
-                      type="time"
+                    <TimeInput24
                       required
                       value={rescheduleForm.jamMulai}
-                      onChange={(e) => setRescheduleForm((cur) => ({ ...cur, jamMulai: e.target.value }))}
+                      onChange={(v) => setRescheduleForm((cur) => ({ ...cur, jamMulai: v }))}
                     />
                   </label>
                 </>
@@ -661,11 +659,10 @@ export default function TiketPage() {
 
                   <label>
                     Jam Kepulangan Baru (24 jam)
-                    <input
-                      type="time"
+                    <TimeInput24
                       required
                       value={rescheduleForm.jamSelesai}
-                      onChange={(e) => setRescheduleForm((cur) => ({ ...cur, jamSelesai: e.target.value }))}
+                      onChange={(v) => setRescheduleForm((cur) => ({ ...cur, jamSelesai: v }))}
                     />
                   </label>
                 </>
