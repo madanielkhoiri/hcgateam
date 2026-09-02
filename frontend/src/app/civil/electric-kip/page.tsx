@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Eye, Pencil, Plus, Printer, ShieldCheck, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Eye, MapPin, Pencil, Plus, Printer, ShieldCheck, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import { ambilLokasiGps, Kip, KipApiError, KipChecklistBulan, LABEL_LOKASI_KIP, LOKASI_KIP, LokasiHousekeepingIndoor, kipApi } from '@/lib/kip-api';
 import { KipCard3D, statusTampilBulan, warnaStatus } from '@/components/kip/kip-card-3d';
@@ -37,9 +37,10 @@ export default function KipListPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [preview, setPreview] = useState<Kip | null>(null);
-  const [cetak, setCetak] = useState<LokasiHousekeepingIndoor | null>(null);
+  const [cetakUniversal, setCetakUniversal] = useState(false);
   const [qrSvg, setQrSvg] = useState('');
   const [qrError, setQrError] = useState('');
+  const [aturGps, setAturGps] = useState<LokasiHousekeepingIndoor | null>(null);
   const [busyCeklis, setBusyCeklis] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'memuat' | 'sukses' | 'gagal' | null>(null);
   const [gpsPesan, setGpsPesan] = useState('');
@@ -169,20 +170,28 @@ export default function KipListPage() {
     }
   }
 
-  async function bukaCetak(lokasi: LokasiHousekeepingIndoor) {
-    setCetak(lokasi);
+  /** Barcode universal — sama untuk semua lokasi, cukup dicetak sekali & digandakan sebagai stok. */
+  async function bukaCetakUniversal() {
+    setCetakUniversal(true);
     setQrSvg('');
     setQrError('');
-    setGpsStatus('memuat');
-    setGpsPesan('');
     try {
-      const target = `${window.location.origin}/kip-scan/${lokasi}`;
-      setQrSvg(await kipApi.qrSvg(lokasi, target));
+      const target = `${window.location.origin}/kip-scan`;
+      setQrSvg(await kipApi.qrSvgUniversal(target));
     } catch (err) {
       setQrError(err instanceof KipApiError ? err.message : 'QR gagal dibuat');
     }
+  }
 
-    // Rekam titik GPS lokasi ini sekali (dipakai validasi jarak saat ceklis nanti).
+  function cetakSekarang() {
+    window.print();
+  }
+
+  /** Rekam titik GPS acuan satu lokasi (dipakai validasi jarak saat ceklis) — berdiri di lokasinya lalu klik ini. */
+  async function bukaAturGps(lokasi: LokasiHousekeepingIndoor) {
+    setAturGps(lokasi);
+    setGpsStatus('memuat');
+    setGpsPesan('');
     try {
       const posisi = await ambilLokasiGps();
       await kipApi.simpanGpsLokasi(lokasi, posisi.latitude, posisi.longitude);
@@ -192,10 +201,6 @@ export default function KipListPage() {
       setGpsStatus('gagal');
       setGpsPesan(err instanceof Error ? err.message : 'GPS lokasi gagal disimpan');
     }
-  }
-
-  function cetakSekarang() {
-    window.print();
   }
 
   async function ceklisSekarang(kip: Kip, payload: { foto: File; parameterChecked: boolean[] }) {
@@ -259,10 +264,14 @@ export default function KipListPage() {
           </span>
           <div>
             <h1>KIP — Kartu Inspeksi Peralatan</h1>
-            <p>Isi lokasi & data alat — barcode lokasi otomatis siap dicetak. Siapa saja bisa scan untuk lihat status; Tim Elektrik ceklis dari situ.</p>
+            <p>Satu barcode berlaku untuk semua lokasi — cetak sekali, tempel di mana saja. Siapa saja bisa scan lalu pilih lokasi & alatnya; Tim Elektrik ceklis dari situ.</p>
           </div>
         </div>
         <div className={styles.heroActions}>
+          <button className={styles.importButton} onClick={bukaCetakUniversal}>
+            <Printer />
+            Cetak Barcode Universal
+          </button>
           <button className={styles.primary} onClick={bukaModal}>
             <Plus />
             Buat KIP
@@ -318,8 +327,8 @@ export default function KipListPage() {
                         <button onClick={() => bukaModalEdit(item)} title="Edit KIP">
                           <Pencil size={16} />
                         </button>
-                        <button onClick={() => bukaCetak(item.lokasi)} title="Cetak Barcode Lokasi">
-                          <Printer size={16} />
+                        <button onClick={() => bukaAturGps(item.lokasi)} title="Atur Titik GPS Lokasi Ini">
+                          <MapPin size={16} />
                         </button>
                         <button onClick={() => hapus(item.id)} title="Hapus">
                           <Trash2 />
@@ -350,7 +359,7 @@ export default function KipListPage() {
                 <p>
                   {editId != null
                     ? 'Ubah data alat & parameter checklist — perubahan berlaku untuk ceklis berikutnya.'
-                    : 'Isi lokasi & data alat — barcode lokasi otomatis siap dicetak, checklist 12 bulan langsung tersedia.'}
+                    : 'Isi lokasi & data alat — checklist 12 bulan langsung tersedia. Barcode-nya universal, sudah dicetak sekali untuk semua lokasi.'}
                 </p>
               </div>
               <button type="button" onClick={() => setModal(false)}>
@@ -417,7 +426,7 @@ export default function KipListPage() {
                   ))}
                 </select>
                 <span style={{ fontSize: 11, color: '#71839d' }}>
-                  Barcode lokasi ini otomatis tersedia untuk dicetak — tidak perlu isi kode manual.
+                  Barcode-nya sama untuk semua lokasi (lihat tombol &quot;Cetak Barcode Universal&quot;) — pilih lokasi cukup untuk pengelompokan & validasi GPS.
                 </span>
               </label>
               <label style={{ gridColumn: '1/-1' }}>
@@ -578,15 +587,15 @@ export default function KipListPage() {
 
       {detailBulan && <KipDetailBulan baris={detailBulan} onTutup={() => setDetailBulan(null)} />}
 
-      {cetak && (
-        <div className={styles.modalBack} onClick={() => setCetak(null)}>
+      {cetakUniversal && (
+        <div className={styles.modalBack} onClick={() => setCetakUniversal(false)}>
           <div className={styles.modal} style={{ width: 'min(380px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <header>
               <div>
-                <h2>Cetak Barcode</h2>
-                <p>Tempel di lokasi {LABEL_LOKASI_KIP[cetak]}.</p>
+                <h2>Cetak Barcode Universal</h2>
+                <p>Satu barcode ini berlaku untuk semua lokasi — boleh digandakan & ditempel di mana saja.</p>
               </div>
-              <button type="button" onClick={() => setCetak(null)}>
+              <button type="button" onClick={() => setCetakUniversal(false)}>
                 <X />
               </button>
             </header>
@@ -599,26 +608,56 @@ export default function KipListPage() {
                 />
               )}
               {!qrError && !qrSvg && <p style={{ color: '#71839d' }}>Membuat QR...</p>}
-              <h3 style={{ margin: '16px 0 2px', fontSize: 17 }}>{LABEL_LOKASI_KIP[cetak]}</h3>
-              <p style={{ margin: 0, color: '#71839d', fontSize: 12 }}>Scan untuk lihat status KIP di lokasi ini</p>
-
-              {gpsStatus === 'memuat' && (
-                <p style={{ marginTop: 10, fontSize: 11.5, color: '#71839d' }}>Merekam titik GPS lokasi ini...</p>
-              )}
-              {gpsStatus === 'sukses' && (
-                <p style={{ marginTop: 10, fontSize: 11.5, color: '#087848', fontWeight: 700 }}>{gpsPesan}</p>
-              )}
-              {gpsStatus === 'gagal' && (
-                <p style={{ marginTop: 10, fontSize: 11.5, color: '#b3261e', fontWeight: 700 }}>{gpsPesan}</p>
-              )}
+              <h3 style={{ margin: '16px 0 2px', fontSize: 17 }}>Barcode KIP — Semua Lokasi</h3>
+              <p style={{ margin: 0, color: '#71839d', fontSize: 12 }}>
+                Scan untuk pilih lokasi & lihat status KIP di lokasi tersebut
+              </p>
             </div>
             <footer>
-              <button type="button" onClick={() => setCetak(null)}>
+              <button type="button" onClick={() => setCetakUniversal(false)}>
                 Tutup
               </button>
               <button type="button" className={styles.primary} onClick={cetakSekarang} disabled={!qrSvg}>
                 <Printer size={15} style={{ marginRight: 6 }} />
                 Cetak
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {aturGps && (
+        <div className={styles.modalBack} onClick={() => setAturGps(null)}>
+          <div className={styles.modal} style={{ width: 'min(380px, 100%)' }} onClick={(e) => e.stopPropagation()}>
+            <header>
+              <div>
+                <h2>Atur Titik GPS Lokasi</h2>
+                <p>Berdiri di lokasi {LABEL_LOKASI_KIP[aturGps]} saat menekan tombol ini.</p>
+              </div>
+              <button type="button" onClick={() => setAturGps(null)}>
+                <X />
+              </button>
+            </header>
+            <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+              <MapPin size={40} color="#079654" style={{ marginBottom: 10 }} />
+              <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{LABEL_LOKASI_KIP[aturGps]}</h3>
+
+              {gpsStatus === 'memuat' && (
+                <p style={{ fontSize: 12.5, color: '#71839d' }}>Merekam titik GPS lokasi ini...</p>
+              )}
+              {gpsStatus === 'sukses' && (
+                <p style={{ fontSize: 12.5, color: '#087848', fontWeight: 700 }}>{gpsPesan}</p>
+              )}
+              {gpsStatus === 'gagal' && (
+                <p style={{ fontSize: 12.5, color: '#b3261e', fontWeight: 700 }}>{gpsPesan}</p>
+              )}
+            </div>
+            <footer>
+              <button type="button" onClick={() => setAturGps(null)}>
+                Tutup
+              </button>
+              <button type="button" className={styles.primary} onClick={() => bukaAturGps(aturGps)}>
+                Rekam Ulang
               </button>
             </footer>
           </div>

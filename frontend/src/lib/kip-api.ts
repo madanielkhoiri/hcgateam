@@ -184,6 +184,20 @@ export const kipApi = {
 
     return response.text();
   },
+
+  /** SVG QR universal (sama untuk semua lokasi) — cukup dicetak sekali lalu digandakan sebagai stok. */
+  qrSvgUniversal: async (target: string) => {
+    const response = await fetch(`${API_URL}/kip/admin/qr-universal?target=${encodeURIComponent(target)}`, {
+      headers: headerAuth(),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new KipApiError(await bacaError(response), response.status);
+    }
+
+    return response.text();
+  },
 };
 
 /** URL publik foto bukti inspeksi yang disimpan lewat KipFileService, disajikan statis lewat /api/uploads/. */

@@ -107,6 +107,22 @@ describe("kipApi.qrSvg", () => {
  });
 });
 
+describe("kipApi.qrSvgUniversal", () => {
+ it("mengembalikan teks mentah (bukan JSON) untuk SVG barcode universal", async () => {
+ mockFetchSekali({ ok: true, text: async () => "<svg>universal</svg>" });
+
+ const hasil = await kipApi.qrSvgUniversal("https://contoh.test/kip-scan");
+
+ expect(hasil).toBe("<svg>universal</svg>");
+ });
+
+ it("melempar KipApiError kalau gagal", async () => {
+ mockFetchSekali({ ok: false, status: 500, json: async () => ({ message: "Gagal generate QR" }) });
+
+ await expect(kipApi.qrSvgUniversal("https://contoh.test")).rejects.toBeInstanceOf(KipApiError);
+ });
+});
+
 describe("urlFotoKip", () => {
  it("menyusun URL uploads dari path relatif", () => {
  expect(urlFotoKip("kip/bukti.jpg")).toContain("/uploads/kip/bukti.jpg");
