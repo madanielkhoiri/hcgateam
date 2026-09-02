@@ -215,8 +215,8 @@ describe('TiketService.kirim', () => {
 
     expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Budi'));
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WIB/);
-    expect(pesan).toMatch(/Pulang .* pukul 17:00 WIB/);
+    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WITA/);
+    expect(pesan).toMatch(/Pulang .* pukul 17:00 WITA/);
   });
 
   it('notifikasi WA menyebut jadwal satu arah lagi menyusul kalau BERANGKAT_SAJA', async () => {
@@ -232,7 +232,7 @@ describe('TiketService.kirim', () => {
     );
 
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WIB/);
+    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WITA/);
     expect(pesan).toContain('menyusul dikonfirmasi kemudian');
   });
 });
@@ -378,8 +378,8 @@ describe('TiketService.reschedule', () => {
 
     expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Cuaca buruk'), undefined);
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/KEBERANGKATAN berubah: dari 05 Januari 2026 pukul 08:00 WIB menjadi 01 Februari 2026 pukul 09:00 WIB/);
-    expect(pesan).toMatch(/KEPULANGAN berubah: dari 10 Januari 2026 pukul 17:00 WIB menjadi 03 Februari 2026 pukul 18:00 WIB/);
+    expect(pesan).toMatch(/KEBERANGKATAN berubah: dari 05 Januari 2026 pukul 08:00 WITA menjadi 01 Februari 2026 pukul 09:00 WITA/);
+    expect(pesan).toMatch(/KEPULANGAN berubah: dari 10 Januari 2026 pukul 17:00 WITA menjadi 03 Februari 2026 pukul 18:00 WITA/);
   });
 
   it('notifikasi WA bilang "sudah dikonfirmasi" untuk leg yang tadinya belum ada jadwalnya', async () => {
@@ -396,7 +396,7 @@ describe('TiketService.reschedule', () => {
     await service.reschedule(1, { tanggalSelesai: '2026-02-03', jamSelesai: '18:00' } as any, undefined);
 
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/KEPULANGAN sudah dikonfirmasi: 03 Februari 2026 pukul 18:00 WIB/);
+    expect(pesan).toMatch(/KEPULANGAN sudah dikonfirmasi: 03 Februari 2026 pukul 18:00 WITA/);
     expect(pesan).not.toContain('KEBERANGKATAN');
   });
 
