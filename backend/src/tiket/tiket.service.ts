@@ -146,11 +146,11 @@ export class TiketService {
     const bagian: string[] = [];
 
     if (tiket.tanggalMulai && tiket.jamMulai) {
-      bagian.push(`Berangkat ${formatTanggal(tiket.tanggalMulai)} pukul ${tiket.jamMulai} WIB`);
+      bagian.push(`Berangkat ${formatTanggal(tiket.tanggalMulai)} pukul ${tiket.jamMulai} WITA`);
     }
 
     if (tiket.tanggalSelesai && tiket.jamSelesai) {
-      bagian.push(`Pulang ${formatTanggal(tiket.tanggalSelesai)} pukul ${tiket.jamSelesai} WIB`);
+      bagian.push(`Pulang ${formatTanggal(tiket.tanggalSelesai)} pukul ${tiket.jamSelesai} WITA`);
     }
 
     const keteranganMenyusul =
@@ -316,10 +316,10 @@ export class TiketService {
       if (!baru || !jamBaru) return null;
 
       if (lama && jamLama) {
-        return `Jadwal ${label} berubah: dari ${formatTanggal(lama)} pukul ${jamLama} WIB menjadi ${formatTanggal(baru)} pukul ${jamBaru} WIB`;
+        return `Jadwal ${label} berubah: dari ${formatTanggal(lama)} pukul ${jamLama} WITA menjadi ${formatTanggal(baru)} pukul ${jamBaru} WITA`;
       }
 
-      return `Jadwal ${label} sudah dikonfirmasi: ${formatTanggal(baru)} pukul ${jamBaru} WIB`;
+      return `Jadwal ${label} sudah dikonfirmasi: ${formatTanggal(baru)} pukul ${jamBaru} WITA`;
     };
 
     const bagian = [
