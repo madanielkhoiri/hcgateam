@@ -3,11 +3,15 @@
 // FUNGSI: Kirim tiket cuti (admin GA) & riwayat cuti karyawan (self-service)
 // ==================================================
 
+import { JenisTiket } from '@prisma/client';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TiketFileService } from './tiket-file.service';
-import { BuatTiketDto } from './dto/tiket.dto';
+import { BuatTiketDto, RescheduleTiketDto } from './dto/tiket.dto';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+
+const formatTanggal = (tanggal: Date) =>
+  tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 
 @Injectable()
 export class TiketService {
@@ -65,14 +69,25 @@ export class TiketService {
       throw new NotFoundException('Karyawan tidak ditemukan');
     }
 
-    const mulai = new Date(`${dto.tanggalMulai}T00:00:00.000Z`);
-    const selesai = new Date(`${dto.tanggalSelesai}T00:00:00.000Z`);
+    const perluBerangkat = dto.jenisTiket !== JenisTiket.PULANG_SAJA;
+    const perluPulang = dto.jenisTiket !== JenisTiket.BERANGKAT_SAJA;
 
-    if (Number.isNaN(mulai.getTime()) || Number.isNaN(selesai.getTime())) {
+    if (perluBerangkat && (!dto.tanggalMulai || !dto.jamMulai)) {
+      throw new BadRequestException('Tanggal & jam keberangkatan wajib diisi');
+    }
+
+    if (perluPulang && (!dto.tanggalSelesai || !dto.jamSelesai)) {
+      throw new BadRequestException('Tanggal & jam kepulangan wajib diisi');
+    }
+
+    const mulai = perluBerangkat ? new Date(`${dto.tanggalMulai}T00:00:00.000Z`) : null;
+    const selesai = perluPulang ? new Date(`${dto.tanggalSelesai}T00:00:00.000Z`) : null;
+
+    if ((mulai && Number.isNaN(mulai.getTime())) || (selesai && Number.isNaN(selesai.getTime()))) {
       throw new BadRequestException('Format tanggal tidak valid');
     }
 
-    if (selesai < mulai) {
+    if (mulai && selesai && selesai < mulai) {
       throw new BadRequestException('Tanggal selesai cuti tidak boleh sebelum tanggal mulai');
     }
 
@@ -86,8 +101,11 @@ export class TiketService {
       const tiket = await this.prisma.transportTiket.create({
         data: {
           karyawanId: karyawan.id,
+          jenisTiket: dto.jenisTiket,
           tanggalMulai: mulai,
+          jamMulai: perluBerangkat ? dto.jamMulai ?? null : null,
           tanggalSelesai: selesai,
+          jamSelesai: perluPulang ? dto.jamSelesai ?? null : null,
           keterangan: dto.keterangan?.trim() || null,
           createdBy: aktorId,
           files: { create: disimpan },
@@ -95,7 +113,7 @@ export class TiketService {
         include: { karyawan: true, files: true },
       });
 
-      await this.notifikasiTiketBaru(karyawan, mulai, selesai);
+      await this.notifikasiTiketBaru(karyawan, tiket);
 
       return tiket;
     } catch (error) {
@@ -107,8 +125,13 @@ export class TiketService {
   /** Notifikasi WA ke akun karyawan penerima tiket, pakai nomor dari data akunnya. */
   private async notifikasiTiketBaru(
     karyawan: { nama: string; noTelepon: string | null; akun: { phoneNumber: string | null } | null },
-    mulai: Date,
-    selesai: Date,
+    tiket: {
+      jenisTiket: JenisTiket;
+      tanggalMulai: Date | null;
+      jamMulai: string | null;
+      tanggalSelesai: Date | null;
+      jamSelesai: string | null;
+    },
   ) {
     if (!this.whatsapp.aktif) {
       return;
@@ -120,11 +143,21 @@ export class TiketService {
       return;
     }
 
-    const formatTanggal = (tanggal: Date) =>
-      tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const bagian: string[] = [];
+
+    if (tiket.tanggalMulai && tiket.jamMulai) {
+      bagian.push(`Berangkat ${formatTanggal(tiket.tanggalMulai)} pukul ${tiket.jamMulai} WIB`);
+    }
+
+    if (tiket.tanggalSelesai && tiket.jamSelesai) {
+      bagian.push(`Pulang ${formatTanggal(tiket.tanggalSelesai)} pukul ${tiket.jamSelesai} WIB`);
+    }
+
+    const keteranganMenyusul =
+      tiket.jenisTiket !== JenisTiket.PULANG_PERGI ? ' Jadwal satu arah lagi menyusul dikonfirmasi kemudian.' : '';
 
     const pesan =
-      `Halo ${karyawan.nama}, ada tiket cuti baru untuk Anda periode ${formatTanggal(mulai)} - ${formatTanggal(selesai)}. ` +
+      `Halo ${karyawan.nama}, ada tiket dinas baru untuk Anda: ${bagian.join(', ')}.${keteranganMenyusul} ` +
       `Silakan download filenya di Portal HCGA TEAM ya.`;
 
     await this.whatsapp.kirim(nomor, pesan);
@@ -138,11 +171,7 @@ export class TiketService {
    * file lama TIDAK dihapus (file baru cuma ditambahkan) supaya jejak
    * tiket asli tetap ada untuk audit.
    */
-  async reschedule(
-    id: number,
-    dto: { tanggalMulai: string; tanggalSelesai: string; alasan?: string },
-    fileBaru: Express.Multer.File | undefined,
-  ) {
+  async reschedule(id: number, dto: RescheduleTiketDto, fileBaru: Express.Multer.File | undefined) {
     const tiket = await this.prisma.transportTiket.findUnique({
       where: { id },
       include: {
@@ -155,19 +184,50 @@ export class TiketService {
       throw new NotFoundException('Tiket tidak ditemukan');
     }
 
-    const mulaiBaru = new Date(`${dto.tanggalMulai}T00:00:00.000Z`);
-    const selesaiBaru = new Date(`${dto.tanggalSelesai}T00:00:00.000Z`);
+    const ubahBerangkat = Boolean(dto.tanggalMulai || dto.jamMulai);
+    const ubahPulang = Boolean(dto.tanggalSelesai || dto.jamSelesai);
 
-    if (Number.isNaN(mulaiBaru.getTime()) || Number.isNaN(selesaiBaru.getTime())) {
-      throw new BadRequestException('Format tanggal tidak valid');
+    if (!ubahBerangkat && !ubahPulang) {
+      throw new BadRequestException('Isi minimal jadwal keberangkatan atau kepulangan yang berubah');
     }
 
-    if (selesaiBaru < mulaiBaru) {
-      throw new BadRequestException('Tanggal selesai tidak boleh sebelum tanggal mulai');
+    if (ubahBerangkat && (!dto.tanggalMulai || !dto.jamMulai)) {
+      throw new BadRequestException('Tanggal & jam keberangkatan baru wajib diisi bersamaan');
+    }
+
+    if (ubahPulang && (!dto.tanggalSelesai || !dto.jamSelesai)) {
+      throw new BadRequestException('Tanggal & jam kepulangan baru wajib diisi bersamaan');
+    }
+
+    const mulaiBaru = ubahBerangkat ? new Date(`${dto.tanggalMulai}T00:00:00.000Z`) : tiket.tanggalMulai;
+    const selesaiBaru = ubahPulang ? new Date(`${dto.tanggalSelesai}T00:00:00.000Z`) : tiket.tanggalSelesai;
+
+    if (ubahBerangkat && Number.isNaN(mulaiBaru!.getTime())) {
+      throw new BadRequestException('Format tanggal keberangkatan tidak valid');
+    }
+
+    if (ubahPulang && Number.isNaN(selesaiBaru!.getTime())) {
+      throw new BadRequestException('Format tanggal kepulangan tidak valid');
+    }
+
+    if (mulaiBaru && selesaiBaru && selesaiBaru < mulaiBaru) {
+      throw new BadRequestException('Tanggal kepulangan tidak boleh sebelum tanggal keberangkatan');
     }
 
     const mulaiLama = tiket.tanggalMulai;
+    const jamMulaiLama = tiket.jamMulai;
     const selesaiLama = tiket.tanggalSelesai;
+    const jamSelesaiLama = tiket.jamSelesai;
+
+    const jamMulaiBaru = ubahBerangkat ? dto.jamMulai! : tiket.jamMulai;
+    const jamSelesaiBaru = ubahPulang ? dto.jamSelesai! : tiket.jamSelesai;
+
+    const jenisBaru: JenisTiket =
+      mulaiBaru && jamMulaiBaru && selesaiBaru && jamSelesaiBaru
+        ? JenisTiket.PULANG_PERGI
+        : mulaiBaru && jamMulaiBaru
+          ? JenisTiket.BERANGKAT_SAJA
+          : JenisTiket.PULANG_SAJA;
 
     const fileTersimpan = fileBaru ? this.file.simpan(fileBaru, tiket.karyawanId) : null;
 
@@ -175,8 +235,11 @@ export class TiketService {
       const hasil = await this.prisma.transportTiket.update({
         where: { id },
         data: {
+          jenisTiket: jenisBaru,
           tanggalMulai: mulaiBaru,
+          jamMulai: jamMulaiBaru,
           tanggalSelesai: selesaiBaru,
+          jamSelesai: jamSelesaiBaru,
           keterangan: dto.alasan?.trim()
             ? `${tiket.keterangan ? `${tiket.keterangan}\n` : ''}Reschedule: ${dto.alasan.trim()}`
             : tiket.keterangan,
@@ -190,10 +253,18 @@ export class TiketService {
 
       await this.notifikasiReschedule(
         tiket.karyawan,
-        mulaiLama,
-        selesaiLama,
-        mulaiBaru,
-        selesaiBaru,
+        {
+          ubahBerangkat,
+          ubahPulang,
+          mulaiLama,
+          jamMulaiLama,
+          selesaiLama,
+          jamSelesaiLama,
+          mulaiBaru,
+          jamMulaiBaru,
+          selesaiBaru,
+          jamSelesaiBaru,
+        },
         dto.alasan,
         fileUntukLampiran,
       );
@@ -207,13 +278,21 @@ export class TiketService {
     }
   }
 
-  /** Notifikasi WA khusus reschedule — beda dari tiket baru, sebut jelas jadwal lama & baru + lampirkan e-tiket terbaru. */
+  /** Notifikasi WA khusus reschedule — beda dari tiket baru, sebut jelas jadwal lama & baru (atau konfirmasi baru) + lampirkan e-tiket terbaru. */
   private async notifikasiReschedule(
     karyawan: { nama: string; noTelepon: string | null; akun: { phoneNumber: string | null } | null },
-    mulaiLama: Date,
-    selesaiLama: Date,
-    mulaiBaru: Date,
-    selesaiBaru: Date,
+    perubahan: {
+      ubahBerangkat: boolean;
+      ubahPulang: boolean;
+      mulaiLama: Date | null;
+      jamMulaiLama: string | null;
+      selesaiLama: Date | null;
+      jamSelesaiLama: string | null;
+      mulaiBaru: Date | null;
+      jamMulaiBaru: string | null;
+      selesaiBaru: Date | null;
+      jamSelesaiBaru: string | null;
+    },
     alasan: string | undefined,
     fileLampiran: { fileUrl: string; namaFile: string } | null,
   ) {
@@ -227,26 +306,42 @@ export class TiketService {
       return;
     }
 
-    const formatTanggal = (tanggal: Date) =>
-      tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const barisPerubahan = (
+      lama: Date | null,
+      jamLama: string | null,
+      baru: Date | null,
+      jamBaru: string | null,
+      label: string,
+    ): string | null => {
+      if (!baru || !jamBaru) return null;
+
+      if (lama && jamLama) {
+        return `Jadwal ${label} berubah: dari ${formatTanggal(lama)} pukul ${jamLama} WIB menjadi ${formatTanggal(baru)} pukul ${jamBaru} WIB`;
+      }
+
+      return `Jadwal ${label} sudah dikonfirmasi: ${formatTanggal(baru)} pukul ${jamBaru} WIB`;
+    };
+
+    const bagian = [
+      perubahan.ubahBerangkat
+        ? barisPerubahan(perubahan.mulaiLama, perubahan.jamMulaiLama, perubahan.mulaiBaru, perubahan.jamMulaiBaru, 'KEBERANGKATAN')
+        : null,
+      perubahan.ubahPulang
+        ? barisPerubahan(perubahan.selesaiLama, perubahan.jamSelesaiLama, perubahan.selesaiBaru, perubahan.jamSelesaiBaru, 'KEPULANGAN')
+        : null,
+    ].filter((item): item is string => Boolean(item));
 
     const pesan =
-      `Halo ${karyawan.nama}, jadwal tiket dinas Anda mengalami PERUBAHAN` +
-      `${alasan ? ` (${alasan.trim()})` : ''}: ` +
-      `dari ${formatTanggal(mulaiLama)} - ${formatTanggal(selesaiLama)} ` +
-      `menjadi ${formatTanggal(mulaiBaru)} - ${formatTanggal(selesaiBaru)}. ` +
-      `Mohon perhatikan perubahan ini.`;
+      `Halo ${karyawan.nama}, ada perubahan jadwal tiket dinas Anda` +
+      `${alasan?.trim() ? ` (${alasan.trim()})` : ''}. ` +
+      `${bagian.join('. ')}. Mohon perhatikan perubahan ini.`;
 
-    const urlLampiran = fileLampiran
-      ? this.whatsapp.urlPublikLampiran(fileLampiran.fileUrl)
-      : null;
+    const urlLampiran = fileLampiran ? this.whatsapp.urlPublikLampiran(fileLampiran.fileUrl) : null;
 
     await this.whatsapp.kirim(
       nomor,
       urlLampiran ? pesan : `${pesan} Silakan cek e-tiket terbaru di Portal HCGA TEAM.`,
-      urlLampiran && fileLampiran
-        ? { url: urlLampiran, namaFile: fileLampiran.namaFile }
-        : undefined,
+      urlLampiran && fileLampiran ? { url: urlLampiran, namaFile: fileLampiran.namaFile } : undefined,
     );
   }
 

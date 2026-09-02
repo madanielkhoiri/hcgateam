@@ -7,7 +7,9 @@ import { ArrowLeft, CalendarClock, Download, Plus, Search, Ticket, Trash2, X } f
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import { compressImage } from '@/lib/compress-image';
 import {
+  JenisTiket,
   KaryawanRingkas,
+  LABEL_JENIS_TIKET,
   TransportApiError,
   TransportTiket,
   transportApi,
@@ -15,7 +17,8 @@ import {
 } from '@/lib/transport-api';
 import styles from '@/components/transport/transport.module.css';
 
-function formatTanggal(value: string): string {
+function formatTanggal(value: string | null): string {
+  if (!value) return '-';
   return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('id-ID', {
     day: '2-digit',
     month: 'short',
@@ -23,12 +26,30 @@ function formatTanggal(value: string): string {
   });
 }
 
+function formatLeg(tanggal: string | null, jam: string | null): string {
+  if (!tanggal || !jam) return 'Belum ada jadwal';
+  return `${formatTanggal(tanggal)}, ${jam} WIB`;
+}
+
 const blankForm = {
   karyawanId: 0,
   namaKaryawan: '',
+  jenisTiket: 'PULANG_PERGI' as JenisTiket,
   tanggalMulai: '',
+  jamMulai: '',
   tanggalSelesai: '',
+  jamSelesai: '',
   keterangan: '',
+};
+
+const blankReschedule = {
+  ubahBerangkat: false,
+  tanggalMulai: '',
+  jamMulai: '',
+  ubahPulang: false,
+  tanggalSelesai: '',
+  jamSelesai: '',
+  alasan: '',
 };
 
 export default function TiketPage() {
@@ -48,7 +69,7 @@ export default function TiketPage() {
   const [formError, setFormError] = useState('');
 
   const [rescheduleTarget, setRescheduleTarget] = useState<TransportTiket | null>(null);
-  const [rescheduleForm, setRescheduleForm] = useState({ tanggalMulai: '', tanggalSelesai: '', alasan: '' });
+  const [rescheduleForm, setRescheduleForm] = useState(blankReschedule);
   const [rescheduleFile, setRescheduleFile] = useState<File | null>(null);
   const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
   const [rescheduleError, setRescheduleError] = useState('');
@@ -100,12 +121,25 @@ export default function TiketPage() {
     setModal(true);
   }
 
+  const perluBerangkat = form.jenisTiket !== 'PULANG_SAJA';
+  const perluPulang = form.jenisTiket !== 'BERANGKAT_SAJA';
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setFormError('');
 
     if (!form.karyawanId) {
       setFormError('Pilih karyawan penerima tiket terlebih dahulu');
+      return;
+    }
+
+    if (perluBerangkat && (!form.tanggalMulai || !form.jamMulai)) {
+      setFormError('Tanggal & jam keberangkatan wajib diisi');
+      return;
+    }
+
+    if (perluPulang && (!form.tanggalSelesai || !form.jamSelesai)) {
+      setFormError('Tanggal & jam kepulangan wajib diisi');
       return;
     }
 
@@ -119,8 +153,11 @@ export default function TiketPage() {
       await transportApi.tiket.kirim(
         {
           karyawanId: form.karyawanId,
-          tanggalMulai: form.tanggalMulai,
-          tanggalSelesai: form.tanggalSelesai,
+          jenisTiket: form.jenisTiket,
+          tanggalMulai: perluBerangkat ? form.tanggalMulai : undefined,
+          jamMulai: perluBerangkat ? form.jamMulai : undefined,
+          tanggalSelesai: perluPulang ? form.tanggalSelesai : undefined,
+          jamSelesai: perluPulang ? form.jamSelesai : undefined,
           keterangan: form.keterangan || undefined,
         },
         files,
@@ -153,7 +190,9 @@ export default function TiketPage() {
         })
         .filter((item) => {
           if (!bulan && !tahun) return true;
-          const tanggal = new Date(`${item.tanggalMulai.slice(0, 10)}T00:00:00`);
+          const acuan = item.tanggalMulai ?? item.tanggalSelesai;
+          if (!acuan) return true;
+          const tanggal = new Date(`${acuan.slice(0, 10)}T00:00:00`);
           if (tahun && tanggal.getFullYear() !== Number(tahun)) return false;
           if (bulan && tanggal.getMonth() + 1 !== Number(bulan)) return false;
           return true;
@@ -174,8 +213,12 @@ export default function TiketPage() {
   function bukaReschedule(item: TransportTiket) {
     setRescheduleTarget(item);
     setRescheduleForm({
-      tanggalMulai: item.tanggalMulai.slice(0, 10),
-      tanggalSelesai: item.tanggalSelesai.slice(0, 10),
+      ubahBerangkat: false,
+      tanggalMulai: item.tanggalMulai ? item.tanggalMulai.slice(0, 10) : '',
+      jamMulai: item.jamMulai ?? '',
+      ubahPulang: false,
+      tanggalSelesai: item.tanggalSelesai ? item.tanggalSelesai.slice(0, 10) : '',
+      jamSelesai: item.jamSelesai ?? '',
       alasan: '',
     });
     setRescheduleFile(null);
@@ -186,13 +229,34 @@ export default function TiketPage() {
     event.preventDefault();
     if (!rescheduleTarget) return;
 
-    setRescheduleSubmitting(true);
     setRescheduleError('');
 
+    if (!rescheduleForm.ubahBerangkat && !rescheduleForm.ubahPulang) {
+      setRescheduleError('Pilih minimal satu jadwal (keberangkatan/kepulangan) yang mau diubah');
+      return;
+    }
+
+    if (rescheduleForm.ubahBerangkat && (!rescheduleForm.tanggalMulai || !rescheduleForm.jamMulai)) {
+      setRescheduleError('Tanggal & jam keberangkatan baru wajib diisi');
+      return;
+    }
+
+    if (rescheduleForm.ubahPulang && (!rescheduleForm.tanggalSelesai || !rescheduleForm.jamSelesai)) {
+      setRescheduleError('Tanggal & jam kepulangan baru wajib diisi');
+      return;
+    }
+
+    setRescheduleSubmitting(true);
     try {
       await transportApi.tiket.reschedule(
         rescheduleTarget.id,
-        rescheduleForm,
+        {
+          tanggalMulai: rescheduleForm.ubahBerangkat ? rescheduleForm.tanggalMulai : undefined,
+          jamMulai: rescheduleForm.ubahBerangkat ? rescheduleForm.jamMulai : undefined,
+          tanggalSelesai: rescheduleForm.ubahPulang ? rescheduleForm.tanggalSelesai : undefined,
+          jamSelesai: rescheduleForm.ubahPulang ? rescheduleForm.jamSelesai : undefined,
+          alasan: rescheduleForm.alasan || undefined,
+        },
         rescheduleFile ?? undefined,
       );
       setRescheduleTarget(null);
@@ -306,7 +370,11 @@ export default function TiketPage() {
                   </td>
                   <td>{item.karyawan?.departemen?.namaDepartemen ?? '-'}</td>
                   <td>
-                    {formatTanggal(item.tanggalMulai)} — {formatTanggal(item.tanggalSelesai)}
+                    <div style={{ fontWeight: 700, fontSize: 11, color: '#385675', marginBottom: 2 }}>
+                      {LABEL_JENIS_TIKET[item.jenisTiket]}
+                    </div>
+                    <div>Berangkat: {formatLeg(item.tanggalMulai, item.jamMulai)}</div>
+                    <div>Pulang: {formatLeg(item.tanggalSelesai, item.jamSelesai)}</div>
                   </td>
                   <td>{item.keterangan || '-'}</td>
                   <td>
@@ -402,25 +470,65 @@ export default function TiketPage() {
                 )}
               </label>
 
-              <label>
-                Tanggal Mulai Cuti
-                <input
-                  type="date"
-                  required
-                  value={form.tanggalMulai}
-                  onChange={(e) => setForm((cur) => ({ ...cur, tanggalMulai: e.target.value }))}
-                />
+              <label style={{ gridColumn: '1/-1' }}>
+                Jenis Tiket
+                <select
+                  value={form.jenisTiket}
+                  onChange={(e) => setForm((cur) => ({ ...cur, jenisTiket: e.target.value as JenisTiket }))}
+                >
+                  <option value="PULANG_PERGI">Pulang-Pergi</option>
+                  <option value="BERANGKAT_SAJA">Berangkat Saja (kepulangan menyusul)</option>
+                  <option value="PULANG_SAJA">Pulang Saja (keberangkatan sudah lewat/menyusul terpisah)</option>
+                </select>
               </label>
 
-              <label>
-                Tanggal Selesai Cuti
-                <input
-                  type="date"
-                  required
-                  value={form.tanggalSelesai}
-                  onChange={(e) => setForm((cur) => ({ ...cur, tanggalSelesai: e.target.value }))}
-                />
-              </label>
+              {perluBerangkat && (
+                <>
+                  <label>
+                    Tanggal Keberangkatan
+                    <input
+                      type="date"
+                      required
+                      value={form.tanggalMulai}
+                      onChange={(e) => setForm((cur) => ({ ...cur, tanggalMulai: e.target.value }))}
+                    />
+                  </label>
+
+                  <label>
+                    Jam Keberangkatan (24 jam)
+                    <input
+                      type="time"
+                      required
+                      value={form.jamMulai}
+                      onChange={(e) => setForm((cur) => ({ ...cur, jamMulai: e.target.value }))}
+                    />
+                  </label>
+                </>
+              )}
+
+              {perluPulang && (
+                <>
+                  <label>
+                    Tanggal Kepulangan
+                    <input
+                      type="date"
+                      required
+                      value={form.tanggalSelesai}
+                      onChange={(e) => setForm((cur) => ({ ...cur, tanggalSelesai: e.target.value }))}
+                    />
+                  </label>
+
+                  <label>
+                    Jam Kepulangan (24 jam)
+                    <input
+                      type="time"
+                      required
+                      value={form.jamSelesai}
+                      onChange={(e) => setForm((cur) => ({ ...cur, jamSelesai: e.target.value }))}
+                    />
+                  </label>
+                </>
+              )}
 
               <label style={{ gridColumn: '1/-1' }}>
                 Keterangan (opsional)
@@ -487,29 +595,81 @@ export default function TiketPage() {
             </header>
 
             <div className={styles.formGrid}>
-              <label>
-                Tanggal Mulai Baru
+              <label style={{ gridColumn: '1/-1', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <input
-                  type="date"
-                  required
-                  value={rescheduleForm.tanggalMulai}
-                  onChange={(e) =>
-                    setRescheduleForm((cur) => ({ ...cur, tanggalMulai: e.target.value }))
-                  }
+                  type="checkbox"
+                  checked={rescheduleForm.ubahBerangkat}
+                  onChange={(e) => setRescheduleForm((cur) => ({ ...cur, ubahBerangkat: e.target.checked }))}
                 />
+                Ubah jadwal keberangkatan
+                <span style={{ fontWeight: 400, color: '#8a9bb0' }}>
+                  (saat ini: {formatLeg(rescheduleTarget.tanggalMulai, rescheduleTarget.jamMulai)})
+                </span>
               </label>
 
-              <label>
-                Tanggal Selesai Baru
+              {rescheduleForm.ubahBerangkat && (
+                <>
+                  <label>
+                    Tanggal Keberangkatan Baru
+                    <input
+                      type="date"
+                      required
+                      value={rescheduleForm.tanggalMulai}
+                      onChange={(e) =>
+                        setRescheduleForm((cur) => ({ ...cur, tanggalMulai: e.target.value }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Jam Keberangkatan Baru (24 jam)
+                    <input
+                      type="time"
+                      required
+                      value={rescheduleForm.jamMulai}
+                      onChange={(e) => setRescheduleForm((cur) => ({ ...cur, jamMulai: e.target.value }))}
+                    />
+                  </label>
+                </>
+              )}
+
+              <label style={{ gridColumn: '1/-1', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <input
-                  type="date"
-                  required
-                  value={rescheduleForm.tanggalSelesai}
-                  onChange={(e) =>
-                    setRescheduleForm((cur) => ({ ...cur, tanggalSelesai: e.target.value }))
-                  }
+                  type="checkbox"
+                  checked={rescheduleForm.ubahPulang}
+                  onChange={(e) => setRescheduleForm((cur) => ({ ...cur, ubahPulang: e.target.checked }))}
                 />
+                Ubah jadwal kepulangan
+                <span style={{ fontWeight: 400, color: '#8a9bb0' }}>
+                  (saat ini: {formatLeg(rescheduleTarget.tanggalSelesai, rescheduleTarget.jamSelesai)})
+                </span>
               </label>
+
+              {rescheduleForm.ubahPulang && (
+                <>
+                  <label>
+                    Tanggal Kepulangan Baru
+                    <input
+                      type="date"
+                      required
+                      value={rescheduleForm.tanggalSelesai}
+                      onChange={(e) =>
+                        setRescheduleForm((cur) => ({ ...cur, tanggalSelesai: e.target.value }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Jam Kepulangan Baru (24 jam)
+                    <input
+                      type="time"
+                      required
+                      value={rescheduleForm.jamSelesai}
+                      onChange={(e) => setRescheduleForm((cur) => ({ ...cur, jamSelesai: e.target.value }))}
+                    />
+                  </label>
+                </>
+              )}
 
               <label style={{ gridColumn: '1/-1' }}>
                 Alasan Perubahan (opsional, ikut disebut di WA)

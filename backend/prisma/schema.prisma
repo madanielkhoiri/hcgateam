@@ -2365,14 +2365,23 @@ model Driver {
   @@map("transport_driver")
 }
 
+enum JenisTiket {
+  PULANG_PERGI
+  BERANGKAT_SAJA
+  PULANG_SAJA
+}
+
 model TransportTiket {
-  id             Int      @id @default(autoincrement())
-  karyawanId     Int      @map("karyawan_id")
-  tanggalMulai   DateTime @map("tanggal_mulai") @db.Date
-  tanggalSelesai DateTime @map("tanggal_selesai") @db.Date
-  keterangan     String?  @db.Text
-  createdBy      Int      @map("created_by")
-  createdAt      DateTime @default(now()) @map("created_at")
+  id             Int         @id @default(autoincrement())
+  karyawanId     Int         @map("karyawan_id")
+  jenisTiket     JenisTiket  @default(PULANG_PERGI) @map("jenis_tiket")
+  tanggalMulai   DateTime?   @map("tanggal_mulai") @db.Date
+  jamMulai       String?     @map("jam_mulai")
+  tanggalSelesai DateTime?   @map("tanggal_selesai") @db.Date
+  jamSelesai     String?     @map("jam_selesai")
+  keterangan     String?     @db.Text
+  createdBy      Int         @map("created_by")
+  createdAt      DateTime    @default(now()) @map("created_at")
 
   karyawan Karyawan             @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
   pengirim User                 @relation(fields: [createdBy], references: [id], onDelete: Restrict)

@@ -25,11 +25,22 @@ export type TransportTiketFile = {
   namaFile: string;
 };
 
+export type JenisTiket = 'PULANG_PERGI' | 'BERANGKAT_SAJA' | 'PULANG_SAJA';
+
+export const LABEL_JENIS_TIKET: Record<JenisTiket, string> = {
+  PULANG_PERGI: 'Pulang-Pergi',
+  BERANGKAT_SAJA: 'Berangkat Saja',
+  PULANG_SAJA: 'Pulang Saja',
+};
+
 export type TransportTiket = {
   id: number;
   karyawanId: number;
-  tanggalMulai: string;
-  tanggalSelesai: string;
+  jenisTiket: JenisTiket;
+  tanggalMulai: string | null;
+  jamMulai: string | null;
+  tanggalSelesai: string | null;
+  jamSelesai: string | null;
   keterangan: string | null;
   createdAt: string;
   karyawan?: KaryawanRingkas;
@@ -151,25 +162,41 @@ export const transportApi = {
     daftarAdmin: () => request<TransportTiket[]>('/tiket/admin'),
     karyawanRingkas: (search?: string) =>
       request<KaryawanRingkas[]>(`/tiket/admin/karyawan${search ? `?search=${encodeURIComponent(search)}` : ''}`),
-    kirim: (data: { karyawanId: number; tanggalMulai: string; tanggalSelesai: string; keterangan?: string }, files: File[]) => {
+    kirim: (
+      data: {
+        karyawanId: number;
+        jenisTiket: JenisTiket;
+        tanggalMulai?: string;
+        jamMulai?: string;
+        tanggalSelesai?: string;
+        jamSelesai?: string;
+        keterangan?: string;
+      },
+      files: File[],
+    ) => {
       const form = new FormData();
       form.append('karyawanId', String(data.karyawanId));
-      form.append('tanggalMulai', data.tanggalMulai);
-      form.append('tanggalSelesai', data.tanggalSelesai);
+      form.append('jenisTiket', data.jenisTiket);
+      if (data.tanggalMulai) form.append('tanggalMulai', data.tanggalMulai);
+      if (data.jamMulai) form.append('jamMulai', data.jamMulai);
+      if (data.tanggalSelesai) form.append('tanggalSelesai', data.tanggalSelesai);
+      if (data.jamSelesai) form.append('jamSelesai', data.jamSelesai);
       if (data.keterangan) form.append('keterangan', data.keterangan);
       files.forEach((file) => form.append('file', file));
       return request<TransportTiket>('/tiket/admin', { method: 'POST', body: form });
     },
     hapus: (id: number) => request<{ message: string }>(`/tiket/admin/${id}`, { method: 'DELETE' }),
-    /** Perubahan jadwal dadakan dari penerbangan (delay/cuaca buruk/dsb) — kirim notifikasi WA khusus ke karyawan, bukan hapus-buat-ulang. */
+    /** Perubahan jadwal dadakan dari penerbangan (delay/cuaca buruk/dsb) — kirim notifikasi WA khusus ke karyawan, bukan hapus-buat-ulang. Isi salah satu leg saja (berangkat/pulang) atau dua-duanya. */
     reschedule: (
       id: number,
-      data: { tanggalMulai: string; tanggalSelesai: string; alasan?: string },
+      data: { tanggalMulai?: string; jamMulai?: string; tanggalSelesai?: string; jamSelesai?: string; alasan?: string },
       fileBaru?: File,
     ) => {
       const form = new FormData();
-      form.append('tanggalMulai', data.tanggalMulai);
-      form.append('tanggalSelesai', data.tanggalSelesai);
+      if (data.tanggalMulai) form.append('tanggalMulai', data.tanggalMulai);
+      if (data.jamMulai) form.append('jamMulai', data.jamMulai);
+      if (data.tanggalSelesai) form.append('tanggalSelesai', data.tanggalSelesai);
+      if (data.jamSelesai) form.append('jamSelesai', data.jamSelesai);
       if (data.alasan) form.append('alasan', data.alasan);
       if (fileBaru) form.append('file', fileBaru);
       return request<TransportTiket>(`/tiket/admin/${id}/reschedule`, { method: 'PATCH', body: form });
