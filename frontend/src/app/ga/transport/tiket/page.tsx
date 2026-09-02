@@ -599,6 +599,7 @@ export default function TiketPage() {
                   type="checkbox"
                   checked={rescheduleForm.ubahBerangkat}
                   onChange={(e) => setRescheduleForm((cur) => ({ ...cur, ubahBerangkat: e.target.checked }))}
+                  style={{ width: 18, height: 18, flex: '0 0 auto' }}
                 />
                 Ubah jadwal keberangkatan
                 <span style={{ fontWeight: 400, color: '#8a9bb0' }}>
@@ -636,6 +637,7 @@ export default function TiketPage() {
                   type="checkbox"
                   checked={rescheduleForm.ubahPulang}
                   onChange={(e) => setRescheduleForm((cur) => ({ ...cur, ubahPulang: e.target.checked }))}
+                  style={{ width: 18, height: 18, flex: '0 0 auto' }}
                 />
                 Ubah jadwal kepulangan
                 <span style={{ fontWeight: 400, color: '#8a9bb0' }}>
