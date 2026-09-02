@@ -239,6 +239,7 @@ export class TravelService {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'Asia/Makassar',
     });
 
     for (const karyawan of daftarKaryawan) {
@@ -249,7 +250,7 @@ export class TravelService {
       }
 
       const pesan =
-        `Halo ${karyawan.nama}, Anda dijadwalkan Travel ke ${tujuan} pada ${waktuText} WIB. ` +
+        `Halo ${karyawan.nama}, Anda dijadwalkan Travel ke ${tujuan} pada ${waktuText} WITA. ` +
         `Armada: ${armada}, Driver: ${driver.nama}${driver.noTelepon ? ` (${driver.noTelepon})` : ''}. ` +
         `Cek di Portal HCGA TEAM ya.`;
 

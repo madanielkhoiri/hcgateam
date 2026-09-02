@@ -1,8 +1,9 @@
 'use client';
 
-import { Camera } from 'lucide-react';
+import { Camera, UserCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { compressImage } from '@/lib/compress-image';
+import { useStoredUser } from '@/lib/use-stored-user';
 
 export function KipCeklisForm({
   parameterChecklist,
@@ -23,9 +24,17 @@ export function KipCeklisForm({
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [localError, setLocalError] = useState('');
+  const user = useStoredUser();
 
   const warnaTeks = gelap ? '#ffffff' : '#12355f';
   const warnaSub = gelap ? 'rgba(255,255,255,.65)' : '#71839d';
+
+  const tanggalSekarang = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 
   async function handleFotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -58,6 +67,31 @@ export function KipCeklisForm({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {user && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '9px 12px',
+            borderRadius: 10,
+            background: gelap ? 'rgba(255,255,255,.08)' : '#f1f6fc',
+            fontSize: 12,
+            color: warnaSub,
+          }}
+        >
+          <UserCircle2 size={16} color={warnaTeks} style={{ flexShrink: 0 }} />
+          <span>
+            Akan tercatat sebagai{' '}
+            <strong style={{ color: warnaTeks }}>
+              {user.name}
+              {user.nrp ? ` (${user.nrp})` : ''}
+            </strong>{' '}
+            pada {tanggalSekarang}
+          </span>
+        </div>
+      )}
+
       <strong style={{ color: warnaTeks, fontSize: 13 }}>Checklist Parameter Inspeksi</strong>
 
       {parameterChecklist.map((label, index) => (

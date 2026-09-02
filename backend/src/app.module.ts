@@ -19,6 +19,7 @@ import { HcgaThrottlerGuard } from './common/hcga-throttler.guard';
 import { AuditModule } from './audit/audit.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { ApprovalSummaryModule } from './approval-summary/approval-summary.module';
+import { PengaduanLayananModule } from './pengaduan-layanan/pengaduan-layanan.module';
 
 // ==================================================
 // APP MODULE
@@ -120,6 +121,7 @@ import { KipModule } from './kip/kip.module';
     AlbumModule,
     KipModule,
     ApprovalSummaryModule,
+    PengaduanLayananModule,
   ],
   controllers: [AppController],
   providers: [
