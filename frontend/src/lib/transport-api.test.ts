@@ -40,13 +40,21 @@ describe("transportApi.tiket.kirim", () => {
  const file = new File(["a"], "tiket.pdf");
 
  await transportApi.tiket.kirim(
- { karyawanId: 1, tanggalMulai: "2026-03-01", tanggalSelesai: "2026-03-05" },
+ {
+ karyawanId: 1,
+ jenisTiket: "PULANG_PERGI",
+ tanggalMulai: "2026-03-01",
+ jamMulai: "08:00",
+ tanggalSelesai: "2026-03-05",
+ jamSelesai: "17:00",
+ },
  [file],
  );
 
  const [, init] = fetchMock.mock.calls[0];
  const form = init.body as FormData;
  expect(form.get("karyawanId")).toBe("1");
+ expect(form.get("jenisTiket")).toBe("PULANG_PERGI");
  expect(form.has("keterangan")).toBe(false);
  expect(form.getAll("file")).toEqual([file]);
  });
@@ -55,12 +63,34 @@ describe("transportApi.tiket.kirim", () => {
  const fetchMock = mockFetchSekali({ ok: true, json: async () => ({}) });
 
  await transportApi.tiket.kirim(
- { karyawanId: 1, tanggalMulai: "2026-03-01", tanggalSelesai: "2026-03-05", keterangan: "Dinas Jakarta" },
+ {
+ karyawanId: 1,
+ jenisTiket: "PULANG_PERGI",
+ tanggalMulai: "2026-03-01",
+ jamMulai: "08:00",
+ tanggalSelesai: "2026-03-05",
+ jamSelesai: "17:00",
+ keterangan: "Dinas Jakarta",
+ },
  [],
  );
 
  const [, init] = fetchMock.mock.calls[0];
  expect((init.body as FormData).get("keterangan")).toBe("Dinas Jakarta");
+ });
+
+ it("BERANGKAT_SAJA tidak menyertakan field tanggal/jam kepulangan", async () => {
+ const fetchMock = mockFetchSekali({ ok: true, json: async () => ({}) });
+
+ await transportApi.tiket.kirim(
+ { karyawanId: 1, jenisTiket: "BERANGKAT_SAJA", tanggalMulai: "2026-03-01", jamMulai: "08:00" },
+ [],
+ );
+
+ const [, init] = fetchMock.mock.calls[0];
+ const form = init.body as FormData;
+ expect(form.has("tanggalSelesai")).toBe(false);
+ expect(form.has("jamSelesai")).toBe(false);
  });
 });
 

@@ -12,6 +12,7 @@ import {
   GlassWater,
   HardHat,
   Home,
+  MessageSquareText,
   Scissors,
   Ticket,
   TreePine,
@@ -215,6 +216,17 @@ const gaTree: MenuTreeNode[] = [
         ],
       },
     ],
+  },
+  {
+    key: 'GA_PENGADUAN',
+    title: 'Pengaduan Layanan',
+    description: 'Beri rating dan masukan atas pelayanan tim GA.',
+    status: 'Tersedia',
+    href: '/ga/pengaduan',
+    icon: MessageSquareText,
+    accessKey: ACCESS_KEYS.GA,
+    accent: '#ef476f',
+    soft: '#ffe4ec',
   },
 ];
 

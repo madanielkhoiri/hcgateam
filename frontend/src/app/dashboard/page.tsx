@@ -1131,7 +1131,7 @@ export default function DashboardPage() {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}{' '}
-                          WIB
+                          WITA
                         </small>
                       </span>
 

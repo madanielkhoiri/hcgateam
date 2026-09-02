@@ -2,6 +2,7 @@ export type PortalUser = {
   id: number;
   name: string;
   username: string;
+  nrp?: string | null;
   role: string;
   accessKeys?: string[];
   isActive?: boolean;

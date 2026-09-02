@@ -9,6 +9,7 @@ import {
   Droplet,
   FolderKanban,
   HardHat,
+  MessageSquareText,
   Plug,
   QrCode,
   Recycle,
@@ -148,6 +149,17 @@ function buatCivilTree(approval: RingkasanApproval | null): MenuTreeNode[] {
         soft: '#e2f7ee',
       },
     ],
+  },
+  {
+    key: 'CIVIL_PENGADUAN',
+    title: 'Pengaduan Layanan',
+    description: 'Beri rating dan masukan atas pelayanan tim Civil.',
+    status: 'Tersedia',
+    href: '/civil/pengaduan',
+    icon: MessageSquareText,
+    accessKey: ACCESS_KEYS.CIVIL,
+    accent: '#ef476f',
+    soft: '#ffe4ec',
   },
   ];
 }

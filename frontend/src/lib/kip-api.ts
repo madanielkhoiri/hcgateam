@@ -30,7 +30,7 @@ export type KipChecklistBulan = {
   tanggalPeriksa: string | null;
   fotoBukti: string | null;
   parameterCeklis: ParameterCeklisHasil[] | null;
-  pemeriksa?: { id: number; name: string } | null;
+  pemeriksa?: { id: number; name: string; nrp: string | null } | null;
 };
 
 export type Kip = {

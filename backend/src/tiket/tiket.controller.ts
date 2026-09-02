@@ -10,18 +10,20 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   Req,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TiketService } from './tiket.service';
-import { BuatTiketDto, TautkanNikDto } from './dto/tiket.dto';
+import { BuatTiketDto, RescheduleTiketDto, TautkanNikDto } from './dto/tiket.dto';
 
 @Controller('tiket')
 @UseGuards(JwtAuthGuard)
@@ -53,6 +55,17 @@ export class TiketController {
   @Delete('admin/:id')
   hapus(@Param('id', ParseIntPipe) id: number) {
     return this.service.hapus(id);
+  }
+
+  /** Perubahan jadwal dadakan dari penerbangan (delay/cuaca buruk/dsb) — kirim notifikasi WA khusus, bukan hapus-buat-ulang. */
+  @Patch('admin/:id/reschedule')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  reschedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RescheduleTiketDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.service.reschedule(id, dto, file);
   }
 
   // ---------- Self-service karyawan (tanpa accessKey, cukup login) ----------
