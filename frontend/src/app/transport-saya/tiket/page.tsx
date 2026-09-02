@@ -2,15 +2,27 @@
 
 import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
-import { TransportApiError, TransportTiket, transportApi, urlFileTransport } from '@/lib/transport-api';
+import {
+  LABEL_JENIS_TIKET,
+  TransportApiError,
+  TransportTiket,
+  transportApi,
+  urlFileTransport,
+} from '@/lib/transport-api';
 import styles from '../transport-saya.module.css';
 
-function formatTanggal(value: string): string {
+function formatTanggal(value: string | null): string {
+  if (!value) return '-';
   return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('id-ID', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
+}
+
+function formatLeg(tanggal: string | null, jam: string | null): string {
+  if (!tanggal || !jam) return 'Belum ada jadwal';
+  return `${formatTanggal(tanggal)}, ${jam} WIB`;
 }
 
 export default function TiketSayaPage() {
@@ -40,9 +52,9 @@ export default function TiketSayaPage() {
         <div key={tiket.id} className={styles.card}>
           <div className={styles.rowBetween}>
             <div>
-              <h3>
-                {formatTanggal(tiket.tanggalMulai)} — {formatTanggal(tiket.tanggalSelesai)}
-              </h3>
+              <h3>{LABEL_JENIS_TIKET[tiket.jenisTiket]}</h3>
+              <p>Berangkat: {formatLeg(tiket.tanggalMulai, tiket.jamMulai)}</p>
+              <p>Pulang: {formatLeg(tiket.tanggalSelesai, tiket.jamSelesai)}</p>
               <p>{tiket.keterangan || 'Tanpa keterangan'}</p>
             </div>
           </div>

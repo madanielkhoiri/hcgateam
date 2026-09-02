@@ -12,8 +12,11 @@ function tiketFixture(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
     karyawanId: 1,
+    jenisTiket: 'PULANG_PERGI',
     tanggalMulai: new Date('2026-01-05T00:00:00.000Z'),
+    jamMulai: '08:00',
     tanggalSelesai: new Date('2026-01-10T00:00:00.000Z'),
+    jamSelesai: '17:00',
     keterangan: null,
     karyawan: karyawanFixture(),
     files: [{ fileUrl: 'tiket/karyawan-1/a.pdf', namaFile: 'a.pdf' }],
@@ -81,7 +84,15 @@ function buatService(overrides: {
   return { service, prisma, file, whatsapp, create, deleteFn, update, updateTiket };
 }
 
-const dtoDasar = { karyawanId: 1, tanggalMulai: '2026-01-05', tanggalSelesai: '2026-01-10', keterangan: '  Cuti tahunan  ' };
+const dtoDasar = {
+  karyawanId: 1,
+  jenisTiket: 'PULANG_PERGI' as const,
+  tanggalMulai: '2026-01-05',
+  jamMulai: '08:00',
+  tanggalSelesai: '2026-01-10',
+  jamSelesai: '17:00',
+  keterangan: '  Cuti tahunan  ',
+};
 const fileFixture = { originalname: 'a.pdf' } as Express.Multer.File;
 
 describe('TiketService.kirim', () => {
@@ -113,6 +124,58 @@ describe('TiketService.kirim', () => {
     await expect(service.kirim(dtoDasar as any, [], 9)).rejects.toThrow('Minimal 1 file tiket wajib diunggah');
   });
 
+  it('menolak jenis PULANG_PERGI kalau jam kepulangan tidak diisi', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.kirim({ ...dtoDasar, jamSelesai: undefined } as any, [fileFixture], 9),
+    ).rejects.toThrow('Tanggal & jam kepulangan wajib diisi');
+  });
+
+  it('BERANGKAT_SAJA tidak wajib mengisi tanggal/jam kepulangan', async () => {
+    const { service, create } = buatService();
+
+    await service.kirim(
+      { ...dtoDasar, jenisTiket: 'BERANGKAT_SAJA', tanggalSelesai: undefined, jamSelesai: undefined } as any,
+      [fileFixture],
+      9,
+    );
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ jenisTiket: 'BERANGKAT_SAJA', tanggalSelesai: null, jamSelesai: null }),
+      }),
+    );
+  });
+
+  it('menolak BERANGKAT_SAJA kalau jam keberangkatan tidak diisi', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.kirim(
+        { ...dtoDasar, jenisTiket: 'BERANGKAT_SAJA', tanggalSelesai: undefined, jamSelesai: undefined, jamMulai: undefined } as any,
+        [fileFixture],
+        9,
+      ),
+    ).rejects.toThrow('Tanggal & jam keberangkatan wajib diisi');
+  });
+
+  it('PULANG_SAJA tidak wajib mengisi tanggal/jam keberangkatan', async () => {
+    const { service, create } = buatService();
+
+    await service.kirim(
+      { ...dtoDasar, jenisTiket: 'PULANG_SAJA', tanggalMulai: undefined, jamMulai: undefined } as any,
+      [fileFixture],
+      9,
+    );
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ jenisTiket: 'PULANG_SAJA', tanggalMulai: null, jamMulai: null }),
+      }),
+    );
+  });
+
   it('berhasil mengirim tiket dan menyimpan file', async () => {
     const { service, create } = buatService();
 
@@ -142,7 +205,7 @@ describe('TiketService.kirim', () => {
     expect(whatsapp.kirim).not.toHaveBeenCalled();
   });
 
-  it('mengirim notifikasi WA ke nomor akun karyawan kalau whatsapp aktif', async () => {
+  it('mengirim notifikasi WA menyebut jam berangkat & pulang kalau PULANG_PERGI', async () => {
     const { service, whatsapp } = buatService({
       whatsappAktif: true,
       karyawan: karyawanFixture({ akun: { phoneNumber: '0812' } }),
@@ -151,55 +214,128 @@ describe('TiketService.kirim', () => {
     await service.kirim(dtoDasar as any, [fileFixture], 9);
 
     expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Budi'));
+    const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
+    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WIB/);
+    expect(pesan).toMatch(/Pulang .* pukul 17:00 WIB/);
+  });
+
+  it('notifikasi WA menyebut jadwal satu arah lagi menyusul kalau BERANGKAT_SAJA', async () => {
+    const { service, whatsapp } = buatService({
+      whatsappAktif: true,
+      karyawan: karyawanFixture({ akun: { phoneNumber: '0812' } }),
+    });
+
+    await service.kirim(
+      { ...dtoDasar, jenisTiket: 'BERANGKAT_SAJA', tanggalSelesai: undefined, jamSelesai: undefined } as any,
+      [fileFixture],
+      9,
+    );
+
+    const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
+    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WIB/);
+    expect(pesan).toContain('menyusul dikonfirmasi kemudian');
   });
 });
 
 describe('TiketService.reschedule', () => {
-  const dtoReschedule = { tanggalMulai: '2026-02-01', tanggalSelesai: '2026-02-03', alasan: 'Cuaca buruk' };
+  const dtoReschedule = {
+    tanggalMulai: '2026-02-01',
+    jamMulai: '09:00',
+    tanggalSelesai: '2026-02-03',
+    jamSelesai: '18:00',
+    alasan: 'Cuaca buruk',
+  };
 
   it('melempar NotFoundException kalau tiket tidak ada', async () => {
     const { service } = buatService({ tiket: null });
 
-    await expect(service.reschedule(1, dtoReschedule, undefined)).rejects.toThrow(NotFoundException);
+    await expect(service.reschedule(1, dtoReschedule as any, undefined)).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak kalau tidak ada satupun jadwal yang diisi', async () => {
+    const { service } = buatService();
+
+    await expect(service.reschedule(1, { alasan: 'x' } as any, undefined)).rejects.toThrow(
+      'Isi minimal jadwal keberangkatan atau kepulangan yang berubah',
+    );
+  });
+
+  it('menolak kalau tanggal keberangkatan diisi tanpa jamnya', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.reschedule(1, { tanggalMulai: '2026-02-01' } as any, undefined),
+    ).rejects.toThrow('Tanggal & jam keberangkatan baru wajib diisi bersamaan');
   });
 
   it('menolak format tanggal tidak valid', async () => {
     const { service } = buatService();
 
     await expect(
-      service.reschedule(1, { ...dtoReschedule, tanggalMulai: 'ngaco' }, undefined),
-    ).rejects.toThrow('Format tanggal tidak valid');
+      service.reschedule(1, { ...dtoReschedule, tanggalMulai: 'ngaco' } as any, undefined),
+    ).rejects.toThrow('Format tanggal keberangkatan tidak valid');
   });
 
-  it('menolak tanggal selesai sebelum tanggal mulai', async () => {
+  it('menolak tanggal kepulangan sebelum tanggal keberangkatan', async () => {
     const { service } = buatService();
 
     await expect(
-      service.reschedule(1, { ...dtoReschedule, tanggalMulai: '2026-02-10', tanggalSelesai: '2026-02-05' }, undefined),
-    ).rejects.toThrow('tidak boleh sebelum tanggal mulai');
+      service.reschedule(1, { ...dtoReschedule, tanggalMulai: '2026-02-10', tanggalSelesai: '2026-02-05' } as any, undefined),
+    ).rejects.toThrow('tidak boleh sebelum tanggal keberangkatan');
   });
 
-  it('update tanggal dan menambah catatan alasan ke keterangan existing', async () => {
+  it('update tanggal+jam dan menambah catatan alasan ke keterangan existing', async () => {
     const { service, updateTiket } = buatService({ tiket: tiketFixture({ keterangan: 'Cuti tahunan' }) });
 
-    await service.reschedule(1, dtoReschedule, undefined);
+    await service.reschedule(1, dtoReschedule as any, undefined);
 
     expect(updateTiket).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 1 },
         data: expect.objectContaining({
+          jenisTiket: 'PULANG_PERGI',
           tanggalMulai: new Date('2026-02-01T00:00:00.000Z'),
+          jamMulai: '09:00',
           tanggalSelesai: new Date('2026-02-03T00:00:00.000Z'),
+          jamSelesai: '18:00',
           keterangan: 'Cuti tahunan\nReschedule: Cuaca buruk',
         }),
       }),
     );
   });
 
+  it('reschedule hanya keberangkatan tidak mengubah jadwal kepulangan yang sudah ada', async () => {
+    const { service, updateTiket } = buatService();
+
+    await service.reschedule(1, { tanggalMulai: '2026-01-06', jamMulai: '09:00' } as any, undefined);
+
+    expect(updateTiket.mock.calls[0][0].data).toMatchObject({
+      jenisTiket: 'PULANG_PERGI',
+      tanggalMulai: new Date('2026-01-06T00:00:00.000Z'),
+      jamMulai: '09:00',
+      tanggalSelesai: tiketFixture().tanggalSelesai,
+      jamSelesai: tiketFixture().jamSelesai,
+    });
+  });
+
+  it('konfirmasi kepulangan pada tiket yang tadinya BERANGKAT_SAJA jadi PULANG_PERGI', async () => {
+    const { service, updateTiket } = buatService({
+      tiket: tiketFixture({ jenisTiket: 'BERANGKAT_SAJA', tanggalSelesai: null, jamSelesai: null }),
+    });
+
+    await service.reschedule(1, { tanggalSelesai: '2026-02-03', jamSelesai: '18:00' } as any, undefined);
+
+    expect(updateTiket.mock.calls[0][0].data).toMatchObject({
+      jenisTiket: 'PULANG_PERGI',
+      tanggalSelesai: new Date('2026-02-03T00:00:00.000Z'),
+      jamSelesai: '18:00',
+    });
+  });
+
   it('tanpa alasan, keterangan lama tidak berubah', async () => {
     const { service, updateTiket } = buatService({ tiket: tiketFixture({ keterangan: 'Cuti tahunan' }) });
 
-    await service.reschedule(1, { tanggalMulai: '2026-02-01', tanggalSelesai: '2026-02-03' }, undefined);
+    await service.reschedule(1, { tanggalMulai: '2026-02-01', jamMulai: '09:00', tanggalSelesai: '2026-02-03', jamSelesai: '18:00' } as any, undefined);
 
     expect(updateTiket.mock.calls[0][0].data.keterangan).toBe('Cuti tahunan');
   });
@@ -207,7 +343,7 @@ describe('TiketService.reschedule', () => {
   it('file baru disimpan dan ditambahkan (bukan menggantikan file lama)', async () => {
     const { service, file, updateTiket } = buatService();
 
-    await service.reschedule(1, dtoReschedule, fileFixture);
+    await service.reschedule(1, dtoReschedule as any, fileFixture);
 
     expect(file.simpan).toHaveBeenCalledWith(fileFixture, 1);
     expect(updateTiket.mock.calls[0][0].data.files).toEqual({
@@ -219,7 +355,7 @@ describe('TiketService.reschedule', () => {
     const updateTiket = jest.fn().mockRejectedValue(new Error('DB error'));
     const { service, file } = buatService({ updateTiket });
 
-    await expect(service.reschedule(1, dtoReschedule, fileFixture)).rejects.toThrow('DB error');
+    await expect(service.reschedule(1, dtoReschedule as any, fileFixture)).rejects.toThrow('DB error');
 
     expect(file.hapus).toHaveBeenCalledWith('tiket/karyawan-1/a.pdf');
   });
@@ -227,27 +363,41 @@ describe('TiketService.reschedule', () => {
   it('tidak mengirim notifikasi WA kalau whatsapp tidak aktif', async () => {
     const { service, whatsapp } = buatService({ whatsappAktif: false });
 
-    await service.reschedule(1, dtoReschedule, undefined);
+    await service.reschedule(1, dtoReschedule as any, undefined);
 
     expect(whatsapp.kirim).not.toHaveBeenCalled();
   });
 
-  it('mengirim notifikasi WA menyebut jadwal lama, baru, dan alasan', async () => {
+  it('mengirim notifikasi WA menyebut jadwal lama, baru, jam, dan alasan', async () => {
     const { service, whatsapp } = buatService({
       whatsappAktif: true,
       tiket: tiketFixture({ karyawan: karyawanFixture({ akun: { phoneNumber: '0812' } }) }),
     });
 
-    await service.reschedule(1, dtoReschedule, undefined);
+    await service.reschedule(1, dtoReschedule as any, undefined);
 
-    expect(whatsapp.kirim).toHaveBeenCalledWith(
-      '0812',
-      expect.stringContaining('Cuaca buruk'),
-      undefined,
-    );
+    expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Cuaca buruk'), undefined);
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/05 Januari 2026 - 10 Januari 2026/);
-    expect(pesan).toMatch(/01 Februari 2026 - 03 Februari 2026/);
+    expect(pesan).toMatch(/KEBERANGKATAN berubah: dari 05 Januari 2026 pukul 08:00 WIB menjadi 01 Februari 2026 pukul 09:00 WIB/);
+    expect(pesan).toMatch(/KEPULANGAN berubah: dari 10 Januari 2026 pukul 17:00 WIB menjadi 03 Februari 2026 pukul 18:00 WIB/);
+  });
+
+  it('notifikasi WA bilang "sudah dikonfirmasi" untuk leg yang tadinya belum ada jadwalnya', async () => {
+    const { service, whatsapp } = buatService({
+      whatsappAktif: true,
+      tiket: tiketFixture({
+        jenisTiket: 'BERANGKAT_SAJA',
+        tanggalSelesai: null,
+        jamSelesai: null,
+        karyawan: karyawanFixture({ akun: { phoneNumber: '0812' } }),
+      }),
+    });
+
+    await service.reschedule(1, { tanggalSelesai: '2026-02-03', jamSelesai: '18:00' } as any, undefined);
+
+    const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
+    expect(pesan).toMatch(/KEPULANGAN sudah dikonfirmasi: 03 Februari 2026 pukul 18:00 WIB/);
+    expect(pesan).not.toContain('KEBERANGKATAN');
   });
 
   it('menyertakan lampiran WA kalau BACKEND_PUBLIC_URL tersedia (pakai file baru)', async () => {
@@ -259,7 +409,7 @@ describe('TiketService.reschedule', () => {
       'https://portal.contoh.test/api/uploads/tiket/karyawan-1/a.pdf',
     );
 
-    await service.reschedule(1, dtoReschedule, fileFixture);
+    await service.reschedule(1, dtoReschedule as any, fileFixture);
 
     expect(whatsapp.kirim).toHaveBeenCalledWith(
       '0812',
@@ -277,7 +427,7 @@ describe('TiketService.reschedule', () => {
       'https://portal.contoh.test/api/uploads/tiket/karyawan-1/a.pdf',
     );
 
-    await service.reschedule(1, dtoReschedule, undefined);
+    await service.reschedule(1, dtoReschedule as any, undefined);
 
     expect(whatsapp.urlPublikLampiran).toHaveBeenCalledWith('tiket/karyawan-1/a.pdf');
   });
