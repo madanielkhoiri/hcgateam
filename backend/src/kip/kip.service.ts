@@ -191,6 +191,17 @@ export class KipService {
     return QRCode.toString(target, { type: 'svg', margin: 1, width: 400 });
   }
 
+  /**
+   * QR universal — SATU barcode yang sama untuk semua lokasi, boleh dicetak
+   * berkali-kali sebagai stok dan ditempel di mana saja. Tidak terikat ke
+   * satu lokasi tertentu, jadi tidak perlu validasi lokasi seperti qrSvg().
+   * Setelah di-scan, karyawan yang memilih sendiri lokasi & alatnya di
+   * halaman /kip-scan.
+   */
+  async qrSvgUniversal(target: string): Promise<string> {
+    return QRCode.toString(target, { type: 'svg', margin: 1, width: 400 });
+  }
+
   /** Simpan/perbarui titik GPS acuan satu lokasi — diisi admin sekali saat cetak barcode di lokasi tsb. */
   async simpanGpsLokasi(lokasi: string, dto: SimpanGpsLokasiDto) {
     const lok = this.validasiLokasi(lokasi);
