@@ -29,7 +29,7 @@ function formatTanggal(value: string | null): string {
 
 function formatLeg(tanggal: string | null, jam: string | null): string {
   if (!tanggal || !jam) return 'Belum ada jadwal';
-  return `${formatTanggal(tanggal)}, ${jam} WIB`;
+  return `${formatTanggal(tanggal)}, ${jam} WITA`;
 }
 
 const blankForm = {
