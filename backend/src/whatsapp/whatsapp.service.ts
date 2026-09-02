@@ -29,8 +29,35 @@ export class WhatsappService {
     return Boolean(this.token);
   }
 
-  /** Kirim satu pesan WA ke satu nomor tujuan (format bebas: 08xx atau 62xx). */
-  async kirim(tujuan: string | undefined | null, pesan: string): Promise<boolean> {
+  /**
+   * URL publik dari path relatif uploads/ — dipakai untuk parameter `url`
+   * lampiran Fonnte (WAJIB URL publik, Fonnte tidak bisa akses localhost).
+   * Kembalikan null kalau BACKEND_PUBLIC_URL belum di-set di .env server —
+   * pemanggil harus fallback ke kirim pesan teks biasa tanpa lampiran.
+   */
+  urlPublikLampiran(pathRelatifUploads: string): string | null {
+    const base = process.env.BACKEND_PUBLIC_URL?.trim().replace(/\/+$/, '');
+
+    if (!base) {
+      return null;
+    }
+
+    const bersih = pathRelatifUploads.replace(/^\/+/, '');
+
+    return `${base}/uploads/${bersih}`;
+  }
+
+  /**
+   * Kirim satu pesan WA ke satu nomor tujuan (format bebas: 08xx atau 62xx).
+   * `lampiran.url` WAJIB URL publik (lihat urlPublikLampiran) — Fonnte hanya
+   * mendukung lampiran di paket Super/Advanced/Ultra; paket di bawah itu
+   * akan mengabaikan parameter `url` (pesan teks tetap terkirim).
+   */
+  async kirim(
+    tujuan: string | undefined | null,
+    pesan: string,
+    lampiran?: { url: string; namaFile?: string },
+  ): Promise<boolean> {
     if (!this.token || !tujuan) {
       return false;
     }
@@ -42,7 +69,16 @@ export class WhatsappService {
           Authorization: this.token,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({ target: tujuan, message: pesan }),
+        body: new URLSearchParams({
+          target: tujuan,
+          message: pesan,
+          ...(lampiran
+            ? {
+                url: lampiran.url,
+                ...(lampiran.namaFile ? { filename: lampiran.namaFile } : {}),
+              }
+            : {}),
+        }),
       });
 
       if (!response.ok) {

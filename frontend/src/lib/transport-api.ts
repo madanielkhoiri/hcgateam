@@ -161,6 +161,19 @@ export const transportApi = {
       return request<TransportTiket>('/tiket/admin', { method: 'POST', body: form });
     },
     hapus: (id: number) => request<{ message: string }>(`/tiket/admin/${id}`, { method: 'DELETE' }),
+    /** Perubahan jadwal dadakan dari penerbangan (delay/cuaca buruk/dsb) — kirim notifikasi WA khusus ke karyawan, bukan hapus-buat-ulang. */
+    reschedule: (
+      id: number,
+      data: { tanggalMulai: string; tanggalSelesai: string; alasan?: string },
+      fileBaru?: File,
+    ) => {
+      const form = new FormData();
+      form.append('tanggalMulai', data.tanggalMulai);
+      form.append('tanggalSelesai', data.tanggalSelesai);
+      if (data.alasan) form.append('alasan', data.alasan);
+      if (fileBaru) form.append('file', fileBaru);
+      return request<TransportTiket>(`/tiket/admin/${id}/reschedule`, { method: 'PATCH', body: form });
+    },
     daftarSaya: () => request<TransportTiket[]>('/tiket/saya'),
     profilSaya: () => request<KaryawanRingkas | null>('/tiket/saya/profil'),
     tautkanNik: (nik: string) =>
