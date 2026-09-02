@@ -41,7 +41,7 @@ export type AktorKip = {
 const KIP_INCLUDE = {
   checklist: {
     orderBy: { bulan: 'asc' as const },
-    include: { pemeriksa: { select: { id: true, name: true } } },
+    include: { pemeriksa: { select: { id: true, name: true, nrp: true } } },
   },
 } satisfies Prisma.KipInclude;
 
