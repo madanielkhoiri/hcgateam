@@ -21,7 +21,18 @@ export function KipDetailBulan({
       judul={`Bukti Inspeksi — ${NAMA_BULAN[baris.bulan - 1]}`}
       keterangan={
         baris.tanggalPeriksa
-          ? `Diperiksa oleh ${baris.pemeriksa?.name ?? '-'} pada ${new Date(baris.tanggalPeriksa).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`
+          ? (() => {
+              const nama = baris.pemeriksa?.name ?? '-';
+              const nrp = baris.pemeriksa?.nrp ? ` (${baris.pemeriksa.nrp})` : '';
+              const tanggalLengkap = new Date(baris.tanggalPeriksa).toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              });
+
+              return `Diperiksa oleh ${nama}${nrp} pada ${tanggalLengkap}`;
+            })()
           : undefined
       }
       onTutup={onTutup}
