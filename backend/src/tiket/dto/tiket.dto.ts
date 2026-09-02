@@ -29,3 +29,18 @@ export class BuatTiketDto {
   @IsString()
   keterangan?: string;
 }
+
+/** Perubahan jadwal dadakan dari penerbangan (delay, cuaca buruk, dsb.) — bukan edit biasa, WAJIB notifikasi ulang ke karyawan. */
+export class RescheduleTiketDto {
+  @IsString()
+  @IsNotEmpty()
+  tanggalMulai: string;
+
+  @IsString()
+  @IsNotEmpty()
+  tanggalSelesai: string;
+
+  @IsOptional()
+  @IsString()
+  alasan?: string;
+}

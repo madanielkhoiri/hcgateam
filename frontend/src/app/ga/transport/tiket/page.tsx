@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Plus, Search, Ticket, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CalendarClock, Download, Plus, Search, Ticket, Trash2, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import { compressImage } from '@/lib/compress-image';
 import {
@@ -46,6 +46,12 @@ export default function TiketPage() {
   const [hasilKaryawan, setHasilKaryawan] = useState<KaryawanRingkas[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  const [rescheduleTarget, setRescheduleTarget] = useState<TransportTiket | null>(null);
+  const [rescheduleForm, setRescheduleForm] = useState({ tanggalMulai: '', tanggalSelesai: '', alasan: '' });
+  const [rescheduleFile, setRescheduleFile] = useState<File | null>(null);
+  const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState('');
 
   useEffect(() => {
     const token = getAccessToken();
@@ -162,6 +168,41 @@ export default function TiketPage() {
       await muat();
     } catch (err) {
       setError(err instanceof TransportApiError ? err.message : 'Tiket gagal dihapus');
+    }
+  }
+
+  function bukaReschedule(item: TransportTiket) {
+    setRescheduleTarget(item);
+    setRescheduleForm({
+      tanggalMulai: item.tanggalMulai.slice(0, 10),
+      tanggalSelesai: item.tanggalSelesai.slice(0, 10),
+      alasan: '',
+    });
+    setRescheduleFile(null);
+    setRescheduleError('');
+  }
+
+  async function submitReschedule(event: FormEvent) {
+    event.preventDefault();
+    if (!rescheduleTarget) return;
+
+    setRescheduleSubmitting(true);
+    setRescheduleError('');
+
+    try {
+      await transportApi.tiket.reschedule(
+        rescheduleTarget.id,
+        rescheduleForm,
+        rescheduleFile ?? undefined,
+      );
+      setRescheduleTarget(null);
+      await muat();
+    } catch (err) {
+      setRescheduleError(
+        err instanceof TransportApiError ? err.message : 'Jadwal gagal diperbarui',
+      );
+    } finally {
+      setRescheduleSubmitting(false);
     }
   }
 
@@ -284,6 +325,9 @@ export default function TiketPage() {
                   <td>{item.pengirim?.name ?? '-'}</td>
                   <td>
                     <div className={styles.actions}>
+                      <button onClick={() => bukaReschedule(item)} title="Reschedule (perubahan jadwal penerbangan)">
+                        <CalendarClock />
+                      </button>
                       <button onClick={() => hapus(item.id)} title="Hapus">
                         <Trash2 />
                       </button>
@@ -420,6 +464,92 @@ export default function TiketPage() {
               </button>
               <button className={styles.primary} disabled={submitting}>
                 {submitting ? 'Mengirim...' : 'Kirim Tiket'}
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
+
+      {rescheduleTarget && (
+        <div className={styles.modalBack}>
+          <form className={styles.modal} onSubmit={submitReschedule}>
+            <header>
+              <div>
+                <h2>Reschedule Jadwal Tiket</h2>
+                <p>
+                  Perubahan jadwal dadakan dari penerbangan (delay/cuaca buruk/dsb) — {rescheduleTarget.karyawan?.nama}{' '}
+                  akan langsung dapat notifikasi WA jadwal lama &amp; barunya.
+                </p>
+              </div>
+              <button type="button" onClick={() => setRescheduleTarget(null)}>
+                <X />
+              </button>
+            </header>
+
+            <div className={styles.formGrid}>
+              <label>
+                Tanggal Mulai Baru
+                <input
+                  type="date"
+                  required
+                  value={rescheduleForm.tanggalMulai}
+                  onChange={(e) =>
+                    setRescheduleForm((cur) => ({ ...cur, tanggalMulai: e.target.value }))
+                  }
+                />
+              </label>
+
+              <label>
+                Tanggal Selesai Baru
+                <input
+                  type="date"
+                  required
+                  value={rescheduleForm.tanggalSelesai}
+                  onChange={(e) =>
+                    setRescheduleForm((cur) => ({ ...cur, tanggalSelesai: e.target.value }))
+                  }
+                />
+              </label>
+
+              <label style={{ gridColumn: '1/-1' }}>
+                Alasan Perubahan (opsional, ikut disebut di WA)
+                <input
+                  placeholder="Contoh: Delay karena cuaca buruk"
+                  value={rescheduleForm.alasan}
+                  onChange={(e) => setRescheduleForm((cur) => ({ ...cur, alasan: e.target.value }))}
+                />
+              </label>
+
+              <label style={{ gridColumn: '1/-1' }}>
+                E-Tiket Terbaru (opsional — kalau tidak diisi, e-tiket lama tetap dilampirkan di WA)
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  onChange={async (e) => {
+                    const dipilih = e.target.files?.[0];
+                    if (!dipilih) {
+                      setRescheduleFile(null);
+                      return;
+                    }
+                    const hasil = dipilih.type.startsWith('image/')
+                      ? await compressImage(dipilih).catch(() => dipilih)
+                      : dipilih;
+                    setRescheduleFile(hasil);
+                  }}
+                  className={styles.fileInput}
+                />
+                {rescheduleFile && <span className={styles.fileHint}>{rescheduleFile.name}</span>}
+              </label>
+            </div>
+
+            {rescheduleError && <p className={styles.error}>{rescheduleError}</p>}
+
+            <footer>
+              <button type="button" onClick={() => setRescheduleTarget(null)}>
+                Batal
+              </button>
+              <button className={styles.primary} disabled={rescheduleSubmitting}>
+                {rescheduleSubmitting ? 'Menyimpan...' : 'Simpan & Kirim Notifikasi'}
               </button>
             </footer>
           </form>

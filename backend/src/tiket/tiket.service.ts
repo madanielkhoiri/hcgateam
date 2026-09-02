@@ -130,6 +130,126 @@ export class TiketService {
     await this.whatsapp.kirim(nomor, pesan);
   }
 
+  /**
+   * Perubahan jadwal dadakan dari penerbangan (delay, cuaca buruk, dsb.) —
+   * BUKAN hapus-lalu-buat-ulang seperti sebelumnya (itu bikin karyawan
+   * dapat 2 notifikasi WA yang membingungkan, tanpa keterangan apa yang
+   * berubah). Tanggal lama tetap tercatat di histori lewat pesan WA,
+   * file lama TIDAK dihapus (file baru cuma ditambahkan) supaya jejak
+   * tiket asli tetap ada untuk audit.
+   */
+  async reschedule(
+    id: number,
+    dto: { tanggalMulai: string; tanggalSelesai: string; alasan?: string },
+    fileBaru: Express.Multer.File | undefined,
+  ) {
+    const tiket = await this.prisma.transportTiket.findUnique({
+      where: { id },
+      include: {
+        karyawan: { include: { akun: { select: { phoneNumber: true } } } },
+        files: true,
+      },
+    });
+
+    if (!tiket) {
+      throw new NotFoundException('Tiket tidak ditemukan');
+    }
+
+    const mulaiBaru = new Date(`${dto.tanggalMulai}T00:00:00.000Z`);
+    const selesaiBaru = new Date(`${dto.tanggalSelesai}T00:00:00.000Z`);
+
+    if (Number.isNaN(mulaiBaru.getTime()) || Number.isNaN(selesaiBaru.getTime())) {
+      throw new BadRequestException('Format tanggal tidak valid');
+    }
+
+    if (selesaiBaru < mulaiBaru) {
+      throw new BadRequestException('Tanggal selesai tidak boleh sebelum tanggal mulai');
+    }
+
+    const mulaiLama = tiket.tanggalMulai;
+    const selesaiLama = tiket.tanggalSelesai;
+
+    const fileTersimpan = fileBaru ? this.file.simpan(fileBaru, tiket.karyawanId) : null;
+
+    try {
+      const hasil = await this.prisma.transportTiket.update({
+        where: { id },
+        data: {
+          tanggalMulai: mulaiBaru,
+          tanggalSelesai: selesaiBaru,
+          keterangan: dto.alasan?.trim()
+            ? `${tiket.keterangan ? `${tiket.keterangan}\n` : ''}Reschedule: ${dto.alasan.trim()}`
+            : tiket.keterangan,
+          ...(fileTersimpan ? { files: { create: fileTersimpan } } : {}),
+        },
+        include: { karyawan: true, files: true },
+      });
+
+      // Lampiran WA: file baru kalau ada, kalau tidak pakai file pertama yang sudah ada.
+      const fileUntukLampiran = fileTersimpan ?? tiket.files[0] ?? null;
+
+      await this.notifikasiReschedule(
+        tiket.karyawan,
+        mulaiLama,
+        selesaiLama,
+        mulaiBaru,
+        selesaiBaru,
+        dto.alasan,
+        fileUntukLampiran,
+      );
+
+      return hasil;
+    } catch (error) {
+      if (fileTersimpan) {
+        this.file.hapus(fileTersimpan.fileUrl);
+      }
+      throw error;
+    }
+  }
+
+  /** Notifikasi WA khusus reschedule — beda dari tiket baru, sebut jelas jadwal lama & baru + lampirkan e-tiket terbaru. */
+  private async notifikasiReschedule(
+    karyawan: { nama: string; noTelepon: string | null; akun: { phoneNumber: string | null } | null },
+    mulaiLama: Date,
+    selesaiLama: Date,
+    mulaiBaru: Date,
+    selesaiBaru: Date,
+    alasan: string | undefined,
+    fileLampiran: { fileUrl: string; namaFile: string } | null,
+  ) {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
+
+    if (!nomor) {
+      return;
+    }
+
+    const formatTanggal = (tanggal: Date) =>
+      tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    const pesan =
+      `Halo ${karyawan.nama}, jadwal tiket dinas Anda mengalami PERUBAHAN` +
+      `${alasan ? ` (${alasan.trim()})` : ''}: ` +
+      `dari ${formatTanggal(mulaiLama)} - ${formatTanggal(selesaiLama)} ` +
+      `menjadi ${formatTanggal(mulaiBaru)} - ${formatTanggal(selesaiBaru)}. ` +
+      `Mohon perhatikan perubahan ini.`;
+
+    const urlLampiran = fileLampiran
+      ? this.whatsapp.urlPublikLampiran(fileLampiran.fileUrl)
+      : null;
+
+    await this.whatsapp.kirim(
+      nomor,
+      urlLampiran ? pesan : `${pesan} Silakan cek e-tiket terbaru di Portal HCGA TEAM.`,
+      urlLampiran && fileLampiran
+        ? { url: urlLampiran, namaFile: fileLampiran.namaFile }
+        : undefined,
+    );
+  }
+
   async hapus(id: number) {
     const tiket = await this.prisma.transportTiket.findUnique({
       where: { id },
