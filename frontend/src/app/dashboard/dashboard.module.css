@@ -831,8 +831,16 @@
     gap: 12px;
   }
 
-  .notificationButton,
+  .notificationButton {
+    display: none;
+  }
+
   .tiketTravelButton {
+    padding: 8px;
+    border-radius: 50%;
+  }
+
+  .tiketTravelButton span {
     display: none;
   }
 

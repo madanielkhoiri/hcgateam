@@ -543,7 +543,7 @@ export default function DashboardPage() {
             onClick={() => router.push('/transport-saya')}
           >
             <Ticket size={18} />
-            Tiket dan Travel
+            <span>Tiket dan Travel</span>
           </button>
 
           <div className={styles.profileWrapper}>
