@@ -260,7 +260,9 @@ export default function InventoryCrud({
   scope = "GENERAL",
 }: InventoryCrudProps) {
   const user = useStoredUser();
-  const bolehEditStok = !!user && ROLE_BOLEH_EDIT_STOK.includes(user.role);
+  const bolehEditStok =
+    !!user &&
+    (ROLE_BOLEH_EDIT_STOK.includes(user.role) || (scope === "ELECTRIC" && user.role === "ELEKTRIK"));
 
   const [items, setItems] = useState<Item[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
