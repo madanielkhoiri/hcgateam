@@ -83,7 +83,7 @@ export class WorkOrderPdfService {
       autoFirstPage: true,
       info: {
         Title: `Work Order ${workOrder.workOrderNumber}`,
-        Author: 'HCGA TEAM',
+        Author: 'ONE FOR ALL',
         Subject: 'Formulir Permintaan Pekerjaan',
       },
     });

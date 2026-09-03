@@ -121,6 +121,8 @@ model User {
   kipDibuat    Kip[]
   kipDiperiksa KipChecklistBulan[]
 
+  deviasiStokDiubah DeviasiStok[]
+
   dokumenIrDiupload        DokumenIr[]          @relation("DokumenIrUploader")
   aspirasiPertanyaanDibuat AspirasiPertanyaan[] @relation("AspirasiPertanyaanCreator")
   aspirasiJawabanDiberikan AspirasiJawaban[]    @relation("AspirasiJawabanUser")
@@ -201,9 +203,10 @@ model Item {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  stock     InventoryStock?
-  stockIns  StockIn[]
-  stockOuts StockOut[]
+  stock       InventoryStock?
+  stockIns    StockIn[]
+  stockOuts   StockOut[]
+  deviasiStok DeviasiStok[]
 
   @@unique([inventoryScope, code])
   @@index([inventoryScope])
@@ -217,6 +220,37 @@ model Item {
 // STOK BARANG
 // Satu master barang hanya memiliki satu baris stok
 // ==================================================
+
+// ==================================================
+// DEVIASI STOK
+// Catatan otomatis tiap kali stok diedit langsung (bukan lewat barang
+// masuk/keluar) dan angkanya berubah — supaya ketahuan kalau ada stok
+// yang "hilang" (jenis KURANG) atau ada stok yang tidak tercatat lewat
+// barang masuk (jenis LEBIH).
+// ==================================================
+
+enum JenisDeviasiStok {
+  KURANG
+  LEBIH
+}
+
+model DeviasiStok {
+  id         Int              @id @default(autoincrement())
+  itemId     Int              @map("item_id")
+  stokLama   Int              @map("stok_lama")
+  stokBaru   Int              @map("stok_baru")
+  selisih    Int
+  jenis      JenisDeviasiStok
+  diubahOleh Int              @map("diubah_oleh")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  item     Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  pengubah User @relation(fields: [diubahOleh], references: [id], onDelete: Restrict)
+
+  @@index([itemId])
+  @@index([createdAt])
+  @@map("deviasi_stok")
+}
 
 model InventoryStock {
   id        Int      @id @default(autoincrement())

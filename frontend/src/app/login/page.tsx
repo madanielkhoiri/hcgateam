@@ -82,7 +82,7 @@ export default function LoginPage() {
             <UsersRound size={23} strokeWidth={2.3} />
           </div>
 
-          <span>HCGA TEAM</span>
+          <span>ONE FOR ALL</span>
         </div>
       </header>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
           </div>
 
           <h1>Selamat Datang</h1>
-          <p className={styles.subtitle}>Portal internal HCGA</p>
+          <p className={styles.subtitle}>Portal internal ONE FOR ALL</p>
 
           <div className={styles.titleLine} />
 
@@ -265,7 +265,7 @@ export default function LoginPage() {
       </section>
 
       <footer className={styles.footer}>
-        <span>© 2026 HCGA TEAM. Semua hak dilindungi.</span>
+        <span>© 2026 ONE FOR ALL. Semua hak dilindungi.</span>
         <span className={styles.separator}>|</span>
 
         <span className={styles.footerItem}>

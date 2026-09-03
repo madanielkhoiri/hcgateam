@@ -243,7 +243,7 @@ export default function CivilPage() {
           <span className={styles.brandLogo}>
             <UsersRound size={24} />
           </span>
-          <strong>HCGA TEAM</strong>
+          <strong>ONE FOR ALL</strong>
         </Link>
 
         <div className={styles.profile}>
@@ -279,7 +279,7 @@ export default function CivilPage() {
       </section>
 
       <footer className={styles.footer}>
-        <span>© 2026 HCGA TEAM. Semua hak dilindungi.</span>
+        <span>© 2026 ONE FOR ALL. Semua hak dilindungi.</span>
         <span>|</span>
         <span>Portal Internal</span>
         <span>|</span>

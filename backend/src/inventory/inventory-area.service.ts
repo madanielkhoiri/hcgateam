@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InventoryScope, ItemCategory, Prisma } from '@prisma/client';
+import { InventoryScope, ItemCategory, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateItemDto, UpdateItemDto } from './dto/item.dto';
 import { CreateStockInDto, UpdateStockInDto } from './dto/stock-in.dto';
@@ -12,10 +12,16 @@ import { CreateStockOutDto, UpdateStockOutDto } from './dto/stock-out.dto';
 import { CreateStockInBatchDto } from './dto/stock-in-batch.dto';
 import { CreateStockOutBatchDto } from './dto/stock-out-batch.dto';
 import { UpdateStockDto } from './dto/stock.dto';
+import { DeviasiStokService } from './deviasi-stok.service';
+import { InventoryAksesService } from './inventory-akses.service';
 
 @Injectable()
 export class InventoryAreaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly akses: InventoryAksesService,
+    private readonly deviasiStok: DeviasiStokService,
+  ) {}
 
   private parseScope(value: string): InventoryScope {
     const scope = value.toUpperCase();
@@ -266,32 +272,39 @@ export class InventoryAreaService {
     );
   }
 
-  async updateStock(scopeValue: string, id: number, dto: UpdateStockDto) {
+  async updateStock(scopeValue: string, id: number, dto: UpdateStockDto, role: UserRole, aktorId: number) {
     const scope = this.parseScope(scopeValue);
+    this.akses.wajibBolehEditStokArea(role, scope);
 
-    const stock = await this.prisma.inventoryStock.findFirst({
-      where: {
-        id,
-        item: {
-          inventoryScope: scope,
+    return this.prisma.$transaction(async (tx) => {
+      const stock = await tx.inventoryStock.findFirst({
+        where: {
+          id,
+          item: {
+            inventoryScope: scope,
+          },
         },
-      },
-    });
+      });
 
-    if (!stock) {
-      throw new NotFoundException('Data stok tidak ditemukan');
-    }
+      if (!stock) {
+        throw new NotFoundException('Data stok tidak ditemukan');
+      }
 
-    return this.prisma.inventoryStock.update({
-      where: {
-        id,
-      },
-      data: {
-        quantity: dto.quantity,
-      },
-      include: {
-        item: true,
-      },
+      const updated = await tx.inventoryStock.update({
+        where: {
+          id,
+        },
+        data: {
+          quantity: dto.quantity,
+        },
+        include: {
+          item: true,
+        },
+      });
+
+      await this.deviasiStok.catatJikaBerubah(tx, stock.itemId, stock.quantity, dto.quantity, aktorId);
+
+      return updated;
     });
   }
 

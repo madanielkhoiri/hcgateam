@@ -158,7 +158,7 @@ export class TiketService {
 
     const pesan =
       `Halo ${karyawan.nama}, ada tiket dinas baru untuk Anda: ${bagian.join(', ')}.${keteranganMenyusul} ` +
-      `Silakan download filenya di Portal HCGA TEAM ya.`;
+      `Silakan download filenya di Portal ONE FOR ALL ya.`;
 
     await this.whatsapp.kirim(nomor, pesan);
   }
@@ -340,7 +340,7 @@ export class TiketService {
 
     await this.whatsapp.kirim(
       nomor,
-      urlLampiran ? pesan : `${pesan} Silakan cek e-tiket terbaru di Portal HCGA TEAM.`,
+      urlLampiran ? pesan : `${pesan} Silakan cek e-tiket terbaru di Portal ONE FOR ALL.`,
       urlLampiran && fileLampiran ? { url: urlLampiran, namaFile: fileLampiran.namaFile } : undefined,
     );
   }

@@ -9,11 +9,28 @@ import { Prisma, StatusTravel, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TravelFileService } from './travel-file.service';
 import { TravelAksesService } from './travel-akses.service';
-import { BuatDriverDto, BuatJadwalDto, RatingTravelDto, UbahDriverDto, UbahJadwalDto } from './dto/travel.dto';
+import {
+  BuatDriverDto,
+  BuatJadwalDto,
+  RatingTravelDto,
+  RescheduleJadwalDto,
+  UbahDriverDto,
+  UbahJadwalDto,
+} from './dto/travel.dto';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 /** Karyawan wajib check-in paling cepat H-2 jam sebelum waktu berangkat rencana. */
 const JENDELA_CHECKIN_MS = 2 * 60 * 60 * 1000;
+
+const formatWaktuWita = (waktu: Date) =>
+  waktu.toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Makassar',
+  });
 
 @Injectable()
 export class TravelService {
@@ -233,14 +250,7 @@ export class TravelService {
       select: { nama: true, noTelepon: true, akun: { select: { phoneNumber: true } } },
     });
 
-    const waktuText = waktu.toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Makassar',
-    });
+    const waktuText = formatWaktuWita(waktu);
 
     for (const karyawan of daftarKaryawan) {
       const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
@@ -252,7 +262,7 @@ export class TravelService {
       const pesan =
         `Halo ${karyawan.nama}, Anda dijadwalkan Travel ke ${tujuan} pada ${waktuText} WITA. ` +
         `Armada: ${armada}, Driver: ${driver.nama}${driver.noTelepon ? ` (${driver.noTelepon})` : ''}. ` +
-        `Cek di Portal HCGA TEAM ya.`;
+        `Cek di Portal ONE FOR ALL ya.`;
 
       await this.whatsapp.kirim(nomor, pesan);
     }
@@ -310,6 +320,86 @@ export class TravelService {
     });
 
     return this.jadwalAtauThrow(id);
+  }
+
+  /**
+   * Perubahan jadwal dadakan (delay, dsb.) — beda dari ubahJadwal() biasa:
+   * SELALU kirim notifikasi WA khusus yang menyebutkan jadwal lama & baru
+   * ke seluruh penumpang, dan alasannya ikut dicatat ke catatan jadwal.
+   */
+  async rescheduleJadwal(id: number, dto: RescheduleJadwalDto) {
+    const jadwal = await this.jadwalAtauThrow(id);
+
+    if (jadwal.status !== StatusTravel.DIJADWALKAN) {
+      throw new BadRequestException('Jadwal yang sudah berjalan/selesai/dibatalkan tidak dapat di-reschedule');
+    }
+
+    const waktuBaru = new Date(dto.waktuBerangkatRencana);
+
+    if (Number.isNaN(waktuBaru.getTime())) {
+      throw new BadRequestException('Format waktu berangkat tidak valid');
+    }
+
+    const waktuLama = jadwal.waktuBerangkatRencana;
+
+    await this.prisma.travelJadwal.update({
+      where: { id },
+      data: {
+        waktuBerangkatRencana: waktuBaru,
+        catatan: dto.alasan?.trim()
+          ? `${jadwal.catatan ? `${jadwal.catatan}\n` : ''}Reschedule: ${dto.alasan.trim()}`
+          : jadwal.catatan,
+      },
+    });
+
+    await this.notifikasiReschedule(jadwal, waktuLama, waktuBaru, dto.alasan);
+
+    return this.jadwalAtauThrow(id);
+  }
+
+  /** Notifikasi WA khusus reschedule — beda dari jadwal baru, sebut jelas jadwal lama & baru ke seluruh penumpang. */
+  private async notifikasiReschedule(
+    jadwal: {
+      tujuan: string;
+      armada: string;
+      driver: { nama: string; noTelepon: string | null };
+      penumpang: { karyawanId: number }[];
+    },
+    waktuLama: Date,
+    waktuBaru: Date,
+    alasan: string | undefined,
+  ) {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    const karyawanIds = jadwal.penumpang.map((p) => p.karyawanId);
+
+    if (karyawanIds.length === 0) {
+      return;
+    }
+
+    const daftarKaryawan = await this.prisma.karyawan.findMany({
+      where: { id: { in: karyawanIds } },
+      select: { nama: true, noTelepon: true, akun: { select: { phoneNumber: true } } },
+    });
+
+    for (const karyawan of daftarKaryawan) {
+      const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
+
+      if (!nomor) {
+        continue;
+      }
+
+      const pesan =
+        `Halo ${karyawan.nama}, jadwal Travel Anda ke ${jadwal.tujuan} mengalami PERUBAHAN` +
+        `${alasan?.trim() ? ` (${alasan.trim()})` : ''}: ` +
+        `dari ${formatWaktuWita(waktuLama)} WITA menjadi ${formatWaktuWita(waktuBaru)} WITA. ` +
+        `Armada: ${jadwal.armada}, Driver: ${jadwal.driver.nama}${jadwal.driver.noTelepon ? ` (${jadwal.driver.noTelepon})` : ''}. ` +
+        `Mohon perhatikan perubahan ini.`;
+
+      await this.whatsapp.kirim(nomor, pesan);
+    }
   }
 
   async hapusJadwal(id: number) {

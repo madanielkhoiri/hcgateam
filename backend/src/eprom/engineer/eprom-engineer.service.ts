@@ -243,7 +243,7 @@ export class EpromEngineerService {
 
     const pesan =
       `Ada upload ${LABEL_TIPE[tipe]} baru di project ${project?.namaProject ?? '-'} oleh ${pengunggah?.name ?? '-'}. ` +
-      `Cek di Portal HCGA TEAM ya.`;
+      `Cek di Portal ONE FOR ALL ya.`;
 
     await this.whatsapp.kirim(nomorOwner, pesan);
   }

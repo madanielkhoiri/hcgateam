@@ -15,6 +15,9 @@ function jadwalFixture(overrides: Record<string, unknown> = {}) {
     id: 1,
     status: StatusTravel.DIJADWALKAN,
     driverId: 1,
+    armada: 'Hiace',
+    tujuan: 'Site A',
+    catatan: null,
     waktuBerangkatRencana: new Date(Date.now() + 60 * 60 * 1000),
     driverCheckIn: null,
     driverCheckOut: null,
@@ -273,6 +276,115 @@ describe('TravelService.ubahJadwal', () => {
     expect(penumpangCreateMany).toHaveBeenCalledWith({
       data: [{ travelId: 1, karyawanId: 1 }, { travelId: 1, karyawanId: 2 }],
     });
+  });
+});
+
+describe('TravelService.rescheduleJadwal', () => {
+  const dtoReschedule = { waktuBerangkatRencana: '2026-02-01T09:00:00Z', alasan: 'Delay pesawat' };
+
+  it('melempar NotFoundException kalau jadwal tidak ada', async () => {
+    const { service } = buatService({ jadwal: null });
+
+    await expect(service.rescheduleJadwal(1, dtoReschedule as any)).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak jadwal yang sudah tidak DIJADWALKAN', async () => {
+    const { service } = buatService({ jadwal: jadwalFixture({ status: StatusTravel.BERJALAN }) });
+
+    await expect(service.rescheduleJadwal(1, dtoReschedule as any)).rejects.toThrow(
+      'sudah berjalan/selesai/dibatalkan tidak dapat di-reschedule',
+    );
+  });
+
+  it('menolak format waktu tidak valid', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.rescheduleJadwal(1, { ...dtoReschedule, waktuBerangkatRencana: 'bukan-tanggal' } as any),
+    ).rejects.toThrow('Format waktu berangkat tidak valid');
+  });
+
+  it('update waktu dan menambah catatan alasan ke catatan existing', async () => {
+    const { service, jadwalUpdate } = buatService({ jadwal: jadwalFixture({ catatan: 'Berangkat pagi' }) });
+
+    await service.rescheduleJadwal(1, dtoReschedule as any);
+
+    expect(jadwalUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({
+          waktuBerangkatRencana: new Date('2026-02-01T09:00:00Z'),
+          catatan: 'Berangkat pagi\nReschedule: Delay pesawat',
+        }),
+      }),
+    );
+  });
+
+  it('tanpa alasan, catatan lama tidak berubah', async () => {
+    const { service, jadwalUpdate } = buatService({ jadwal: jadwalFixture({ catatan: 'Berangkat pagi' }) });
+
+    await service.rescheduleJadwal(1, { waktuBerangkatRencana: dtoReschedule.waktuBerangkatRencana } as any);
+
+    expect(jadwalUpdate.mock.calls[0][0].data.catatan).toBe('Berangkat pagi');
+  });
+
+  it('tidak mengirim notifikasi WA kalau whatsapp tidak aktif', async () => {
+    const { service, whatsapp } = buatService({ whatsappAktif: false });
+
+    await service.rescheduleJadwal(1, dtoReschedule as any);
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('tidak mengirim notifikasi WA kalau tidak ada penumpang', async () => {
+    const { service, whatsapp, prisma } = buatService({
+      whatsappAktif: true,
+      jadwal: jadwalFixture({ penumpang: [] }),
+    });
+
+    await service.rescheduleJadwal(1, dtoReschedule as any);
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+    expect(prisma.karyawan.findMany).not.toHaveBeenCalled();
+  });
+
+  it('mengirim notifikasi WA ke seluruh penumpang menyebut jadwal lama, baru, dan alasan', async () => {
+    const { service, whatsapp, prisma } = buatService({
+      whatsappAktif: true,
+      jadwal: jadwalFixture({
+        waktuBerangkatRencana: new Date('2026-01-05T08:00:00Z'),
+        penumpang: [{ karyawanId: 1 }, { karyawanId: 2 }],
+      }),
+    });
+    (prisma.karyawan.findMany as jest.Mock).mockResolvedValue([
+      { nama: 'Budi', noTelepon: '0812', akun: null },
+      { nama: 'Ani', noTelepon: null, akun: { phoneNumber: '0813' } },
+    ]);
+
+    await service.rescheduleJadwal(1, dtoReschedule as any);
+
+    expect(prisma.karyawan.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: [1, 2] } } }),
+    );
+    expect(whatsapp.kirim).toHaveBeenCalledTimes(2);
+    expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Budi'));
+    expect(whatsapp.kirim).toHaveBeenCalledWith('0813', expect.stringContaining('Delay pesawat'));
+
+    const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
+    expect(pesan).toMatch(/PERUBAHAN \(Delay pesawat\)/);
+    expect(pesan).toContain('menjadi');
+  });
+
+  it('tidak mengirim WA ke penumpang tanpa nomor telepon', async () => {
+    const { service, whatsapp, prisma } = buatService({
+      whatsappAktif: true,
+      jadwal: jadwalFixture({ penumpang: [{ karyawanId: 1 }] }),
+    });
+    (prisma.karyawan.findMany as jest.Mock).mockResolvedValue([{ nama: 'Budi', noTelepon: null, akun: null }]);
+
+    await service.rescheduleJadwal(1, dtoReschedule as any);
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
   });
 });
 

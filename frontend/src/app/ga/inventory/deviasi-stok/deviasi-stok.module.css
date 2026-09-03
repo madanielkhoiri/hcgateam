@@ -1,0 +1,224 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.header h1 {
+  margin: 0 0 4px;
+  color: #12355f;
+  font-size: 22px;
+}
+
+.header p {
+  margin: 0;
+  color: #71839d;
+  font-size: 13px;
+}
+
+.filterRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filterRow select {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #cbd9e8;
+  border-radius: 10px;
+  color: #193b62;
+  background: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.error {
+  color: #b3261e;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.memuat {
+  color: #71839d;
+  font-size: 13px;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e1e9f2;
+}
+
+.statLabel {
+  color: #71839d;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.statAngka {
+  color: #12355f;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.statKurang .statAngka {
+  color: #b3261e;
+}
+
+.statLebih .statAngka {
+  color: #b47b00;
+}
+
+.trenCard,
+.daftarCard {
+  padding: 18px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e1e9f2;
+}
+
+.trenGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  height: 160px;
+  align-items: end;
+}
+
+.trenBulan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.trenBarTrack {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  gap: 2px;
+}
+
+.trenBarKurang {
+  width: 100%;
+  background: #e35555;
+  border-radius: 4px 4px 0 0;
+  min-height: 0;
+}
+
+.trenBarLebih {
+  width: 100%;
+  background: #f0b429;
+  border-radius: 4px 4px 0 0;
+  min-height: 0;
+}
+
+.trenLabel {
+  color: #8a9bb0;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.legenda {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: #5c7a9a;
+  font-weight: 700;
+}
+
+.legendaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendaDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  margin-top: 14px;
+}
+
+.tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.tabel th {
+  text-align: left;
+  padding: 10px 12px;
+  color: #71839d;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #e1e9f2;
+  white-space: nowrap;
+}
+
+.tabel td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f4f9;
+  color: #193b62;
+  white-space: nowrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pillKurang {
+  background: #fdecec;
+  color: #b3261e;
+}
+
+.pillLebih {
+  background: #fff5df;
+  color: #8a5b00;
+}
+
+.kosong {
+  color: #8a9bb0;
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+@media (max-width: 800px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .trenGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    height: auto;
+  }
+}
