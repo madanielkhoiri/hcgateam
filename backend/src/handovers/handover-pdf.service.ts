@@ -76,7 +76,7 @@ export class HandoverPdfService {
       bufferPages: true,
       info: {
         Title: `Serah Terima ${handover.stpNumber}`,
-        Author: 'HCGA TEAM',
+        Author: 'ONE FOR ALL',
         Subject: 'Serah Terima Pekerjaan',
       },
     });

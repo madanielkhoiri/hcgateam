@@ -175,7 +175,7 @@ export default function PortalShell({
               <UsersRound size={23} />
             </span>
             {!sidebarCollapsed && (
-              <span className={styles.brandText}>HCGA TEAM</span>
+              <span className={styles.brandText}>ONE FOR ALL</span>
             )}
           </Link>
 
