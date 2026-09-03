@@ -126,7 +126,7 @@ const departmentCards: Array<{
   },
   {
     key: 'ADMINISTRASI',
-    title: 'ADMINISTRASI',
+    title: 'ADMIN',
     href: '/administrasi',
     icon: BookOpen,
     cardClass: 'administrasiCard',
