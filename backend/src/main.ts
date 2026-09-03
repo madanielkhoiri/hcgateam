@@ -1,6 +1,6 @@
 // ==================================================
 // FILE: backend/src/main.ts
-// FUNGSI: Konfigurasi utama backend HCGA TEAM
+// FUNGSI: Konfigurasi utama backend ONE FOR ALL
 // ==================================================
 
 import { ValidationPipe } from '@nestjs/common';
@@ -154,7 +154,7 @@ async function bootstrap() {
   await app.listen(port);
 
   const skema = httpsOptions ? 'https' : 'http';
-  console.log(`HCGA TEAM API berjalan di ${skema}://localhost:${port}/api`);
+  console.log(`ONE FOR ALL API berjalan di ${skema}://localhost:${port}/api`);
 }
 
 // ==================================================

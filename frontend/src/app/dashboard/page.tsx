@@ -2,11 +2,10 @@
 
 // ==================================================
 // FILE: frontend/src/app/dashboard/page.tsx
-// FUNGSI: Dashboard awal portal HCGA TEAM
+// FUNGSI: Dashboard awal portal ONE FOR ALL
 // ==================================================
 
 import {
-  Bell,
   BookOpen,
   Building2,
   ChevronLeft,
@@ -75,7 +74,7 @@ const slides = [
     subtitle: 'Seluruh kebutuhan HCGA dalam satu portal.',
   },
   {
-    label: 'HCGA TEAM',
+    label: 'ONE FOR ALL',
     title: 'Kolaborasi Menjadi Lebih Mudah.',
     subtitle: 'Terhubung bersama HC, GA, CIVIL, dan Administrasi.',
   },
@@ -127,7 +126,7 @@ const departmentCards: Array<{
   },
   {
     key: 'ADMINISTRASI',
-    title: 'ADMINISTRASI',
+    title: 'ADMIN',
     href: '/administrasi',
     icon: BookOpen,
     cardClass: 'administrasiCard',
@@ -532,27 +531,19 @@ export default function DashboardPage() {
             <UsersRound size={24} />
           </div>
 
-          <span>HCGA TEAM</span>
+          <span>ONE FOR ALL</span>
         </div>
 
         <div className={styles.headerRight}>
           <button
             type="button"
-            className={styles.notificationButton}
-            aria-label="Tiket & Travel Saya"
-            title="Tiket & Travel Saya"
+            className={styles.tiketTravelButton}
+            aria-label="Tiket dan Travel"
+            title="Tiket dan Travel"
             onClick={() => router.push('/transport-saya')}
           >
-            <Ticket size={24} />
-          </button>
-
-          <button
-            type="button"
-            className={styles.notificationButton}
-            aria-label="Notifikasi"
-          >
-            <Bell size={24} />
-            <span>3</span>
+            <Ticket size={18} />
+            <span>Tiket dan Travel</span>
           </button>
 
           <div className={styles.profileWrapper}>
@@ -717,7 +708,7 @@ export default function DashboardPage() {
 
           <div className={styles.heroVisual}>
             <div className={styles.screenMockup}>
-              <strong>HCGA TEAM</strong>
+              <strong>ONE FOR ALL</strong>
 
               <div>
                 <span className={styles.visualHc}>
@@ -1414,7 +1405,7 @@ export default function DashboardPage() {
       ================================================== */}
 
       <footer className={styles.footer}>
-        <span>© 2026 HCGA TEAM. Semua hak dilindungi.</span>
+        <span>© 2026 ONE FOR ALL. Semua hak dilindungi.</span>
         <span>|</span>
         <span>Portal Internal</span>
         <span>|</span>
