@@ -273,8 +273,8 @@ export class InventoryAreaService {
   }
 
   async updateStock(scopeValue: string, id: number, dto: UpdateStockDto, role: UserRole, aktorId: number) {
-    this.akses.wajibBolehEditStok(role);
     const scope = this.parseScope(scopeValue);
+    this.akses.wajibBolehEditStokArea(role, scope);
 
     return this.prisma.$transaction(async (tx) => {
       const stock = await tx.inventoryStock.findFirst({

@@ -65,7 +65,7 @@ function buatService(overrides: {
     prisma.item.findFirst = jest.fn().mockResolvedValue(overrides.duplicateItem);
   }
 
-  const akses = { wajibBolehEditStok: jest.fn() } as unknown as InventoryAksesService;
+  const akses = { wajibBolehEditStok: jest.fn(), wajibBolehEditStokArea: jest.fn() } as unknown as InventoryAksesService;
   const deviasiStok = { catatJikaBerubah: jest.fn(), rekap: jest.fn() } as unknown as DeviasiStokService;
 
   const service = new InventoryAreaService(prisma as PrismaService, akses, deviasiStok);
@@ -153,15 +153,23 @@ describe('InventoryAreaService.getStocks — urutan mengikuti sortByCode item', 
 });
 
 describe('InventoryAreaService.updateStock', () => {
-  it('menolak kalau role tidak diizinkan (dicek lewat InventoryAksesService)', async () => {
+  it('menolak kalau role tidak diizinkan (dicek lewat InventoryAksesService.wajibBolehEditStokArea)', async () => {
     const { service, akses } = buatService();
-    (akses.wajibBolehEditStok as jest.Mock).mockImplementation(() => {
+    (akses.wajibBolehEditStokArea as jest.Mock).mockImplementation(() => {
       throw new ForbiddenException('Hanya Admin atau Section Head yang boleh mengubah stok');
     });
 
     await expect(service.updateStock('MESS', 1, { quantity: 5 } as any, UserRole.KARYAWAN, 9)).rejects.toThrow(
       ForbiddenException,
     );
+  });
+
+  it('mengecek akses dengan scope yang benar (ELECTRIC) supaya Tim Elektrik bisa dikecualikan di InventoryAksesService', async () => {
+    const { service, akses } = buatService({ stockFindFirst: { id: 1, itemId: 5, quantity: 10 } });
+
+    await service.updateStock('ELECTRIC', 1, { quantity: 10 } as any, UserRole.ELEKTRIK, 9);
+
+    expect(akses.wajibBolehEditStokArea).toHaveBeenCalledWith(UserRole.ELEKTRIK, InventoryScope.ELECTRIC);
   });
 
   it('melempar NotFoundException kalau stok tidak ditemukan pada scope tersebut', async () => {
