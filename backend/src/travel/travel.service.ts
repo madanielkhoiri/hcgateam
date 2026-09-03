@@ -262,7 +262,7 @@ export class TravelService {
       const pesan =
         `Halo ${karyawan.nama}, Anda dijadwalkan Travel ke ${tujuan} pada ${waktuText} WITA. ` +
         `Armada: ${armada}, Driver: ${driver.nama}${driver.noTelepon ? ` (${driver.noTelepon})` : ''}. ` +
-        `Cek di Portal HCGA TEAM ya.`;
+        `Cek di Portal ONE FOR ALL ya.`;
 
       await this.whatsapp.kirim(nomor, pesan);
     }

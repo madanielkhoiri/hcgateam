@@ -19,7 +19,7 @@ export class PostActivityPdfService {
 
     const qrBuffer = await QRCode.toBuffer(
       [
-        'HCGA TEAM',
+        'ONE FOR ALL',
         `POST ACTIVITY ID: ${data.id}`,
         `PEKERJAAN: ${data.workName}`,
         `DISETUJUI OLEH: ${data.approverName}`,
