@@ -242,6 +242,9 @@ export const transportApi = {
         karyawanIds: number[];
       }>,
     ) => request<TravelJadwal>(`/travel/admin/jadwal/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    /** Perubahan jadwal dadakan (delay, dsb.) — kirim notifikasi WA khusus ke seluruh penumpang, bukan edit biasa. */
+    reschedule: (id: number, data: { waktuBerangkatRencana: string; alasan?: string }) =>
+      request<TravelJadwal>(`/travel/admin/jadwal/${id}/reschedule`, { method: 'PATCH', body: JSON.stringify(data) }),
     hapusJadwal: (id: number) => request<{ message: string }>(`/travel/admin/jadwal/${id}`, { method: 'DELETE' }),
 
     daftarSaya: () => request<TravelSaya[]>('/travel/saya'),

@@ -107,6 +107,21 @@ describe("transportApi.travel.ubahJadwal", () => {
  });
 });
 
+describe("transportApi.travel.reschedule", () => {
+ it("memakai method PATCH ke endpoint reschedule yang benar", async () => {
+ const fetchMock = mockFetchSekali({ ok: true, json: async () => ({}) });
+
+ await transportApi.travel.reschedule(9, { waktuBerangkatRencana: "2026-03-01T08:00:00.000Z", alasan: "Delay" });
+
+ const [url, init] = fetchMock.mock.calls[0];
+ expect(url).toContain("/travel/admin/jadwal/9/reschedule");
+ expect(init.method).toBe("PATCH");
+ expect(init.body).toBe(
+ JSON.stringify({ waktuBerangkatRencana: "2026-03-01T08:00:00.000Z", alasan: "Delay" }),
+ );
+ });
+});
+
 describe("bacaError (lewat request gagal)", () => {
  it("pesan error array digabung koma", async () => {
  mockFetchSekali({

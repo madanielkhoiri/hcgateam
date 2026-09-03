@@ -22,7 +22,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TravelService } from './travel.service';
-import { BuatDriverDto, BuatJadwalDto, RatingTravelDto, UbahDriverDto, UbahJadwalDto } from './dto/travel.dto';
+import {
+  BuatDriverDto,
+  BuatJadwalDto,
+  RatingTravelDto,
+  RescheduleJadwalDto,
+  UbahDriverDto,
+  UbahJadwalDto,
+} from './dto/travel.dto';
 
 @Controller('travel')
 @UseGuards(JwtAuthGuard)
@@ -74,6 +81,12 @@ export class TravelController {
   @Patch('admin/jadwal/:id')
   ubahJadwal(@Param('id', ParseIntPipe) id: number, @Body() dto: UbahJadwalDto) {
     return this.service.ubahJadwal(id, dto);
+  }
+
+  /** Perubahan jadwal dadakan (delay, dsb.) — kirim notifikasi WA khusus ke penumpang, bukan edit biasa. */
+  @Patch('admin/jadwal/:id/reschedule')
+  rescheduleJadwal(@Param('id', ParseIntPipe) id: number, @Body() dto: RescheduleJadwalDto) {
+    return this.service.rescheduleJadwal(id, dto);
   }
 
   @Delete('admin/jadwal/:id')
