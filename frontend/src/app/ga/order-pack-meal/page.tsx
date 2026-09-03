@@ -720,7 +720,7 @@ export default function OrderPackMealPage() {
             <span className={styles.brandLogo}>
               <UsersRound size={23} />
             </span>
-            <strong>HCGA TEAM</strong>
+            <strong>ONE FOR ALL</strong>
           </div>
 
           <div className={styles.guestProfile}>
@@ -759,7 +759,7 @@ export default function OrderPackMealPage() {
         </section>
 
         <footer className={styles.footer}>
-          © 2026 HCGA TEAM · Portal Internal
+          © 2026 ONE FOR ALL · Portal Internal
         </footer>
       </main>
     );
@@ -772,7 +772,7 @@ export default function OrderPackMealPage() {
           <span className={styles.brandLogo}>
             <UsersRound size={23} />
           </span>
-          <strong>HCGA TEAM</strong>
+          <strong>ONE FOR ALL</strong>
         </Link>
 
         <div className={styles.staffProfile}>
@@ -986,7 +986,7 @@ export default function OrderPackMealPage() {
       </section>
 
       <footer className={styles.footer}>
-        © 2026 HCGA TEAM · Portal Internal
+        © 2026 ONE FOR ALL · Portal Internal
       </footer>
 
       {modalOpen && (
