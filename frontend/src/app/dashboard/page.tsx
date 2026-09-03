@@ -6,7 +6,6 @@
 // ==================================================
 
 import {
-  Bell,
   BookOpen,
   Building2,
   ChevronLeft,
@@ -538,21 +537,13 @@ export default function DashboardPage() {
         <div className={styles.headerRight}>
           <button
             type="button"
-            className={styles.notificationButton}
-            aria-label="Tiket & Travel Saya"
-            title="Tiket & Travel Saya"
+            className={styles.tiketTravelButton}
+            aria-label="Tiket dan Travel"
+            title="Tiket dan Travel"
             onClick={() => router.push('/transport-saya')}
           >
-            <Ticket size={24} />
-          </button>
-
-          <button
-            type="button"
-            className={styles.notificationButton}
-            aria-label="Notifikasi"
-          >
-            <Bell size={24} />
-            <span>3</span>
+            <Ticket size={18} />
+            Tiket dan Travel
           </button>
 
           <div className={styles.profileWrapper}>
