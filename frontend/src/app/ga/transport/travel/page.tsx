@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bus, Eye, Pencil, Plus, Trash2, UserRound, X } from 'lucide-react';
+import { ArrowLeft, Bus, CalendarClock, Eye, Pencil, Plus, Trash2, UserRound, X } from 'lucide-react';
 import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
 import { Driver, KaryawanRingkas, TransportApiError, TravelJadwal, transportApi } from '@/lib/transport-api';
 import styles from '@/components/transport/transport.module.css';
@@ -36,6 +36,8 @@ const blankJadwalForm = {
   catatan: '',
 };
 
+const blankRescheduleForm = { tanggal: '', jam: '08', menit: '00', alasan: '' };
+
 const OPSI_JAM = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const OPSI_MENIT = ['00', '15', '30', '45'];
 
@@ -63,6 +65,11 @@ export default function TravelPage() {
   const [penumpangDipilih, setPenumpangDipilih] = useState<KaryawanRingkas[]>([]);
   const [jadwalError, setJadwalError] = useState('');
   const [savingJadwal, setSavingJadwal] = useState(false);
+
+  const [rescheduleTarget, setRescheduleTarget] = useState<TravelJadwal | null>(null);
+  const [rescheduleForm, setRescheduleForm] = useState(blankRescheduleForm);
+  const [rescheduleError, setRescheduleError] = useState('');
+  const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -239,6 +246,45 @@ export default function TravelPage() {
       await muat();
     } catch (err) {
       setError(err instanceof TransportApiError ? err.message : 'Jadwal gagal dihapus');
+    }
+  }
+
+  function bukaReschedule(jadwal: TravelJadwal) {
+    const waktu = new Date(jadwal.waktuBerangkatRencana);
+    setRescheduleTarget(jadwal);
+    setRescheduleForm({
+      tanggal: waktu.toISOString().slice(0, 10),
+      jam: String(waktu.getHours()).padStart(2, '0'),
+      menit: String(waktu.getMinutes()).padStart(2, '0'),
+      alasan: '',
+    });
+    setRescheduleError('');
+  }
+
+  async function submitReschedule(event: FormEvent) {
+    event.preventDefault();
+    if (!rescheduleTarget) return;
+
+    if (!rescheduleForm.tanggal) {
+      setRescheduleError('Pilih tanggal keberangkatan baru');
+      return;
+    }
+
+    setRescheduleSubmitting(true);
+    setRescheduleError('');
+    try {
+      await transportApi.travel.reschedule(rescheduleTarget.id, {
+        waktuBerangkatRencana: new Date(
+          `${rescheduleForm.tanggal}T${rescheduleForm.jam}:${rescheduleForm.menit}:00`,
+        ).toISOString(),
+        alasan: rescheduleForm.alasan || undefined,
+      });
+      setRescheduleTarget(null);
+      await muat();
+    } catch (err) {
+      setRescheduleError(err instanceof TransportApiError ? err.message : 'Jadwal gagal di-reschedule');
+    } finally {
+      setRescheduleSubmitting(false);
     }
   }
 
@@ -443,6 +489,11 @@ export default function TravelPage() {
                       <Link href={`/ga/transport/travel/${j.id}`} title="Detail">
                         <Eye size={16} />
                       </Link>
+                      {j.status === 'DIJADWALKAN' && (
+                        <button onClick={() => bukaReschedule(j)} title="Reschedule (perubahan jadwal dadakan)">
+                          <CalendarClock size={16} />
+                        </button>
+                      )}
                       {j.status === 'DIJADWALKAN' && (
                         <button onClick={() => hapusJadwal(j.id)} title="Hapus">
                           <Trash2 />
@@ -694,6 +745,85 @@ export default function TravelPage() {
               </button>
               <button className={styles.primary} disabled={savingJadwal}>
                 {savingJadwal ? 'Menyimpan...' : 'Simpan Jadwal'}
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
+
+      {rescheduleTarget && (
+        <div className={styles.modalBack}>
+          <form className={styles.modal} onSubmit={submitReschedule}>
+            <header>
+              <div>
+                <h2>Reschedule Jadwal Travel</h2>
+                <p>
+                  Perubahan jadwal dadakan (delay, dsb) — seluruh penumpang {rescheduleTarget.tujuan} akan langsung
+                  dapat notifikasi WA jadwal lama &amp; barunya.
+                </p>
+              </div>
+              <button type="button" onClick={() => setRescheduleTarget(null)}>
+                <X />
+              </button>
+            </header>
+
+            <div className={styles.formGrid}>
+              <label>
+                Tanggal Berangkat Baru
+                <input
+                  type="date"
+                  required
+                  value={rescheduleForm.tanggal}
+                  onChange={(e) => setRescheduleForm((cur) => ({ ...cur, tanggal: e.target.value }))}
+                />
+              </label>
+
+              <label>
+                Jam Berangkat Baru (24 jam)
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select
+                    required
+                    value={rescheduleForm.jam}
+                    onChange={(e) => setRescheduleForm((cur) => ({ ...cur, jam: e.target.value }))}
+                  >
+                    {OPSI_JAM.map((jam) => (
+                      <option key={jam} value={jam}>
+                        {jam}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    required
+                    value={rescheduleForm.menit}
+                    onChange={(e) => setRescheduleForm((cur) => ({ ...cur, menit: e.target.value }))}
+                  >
+                    {OPSI_MENIT.map((menit) => (
+                      <option key={menit} value={menit}>
+                        {menit}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
+
+              <label style={{ gridColumn: '1/-1' }}>
+                Alasan Perubahan (opsional, ikut disebut di WA)
+                <input
+                  placeholder="Contoh: Delay karena cuaca buruk"
+                  value={rescheduleForm.alasan}
+                  onChange={(e) => setRescheduleForm((cur) => ({ ...cur, alasan: e.target.value }))}
+                />
+              </label>
+            </div>
+
+            {rescheduleError && <p className={styles.error}>{rescheduleError}</p>}
+
+            <footer>
+              <button type="button" onClick={() => setRescheduleTarget(null)}>
+                Batal
+              </button>
+              <button className={styles.primary} disabled={rescheduleSubmitting}>
+                {rescheduleSubmitting ? 'Menyimpan...' : 'Simpan & Kirim Notifikasi'}
               </button>
             </footer>
           </form>

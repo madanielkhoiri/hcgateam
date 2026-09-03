@@ -126,6 +126,17 @@ export class UbahJadwalDto {
   karyawanIds?: number[];
 }
 
+/** Perubahan jadwal dadakan (delay, dsb.) — bukan edit biasa, WAJIB notifikasi ulang ke penumpang. */
+export class RescheduleJadwalDto {
+  @IsString()
+  @IsNotEmpty()
+  waktuBerangkatRencana: string;
+
+  @IsOptional()
+  @IsString()
+  alasan?: string;
+}
+
 export class RatingTravelDto {
   @Type(() => Number)
   @IsInt()
