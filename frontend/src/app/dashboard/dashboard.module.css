@@ -67,6 +67,25 @@
   cursor: pointer;
 }
 
+.tiketTravelButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: #536986;
+  background: transparent;
+  border: 1px solid #e4edf7;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tiketTravelButton:hover {
+  border-color: #cbd9e8;
+  color: #12355f;
+}
+
 .notificationButton span {
   position: absolute;
   top: -8px;
@@ -812,7 +831,8 @@
     gap: 12px;
   }
 
-  .notificationButton {
+  .notificationButton,
+  .tiketTravelButton {
     display: none;
   }
 
