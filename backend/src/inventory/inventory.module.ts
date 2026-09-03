@@ -8,6 +8,8 @@ import { InventoryController } from './inventory.controller';
 import { InventoryDashboardController } from './inventory-dashboard.controller';
 import { InventoryDashboardService } from './inventory-dashboard.service';
 import { InventoryService } from './inventory.service';
+import { InventoryAksesService } from './inventory-akses.service';
+import { DeviasiStokService } from './deviasi-stok.service';
 
 @Module({
   controllers: [
@@ -21,6 +23,8 @@ import { InventoryService } from './inventory.service';
     InventoryDashboardService,
     InventoryAreaService,
     ElectricStockOutService,
+    InventoryAksesService,
+    DeviasiStokService,
     PrismaService,
   ],
 })

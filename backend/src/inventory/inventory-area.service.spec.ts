@@ -1,6 +1,8 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { InventoryScope, ItemCategory } from '@prisma/client';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { InventoryScope, ItemCategory, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { InventoryAksesService } from './inventory-akses.service';
+import { DeviasiStokService } from './deviasi-stok.service';
 import { InventoryAreaService } from './inventory-area.service';
 
 function itemFixture(overrides: Record<string, unknown> = {}) {
@@ -63,9 +65,12 @@ function buatService(overrides: {
     prisma.item.findFirst = jest.fn().mockResolvedValue(overrides.duplicateItem);
   }
 
-  const service = new InventoryAreaService(prisma as PrismaService);
+  const akses = { wajibBolehEditStok: jest.fn() } as unknown as InventoryAksesService;
+  const deviasiStok = { catatJikaBerubah: jest.fn(), rekap: jest.fn() } as unknown as DeviasiStokService;
 
-  return { service, prisma, itemCreate, itemUpdate, itemDelete, stockUpdate, stockInCreate, stockInDelete, stockOutCreate, stockOutDelete };
+  const service = new InventoryAreaService(prisma as PrismaService, akses, deviasiStok);
+
+  return { service, prisma, akses, deviasiStok, itemCreate, itemUpdate, itemDelete, stockUpdate, stockInCreate, stockInDelete, stockOutCreate, stockOutDelete };
 }
 
 describe('InventoryAreaService — parseScope', () => {
@@ -148,10 +153,31 @@ describe('InventoryAreaService.getStocks — urutan mengikuti sortByCode item', 
 });
 
 describe('InventoryAreaService.updateStock', () => {
+  it('menolak kalau role tidak diizinkan (dicek lewat InventoryAksesService)', async () => {
+    const { service, akses } = buatService();
+    (akses.wajibBolehEditStok as jest.Mock).mockImplementation(() => {
+      throw new ForbiddenException('Hanya Admin atau Section Head yang boleh mengubah stok');
+    });
+
+    await expect(service.updateStock('MESS', 1, { quantity: 5 } as any, UserRole.KARYAWAN, 9)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
   it('melempar NotFoundException kalau stok tidak ditemukan pada scope tersebut', async () => {
     const { service } = buatService({ stockFindFirst: null });
 
-    await expect(service.updateStock('MESS', 1, { quantity: 5 } as any)).rejects.toThrow(NotFoundException);
+    await expect(service.updateStock('MESS', 1, { quantity: 5 } as any, UserRole.ADMIN, 9)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('mencatat deviasi via DeviasiStokService kalau quantity berubah', async () => {
+    const { service, prisma, deviasiStok } = buatService({ stockFindFirst: { id: 1, itemId: 5, quantity: 10 } });
+
+    await service.updateStock('MESS', 1, { quantity: 6 } as any, UserRole.ADMIN, 9);
+
+    expect(deviasiStok.catatJikaBerubah).toHaveBeenCalledWith(prisma, 5, 10, 6, 9);
   });
 });
 

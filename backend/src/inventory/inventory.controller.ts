@@ -7,6 +7,8 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,11 +19,17 @@ import { UpdateStockDto } from './dto/stock.dto';
 import { CreateStockInBatchDto } from './dto/stock-in-batch.dto';
 import { CreateStockOutBatchDto } from './dto/stock-out-batch.dto';
 import { InventoryService } from './inventory.service';
+import { InventoryAksesService } from './inventory-akses.service';
+import { DeviasiStokService } from './deviasi-stok.service';
 
 @Controller('inventory')
 @UseGuards(JwtAuthGuard)
 export class InventoryController {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(
+    private readonly inventoryService: InventoryService,
+    private readonly akses: InventoryAksesService,
+    private readonly deviasiStok: DeviasiStokService,
+  ) {}
 
   @Get('items')
   getItems() {
@@ -55,8 +63,20 @@ export class InventoryController {
   updateStock(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateStockDto,
+    @Req() req: any,
   ) {
-    return this.inventoryService.updateStock(id, dto);
+    return this.inventoryService.updateStock(id, dto, req.user.role, req.user.id);
+  }
+
+  /** Dashboard deviasi stok — hanya Admin/Section Head, sama seperti yang boleh edit stok. */
+  @Get('deviasi-stok')
+  rekapDeviasiStok(
+    @Query('bulan') bulan: string | undefined,
+    @Query('tahun') tahun: string | undefined,
+    @Req() req: any,
+  ) {
+    this.akses.wajibBolehEditStok(req.user.role);
+    return this.deviasiStok.rekap(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined);
   }
 
   @Post('stock-ins/batch')

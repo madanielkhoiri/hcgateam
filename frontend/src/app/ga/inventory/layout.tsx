@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   BarChart3,
   Boxes,
   ChevronDown,
@@ -47,6 +48,8 @@ type MenuGroup = {
   items: MenuItem[];
 };
 
+const ROLE_BOLEH_LIHAT_DEVIASI = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
+
 const menuGroups: MenuGroup[] = [
   {
     id: "dashboard",
@@ -58,6 +61,11 @@ const menuGroups: MenuGroup[] = [
         label: "Dashboard Inventory",
         href: "/ga/inventory/dashboard-inventory",
         icon: BarChart3,
+      },
+      {
+        label: "Deviasi Stok",
+        href: "/ga/inventory/deviasi-stok",
+        icon: AlertTriangle,
       },
     ],
   },
@@ -311,6 +319,10 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             })),
           ],
         };
+      }
+
+      if (group.id === "dashboard" && !ROLE_BOLEH_LIHAT_DEVIASI.includes(user?.role ?? "")) {
+        return { ...group, items: group.items.filter((item) => item.href !== "/ga/inventory/deviasi-stok") };
       }
 
       return group;
