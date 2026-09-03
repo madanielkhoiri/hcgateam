@@ -73,6 +73,14 @@ export class KipController {
     return this.service.qrSvg(lokasi, target);
   }
 
+  /** QR universal — sama untuk semua lokasi, boleh dicetak berkali-kali sebagai stok. */
+  @Get('admin/qr-universal')
+  @UseGuards(JwtAuthGuard)
+  @Header('Content-Type', 'image/svg+xml')
+  qrSvgUniversal(@Query('target') target: string) {
+    return this.service.qrSvgUniversal(target);
+  }
+
   /** Simpan titik GPS acuan lokasi — dipanggil sekali saat admin cetak barcode sambil berdiri di lokasi tsb. */
   @Post('admin/lokasi-gps/:lokasi')
   @UseGuards(JwtAuthGuard)

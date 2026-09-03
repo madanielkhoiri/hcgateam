@@ -15,7 +15,10 @@ import {
   useState,
 } from "react";
 import { compressImage } from "@/lib/compress-image";
+import { useStoredUser } from "@/lib/use-stored-user";
 import styles from "./inventory-crud.module.css";
+
+const ROLE_BOLEH_EDIT_STOK = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
@@ -256,6 +259,11 @@ export default function InventoryCrud({
   mode,
   scope = "GENERAL",
 }: InventoryCrudProps) {
+  const user = useStoredUser();
+  const bolehEditStok =
+    !!user &&
+    (ROLE_BOLEH_EDIT_STOK.includes(user.role) || (scope === "ELECTRIC" && user.role === "ELEKTRIK"));
+
   const [items, setItems] = useState<Item[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [transactions, setTransactions] = useState<
@@ -1254,14 +1262,23 @@ export default function InventoryCrud({
                           </td>
                           <td>
                             <div className={styles.actions}>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openEditStock(stock)
-                                }
-                              >
-                                <Pencil size={16} />
-                              </button>
+                              {bolehEditStok ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openEditStock(stock)
+                                  }
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                              ) : (
+                                <span
+                                  style={{ color: "#b7c2cf", fontSize: 12 }}
+                                  title="Hanya Admin/Section Head yang boleh mengubah stok"
+                                >
+                                  —
+                                </span>
+                              )}
                             </div>
                           </td>
                         </tr>

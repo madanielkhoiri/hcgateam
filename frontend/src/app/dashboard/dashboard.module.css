@@ -67,6 +67,25 @@
   cursor: pointer;
 }
 
+.tiketTravelButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: #536986;
+  background: transparent;
+  border: 1px solid #e4edf7;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tiketTravelButton:hover {
+  border-color: #cbd9e8;
+  color: #12355f;
+}
+
 .notificationButton span {
   position: absolute;
   top: -8px;
@@ -326,8 +345,12 @@
 }
 
 .departmentCard strong {
+  min-width: 0;
+  overflow: hidden;
   text-align: left;
-  font-size: 27px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(15px, 1.9vw, 27px);
 }
 
 .hcCard {
@@ -813,6 +836,15 @@
   }
 
   .notificationButton {
+    display: none;
+  }
+
+  .tiketTravelButton {
+    padding: 8px;
+    border-radius: 50%;
+  }
+
+  .tiketTravelButton span {
     display: none;
   }
 

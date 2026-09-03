@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -60,8 +61,9 @@ export class InventoryAreaController {
     @Param('scope') scope: string,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateStockDto,
+    @Req() req: any,
   ) {
-    return this.service.updateStock(scope, id, dto);
+    return this.service.updateStock(scope, id, dto, req.user.role, req.user.id);
   }
 
   @Get('stock-ins')

@@ -1,6 +1,6 @@
 // ==================================================
 // FILE: backend/src/app.module.ts
-// FUNGSI: Module utama backend HCGA TEAM
+// FUNGSI: Module utama backend ONE FOR ALL
 // ==================================================
 
 import { Module } from '@nestjs/common';
