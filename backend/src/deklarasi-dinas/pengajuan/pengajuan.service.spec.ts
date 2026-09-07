@@ -169,6 +169,60 @@ describe('PengajuanService.buatPengajuan — sukses', () => {
   });
 });
 
+describe('PengajuanService — notif WA ke FA pakai token HC', () => {
+  const tokenHcAsli = process.env.FONNTE_TOKEN_HC;
+
+  afterEach(() => {
+    if (tokenHcAsli === undefined) delete process.env.FONNTE_TOKEN_HC;
+    else process.env.FONNTE_TOKEN_HC = tokenHcAsli;
+    jest.restoreAllMocks();
+  });
+
+  it('memakai FONNTE_TOKEN_HC (bukan FONNTE_TOKEN/GA) kalau dua-duanya terisi', async () => {
+    process.env.FONNTE_TOKEN = 'token-ga';
+    process.env.FONNTE_TOKEN_HC = 'token-hc';
+    const fetchMock = jest.fn().mockResolvedValue({ text: async () => 'ok' });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { service } = buatService({
+      faList: [{ id: 2, role: 'FA', isActive: true, phoneNumber: '081200000000' }],
+    });
+
+    await service.buatPengajuan(
+      { id_pengguna: '1', jenis_pengajuan: 'UANG_OPERASIONAL', nomor_rab: 'RAB-1' } as any,
+      undefined,
+      fileFixture('rab.pdf'),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/send',
+      expect.objectContaining({ headers: { Authorization: 'token-hc' } }),
+    );
+  });
+
+  it('fallback ke FONNTE_TOKEN (GA) kalau FONNTE_TOKEN_HC belum diisi', async () => {
+    process.env.FONNTE_TOKEN = 'token-ga';
+    delete process.env.FONNTE_TOKEN_HC;
+    const fetchMock = jest.fn().mockResolvedValue({ text: async () => 'ok' });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { service } = buatService({
+      faList: [{ id: 2, role: 'FA', isActive: true, phoneNumber: '081200000000' }],
+    });
+
+    await service.buatPengajuan(
+      { id_pengguna: '1', jenis_pengajuan: 'UANG_OPERASIONAL', nomor_rab: 'RAB-1' } as any,
+      undefined,
+      fileFixture('rab.pdf'),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/send',
+      expect.objectContaining({ headers: { Authorization: 'token-ga' } }),
+    );
+  });
+});
+
 describe('PengajuanService.ambilPengajuanBerdasarkanPengguna', () => {
   it('menolak id pengguna tidak valid', async () => {
     const { service } = buatService();
