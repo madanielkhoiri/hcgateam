@@ -14,6 +14,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { MailgunModule } from './mailgun/mailgun.module';
+import { SmtpModule } from './smtp/smtp.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { HcgaThrottlerGuard } from './common/hcga-throttler.guard';
@@ -68,6 +69,7 @@ import { KipModule } from './kip/kip.module';
     InventoryModule,
     WhatsappModule,
     MailgunModule,
+    SmtpModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

@@ -2,10 +2,20 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TiketFileService } from './tiket-file.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { SmtpService } from '../smtp/smtp.service';
 import { TiketService } from './tiket.service';
 
 function karyawanFixture(overrides: Record<string, unknown> = {}) {
-  return { id: 1, nama: 'Budi', nik: '12345', noTelepon: null, akunId: null, akun: null, ...overrides };
+  return {
+    id: 1,
+    nama: 'Budi',
+    nik: '12345',
+    noTelepon: null,
+    email: null,
+    akunId: null,
+    akun: null,
+    ...overrides,
+  };
 }
 
 function tiketFixture(overrides: Record<string, unknown> = {}) {
@@ -35,6 +45,7 @@ function buatService(overrides: {
   update?: jest.Mock;
   updateTiket?: jest.Mock;
   whatsappAktif?: boolean;
+  smtpAktif?: boolean;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const deleteFn = overrides.deleteFn ?? jest.fn().mockResolvedValue({});
@@ -79,9 +90,14 @@ function buatService(overrides: {
     urlPublikLampiran: jest.fn().mockReturnValue(null),
   } as unknown as WhatsappService;
 
-  const service = new TiketService(prisma, file, whatsapp);
+  const smtp = {
+    aktif: overrides.smtpAktif ?? false,
+    kirim: jest.fn().mockResolvedValue(true),
+  } as unknown as SmtpService;
 
-  return { service, prisma, file, whatsapp, create, deleteFn, update, updateTiket };
+  const service = new TiketService(prisma, file, whatsapp, smtp);
+
+  return { service, prisma, file, whatsapp, smtp, create, deleteFn, update, updateTiket };
 }
 
 const dtoDasar = {
@@ -234,6 +250,50 @@ describe('TiketService.kirim', () => {
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
     expect(pesan).toMatch(/Berangkat .* pukul 08:00 WITA/);
     expect(pesan).toContain('menyusul dikonfirmasi kemudian');
+  });
+
+  it('tidak mengirim email kalau smtp tidak aktif', async () => {
+    const { service, smtp } = buatService({ smtpAktif: false });
+
+    await service.kirim(dtoDasar as any, [fileFixture], 9);
+
+    expect(smtp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('tidak mengirim email kalau karyawan tidak punya email', async () => {
+    const { service, smtp } = buatService({ smtpAktif: true, karyawan: karyawanFixture({ email: null, akun: null }) });
+
+    await service.kirim(dtoDasar as any, [fileFixture], 9);
+
+    expect(smtp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('mengirim email dengan lampiran file kalau smtp aktif', async () => {
+    const fileBuffer = { originalname: 'tiket.pdf', buffer: Buffer.from('isi-pdf') } as Express.Multer.File;
+    const { service, smtp } = buatService({
+      smtpAktif: true,
+      karyawan: karyawanFixture({ akun: { phoneNumber: null, email: 'budi@contoh.test' } }),
+    });
+
+    await service.kirim(dtoDasar as any, [fileBuffer], 9);
+
+    expect(smtp.kirim).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'budi@contoh.test',
+        lampiran: [{ namaFile: 'tiket.pdf', data: Buffer.from('isi-pdf') }],
+      }),
+    );
+  });
+
+  it('fallback ke karyawan.email kalau akun tidak punya email', async () => {
+    const { service, smtp } = buatService({
+      smtpAktif: true,
+      karyawan: karyawanFixture({ email: 'budi-pribadi@contoh.test', akun: null }),
+    });
+
+    await service.kirim(dtoDasar as any, [fileFixture], 9);
+
+    expect(smtp.kirim).toHaveBeenCalledWith(expect.objectContaining({ to: 'budi-pribadi@contoh.test' }));
   });
 });
 

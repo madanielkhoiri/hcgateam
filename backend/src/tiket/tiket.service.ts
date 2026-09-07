@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TiketFileService } from './tiket-file.service';
 import { BuatTiketDto, RescheduleTiketDto } from './dto/tiket.dto';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { SmtpService } from '../smtp/smtp.service';
 
 const formatTanggal = (tanggal: Date) =>
   tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -19,6 +20,7 @@ export class TiketService {
     private readonly prisma: PrismaService,
     private readonly file: TiketFileService,
     private readonly whatsapp: WhatsappService,
+    private readonly smtp: SmtpService,
   ) {}
 
   /** Daftar ringkas karyawan aktif untuk dropdown pencarian di form admin. */
@@ -62,7 +64,7 @@ export class TiketService {
   async kirim(dto: BuatTiketDto, files: Express.Multer.File[] = [], aktorId: number) {
     const karyawan = await this.prisma.karyawan.findUnique({
       where: { id: dto.karyawanId },
-      include: { akun: { select: { phoneNumber: true } } },
+      include: { akun: { select: { phoneNumber: true, email: true } } },
     });
 
     if (!karyawan) {
@@ -113,7 +115,7 @@ export class TiketService {
         include: { karyawan: true, files: true },
       });
 
-      await this.notifikasiTiketBaru(karyawan, tiket);
+      await this.notifikasiTiketBaru(karyawan, tiket, files);
 
       return tiket;
     } catch (error) {
@@ -122,9 +124,14 @@ export class TiketService {
     }
   }
 
-  /** Notifikasi WA ke akun karyawan penerima tiket, pakai nomor dari data akunnya. */
+  /** Notifikasi WA + email ke akun karyawan penerima tiket, pakai kontak dari data akunnya. */
   private async notifikasiTiketBaru(
-    karyawan: { nama: string; noTelepon: string | null; akun: { phoneNumber: string | null } | null },
+    karyawan: {
+      nama: string;
+      noTelepon: string | null;
+      email: string | null;
+      akun: { phoneNumber: string | null; email: string | null } | null;
+    },
     tiket: {
       jenisTiket: JenisTiket;
       tanggalMulai: Date | null;
@@ -132,17 +139,8 @@ export class TiketService {
       tanggalSelesai: Date | null;
       jamSelesai: string | null;
     },
+    files: Express.Multer.File[],
   ) {
-    if (!this.whatsapp.aktif) {
-      return;
-    }
-
-    const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
-
-    if (!nomor) {
-      return;
-    }
-
     const bagian: string[] = [];
 
     if (tiket.tanggalMulai && tiket.jamMulai) {
@@ -156,11 +154,31 @@ export class TiketService {
     const keteranganMenyusul =
       tiket.jenisTiket !== JenisTiket.PULANG_PERGI ? ' Jadwal satu arah lagi menyusul dikonfirmasi kemudian.' : '';
 
-    const pesan =
-      `Halo ${karyawan.nama}, ada tiket dinas baru untuk Anda: ${bagian.join(', ')}.${keteranganMenyusul} ` +
-      `Silakan download filenya di Portal ONE FOR ALL ya.`;
+    const ringkasan = `${bagian.join(', ')}.${keteranganMenyusul}`;
 
-    await this.whatsapp.kirim(nomor, pesan);
+    if (this.whatsapp.aktif) {
+      const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
+
+      if (nomor) {
+        await this.whatsapp.kirim(
+          nomor,
+          `Halo ${karyawan.nama}, ada tiket dinas baru untuk Anda: ${ringkasan} Silakan download filenya di Portal ONE FOR ALL ya.`,
+        );
+      }
+    }
+
+    if (this.smtp.aktif) {
+      const email = karyawan.akun?.email || karyawan.email;
+
+      if (email) {
+        await this.smtp.kirim({
+          to: email,
+          subjek: 'Tiket Dinas Baru — Portal ONE FOR ALL',
+          teks: `Halo ${karyawan.nama},\n\nAda tiket dinas baru untuk Anda: ${ringkasan}\n\nFile tiket terlampir pada email ini.\n\nTerima kasih.`,
+          lampiran: files.map((f) => ({ namaFile: f.originalname, data: f.buffer })),
+        });
+      }
+    }
   }
 
   /**
