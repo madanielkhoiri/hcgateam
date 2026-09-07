@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, StatusTiketHelpdesk, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { SelesaikanTiketDto } from './dto/selesaikan-tiket.dto';
 import {
   KATEGORI_TIKET_HELPDESK,
@@ -54,7 +55,10 @@ const tiketSelect = {
 
 @Injectable()
 export class HelpdeskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly whatsapp: WhatsappService,
+  ) {}
 
   private isPic(aktor: AktorHelpdesk): boolean {
     return aktor.role === UserRole.ADMIN || aktor.role === UserRole.SUPER_ADMIN;
@@ -121,7 +125,7 @@ export class HelpdeskService {
 
     const tanggal = new Date();
 
-    return this.prisma.$transaction(async (tx) => {
+    const tiket = await this.prisma.$transaction(async (tx) => {
       const { sequenceNumber, nomorTiket } = await this.nomorTiketBerikutnya(
         tx,
         tanggal,
@@ -142,6 +146,43 @@ export class HelpdeskService {
         select: tiketSelect,
       });
     });
+
+    await this.notifikasiTiketBaruKeComben(tiket);
+
+    return tiket;
+  }
+
+  /** Notif WA ke Admin Comben (dari device WA HC) tiap kali karyawan submit tiket helpdesk baru. */
+  private async notifikasiTiketBaruKeComben(tiket: {
+    nomorTiket: string;
+    kategori: string;
+    subKategori: string;
+    masalah: string | null;
+    deskripsi: string;
+    pembuat: { name: string } | null;
+  }) {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    const nomorComben = process.env.WA_COMBEN_NUMBER;
+
+    if (!nomorComben) {
+      return;
+    }
+
+    const pesan = [
+      'TIKET HELPDESK BARU',
+      '',
+      `Nomor Tiket: ${tiket.nomorTiket}`,
+      `Dari: ${tiket.pembuat?.name ?? '-'}`,
+      `Kategori: ${tiket.kategori} - ${tiket.subKategori}${tiket.masalah ? ` - ${tiket.masalah}` : ''}`,
+      `Deskripsi: ${tiket.deskripsi}`,
+      '',
+      'Silakan cek dan proses tiket ini di Portal ONE FOR ALL.',
+    ].join('\n');
+
+    await this.whatsapp.kirim(nomorComben, pesan, undefined, 'HC');
   }
 
   async daftar(aktor: AktorHelpdesk, status?: string) {

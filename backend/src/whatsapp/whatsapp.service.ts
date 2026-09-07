@@ -1,9 +1,11 @@
 // ==================================================
 // FILE: backend/src/whatsapp/whatsapp.service.ts
 // FUNGSI: Kirim notifikasi WhatsApp keluar lewat Fonnte (fonnte.com).
-// Kredensial diisi lewat env: FONNTE_TOKEN. Bila belum diisi,
-// pengiriman notifikasi dilewati (fitur lain tetap jalan) dan
-// dicatat di log.
+// Kredensial diisi lewat env: FONNTE_TOKEN (device default/GA),
+// FONNTE_TOKEN_HC (device WA milik HC — dipakai kalau parameter
+// `departemen: 'HC'` diisi saat kirim, fallback ke device default kalau
+// belum dikonfigurasi). Bila token belum diisi, pengiriman notifikasi
+// dilewati (fitur lain tetap jalan) dan dicatat di log.
 // ==================================================
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -14,9 +16,11 @@ const FONNTE_ENDPOINT = 'https://api.fonnte.com/send';
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly token: string | undefined;
+  private readonly tokenHc: string | undefined;
 
   constructor() {
     this.token = process.env.FONNTE_TOKEN || undefined;
+    this.tokenHc = process.env.FONNTE_TOKEN_HC || undefined;
 
     if (!this.token) {
       this.logger.warn(
@@ -52,13 +56,18 @@ export class WhatsappService {
    * `lampiran.url` WAJIB URL publik (lihat urlPublikLampiran) — Fonnte hanya
    * mendukung lampiran di paket Super/Advanced/Ultra; paket di bawah itu
    * akan mengabaikan parameter `url` (pesan teks tetap terkirim).
+   * `departemen: 'HC'` mengirim dari device WA HC (FONNTE_TOKEN_HC),
+   * fallback ke device default kalau belum dikonfigurasi.
    */
   async kirim(
     tujuan: string | undefined | null,
     pesan: string,
     lampiran?: { url: string; namaFile?: string },
+    departemen?: 'HC',
   ): Promise<boolean> {
-    if (!this.token || !tujuan) {
+    const token = departemen === 'HC' ? this.tokenHc || this.token : this.token;
+
+    if (!token || !tujuan) {
       return false;
     }
 
@@ -66,7 +75,7 @@ export class WhatsappService {
       const response = await fetch(FONNTE_ENDPOINT, {
         method: 'POST',
         headers: {
-          Authorization: this.token,
+          Authorization: token,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
