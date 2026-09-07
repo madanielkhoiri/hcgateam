@@ -5,6 +5,7 @@
 // ==================================================
 
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { EpromAksesService } from './common/eprom-akses.service';
 import { EpromFileService } from './common/eprom-file.service';
 import { EpromVendorController } from './vendor/eprom-vendor.controller';
@@ -13,6 +14,10 @@ import { EpromDocumentsController } from './documents/eprom-documents.controller
 import { EpromDocumentsService } from './documents/eprom-documents.service';
 import { EpromTenderController } from './tender/eprom-tender.controller';
 import { EpromTenderService } from './tender/eprom-tender.service';
+import { EpromTenderChatController } from './tender/eprom-tender-chat.controller';
+import { EpromTenderChatService } from './tender/eprom-tender-chat.service';
+import { EpromTenderChatGateway } from './tender/eprom-tender-chat.gateway';
+import { EpromTenderMailgunWebhookController } from './tender/eprom-tender-mailgun-webhook.controller';
 import { EpromKontrakController } from './kontrak/eprom-kontrak.controller';
 import { EpromKontrakService } from './kontrak/eprom-kontrak.service';
 import { EpromDashboardController } from './dashboard/eprom-dashboard.controller';
@@ -44,10 +49,13 @@ import { EpromPerformanceVendorController } from './performance-vendor/eprom-per
 import { EpromPerformanceVendorService } from './performance-vendor/eprom-performance-vendor.service';
 
 @Module({
+  imports: [AuthModule],
   controllers: [
     EpromVendorController,
     EpromDocumentsController,
     EpromTenderController,
+    EpromTenderChatController,
+    EpromTenderMailgunWebhookController,
     EpromEvaluasiVendorController,
     EpromKontrakController,
     EpromDashboardController,
@@ -69,6 +77,8 @@ import { EpromPerformanceVendorService } from './performance-vendor/eprom-perfor
     EpromVendorService,
     EpromDocumentsService,
     EpromTenderService,
+    EpromTenderChatService,
+    EpromTenderChatGateway,
     EpromEvaluasiVendorService,
     EpromKontrakService,
     EpromDashboardService,

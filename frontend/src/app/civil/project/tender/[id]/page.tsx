@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Pencil, Plus, Printer, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, Plus, Printer, Trash2, Trophy } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import {
@@ -26,6 +26,7 @@ import {
 } from "@/lib/eprom-api";
 import { FolderExplorer } from "@/components/civil-project/folder-explorer";
 import { Modal } from "@/components/civil-project/modal";
+import { TenderChatPanel } from "@/components/civil-project/tender-chat-panel";
 import styles from "../tender.module.css";
 
 type Tab = "dokumen" | "undangan" | "sph";
@@ -73,6 +74,7 @@ export default function TenderDetailPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [formVendorId, setFormVendorId] = useState<number | null>(null);
   const [formKode, setFormKode] = useState<Partial<Record<KategoriGabungan, string>>>({});
+  const [chatVendor, setChatVendor] = useState<{ vendorId: number; namaVendor: string } | null>(null);
 
   function muatUlang() {
     epromApi.tender
@@ -400,6 +402,14 @@ export default function TenderDetailPage() {
                 <div key={u.id} className={styles.roundRow}>
                   <strong>{u.vendor.namaVendor}</strong>
                   <span>Dikirim {formatTanggal(u.tanggalKirim)}</span>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    onClick={() => setChatVendor({ vendorId: u.vendorId, namaVendor: u.vendor.namaVendor })}
+                    title="Chat dengan vendor"
+                  >
+                    <MessageCircle size={13} />
+                  </button>
                   <button
                     type="button"
                     className={styles.iconButtonDanger}
@@ -856,6 +866,16 @@ export default function TenderDetailPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {chatVendor && (
+        <TenderChatPanel
+          tenderId={tenderId}
+          vendorId={chatVendor.vendorId}
+          namaTender={detail.namaTender}
+          namaVendor={chatVendor.namaVendor}
+          onClose={() => setChatVendor(null)}
+        />
       )}
     </div>
   );

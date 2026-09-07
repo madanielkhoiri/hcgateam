@@ -15,10 +15,13 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { StatusTender } from '@prisma/client';
+import { ArahPesanTenderChat, StatusTender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromFileService } from '../common/eprom-file.service';
 import { AktorEprom } from '../common/eprom-aktor';
+import { MailgunService } from '../../mailgun/mailgun.service';
+import { EpromTenderChatGateway } from './eprom-tender-chat.gateway';
+import { alamatInboundUndangan } from './eprom-tender-chat.util';
 
 export class BuatTenderDto {
   @IsString()
@@ -48,6 +51,8 @@ export class EpromTenderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly file: EpromFileService,
+    private readonly mailgun: MailgunService,
+    private readonly gateway: EpromTenderChatGateway,
   ) {}
 
   async daftar() {
@@ -132,27 +137,93 @@ export class EpromTenderService {
     return { message: 'Tender berhasil dihapus' };
   }
 
-  async kirimUndangan(tenderId: number, dto: KirimUndanganDto) {
+  /**
+   * Kirim undangan ke satu/beberapa vendor sekaligus — tiap vendor boleh
+   * punya lampiran file berbeda (`filesPerVendor`, dari fieldname
+   * `files_<vendorId>` di controller). Undangan pertama ini otomatis jadi
+   * pesan pembuka chat (arah KELUAR) dan dikirim sungguhan ke email vendor
+   * lewat Mailgun (dilewati kalau Mailgun belum dikonfigurasi — lihat
+   * ringkasanEmail.mailAktif pada hasil).
+   */
+  async kirimUndangan(
+    tenderId: number,
+    dto: KirimUndanganDto,
+    filesPerVendor: Map<number, Express.Multer.File[]> = new Map(),
+  ) {
     const tender = await this.detail(tenderId);
-
-    await this.prisma.$transaction(async (tx) => {
-      for (const vendorId of dto.vendorIds) {
-        await tx.tenderUndangan.upsert({
-          where: { tenderId_vendorId: { tenderId, vendorId } },
-          update: { tanggalKirim: new Date() },
-          create: { tenderId, vendorId, tanggalKirim: new Date() },
-        });
-      }
-
-      if (tender.status === StatusTender.PERSIAPAN) {
-        await tx.tenderProcess.update({
-          where: { id: tenderId },
-          data: { status: StatusTender.UNDANGAN_TERKIRIM },
-        });
-      }
+    const vendors = await this.prisma.vendor.findMany({
+      where: { id: { in: dto.vendorIds } },
+      select: { id: true, namaVendor: true, email: true },
     });
 
-    return this.detail(tenderId);
+    const ringkasanEmail = { mailAktif: this.mailgun.aktif, terkirim: [] as string[], gagal: [] as string[], tanpaEmail: [] as string[] };
+
+    for (const vendorId of dto.vendorIds) {
+      const vendor = vendors.find((item) => item.id === vendorId);
+      const files = filesPerVendor.get(vendorId) ?? [];
+
+      const undangan = await this.prisma.tenderUndangan.upsert({
+        where: { tenderId_vendorId: { tenderId, vendorId } },
+        update: { tanggalKirim: new Date() },
+        create: { tenderId, vendorId, tanggalKirim: new Date() },
+      });
+
+      const lampiranTersimpan = files.map((berkas) => ({
+        namaFile: berkas.originalname,
+        urlFile: this.file.simpanDokumen(berkas, `tender/${tenderId}/undangan/${vendorId}`),
+      }));
+
+      const isiUndangan =
+        `Yth. ${vendor?.namaVendor ?? 'Bapak/Ibu'},\n\nDengan ini kami mengundang perusahaan Anda untuk berpartisipasi pada tender "${tender.namaTender}".` +
+        `${lampiranTersimpan.length ? ' Dokumen undangan terlampir pada email ini.' : ''}\n\nTerima kasih.`;
+
+      const pesan = await this.prisma.tenderPesan.create({
+        data: {
+          undanganId: undangan.id,
+          arah: ArahPesanTenderChat.KELUAR,
+          isiPesan: isiUndangan,
+          lampiran: { create: lampiranTersimpan },
+        },
+        include: { lampiran: true, pengirim: { select: { id: true, name: true } } },
+      });
+
+      this.gateway.emitPesanBaru(undangan.id, pesan);
+
+      if (!vendor?.email) {
+        ringkasanEmail.tanpaEmail.push(vendor?.namaVendor ?? `Vendor #${vendorId}`);
+        continue;
+      }
+
+      const hasilEmail = await this.mailgun.kirim({
+        to: vendor.email,
+        subjek: `Undangan Tender: ${tender.namaTender}`,
+        teks: isiUndangan,
+        replyTo: alamatInboundUndangan(undangan.id, this.mailgun.domainAktif),
+        lampiran: files.map((berkas) => ({ namaFile: berkas.originalname, data: berkas.buffer })),
+      });
+
+      if (hasilEmail.berhasil) {
+        ringkasanEmail.terkirim.push(vendor.namaVendor);
+
+        if (hasilEmail.messageId) {
+          await this.prisma.tenderPesan.update({
+            where: { id: pesan.id },
+            data: { messageId: hasilEmail.messageId },
+          });
+        }
+      } else {
+        ringkasanEmail.gagal.push(vendor.namaVendor);
+      }
+    }
+
+    if (tender.status === StatusTender.PERSIAPAN) {
+      await this.prisma.tenderProcess.update({
+        where: { id: tenderId },
+        data: { status: StatusTender.UNDANGAN_TERKIRIM },
+      });
+    }
+
+    return { ...(await this.detail(tenderId)), ringkasanEmail };
   }
 
   /** Batalkan undangan vendor — hanya boleh sebelum vendor punya SPH sama sekali. */

@@ -14,10 +14,11 @@ import {
   Patch,
   Post,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { EpromAksesService } from '../common/eprom-akses.service';
@@ -70,14 +71,42 @@ export class EpromTenderController {
     return this.service.hapus(id);
   }
 
+  /** Lampiran per vendor dikirim dengan fieldname `files_<vendorId>` (bisa lebih dari satu per vendor). */
   @Post(':id/undangan')
+  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
   kirimUndangan(
     @Aktor() aktor: AktorEprom,
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: KirimUndanganDto,
+    @Body('vendorIds') vendorIdsRaw: string,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     this.akses.wajibOwner(aktor);
-    return this.service.kirimUndangan(id, dto);
+
+    const vendorIds = (vendorIdsRaw ?? '')
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isInteger(value) && value > 0);
+
+    if (vendorIds.length === 0) {
+      throw new BadRequestException('Pilih minimal satu vendor untuk diundang');
+    }
+
+    const filesPerVendor = new Map<number, Express.Multer.File[]>();
+
+    for (const file of files ?? []) {
+      const match = /^files_(\d+)$/.exec(file.fieldname);
+
+      if (!match) {
+        continue;
+      }
+
+      const vendorId = Number(match[1]);
+      const list = filesPerVendor.get(vendorId) ?? [];
+      list.push(file);
+      filesPerVendor.set(vendorId, list);
+    }
+
+    return this.service.kirimUndangan(id, { vendorIds } as KirimUndanganDto, filesPerVendor);
   }
 
   @Delete(':id/undangan/:vendorId')

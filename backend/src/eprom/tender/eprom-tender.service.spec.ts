@@ -2,6 +2,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusTender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromFileService } from '../common/eprom-file.service';
+import { MailgunService } from '../../mailgun/mailgun.service';
+import { EpromTenderChatGateway } from './eprom-tender-chat.gateway';
 import { EpromTenderService } from './eprom-tender.service';
 
 function buatService(overrides: {
@@ -11,14 +13,18 @@ function buatService(overrides: {
   roundTerakhir?: unknown;
   undanganList?: unknown[];
   roundByIdMap?: Record<number, unknown>;
+  vendorList?: unknown[];
+  mailAktif?: boolean;
 } = {}) {
   const tenderUpdate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const tenderUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
   const tenderCreate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const tenderDelete = jest.fn().mockResolvedValue({});
 
-  const undanganUpsert = jest.fn().mockResolvedValue({});
+  const undanganUpsert = jest.fn(({ create }) => Promise.resolve({ id: 1, ...create }));
   const undanganDelete = jest.fn().mockResolvedValue({});
+  const pesanCreate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+  const pesanUpdate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
 
   const sphCreate = jest.fn(({ data }) => Promise.resolve({ id: 100, isFinal: false, ...data }));
   const sphUpdate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
@@ -42,6 +48,13 @@ function buatService(overrides: {
       upsert: undanganUpsert,
       delete: undanganDelete,
     },
+    tenderPesan: {
+      create: pesanCreate,
+      update: pesanUpdate,
+    },
+    vendor: {
+      findMany: jest.fn().mockResolvedValue(overrides.vendorList ?? []),
+    },
     tenderSPH: {
       count: jest.fn().mockResolvedValue(overrides.jumlahSph ?? 0),
       findFirst: jest.fn().mockResolvedValue('roundTerakhir' in overrides ? overrides.roundTerakhir : null),
@@ -64,21 +77,36 @@ function buatService(overrides: {
 
   const file = {
     simpan: jest.fn().mockReturnValue('eprom/tender/1/sph/a.pdf'),
+    simpanDokumen: jest.fn().mockReturnValue('eprom/tender/1/undangan/1/a.pdf'),
     tebakTipe: jest.fn().mockReturnValue('PDF'),
   } as unknown as EpromFileService;
 
-  const service = new EpromTenderService(prisma, file);
+  const mailgun = {
+    aktif: overrides.mailAktif ?? false,
+    domainAktif: 'mail.contoh.test',
+    kirim: jest.fn().mockResolvedValue({ berhasil: false }),
+  } as unknown as MailgunService;
+
+  const gateway = {
+    emitPesanBaru: jest.fn(),
+  } as unknown as EpromTenderChatGateway;
+
+  const service = new EpromTenderService(prisma, file, mailgun, gateway);
 
   return {
     service,
     prisma,
     file,
+    mailgun,
+    gateway,
     tenderUpdate,
     tenderUpdateMany,
     tenderCreate,
     tenderDelete,
     undanganUpsert,
     undanganDelete,
+    pesanCreate,
+    pesanUpdate,
     sphCreate,
     sphUpdate,
     sphUpdateMany,
@@ -162,6 +190,85 @@ describe('EpromTenderService.kirimUndangan', () => {
     await service.kirimUndangan(1, { vendorIds: [1] } as any);
 
     expect(tenderUpdate).not.toHaveBeenCalled();
+  });
+
+  it('membuat TenderPesan arah KELUAR (pesan pembuka chat) untuk tiap vendor', async () => {
+    const { service, pesanCreate } = buatService({
+      tender: { id: 1, namaTender: 'Tender A', status: StatusTender.UNDANGAN_TERKIRIM },
+      vendorList: [{ id: 1, namaVendor: 'PT A', email: null }],
+    });
+
+    await service.kirimUndangan(1, { vendorIds: [1] } as any);
+
+    expect(pesanCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ undanganId: 1, arah: 'KELUAR' }) }),
+    );
+  });
+
+  it('vendor tanpa email masuk ringkasanEmail.tanpaEmail, tidak memanggil mailgun.kirim', async () => {
+    const { service, mailgun } = buatService({
+      tender: { id: 1, namaTender: 'Tender A', status: StatusTender.UNDANGAN_TERKIRIM },
+      vendorList: [{ id: 1, namaVendor: 'PT A', email: null }],
+    });
+
+    const hasil = await service.kirimUndangan(1, { vendorIds: [1] } as any);
+
+    expect(mailgun.kirim).not.toHaveBeenCalled();
+    expect(hasil.ringkasanEmail.tanpaEmail).toEqual(['PT A']);
+  });
+
+  it('vendor dengan email: kirim lewat Mailgun, sukses masuk ringkasanEmail.terkirim', async () => {
+    const { service, mailgun, pesanUpdate } = buatService({
+      tender: { id: 1, namaTender: 'Tender A', status: StatusTender.UNDANGAN_TERKIRIM },
+      vendorList: [{ id: 1, namaVendor: 'PT A', email: 'vendor@contoh.test' }],
+      mailAktif: true,
+    });
+    (mailgun.kirim as jest.Mock).mockResolvedValue({ berhasil: true, messageId: '<abc@mailgun>' });
+
+    const hasil = await service.kirimUndangan(1, { vendorIds: [1] } as any);
+
+    expect(mailgun.kirim).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'vendor@contoh.test', replyTo: 'tender-1@mail.contoh.test' }),
+    );
+    expect(hasil.ringkasanEmail.terkirim).toEqual(['PT A']);
+    expect(pesanUpdate).toHaveBeenCalledWith({ where: { id: 1 }, data: { messageId: '<abc@mailgun>' } });
+  });
+
+  it('vendor dengan email tapi Mailgun gagal kirim: masuk ringkasanEmail.gagal', async () => {
+    const { service, mailgun } = buatService({
+      tender: { id: 1, namaTender: 'Tender A', status: StatusTender.UNDANGAN_TERKIRIM },
+      vendorList: [{ id: 1, namaVendor: 'PT A', email: 'vendor@contoh.test' }],
+      mailAktif: true,
+    });
+    (mailgun.kirim as jest.Mock).mockResolvedValue({ berhasil: false });
+
+    const hasil = await service.kirimUndangan(1, { vendorIds: [1] } as any);
+
+    expect(hasil.ringkasanEmail.gagal).toEqual(['PT A']);
+  });
+
+  it('menyimpan file lampiran per vendor dari filesPerVendor', async () => {
+    const { service, file } = buatService({
+      tender: { id: 1, namaTender: 'Tender A', status: StatusTender.UNDANGAN_TERKIRIM },
+      vendorList: [{ id: 1, namaVendor: 'PT A', email: null }],
+    });
+    const dummyFile = { originalname: 'proposal.pdf', buffer: Buffer.from('x') } as Express.Multer.File;
+    const filesPerVendor = new Map([[1, [dummyFile]]]);
+
+    await service.kirimUndangan(1, { vendorIds: [1] } as any, filesPerVendor);
+
+    expect(file.simpanDokumen).toHaveBeenCalledWith(dummyFile, 'tender/1/undangan/1');
+  });
+
+  it('memanggil gateway.emitPesanBaru untuk tiap undangan yang dikirim', async () => {
+    const { service, gateway } = buatService({
+      tender: { id: 1, namaTender: 'Tender A', status: StatusTender.UNDANGAN_TERKIRIM },
+      vendorList: [{ id: 1, namaVendor: 'PT A', email: null }],
+    });
+
+    await service.kirimUndangan(1, { vendorIds: [1] } as any);
+
+    expect(gateway.emitPesanBaru).toHaveBeenCalledWith(1, expect.objectContaining({ arah: 'KELUAR' }));
   });
 });
 
