@@ -122,6 +122,7 @@ model User {
   kipDiperiksa KipChecklistBulan[]
 
   deviasiStokDiubah DeviasiStok[]
+  tenderPesanDikirim TenderPesan[]
 
   dokumenIrDiupload        DokumenIr[]          @relation("DokumenIrUploader")
   aspirasiPertanyaanDibuat AspirasiPertanyaan[] @relation("AspirasiPertanyaanCreator")
@@ -1759,9 +1760,53 @@ model TenderUndangan {
 
   tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  pesan  TenderPesan[]
 
   @@unique([tenderId, vendorId])
   @@map("eprom_tender_undangan")
+}
+
+// --------------------------------------------------
+// CHAT UNDANGAN TENDER (email vendor <-> chat real-time staff)
+// Vendor tetap balas lewat email biasa — balasannya masuk lewat webhook
+// Mailgun (arah MASUK). Staff balas dari web, dikirim keluar sebagai
+// email ke vendor lewat Mailgun (arah KELUAR). Satu TenderUndangan =
+// satu "ruang chat" per vendor per tender.
+// --------------------------------------------------
+
+enum ArahPesanTenderChat {
+  KELUAR
+  MASUK
+}
+
+model TenderPesan {
+  id          Int                 @id @default(autoincrement())
+  undanganId  Int                 @map("undangan_id")
+  arah        ArahPesanTenderChat
+  isiPesan    String              @map("isi_pesan") @db.Text
+  pengirimId  Int?                @map("pengirim_id")
+  messageId   String?             @map("message_id")
+  inReplyTo   String?             @map("in_reply_to")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  undangan TenderUndangan    @relation(fields: [undanganId], references: [id], onDelete: Cascade)
+  pengirim User?             @relation(fields: [pengirimId], references: [id], onDelete: SetNull)
+  lampiran TenderPesanFile[]
+
+  @@index([undanganId])
+  @@map("eprom_tender_pesan")
+}
+
+model TenderPesanFile {
+  id        Int      @id @default(autoincrement())
+  pesanId   Int      @map("pesan_id")
+  namaFile  String   @map("nama_file")
+  urlFile   String   @map("url_file")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  pesan TenderPesan @relation(fields: [pesanId], references: [id], onDelete: Cascade)
+
+  @@map("eprom_tender_pesan_file")
 }
 
 model TenderSPH {
