@@ -1,9 +1,11 @@
 // ==================================================
 // FILE: backend/src/mailgun/mailgun.service.ts
 // FUNGSI: Kirim email keluar lewat Mailgun (mailgun.com). Kredensial
-// diisi lewat env: MAILGUN_API_KEY, MAILGUN_DOMAIN. Bila belum diisi,
-// pengiriman email dilewati (fitur lain tetap jalan) dan dicatat di
-// log — pola sama persis dengan WhatsappService (Fonnte).
+// diisi lewat env: MAILGUN_API_KEY, MAILGUN_DOMAIN,
+// MAILGUN_WEBHOOK_SIGNING_KEY (dari Account Settings → API Security,
+// BUKAN sama dengan MAILGUN_API_KEY). Bila MAILGUN_API_KEY/DOMAIN belum
+// diisi, pengiriman email dilewati (fitur lain tetap jalan) dan dicatat
+// di log — pola sama persis dengan WhatsappService (Fonnte).
 // ==================================================
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -19,10 +21,12 @@ export class MailgunService {
   private readonly logger = new Logger(MailgunService.name);
   private readonly apiKey: string | undefined;
   private readonly domain: string | undefined;
+  private readonly webhookSigningKey: string | undefined;
 
   constructor() {
     this.apiKey = process.env.MAILGUN_API_KEY || undefined;
     this.domain = process.env.MAILGUN_DOMAIN || undefined;
+    this.webhookSigningKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY || undefined;
 
     if (!this.apiKey || !this.domain) {
       this.logger.warn(
@@ -35,9 +39,14 @@ export class MailgunService {
     return Boolean(this.apiKey && this.domain);
   }
 
-  /** Dipakai controller webhook untuk verifikasi signature — lihat mailgun-signature.util.ts. */
+  /**
+   * Dipakai controller webhook untuk verifikasi signature (lihat
+   * mailgun-signature.util.ts) — Mailgun menandatangani webhook pakai
+   * "HTTP webhook signing key" TERPISAH dari API key biasa (Account
+   * Settings → API Security), bukan MAILGUN_API_KEY.
+   */
   get kunciWebhook(): string | undefined {
-    return this.apiKey;
+    return this.webhookSigningKey;
   }
 
   get domainAktif(): string | undefined {
