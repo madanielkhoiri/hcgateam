@@ -4,6 +4,7 @@ const APIKEY_ASLI = process.env.MAILGUN_API_KEY;
 const DOMAIN_ASLI = process.env.MAILGUN_DOMAIN;
 const FROM_ASLI = process.env.MAILGUN_FROM;
 const BASE_ASLI = process.env.MAILGUN_BASE_URL;
+const WEBHOOK_KEY_ASLI = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
 
 function buatServiceDenganKredensial(apiKey: string | undefined, domain: string | undefined) {
   if (apiKey === undefined) delete process.env.MAILGUN_API_KEY;
@@ -28,6 +29,9 @@ afterEach(() => {
   if (BASE_ASLI === undefined) delete process.env.MAILGUN_BASE_URL;
   else process.env.MAILGUN_BASE_URL = BASE_ASLI;
 
+  if (WEBHOOK_KEY_ASLI === undefined) delete process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
+  else process.env.MAILGUN_WEBHOOK_SIGNING_KEY = WEBHOOK_KEY_ASLI;
+
   jest.restoreAllMocks();
 });
 
@@ -44,10 +48,24 @@ describe('MailgunService.aktif', () => {
 });
 
 describe('MailgunService.domainAktif & kunciWebhook', () => {
-  it('mengembalikan domain & api key apa adanya (dipakai controller webhook)', () => {
+  it('mengembalikan domain apa adanya', () => {
     const service = buatServiceDenganKredensial('key-123', 'mail.contoh.test');
     expect(service.domainAktif).toBe('mail.contoh.test');
-    expect(service.kunciWebhook).toBe('key-123');
+  });
+
+  it('kunciWebhook mengambil dari MAILGUN_WEBHOOK_SIGNING_KEY, BUKAN dari MAILGUN_API_KEY', () => {
+    process.env.MAILGUN_WEBHOOK_SIGNING_KEY = 'signing-key-berbeda';
+    const service = buatServiceDenganKredensial('key-123', 'mail.contoh.test');
+
+    expect(service.kunciWebhook).toBe('signing-key-berbeda');
+    expect(service.kunciWebhook).not.toBe('key-123');
+  });
+
+  it('kunciWebhook undefined kalau MAILGUN_WEBHOOK_SIGNING_KEY belum diisi', () => {
+    delete process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
+    const service = buatServiceDenganKredensial('key-123', 'mail.contoh.test');
+
+    expect(service.kunciWebhook).toBeUndefined();
   });
 });
 
