@@ -63,6 +63,7 @@ export default function TenderDetailPage() {
   const [vendorList, setVendorList] = useState<Vendor[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedVendorIds, setSelectedVendorIds] = useState<number[]>([]);
+  const [filesPerVendor, setFilesPerVendor] = useState<Record<number, File[]>>({});
   const [submitting, setSubmitting] = useState(false);
   const [sphFormOpen, setSphFormOpen] = useState<Record<number, boolean>>({});
   const [sphFile, setSphFile] = useState<Record<number, File | null>>({});
@@ -170,8 +171,9 @@ export default function TenderDetailPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const hasil = await epromApi.tender.kirimUndangan(tenderId, selectedVendorIds);
+      const hasil = await epromApi.tender.kirimUndangan(tenderId, selectedVendorIds, filesPerVendor);
       setSelectedVendorIds([]);
+      setFilesPerVendor({});
       setDetail(hasil);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengirim undangan");
@@ -353,13 +355,14 @@ export default function TenderDetailPage() {
             <div className={styles.vendorPickerGrid}>
               {vendorBelumDiundang.map((v) => {
                 const dipilih = selectedVendorIds.includes(v.id);
+                const filesVendor = filesPerVendor[v.id] ?? [];
 
                 return (
-                  <label
+                  <div
                     key={v.id}
                     className={`${styles.vendorPickerCard} ${dipilih ? styles.vendorPickerCardActive : ""}`}
                   >
-                    <div className={styles.vendorPickerCardHead}>
+                    <label className={styles.vendorPickerCardHead}>
                       <input
                         type="checkbox"
                         checked={dipilih}
@@ -373,8 +376,46 @@ export default function TenderDetailPage() {
                         <strong>{v.namaVendor}</strong>
                         <small>{v.email ?? v.noTelepon ?? "Tanpa kontak"}</small>
                       </div>
-                    </div>
-                  </label>
+                    </label>
+
+                    {dipilih && (
+                      <div className={styles.vendorPickerLampiran}>
+                        <label className={styles.vendorPickerLampiranTombol}>
+                          <Plus size={12} /> Lampiran
+                          <input
+                            type="file"
+                            multiple
+                            hidden
+                            onChange={(e) => {
+                              const dipilihFile = Array.from(e.target.files ?? []);
+                              if (dipilihFile.length === 0) return;
+                              setFilesPerVendor((cur) => ({
+                                ...cur,
+                                [v.id]: [...(cur[v.id] ?? []), ...dipilihFile],
+                              }));
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        {filesVendor.map((file, index) => (
+                          <span key={`${file.name}-${index}`} className={styles.vendorPickerLampiranChip}>
+                            {file.name}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFilesPerVendor((cur) => ({
+                                  ...cur,
+                                  [v.id]: (cur[v.id] ?? []).filter((_, i) => i !== index),
+                                }))
+                              }
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
