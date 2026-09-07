@@ -528,6 +528,63 @@
   box-shadow: 0 0 0 3px rgba(239, 113, 0, 0.12);
 }
 
+.vendorPickerLampiran {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed #e4d2b8;
+}
+
+.vendorPickerLampiranTombol {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  color: #34506f;
+  background: #ffffff;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vendorPickerLampiranTombol:hover {
+  color: #ef7100;
+  border-color: #f5c08a;
+}
+
+.vendorPickerLampiranChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 160px;
+  padding: 4px 6px 4px 9px;
+  overflow: hidden;
+  color: #34506f;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #ffffff;
+  border: 1px solid #d8e4f2;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.vendorPickerLampiranChip button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  color: #b3261e;
+  background: #ffeded;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
 .vendorBlock {
   padding: 14px 0;
   border-bottom: 1px solid #eef2f7;
