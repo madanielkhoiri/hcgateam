@@ -119,6 +119,7 @@ export default function KaryawanPage() {
   const [sukses, setSukses] = useState<string | null>(null);
   const [proses, setProses] = useState(false);
   const [idCekWa, setIdCekWa] = useState<number | null>(null);
+  const [errorCekWa, setErrorCekWa] = useState<Record<number, string>>({});
 
   const [cari, setCari] = useState('');
   const [filterDept, setFilterDept] = useState('');
@@ -224,7 +225,11 @@ export default function KaryawanPage() {
 
   async function cekWa(id: number) {
     setIdCekWa(id);
-    setGalat(null);
+    setErrorCekWa((cur) => {
+      const next = { ...cur };
+      delete next[id];
+      return next;
+    });
 
     try {
       const hasil = await karyawanApi.kirim<Pick<Karyawan, 'id' | 'waTerdaftar' | 'waDicekPada'>>(
@@ -239,7 +244,7 @@ export default function KaryawanPage() {
         ),
       );
     } catch (error) {
-      setGalat((error as Error).message);
+      setErrorCekWa((cur) => ({ ...cur, [id]: (error as Error).message }));
     } finally {
       setIdCekWa(null);
     }
@@ -437,6 +442,11 @@ export default function KaryawanPage() {
                         <div className={styles.statusWa}>
                           {idCekWa === item.id ? (
                             <Loader2 size={14} className={styles.ikonMuat} />
+                          ) : errorCekWa[item.id] ? (
+                            <span className={styles.statusWaError} title={errorCekWa[item.id]}>
+                              <X size={14} className={styles.ikonGagal} aria-label="Gagal dicek" />
+                              Gagal dicek
+                            </span>
                           ) : item.waTerdaftar === true ? (
                             <CheckCircle2
                               size={14}
