@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getStoredUser, type PortalUser } from '@/lib/access-control';
+import { clearSession, formatRole, getStoredUser, type PortalUser } from '@/lib/access-control';
 import {
   gudangApi,
   urlFotoGudang,
@@ -34,6 +34,15 @@ const KATEGORI_TAB = [
   { key: 'BAJU', label: 'Baju' },
   { key: 'ELEKTRONIK', label: 'Elektronik' },
   { key: 'FURNITURE', label: 'Furniture' },
+];
+
+const DAFTAR_DEPARTEMEN = [
+  'HCGA',
+  'PRODUKSI',
+  'PLANT',
+  'ENGINEERING',
+  'SHE',
+  'ICT MD',
 ];
 
 const LABEL_SCOPE: Record<InventoryScopeGudang, string> = {
@@ -93,6 +102,7 @@ function GudangPageInner() {
 
   const [user, setUser] = useState<PortalUser | null>(null);
   const [siapDicek, setSiapDicek] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const [langkah, setLangkah] = useState<Langkah>('scope');
   const [scope, setScope] = useState<InventoryScopeGudang | null>(null);
@@ -105,11 +115,9 @@ function GudangPageInner() {
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<Record<number, number>>({});
 
+  const [nrp, setNrp] = useState('');
   const [taker, setTaker] = useState('');
   const [department, setDepartment] = useState('');
-  const [note, setNote] = useState('');
-  const [foto, setFoto] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -155,16 +163,11 @@ function GudangPageInner() {
     }
   }, [scope, langkah, muatBarang]);
 
-  useEffect(() => {
-    if (!foto) {
-      setFotoPreview(null);
-      return;
-    }
-
-    const url = URL.createObjectURL(foto);
-    setFotoPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [foto]);
+  function logout() {
+    clearSession();
+    router.replace('/login');
+    router.refresh();
+  }
 
   function pilihScope(nilai: InventoryScopeGudang) {
     setScope(nilai);
@@ -231,14 +234,14 @@ function GudangPageInner() {
     setSubmitting(true);
     setSubmitError('');
 
+    const namaPengambil = nrp.trim() ? `${nrp.trim()} - ${taker.trim()}` : taker.trim();
+
     try {
       const hasilCheckout = await gudangApi.checkout({
         scope,
-        taker,
+        taker: namaPengambil,
         department,
-        note: note.trim() || undefined,
         items: barisKeranjang.map(({ item, qty }) => ({ itemId: item.id, quantity: qty })),
-        foto: foto ?? undefined,
       });
 
       setHasil(hasilCheckout);
@@ -252,8 +255,6 @@ function GudangPageInner() {
 
   function mulaiLagi() {
     setCart({});
-    setNote('');
-    setFoto(null);
     setHasil(null);
     setSubmitError('');
     setLangkah('menu');
@@ -266,6 +267,65 @@ function GudangPageInner() {
           <path d="M15 18l-6-6 6-6" />
         </svg>
       </button>
+    );
+  }
+
+  function ProfileMenu() {
+    return (
+      <div className={styles.profileWrapper}>
+        <button
+          type="button"
+          className={styles.avatar}
+          onClick={() => setProfileMenuOpen((current) => !current)}
+          aria-expanded={profileMenuOpen}
+          aria-label="Menu profil"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="3.4" />
+            <path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" />
+          </svg>
+        </button>
+
+        {profileMenuOpen && (
+          <>
+            <button
+              type="button"
+              className={styles.menuBackdrop}
+              aria-label="Tutup menu profil"
+              onClick={() => setProfileMenuOpen(false)}
+            />
+
+            <div className={styles.profileMenu}>
+              <div className={styles.profileMenuHeader}>
+                <div className={styles.avatar} style={{ cursor: 'default' }}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="3.4" />
+                    <path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" />
+                  </svg>
+                </div>
+                <div>
+                  <strong>{user?.name}</strong>
+                  <span>{formatRole(user?.role)}</span>
+                </div>
+              </div>
+
+              <div className={styles.profileMenuDivider} />
+
+              <button type="button" className={styles.logoutButton} onClick={logout}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#c4708a" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                  <path d="M16 17l5-5-5-5" />
+                  <path d="M21 12H9" />
+                </svg>
+                <span>
+                  <strong>Keluar</strong>
+                  <small>Kembali ke halaman login</small>
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     );
   }
 
@@ -290,6 +350,7 @@ function GudangPageInner() {
                 <div className={styles.title}>Pilih lingkup gudang</div>
               </div>
             </div>
+            <ProfileMenu />
           </div>
         </div>
 
@@ -331,12 +392,7 @@ function GudangPageInner() {
                 <div className={styles.title}>Ambil Barang</div>
               </div>
             </div>
-            <div className={styles.avatar}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="3.4" />
-                <path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" />
-              </svg>
-            </div>
+            <ProfileMenu />
           </div>
 
           <label className={styles.searchBox}>
@@ -386,7 +442,7 @@ function GudangPageInner() {
                 className={`${styles.card} ${qty > 0 ? styles.cardSelected : ''} ${habis ? styles.cardDisabled : ''}`}
               >
                 <div className={styles.tile} style={{ background: item.photoPath ? '#eef2f8' : meta.bg }}>
-                  <TileFoto item={item} size={38} />
+                  <TileFoto item={item} size={56} />
                   {!item.photoPath && <span className={styles.tileCaption}>Foto belum ada</span>}
                   {habis && <div className={styles.tileOverlay} />}
                 </div>
@@ -403,15 +459,16 @@ function GudangPageInner() {
 
                   {habis ? (
                     <div className={styles.unavailable}>Tidak tersedia</div>
-                  ) : qty > 0 ? (
+                  ) : (
                     <div className={styles.stepper}>
                       <button
                         type="button"
                         className={styles.stepperButton}
                         onClick={() => ubahQty(item.id, -1, item.stock)}
+                        disabled={qty === 0}
                         aria-label={`Kurangi ${item.name}`}
                       >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0868f6" strokeWidth={2.6} strokeLinecap="round"><path d="M5 12h14" /></svg>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={qty === 0 ? '#c3cede' : '#0868f6'} strokeWidth={2.6} strokeLinecap="round"><path d="M5 12h14" /></svg>
                       </button>
                       <span className={styles.stepperQty}>{qty}</span>
                       <button
@@ -423,11 +480,6 @@ function GudangPageInner() {
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ffffff" strokeWidth={2.6} strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                       </button>
                     </div>
-                  ) : (
-                    <button type="button" className={styles.ambilButton} onClick={() => ubahQty(item.id, 1, item.stock)}>
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ffffff" strokeWidth={2.8} strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-                      Ambil
-                    </button>
                   )}
                 </div>
               </div>
@@ -578,43 +630,23 @@ function GudangPageInner() {
 
           <div className={styles.form}>
             <div className={styles.field}>
+              <label>NRP</label>
+              <input className={styles.input} value={nrp} onChange={(event) => setNrp(event.target.value)} placeholder="Contoh: 12345" />
+            </div>
+
+            <div className={styles.field}>
               <label>Nama pengambil *</label>
               <input className={styles.input} value={taker} onChange={(event) => setTaker(event.target.value)} placeholder="Nama lengkap" />
             </div>
 
             <div className={styles.field}>
               <label>Departemen / Site *</label>
-              <input className={styles.input} value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="Contoh: GA - Kantor Site" />
-            </div>
-
-            <div className={styles.field}>
-              <label>Catatan (opsional)</label>
-              <textarea className={styles.input} rows={3} style={{ resize: 'none' }} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Tambahkan catatan kalau perlu..." />
-            </div>
-
-            <div className={styles.field}>
-              <label>Foto bukti (opsional)</label>
-              <label className={styles.uploadBox}>
-                {fotoPreview ? (
-                  <img src={fotoPreview} alt="Pratinjau foto" className={styles.uploadPreview} />
-                ) : (
-                  <>
-                    <div className={styles.cartIconWrap} style={{ background: '#eaf2ff' }}>
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0868f6" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 8a2 2 0 012-2h1.2l1-1.6h7.6l1 1.6H18a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" />
-                        <circle cx="12" cy="13" r="3.3" />
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0868f6' }}>Ambil / unggah foto</span>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  style={{ display: 'none' }}
-                  onChange={(event) => setFoto(event.target.files?.[0] ?? null)}
-                />
-              </label>
+              <select className={styles.input} value={department} onChange={(event) => setDepartment(event.target.value)}>
+                <option value="">Pilih departemen...</option>
+                {DAFTAR_DEPARTEMEN.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
             </div>
           </div>
 
