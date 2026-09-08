@@ -1,12 +1,19 @@
 import { WhatsappService } from './whatsapp.service';
 
 const TOKEN_ASLI = process.env.FONNTE_TOKEN;
+const TOKEN_HC_ASLI = process.env.FONNTE_TOKEN_HC;
 
-function buatServiceDenganToken(token: string | undefined) {
+function buatServiceDenganToken(token: string | undefined, tokenHc?: string | undefined) {
   if (token === undefined) {
     delete process.env.FONNTE_TOKEN;
   } else {
     process.env.FONNTE_TOKEN = token;
+  }
+
+  if (tokenHc === undefined) {
+    delete process.env.FONNTE_TOKEN_HC;
+  } else {
+    process.env.FONNTE_TOKEN_HC = tokenHc;
   }
 
   return new WhatsappService();
@@ -17,6 +24,12 @@ afterEach(() => {
     delete process.env.FONNTE_TOKEN;
   } else {
     process.env.FONNTE_TOKEN = TOKEN_ASLI;
+  }
+
+  if (TOKEN_HC_ASLI === undefined) {
+    delete process.env.FONNTE_TOKEN_HC;
+  } else {
+    process.env.FONNTE_TOKEN_HC = TOKEN_HC_ASLI;
   }
 
   jest.restoreAllMocks();
@@ -125,6 +138,128 @@ describe('WhatsappService.kirim', () => {
 
     const body = fetchMock.mock.calls[0][1].body as URLSearchParams;
     expect(body.has('url')).toBe(false);
+  });
+
+  it('departemen "HC" memakai FONNTE_TOKEN_HC, bukan FONNTE_TOKEN default', async () => {
+    const service = buatServiceDenganToken('token-ga', 'token-hc');
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await service.kirim('08123456789', 'Halo', undefined, 'HC');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/send',
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'token-hc' }) }),
+    );
+  });
+
+  it('departemen "HC" fallback ke FONNTE_TOKEN default kalau FONNTE_TOKEN_HC belum diisi', async () => {
+    const service = buatServiceDenganToken('token-ga', undefined);
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await service.kirim('08123456789', 'Halo', undefined, 'HC');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/send',
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'token-ga' }) }),
+    );
+  });
+
+  it('tanpa departemen tetap memakai FONNTE_TOKEN default walau FONNTE_TOKEN_HC terisi', async () => {
+    const service = buatServiceDenganToken('token-ga', 'token-hc');
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await service.kirim('08123456789', 'Halo');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/send',
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'token-ga' }) }),
+    );
+  });
+});
+
+describe('WhatsappService.validasiTerdaftar', () => {
+  it('null kalau token belum diisi', async () => {
+    const service = buatServiceDenganToken(undefined);
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const hasil = await service.validasiTerdaftar('08123456789');
+
+    expect(hasil).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('null kalau nomor kosong/null', async () => {
+    const service = buatServiceDenganToken('token-123');
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    expect(await service.validasiTerdaftar(null)).toBeNull();
+    expect(await service.validasiTerdaftar('   ')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('true kalau nomor ada di daftar registered', async () => {
+    const service = buatServiceDenganToken('token-123');
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: true, registered: ['08123456789'], not_registered: [] }),
+    }) as unknown as typeof fetch;
+
+    expect(await service.validasiTerdaftar('08123456789')).toBe(true);
+  });
+
+  it('false kalau nomor ada di daftar not_registered', async () => {
+    const service = buatServiceDenganToken('token-123');
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: true, registered: [], not_registered: ['08123456789'] }),
+    }) as unknown as typeof fetch;
+
+    expect(await service.validasiTerdaftar('08123456789')).toBe(false);
+  });
+
+  it('null kalau status false (mis. device disconnected)', async () => {
+    const service = buatServiceDenganToken('token-123');
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: false, reason: 'device disconnected' }),
+    }) as unknown as typeof fetch;
+
+    expect(await service.validasiTerdaftar('08123456789')).toBeNull();
+  });
+
+  it('null kalau HTTP status bukan 2xx', async () => {
+    const service = buatServiceDenganToken('token-123');
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
+
+    expect(await service.validasiTerdaftar('08123456789')).toBeNull();
+  });
+
+  it('null kalau fetch melempar error', async () => {
+    const service = buatServiceDenganToken('token-123');
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
+
+    expect(await service.validasiTerdaftar('08123456789')).toBeNull();
+  });
+
+  it('departemen "HC" memakai FONNTE_TOKEN_HC', async () => {
+    const service = buatServiceDenganToken('token-ga', 'token-hc');
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: true, registered: ['08123456789'], not_registered: [] }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await service.validasiTerdaftar('08123456789', 'HC');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/validate',
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'token-hc' }) }),
+    );
   });
 });
 

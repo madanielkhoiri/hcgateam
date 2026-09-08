@@ -17,6 +17,7 @@ import {
   Database,
   Inbox,
   Info,
+  Loader2,
   Pencil,
   Plus,
   UsersRound,
@@ -117,6 +118,8 @@ export default function KaryawanPage() {
   const [galat, setGalat] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
   const [proses, setProses] = useState(false);
+  const [idCekWa, setIdCekWa] = useState<number | null>(null);
+  const [errorCekWa, setErrorCekWa] = useState<Record<number, string>>({});
 
   const [cari, setCari] = useState('');
   const [filterDept, setFilterDept] = useState('');
@@ -219,6 +222,33 @@ export default function KaryawanPage() {
       void muat();
     }
   }, [user, muat]);
+
+  async function cekWa(id: number) {
+    setIdCekWa(id);
+    setErrorCekWa((cur) => {
+      const next = { ...cur };
+      delete next[id];
+      return next;
+    });
+
+    try {
+      const hasil = await karyawanApi.kirim<Pick<Karyawan, 'id' | 'waTerdaftar' | 'waDicekPada'>>(
+        `/${id}/cek-wa`,
+      );
+
+      setKaryawan((cur) =>
+        cur.map((item) =>
+          item.id === id
+            ? { ...item, waTerdaftar: hasil.waTerdaftar, waDicekPada: hasil.waDicekPada }
+            : item,
+        ),
+      );
+    } catch (error) {
+      setErrorCekWa((cur) => ({ ...cur, [id]: (error as Error).message }));
+    } finally {
+      setIdCekWa(null);
+    }
+  }
 
   function bukaTambah() {
     setIdDiedit(null);
@@ -388,6 +418,7 @@ export default function KaryawanPage() {
                     <th>Departemen</th>
                     <th>Jabatan</th>
                     <th>No. Telepon</th>
+                    <th>Status WA</th>
                     <th>Email</th>
                     <th>Aksi</th>
                   </tr>
@@ -406,6 +437,42 @@ export default function KaryawanPage() {
                       <td>{item.departemen.namaDepartemen}</td>
                       <td>{item.jabatan ?? '-'}</td>
                       <td>{item.noTelepon ?? '-'}</td>
+
+                      <td>
+                        <div className={styles.statusWa}>
+                          {idCekWa === item.id ? (
+                            <Loader2 size={14} className={styles.ikonMuat} />
+                          ) : errorCekWa[item.id] ? (
+                            <span className={styles.statusWaError} title={errorCekWa[item.id]}>
+                              <X size={14} className={styles.ikonGagal} aria-label="Gagal dicek" />
+                              Gagal dicek
+                            </span>
+                          ) : item.waTerdaftar === true ? (
+                            <CheckCircle2
+                              size={14}
+                              className={styles.ikonSukses}
+                              aria-label="Terdaftar WhatsApp"
+                            />
+                          ) : item.waTerdaftar === false ? (
+                            <X size={14} className={styles.ikonGagal} aria-label="Tidak terdaftar WhatsApp" />
+                          ) : (
+                            <span className={styles.statusWaKosong}>Belum dicek</span>
+                          )}
+
+                          {bolehKelola ? (
+                            <button
+                              type="button"
+                              className={styles.tombolCekWa}
+                              onClick={() => cekWa(item.id)}
+                              disabled={idCekWa === item.id || !item.noTelepon}
+                              title={!item.noTelepon ? 'Karyawan belum punya nomor telepon' : 'Cek status WhatsApp'}
+                            >
+                              Cek
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+
                       <td>{item.email ?? '-'}</td>
 
                       <td>

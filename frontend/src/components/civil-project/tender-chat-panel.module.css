@@ -1,0 +1,335 @@
+.overlay {
+  position: fixed;
+  z-index: 320;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(10, 29, 52, 0.42);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100%);
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -18px 0 48px rgba(10, 29, 52, 0.22);
+  animation: slideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid #e4edf7;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.headerInfo strong {
+  color: #10244a;
+  font-size: 15px;
+}
+
+.headerInfo span {
+  color: #7185a0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.closeButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #7185a0;
+  background: #f7fafd;
+  border: 1px solid #e4edf7;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: #b3261e;
+  background: #ffeded;
+  border-color: #ffd7d7;
+}
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.statusBarAktif {
+  color: #1a7a4a;
+  background: #eafaf1;
+}
+
+.statusBarNonaktif {
+  color: #a0650a;
+  background: #fff6e6;
+}
+
+.errorText {
+  flex-shrink: 0;
+  margin: 8px 16px 0;
+  color: #b3261e;
+  font-size: 12.5px;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f7fafd;
+}
+
+.emptyState {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  color: #93a2b8;
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #34506f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.emptyState span {
+  font-size: 12px;
+}
+
+.bubbleRowKeluar,
+.bubbleRowMasuk {
+  display: flex;
+}
+
+.bubbleRowKeluar {
+  justify-content: flex-end;
+}
+
+.bubbleRowMasuk {
+  justify-content: flex-start;
+}
+
+.bubbleKeluar,
+.bubbleMasuk {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 82%;
+  padding: 9px 12px 7px;
+  border-radius: 14px;
+}
+
+.bubbleKeluar {
+  color: #ffffff;
+  background: linear-gradient(135deg, #ef7100, #ff8f2e);
+  border-bottom-right-radius: 4px;
+}
+
+.bubbleMasuk {
+  color: #10244a;
+  background: #ffffff;
+  border: 1px solid #e4edf7;
+  border-bottom-left-radius: 4px;
+}
+
+.bubbleSender {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.bubbleText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubbleTime {
+  align-self: flex-end;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.bubbleLampiran {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.lampiranChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.bubbleMasuk .lampiranChip {
+  background: #f7fafd;
+  border: 1px solid #e4edf7;
+}
+
+.filePreviewBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 16px 0;
+}
+
+.filePreviewChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 20px;
+  font-size: 11.5px;
+}
+
+.filePreviewChip button {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: #7185a0;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.filePreviewChip button:hover {
+  color: #b3261e;
+}
+
+.footer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px 14px;
+  border-top: 1px solid #e4edf7;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.attachButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.attachButton:hover {
+  color: #ef7100;
+  border-color: #ffd9b3;
+}
+
+.textarea {
+  flex: 1;
+  min-height: 36px;
+  max-height: 96px;
+  padding: 8px 12px;
+  color: #10244a;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: none;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #ef7100;
+}
+
+.sendButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #ffffff;
+  background: #ef7100;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.sendButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sendButton:not(:disabled):hover {
+  background: #d96500;
+}

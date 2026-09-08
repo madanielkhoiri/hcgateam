@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { StatusTiketHelpdesk, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AktorHelpdesk, HelpdeskService } from './helpdesk.service';
 import { POHON_KATEGORI_HELPDESK } from './helpdesk.constants';
 
@@ -26,6 +27,7 @@ function buatService(overrides: {
   update?: jest.Mock;
   aggregate?: unknown;
   count?: number;
+  whatsappAktif?: boolean;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
@@ -43,9 +45,14 @@ function buatService(overrides: {
 
   prisma.$transaction = jest.fn((cb: any) => cb(prisma));
 
-  const service = new HelpdeskService(prisma as PrismaService);
+  const whatsapp = {
+    aktif: overrides.whatsappAktif ?? false,
+    kirim: jest.fn().mockResolvedValue(true),
+  } as unknown as WhatsappService;
 
-  return { service, prisma, create, update };
+  const service = new HelpdeskService(prisma as PrismaService, whatsapp);
+
+  return { service, prisma, create, update, whatsapp };
 }
 
 const dataDasar = {
@@ -140,6 +147,47 @@ describe('HelpdeskService.buat — sukses', () => {
     await service.buat(aktor(UserRole.KARYAWAN, 7), dataDasar);
 
     expect(create.mock.calls[0][0].data.pembuatId).toBe(7);
+  });
+});
+
+describe('HelpdeskService.buat — notif WA ke Admin Comben', () => {
+  const NOMOR_ASLI = process.env.WA_COMBEN_NUMBER;
+
+  afterEach(() => {
+    if (NOMOR_ASLI === undefined) delete process.env.WA_COMBEN_NUMBER;
+    else process.env.WA_COMBEN_NUMBER = NOMOR_ASLI;
+  });
+
+  it('tidak mengirim WA kalau whatsapp tidak aktif', async () => {
+    process.env.WA_COMBEN_NUMBER = '0812';
+    const { service, whatsapp } = buatService({ whatsappAktif: false });
+
+    await service.buat(aktor(UserRole.KARYAWAN), dataDasar);
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('tidak mengirim WA kalau WA_COMBEN_NUMBER belum diisi', async () => {
+    delete process.env.WA_COMBEN_NUMBER;
+    const { service, whatsapp } = buatService({ whatsappAktif: true });
+
+    await service.buat(aktor(UserRole.KARYAWAN), dataDasar);
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('mengirim WA ke WA_COMBEN_NUMBER dari device HC kalau aktif & nomor terisi', async () => {
+    process.env.WA_COMBEN_NUMBER = '081200000000';
+    const { service, whatsapp } = buatService({ whatsappAktif: true });
+
+    await service.buat(aktor(UserRole.KARYAWAN), dataDasar);
+
+    expect(whatsapp.kirim).toHaveBeenCalledWith(
+      '081200000000',
+      expect.stringContaining(dataDasar.deskripsi),
+      undefined,
+      'HC',
+    );
   });
 });
 
