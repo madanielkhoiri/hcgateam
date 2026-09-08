@@ -255,14 +255,27 @@
   gap: 8px;
 }
 
-.ikonSukses {
-  color: #07984c;
-  flex-shrink: 0;
-}
-
 .ikonGagal {
   color: #d53535;
   flex-shrink: 0;
+}
+
+.statusWaSukses {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #07984c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.statusWaGagal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #d53535;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .ikonMuat {
