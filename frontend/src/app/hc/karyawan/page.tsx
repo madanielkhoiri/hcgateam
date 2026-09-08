@@ -448,13 +448,15 @@ export default function KaryawanPage() {
                               Gagal dicek
                             </span>
                           ) : item.waTerdaftar === true ? (
-                            <CheckCircle2
-                              size={14}
-                              className={styles.ikonSukses}
-                              aria-label="Terdaftar WhatsApp"
-                            />
+                            <span className={styles.statusWaSukses}>
+                              <CheckCircle2 size={14} />
+                              Terdaftar WA
+                            </span>
                           ) : item.waTerdaftar === false ? (
-                            <X size={14} className={styles.ikonGagal} aria-label="Tidak terdaftar WhatsApp" />
+                            <span className={styles.statusWaGagal}>
+                              <X size={14} />
+                              Tidak terdaftar WA
+                            </span>
                           ) : (
                             <span className={styles.statusWaKosong}>Belum dicek</span>
                           )}

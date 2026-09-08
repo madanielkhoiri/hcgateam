@@ -41,10 +41,10 @@ export class InventoryService {
     }
 
     if (category === ItemCategory.ELEKTRONIK) {
-      return 'EL';
+      return 'ELK';
     }
 
-    return 'FR';
+    return 'FUE';
   }
 
   private async generateItemCode(
