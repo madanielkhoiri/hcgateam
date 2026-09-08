@@ -197,11 +197,9 @@ export class McuKaryawanService {
       throw new BadRequestException('Karyawan ini belum punya nomor telepon');
     }
 
-    const terdaftar = await this.whatsapp.validasiTerdaftar(karyawan.noTelepon);
-
-    if (terdaftar === null) {
-      throw new BadRequestException('Gagal memeriksa status WhatsApp, coba lagi beberapa saat');
-    }
+    // Tidak bisa dipastikan (nomor salah format, device Fonnte bermasalah, dll)
+    // dianggap tidak terdaftar — supaya hasilnya selalu tegas: ada WA atau tidak.
+    const terdaftar = (await this.whatsapp.validasiTerdaftar(karyawan.noTelepon)) ?? false;
 
     return this.prisma.karyawan.update({
       where: { id },

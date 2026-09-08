@@ -309,13 +309,15 @@ describe('McuKaryawanService.cekStatusWa', () => {
     await expect(service.cekStatusWa(7)).rejects.toThrow('belum punya nomor telepon');
   });
 
-  it('menolak kalau validasiTerdaftar gagal dipastikan (null)', async () => {
+  it('menganggap tidak terdaftar (false) kalau validasiTerdaftar gagal dipastikan (null)', async () => {
     const { service } = buatService({
       karyawan: { ...karyawanFixture(), noTelepon: '0812' } as any,
       validasiTerdaftar: jest.fn().mockResolvedValue(null),
     });
 
-    await expect(service.cekStatusWa(7)).rejects.toThrow('Gagal memeriksa status WhatsApp');
+    const hasil = await service.cekStatusWa(7);
+
+    expect(hasil.waTerdaftar).toBe(false);
   });
 
   it('berhasil menyimpan waTerdaftar true & waDicekPada saat nomor terdaftar', async () => {
