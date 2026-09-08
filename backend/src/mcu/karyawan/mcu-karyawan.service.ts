@@ -197,7 +197,7 @@ export class McuKaryawanService {
       throw new BadRequestException('Karyawan ini belum punya nomor telepon');
     }
 
-    const terdaftar = await this.whatsapp.validasiTerdaftar(karyawan.noTelepon, 'HC');
+    const terdaftar = await this.whatsapp.validasiTerdaftar(karyawan.noTelepon);
 
     if (terdaftar === null) {
       throw new BadRequestException('Gagal memeriksa status WhatsApp, coba lagi beberapa saat');
