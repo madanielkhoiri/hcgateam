@@ -1071,6 +1071,9 @@ model Karyawan {
   statusKerja               StatusKerja                @default(AKTIF) @map("status_kerja")
   statusKesehatanDirumahkan StatusKesehatanDirumahkan? @map("status_kesehatan_dirumahkan")
   akunId                    Int?                       @unique @map("akun_id")
+  /** Hasil cek terakhir apakah noTelepon terdaftar WhatsApp — null = belum pernah dicek. */
+  waTerdaftar               Boolean?                   @map("wa_terdaftar")
+  waDicekPada               DateTime?                  @map("wa_dicek_pada")
   createdAt                 DateTime                   @default(now()) @map("created_at")
   updatedAt                 DateTime                   @updatedAt @map("updated_at")
 
