@@ -74,6 +74,101 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.profileWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  border: none;
+  z-index: 40;
+  cursor: default;
+  padding: 0;
+}
+
+.profileMenu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 260px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e6edf7;
+  box-shadow: 0 16px 34px rgba(43, 83, 137, 0.18);
+  padding: 8px;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profileMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+}
+
+.profileMenuHeader strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-main, #10244a);
+}
+
+.profileMenuHeader span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary, #6f819d);
+  margin-top: 1px;
+}
+
+.profileMenuDivider {
+  height: 1px;
+  background: #eef2f8;
+  margin: 4px 4px;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  min-height: 44px;
+  font-family: inherit;
+}
+
+.logoutButton:hover {
+  background: #fff0f3;
+}
+
+.logoutButton strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #c4708a;
+}
+
+.logoutButton small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #6f819d);
+  margin-top: 1px;
 }
 
 .searchBox {
@@ -146,6 +241,8 @@
   padding: 2px 20px 120px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  align-items: start;
   gap: 14px;
 }
 
@@ -180,7 +277,8 @@
 }
 
 .tile {
-  height: 96px;
+  aspect-ratio: 1 / 1;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,11 +303,10 @@
 }
 
 .cardBody {
-  padding: 11px 11px 13px;
+  padding: 9px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  flex: 1;
+  gap: 5px;
 }
 
 .categoryBadge {
@@ -223,11 +320,14 @@
 }
 
 .itemName {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   color: var(--text-main, #10244a);
   line-height: 1.25;
-  min-height: 33px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .stockRow {
@@ -249,7 +349,7 @@
 }
 
 .unavailable {
-  margin-top: auto;
+  margin-top: 2px;
   text-align: center;
   padding: 10px;
   border-radius: 12px;
@@ -263,27 +363,8 @@
   justify-content: center;
 }
 
-.ambilButton {
-  margin-top: auto;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 12px;
-  background: var(--primary, #0868f6);
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(8, 104, 246, 0.25);
-  border: none;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  font-family: inherit;
-}
-
 .stepper {
-  margin-top: auto;
+  margin-top: 2px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -305,6 +386,12 @@
   box-shadow: 0 2px 6px rgba(43, 83, 137, 0.12);
   border: none;
   flex-shrink: 0;
+}
+
+.stepperButton:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 .stepperButtonPrimary {
@@ -577,26 +664,6 @@
 .input::placeholder {
   color: var(--text-placeholder, #9aa8bf);
   font-weight: 600;
-}
-
-.uploadBox {
-  border: 1.5px dashed var(--border, #cfdeef);
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  background: var(--input-bg, #f8fbff);
-  cursor: pointer;
-  min-height: 44px;
-}
-
-.uploadPreview {
-  width: 100%;
-  max-height: 160px;
-  object-fit: cover;
-  border-radius: 12px;
 }
 
 .errorText {
