@@ -4,6 +4,7 @@ import {
   IsArray,
   IsDateString,
   IsInt,
+  IsOptional,
   IsPositive,
   IsString,
   MinLength,
@@ -31,6 +32,10 @@ export class CreateStockOutBatchDto {
   @IsString()
   @MinLength(2)
   department!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @IsArray()
   @ArrayMinSize(1)

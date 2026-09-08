@@ -23,6 +23,7 @@ import {
   PackagePlus,
   PanelLeftClose,
   ShieldCheck,
+  ShoppingBag,
   ToolCase,
   UsersRound,
   Warehouse,
@@ -49,6 +50,7 @@ type MenuGroup = {
 };
 
 const ROLE_BOLEH_LIHAT_DEVIASI = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
+const ROLE_BOLEH_SELF_ORDER = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
 
 const menuGroups: MenuGroup[] = [
   {
@@ -95,6 +97,11 @@ const menuGroups: MenuGroup[] = [
         href: "/ga/inventory/stok-barang",
         icon: Warehouse,
       },
+      {
+        label: "Ambil Barang (Self-Order)",
+        href: "/gudang?scope=GENERAL",
+        icon: ShoppingBag,
+      },
     ],
   },
   {
@@ -123,6 +130,11 @@ const menuGroups: MenuGroup[] = [
         href: "/ga/inventory/mess/stok-barang",
         icon: Warehouse,
       },
+      {
+        label: "Ambil Barang (Self-Order)",
+        href: "/gudang?scope=MESS",
+        icon: ShoppingBag,
+      },
     ],
   },
   {
@@ -150,6 +162,11 @@ const menuGroups: MenuGroup[] = [
         label: "Stok Barang",
         href: "/ga/inventory/electric/stok-barang",
         icon: Warehouse,
+      },
+      {
+        label: "Ambil Barang (Self-Order)",
+        href: "/gudang?scope=ELECTRIC",
+        icon: ShoppingBag,
       },
     ],
   },
@@ -323,6 +340,10 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
 
       if (group.id === "dashboard" && !ROLE_BOLEH_LIHAT_DEVIASI.includes(user?.role ?? "")) {
         return { ...group, items: group.items.filter((item) => item.href !== "/ga/inventory/deviasi-stok") };
+      }
+
+      if (!ROLE_BOLEH_SELF_ORDER.includes(user?.role ?? "")) {
+        return { ...group, items: group.items.filter((item) => !item.href.startsWith("/gudang")) };
       }
 
       return group;
