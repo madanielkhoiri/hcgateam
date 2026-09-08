@@ -118,7 +118,17 @@ describe('InventoryService.createItem', () => {
     await service.createItem({ name: 'Kursi', category: ItemCategory.FURNITURE, unit: 'PCS' } as any);
 
     expect(itemCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ code: 'FR-01' }) }),
+      expect.objectContaining({ data: expect.objectContaining({ code: 'FUE-01' }) }),
+    );
+  });
+
+  it('prefix kategori Elektronik adalah ELK', async () => {
+    const { service, itemCreate } = buatService();
+
+    await service.createItem({ name: 'Laptop', category: ItemCategory.ELEKTRONIK, unit: 'UNIT' } as any);
+
+    expect(itemCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ code: 'ELK-01' }) }),
     );
   });
 
