@@ -249,6 +249,63 @@
   flex-wrap: wrap;
 }
 
+.statusWa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ikonSukses {
+  color: #07984c;
+  flex-shrink: 0;
+}
+
+.ikonGagal {
+  color: #d53535;
+  flex-shrink: 0;
+}
+
+.ikonMuat {
+  flex-shrink: 0;
+  color: #7185a0;
+  animation: statusWaSpin 0.8s linear infinite;
+}
+
+@keyframes statusWaSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.statusWaKosong {
+  color: #93a2b8;
+  font-size: 11px;
+}
+
+.tombolCekWa {
+  padding: 3px 8px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.tombolCekWa:hover:not(:disabled) {
+  color: #ef7100;
+  border-color: #f5c08a;
+}
+
+.tombolCekWa:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ==================================================
    BADGE
    ================================================== */

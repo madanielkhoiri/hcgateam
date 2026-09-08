@@ -11,6 +11,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 const FONNTE_ENDPOINT = 'https://api.fonnte.com/send';
+const FONNTE_VALIDATE_ENDPOINT = 'https://api.fonnte.com/validate';
 
 @Injectable()
 export class WhatsappService {
@@ -31,6 +32,10 @@ export class WhatsappService {
 
   get aktif(): boolean {
     return Boolean(this.token);
+  }
+
+  private pilihToken(departemen?: 'HC'): string | undefined {
+    return departemen === 'HC' ? this.tokenHc || this.token : this.token;
   }
 
   /**
@@ -65,7 +70,7 @@ export class WhatsappService {
     lampiran?: { url: string; namaFile?: string },
     departemen?: 'HC',
   ): Promise<boolean> {
-    const token = departemen === 'HC' ? this.tokenHc || this.token : this.token;
+    const token = this.pilihToken(departemen);
 
     if (!token || !tujuan) {
       return false;
@@ -103,6 +108,64 @@ export class WhatsappService {
         `Gagal kirim WA ke ${tujuan}: ${(error as Error).message}`,
       );
       return false;
+    }
+  }
+
+  /**
+   * Cek apakah satu nomor terdaftar di WhatsApp lewat Fonnte /validate.
+   * Return `true`/`false` kalau berhasil dicek, `null` kalau tidak bisa
+   * dipastikan (token/nomor kosong, request gagal, atau respons Fonnte
+   * error) — pemanggil sebaiknya TIDAK menimpa status lama dengan `null`.
+   */
+  async validasiTerdaftar(
+    nomor: string | undefined | null,
+    departemen?: 'HC',
+  ): Promise<boolean | null> {
+    const token = this.pilihToken(departemen);
+
+    if (!token || !nomor?.trim()) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(FONNTE_VALIDATE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ target: nomor.trim() }),
+      });
+
+      if (!response.ok) {
+        this.logger.error(`Fonnte validate membalas status ${response.status} untuk ${nomor}`);
+        return null;
+      }
+
+      const data = (await response.json().catch(() => null)) as {
+        status?: boolean;
+        reason?: string;
+        registered?: string[];
+        not_registered?: string[];
+      } | null;
+
+      if (!data || data.status !== true) {
+        this.logger.error(`Fonnte validate gagal untuk ${nomor}: ${data?.reason ?? 'respons tidak dikenal'}`);
+        return null;
+      }
+
+      if ((data.registered?.length ?? 0) > 0) {
+        return true;
+      }
+
+      if ((data.not_registered?.length ?? 0) > 0) {
+        return false;
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(`Gagal validasi nomor WA ${nomor}: ${(error as Error).message}`);
+      return null;
     }
   }
 }
