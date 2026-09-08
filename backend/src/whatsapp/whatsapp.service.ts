@@ -1,22 +1,27 @@
 // ==================================================
 // FILE: backend/src/whatsapp/whatsapp.service.ts
 // FUNGSI: Kirim notifikasi WhatsApp keluar lewat Fonnte (fonnte.com).
-// Kredensial diisi lewat env: FONNTE_TOKEN. Bila belum diisi,
-// pengiriman notifikasi dilewati (fitur lain tetap jalan) dan
-// dicatat di log.
+// Kredensial diisi lewat env: FONNTE_TOKEN (device default/GA),
+// FONNTE_TOKEN_HC (device WA milik HC — dipakai kalau parameter
+// `departemen: 'HC'` diisi saat kirim, fallback ke device default kalau
+// belum dikonfigurasi). Bila token belum diisi, pengiriman notifikasi
+// dilewati (fitur lain tetap jalan) dan dicatat di log.
 // ==================================================
 
 import { Injectable, Logger } from '@nestjs/common';
 
 const FONNTE_ENDPOINT = 'https://api.fonnte.com/send';
+const FONNTE_VALIDATE_ENDPOINT = 'https://api.fonnte.com/validate';
 
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly token: string | undefined;
+  private readonly tokenHc: string | undefined;
 
   constructor() {
     this.token = process.env.FONNTE_TOKEN || undefined;
+    this.tokenHc = process.env.FONNTE_TOKEN_HC || undefined;
 
     if (!this.token) {
       this.logger.warn(
@@ -27,6 +32,10 @@ export class WhatsappService {
 
   get aktif(): boolean {
     return Boolean(this.token);
+  }
+
+  private pilihToken(departemen?: 'HC'): string | undefined {
+    return departemen === 'HC' ? this.tokenHc || this.token : this.token;
   }
 
   /**
@@ -52,13 +61,18 @@ export class WhatsappService {
    * `lampiran.url` WAJIB URL publik (lihat urlPublikLampiran) — Fonnte hanya
    * mendukung lampiran di paket Super/Advanced/Ultra; paket di bawah itu
    * akan mengabaikan parameter `url` (pesan teks tetap terkirim).
+   * `departemen: 'HC'` mengirim dari device WA HC (FONNTE_TOKEN_HC),
+   * fallback ke device default kalau belum dikonfigurasi.
    */
   async kirim(
     tujuan: string | undefined | null,
     pesan: string,
     lampiran?: { url: string; namaFile?: string },
+    departemen?: 'HC',
   ): Promise<boolean> {
-    if (!this.token || !tujuan) {
+    const token = this.pilihToken(departemen);
+
+    if (!token || !tujuan) {
       return false;
     }
 
@@ -66,7 +80,7 @@ export class WhatsappService {
       const response = await fetch(FONNTE_ENDPOINT, {
         method: 'POST',
         headers: {
-          Authorization: this.token,
+          Authorization: token,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
@@ -94,6 +108,64 @@ export class WhatsappService {
         `Gagal kirim WA ke ${tujuan}: ${(error as Error).message}`,
       );
       return false;
+    }
+  }
+
+  /**
+   * Cek apakah satu nomor terdaftar di WhatsApp lewat Fonnte /validate.
+   * Return `true`/`false` kalau berhasil dicek, `null` kalau tidak bisa
+   * dipastikan (token/nomor kosong, request gagal, atau respons Fonnte
+   * error) — pemanggil sebaiknya TIDAK menimpa status lama dengan `null`.
+   */
+  async validasiTerdaftar(
+    nomor: string | undefined | null,
+    departemen?: 'HC',
+  ): Promise<boolean | null> {
+    const token = this.pilihToken(departemen);
+
+    if (!token || !nomor?.trim()) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(FONNTE_VALIDATE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ target: nomor.trim() }),
+      });
+
+      if (!response.ok) {
+        this.logger.error(`Fonnte validate membalas status ${response.status} untuk ${nomor}`);
+        return null;
+      }
+
+      const data = (await response.json().catch(() => null)) as {
+        status?: boolean;
+        reason?: string;
+        registered?: string[];
+        not_registered?: string[];
+      } | null;
+
+      if (!data || data.status !== true) {
+        this.logger.error(`Fonnte validate gagal untuk ${nomor}: ${data?.reason ?? 'respons tidak dikenal'}`);
+        return null;
+      }
+
+      if ((data.registered?.length ?? 0) > 0) {
+        return true;
+      }
+
+      if ((data.not_registered?.length ?? 0) > 0) {
+        return false;
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(`Gagal validasi nomor WA ${nomor}: ${(error as Error).message}`);
+      return null;
     }
   }
 }

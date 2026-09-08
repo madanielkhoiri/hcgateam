@@ -17,6 +17,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import {
   BULAN_MASA_BERLAKU_MCU,
   BULAN_REMINDER_SEBELUM_EXPIRED,
@@ -55,6 +56,7 @@ export class McuKaryawanService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifikasi: McuNotifikasiService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   // ==================================================
@@ -181,6 +183,29 @@ export class McuKaryawanService {
     }
 
     return this.lengkapiStatusMcu(karyawan);
+  }
+
+  /** Cek nomor telepon karyawan terdaftar WhatsApp atau tidak lewat Fonnte /validate. */
+  async cekStatusWa(id: number) {
+    const karyawan = await this.prisma.karyawan.findUnique({ where: { id } });
+
+    if (!karyawan) {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+
+    if (!karyawan.noTelepon?.trim()) {
+      throw new BadRequestException('Karyawan ini belum punya nomor telepon');
+    }
+
+    // Tidak bisa dipastikan (nomor salah format, device Fonnte bermasalah, dll)
+    // dianggap tidak terdaftar — supaya hasilnya selalu tegas: ada WA atau tidak.
+    const terdaftar = (await this.whatsapp.validasiTerdaftar(karyawan.noTelepon)) ?? false;
+
+    return this.prisma.karyawan.update({
+      where: { id },
+      data: { waTerdaftar: terdaftar, waDicekPada: new Date() },
+      select: { id: true, waTerdaftar: true, waDicekPada: true },
+    });
   }
 
   async buatKaryawan(dto: BuatKaryawanDto) {

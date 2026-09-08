@@ -61,9 +61,42 @@ export type TenderProcess = {
   pemenang?: { vendorId: number; vendor: { id: number; namaVendor: string } } | null;
 };
 
+export type RingkasanEmailUndangan = {
+  mailAktif: boolean;
+  terkirim: string[];
+  gagal: string[];
+  tanpaEmail: string[];
+};
+
 export type TenderDetail = TenderProcess & {
   undangan: TenderUndangan[];
   sph: TenderSPH[];
+  ringkasanEmail?: RingkasanEmailUndangan;
+};
+
+export type ArahPesanTenderChat = 'KELUAR' | 'MASUK';
+
+export type TenderPesanLampiran = {
+  id: number;
+  namaFile: string;
+  urlFile: string;
+};
+
+export type TenderPesan = {
+  id: number;
+  undanganId: number;
+  arah: ArahPesanTenderChat;
+  isiPesan: string;
+  createdAt: string;
+  pengirim: { id: number; name: string } | null;
+  lampiran: TenderPesanLampiran[];
+};
+
+export type DaftarPesanTender = {
+  undanganId: number;
+  vendor: { namaVendor: string; email: string | null };
+  mailAktif: boolean;
+  pesan: TenderPesan[];
 };
 
 export type KategoriEvaluasiVendor =
@@ -663,11 +696,18 @@ export const epromApi = {
     ubah: (id: number, data: Partial<{ namaTender: string; tanggalMulai: string; tanggalSelesai: string }>) =>
       request<TenderProcess>(`/tender/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     /** Kirim undangan ke beberapa vendor sekaligus — file lampiran per vendor berbeda-beda. */
-    kirimUndangan: (id: number, vendorIds: number[]) =>
-      request<TenderDetail>(`/tender/${id}/undangan`, {
-        method: 'POST',
-        body: JSON.stringify({ vendorIds }),
-      }),
+    kirimUndangan: (id: number, vendorIds: number[], filesPerVendor: Record<number, File[]> = {}) => {
+      const form = new FormData();
+      form.append('vendorIds', vendorIds.join(','));
+
+      for (const vendorId of vendorIds) {
+        for (const file of filesPerVendor[vendorId] ?? []) {
+          form.append(`files_${vendorId}`, file);
+        }
+      }
+
+      return request<TenderDetail>(`/tender/${id}/undangan`, { method: 'POST', body: form });
+    },
     hapus: (id: number) => request<{ message: string }>(`/tender/${id}`, { method: 'DELETE' }),
     hapusUndangan: (tenderId: number, vendorId: number) =>
       request<{ message: string }>(`/tender/${tenderId}/undangan/${vendorId}`, { method: 'DELETE' }),
@@ -720,6 +760,20 @@ export const epromApi = {
           method: 'PATCH',
           body: JSON.stringify(data),
         }),
+    },
+    /** Chat undangan tender (khusus Owner) — vendor tetap balas lewat email biasa. */
+    pesan: {
+      daftar: (tenderId: number, vendorId: number) =>
+        request<DaftarPesanTender>(`/tender/${tenderId}/undangan/${vendorId}/pesan`),
+      kirim: (tenderId: number, vendorId: number, isi: string, files: File[] = []) => {
+        const form = new FormData();
+        form.append('isi', isi);
+        files.forEach((file) => form.append('file', file));
+        return request<TenderPesan>(`/tender/${tenderId}/undangan/${vendorId}/pesan`, {
+          method: 'POST',
+          body: form,
+        });
+      },
     },
   },
 

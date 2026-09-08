@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusKerja, StatusKesehatanDirumahkan } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { McuNotifikasiService } from '../notifikasi/mcu-notifikasi.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import { hariIni, tambahBulan, tambahHari } from '../mcu-date.util';
 import { McuKaryawanService } from './mcu-karyawan.service';
 
@@ -34,6 +35,8 @@ function buatService(overrides: {
   update?: jest.Mock;
   deleteDepartemen?: jest.Mock;
   deleteKaryawan?: jest.Mock;
+  whatsappAktif?: boolean;
+  validasiTerdaftar?: jest.Mock;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ ...(karyawanFixture() as object), ...data }));
@@ -63,9 +66,14 @@ function buatService(overrides: {
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;
 
-  const service = new McuKaryawanService(prisma, notifikasi);
+  const whatsapp = {
+    aktif: overrides.whatsappAktif ?? true,
+    validasiTerdaftar: overrides.validasiTerdaftar ?? jest.fn().mockResolvedValue(true),
+  } as unknown as WhatsappService;
 
-  return { service, create, update };
+  const service = new McuKaryawanService(prisma, notifikasi, whatsapp);
+
+  return { service, create, update, whatsapp };
 }
 
 describe('McuKaryawanService.buatDepartemen', () => {
@@ -94,7 +102,8 @@ describe('McuKaryawanService.hapusDepartemen', () => {
       },
     } as unknown as PrismaService;
     const notifikasi = {} as unknown as McuNotifikasiService;
-    const service = new McuKaryawanService(prisma, notifikasi);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new McuKaryawanService(prisma, notifikasi, whatsapp);
 
     await expect(service.hapusDepartemen(1)).rejects.toThrow(
       'Departemen masih memiliki karyawan dan tidak dapat dihapus',
@@ -110,7 +119,8 @@ describe('McuKaryawanService.hapusDepartemen', () => {
       },
     } as unknown as PrismaService;
     const notifikasi = {} as unknown as McuNotifikasiService;
-    const service = new McuKaryawanService(prisma, notifikasi);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new McuKaryawanService(prisma, notifikasi, whatsapp);
 
     const hasil = await service.hapusDepartemen(1);
 
@@ -178,7 +188,8 @@ describe('McuKaryawanService.hapusKaryawan', () => {
       },
     } as unknown as PrismaService;
     const notifikasi = {} as unknown as McuNotifikasiService;
-    const service = new McuKaryawanService(prisma, notifikasi);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new McuKaryawanService(prisma, notifikasi, whatsapp);
 
     await expect(service.hapusKaryawan(7)).rejects.toThrow(
       'Karyawan sudah memiliki riwayat MCU dan tidak dapat dihapus',
@@ -229,7 +240,8 @@ describe('McuKaryawanService.perbaruiMasaBerlaku', () => {
     const update = jest.fn().mockResolvedValue({});
     const prisma = { karyawan: { update } } as unknown as PrismaService;
     const notifikasi = {} as unknown as McuNotifikasiService;
-    const service = new McuKaryawanService(prisma, notifikasi);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new McuKaryawanService(prisma, notifikasi, whatsapp);
     const tanggalMcu = hariIni();
 
     await service.perbaruiMasaBerlaku(7, tanggalMcu);
@@ -281,5 +293,56 @@ describe('McuKaryawanService.detailKaryawan — status jatuh tempo', () => {
     const hasil = await service.detailKaryawan(7);
 
     expect(hasil.mcuKedaluwarsa).toBe(true);
+  });
+});
+
+describe('McuKaryawanService.cekStatusWa', () => {
+  it('melempar NotFoundException kalau karyawan tidak ada', async () => {
+    const { service } = buatService({ karyawan: null });
+
+    await expect(service.cekStatusWa(7)).rejects.toThrow('Karyawan tidak ditemukan');
+  });
+
+  it('menolak kalau karyawan belum punya nomor telepon', async () => {
+    const { service } = buatService({ karyawan: karyawanFixture() as any });
+
+    await expect(service.cekStatusWa(7)).rejects.toThrow('belum punya nomor telepon');
+  });
+
+  it('menganggap tidak terdaftar (false) kalau validasiTerdaftar gagal dipastikan (null)', async () => {
+    const { service } = buatService({
+      karyawan: { ...karyawanFixture(), noTelepon: '0812' } as any,
+      validasiTerdaftar: jest.fn().mockResolvedValue(null),
+    });
+
+    const hasil = await service.cekStatusWa(7);
+
+    expect(hasil.waTerdaftar).toBe(false);
+  });
+
+  it('berhasil menyimpan waTerdaftar true & waDicekPada saat nomor terdaftar', async () => {
+    const update = jest.fn(({ data }: any) => Promise.resolve({ id: 7, ...data }));
+    const { service, whatsapp } = buatService({
+      karyawan: { ...karyawanFixture(), noTelepon: '0812' } as any,
+      update,
+      validasiTerdaftar: jest.fn().mockResolvedValue(true),
+    });
+
+    const hasil = await service.cekStatusWa(7);
+
+    expect(whatsapp.validasiTerdaftar).toHaveBeenCalledWith('0812');
+    expect(hasil.waTerdaftar).toBe(true);
+    expect(hasil.waDicekPada).toBeInstanceOf(Date);
+  });
+
+  it('menyimpan waTerdaftar false saat nomor tidak terdaftar', async () => {
+    const { service } = buatService({
+      karyawan: { ...karyawanFixture(), noTelepon: '0812' } as any,
+      validasiTerdaftar: jest.fn().mockResolvedValue(false),
+    });
+
+    const hasil = await service.cekStatusWa(7);
+
+    expect(hasil.waTerdaftar).toBe(false);
   });
 });

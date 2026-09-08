@@ -79,6 +79,9 @@ export type Karyawan = {
   statusKerja: StatusKerja;
   statusKesehatanDirumahkan: StatusKesehatanDirumahkan | null;
   akunId: number | null;
+  /** Hasil cek terakhir nomor telepon terdaftar WhatsApp atau tidak — null = belum pernah dicek. */
+  waTerdaftar: boolean | null;
+  waDicekPada: string | null;
   departemen: Departemen;
   sisaHariExpired: number | null;
   sisaHariReminder: number | null;

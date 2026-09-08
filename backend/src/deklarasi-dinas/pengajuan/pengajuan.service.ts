@@ -348,11 +348,11 @@ export class PengajuanService {
 
   // <--- kirim notifikasi WA pengajuan baru ke akun FA --->
   private async kirimNotifikasiPengajuanBaruKeFa(pengajuan: Pengajuan) {
-    const tokenFonnte = process.env.FONNTE_TOKEN || '';
+    const tokenFonnte = this.tokenFonnteHc();
 
     if (!tokenFonnte) {
       console.log(
-        'Notif WA dilewati: FONNTE_TOKEN belum diisi di file .env.',
+        'Notif WA dilewati: FONNTE_TOKEN_HC/FONNTE_TOKEN belum diisi di file .env.',
       );
       return;
     }
@@ -393,12 +393,17 @@ export class PengajuanService {
   }
   // <--- end --->
 
+  /** Notif pengajuan HC->FA dikirim dari device WA HC — fallback ke FONNTE_TOKEN (GA) kalau belum diisi. */
+  private tokenFonnteHc(): string {
+    return process.env.FONNTE_TOKEN_HC || process.env.FONNTE_TOKEN || '';
+  }
+
   // <--- helper kirim WA menggunakan Fonnte --->
   private async kirimWaFonnte(daftarNomor: string[], pesan: string) {
-    const tokenFonnte = process.env.FONNTE_TOKEN || '';
+    const tokenFonnte = this.tokenFonnteHc();
 
     if (!tokenFonnte) {
-      console.log('Kirim WA dilewati: FONNTE_TOKEN kosong.');
+      console.log('Kirim WA dilewati: FONNTE_TOKEN_HC/FONNTE_TOKEN kosong.');
       return;
     }
 
