@@ -328,7 +328,7 @@ describe('McuKaryawanService.cekStatusWa', () => {
 
     const hasil = await service.cekStatusWa(7);
 
-    expect(whatsapp.validasiTerdaftar).toHaveBeenCalledWith('0812', 'HC');
+    expect(whatsapp.validasiTerdaftar).toHaveBeenCalledWith('0812');
     expect(hasil.waTerdaftar).toBe(true);
     expect(hasil.waDicekPada).toBeInstanceOf(Date);
   });
