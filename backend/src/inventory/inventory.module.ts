@@ -27,5 +27,6 @@ import { DeviasiStokService } from './deviasi-stok.service';
     DeviasiStokService,
     PrismaService,
   ],
+  exports: [InventoryAreaService],
 })
 export class InventoryModule {}

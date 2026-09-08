@@ -421,7 +421,11 @@ export class InventoryAreaService {
     });
   }
 
-  async createStockOutBatch(scopeValue: string, dto: CreateStockOutBatchDto) {
+  async createStockOutBatch(
+    scopeValue: string,
+    dto: CreateStockOutBatchDto,
+    photoPath?: string,
+  ) {
     const scope = this.parseScope(scopeValue);
 
     return this.prisma.$transaction(async (tx) => {
@@ -463,6 +467,8 @@ export class InventoryAreaService {
             unit: item.unit,
             taker: dto.taker.trim().toUpperCase(),
             department: dto.department.trim().toUpperCase(),
+            description: dto.description?.trim() || null,
+            photoPath: photoPath ?? null,
           },
           include: {
             item: true,
@@ -487,6 +493,34 @@ export class InventoryAreaService {
         message: `${results.length} barang keluar berhasil disimpan`,
         data: results,
       };
+    });
+  }
+
+  /** Simpan/ganti foto satu barang di Master Barang — dipakai Admin, dan ditampilkan di menu self-order Gudang. */
+  async setItemPhoto(scopeValue: string, id: number, filename: string) {
+    const scope = this.parseScope(scopeValue);
+
+    const item = await this.prisma.item.findFirst({
+      where: {
+        id,
+        inventoryScope: scope,
+      },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Master barang tidak ditemukan');
+    }
+
+    return this.prisma.item.update({
+      where: {
+        id,
+      },
+      data: {
+        photoPath: filename,
+      },
+      include: {
+        stock: true,
+      },
     });
   }
 
