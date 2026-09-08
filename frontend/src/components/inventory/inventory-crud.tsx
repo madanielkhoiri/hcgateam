@@ -75,6 +75,7 @@ type Item = {
   category: "ATK" | "HOUSEKEEPING" | "BAJU" | "ELEKTRONIK" | "FURNITURE";
   unit: string;
   isActive: boolean;
+  photoPath?: string | null;
   stock?: {
     id: number;
     quantity: number;
@@ -475,6 +476,8 @@ export default function InventoryCrud({
     setCategory(item.category);
     setUnit(item.unit);
     setIsActive(item.isActive);
+    setExistingPhotoPath(item.photoPath ?? "");
+    setPhotoInputKey((current) => current + 1);
     setModalOpen(true);
   }
 
@@ -861,13 +864,44 @@ export default function InventoryCrud({
           endpoint = `${endpoint}/${editingId}`;
         }
 
-        await request(endpoint, {
+        const savedItem = await request(endpoint, {
           method:
             editingId === null
               ? "POST"
               : "PATCH",
           body: JSON.stringify(payload),
         });
+
+        if (mode === "items" && photoFile) {
+          const targetId = editingId ?? savedItem?.id;
+
+          if (targetId) {
+            const photoForm = new FormData();
+            photoForm.append("photo", photoFile);
+
+            const photoResponse = await fetch(
+              `${API_URL}/${inventoryApiPath}/items/${targetId}/photo`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${getToken()}`,
+                },
+                body: photoForm,
+              },
+            );
+
+            if (!photoResponse.ok) {
+              const photoResult = await photoResponse
+                .json()
+                .catch(() => ({}));
+
+              throw new Error(
+                photoResult.message ||
+                  "Foto barang gagal diunggah",
+              );
+            }
+          }
+        }
       }
 
       setModalOpen(false);
@@ -1537,6 +1571,106 @@ export default function InventoryCrud({
                       <span>Barang aktif</span>
                     </label>
                   )}
+
+                  <div className={styles.fullField}>
+                    <span className={styles.fileFieldTitle}>
+                      Foto Barang (opsional)
+                    </span>
+
+                    {existingPhotoPath && !photoFile && (
+                      <div className={styles.currentPhotoSection}>
+                        <span className={styles.currentPhotoLabel}>
+                          Foto saat ini
+                        </span>
+                        <img
+                          src={`${API_URL}/uploads/items/${existingPhotoPath}`}
+                          alt="Foto barang"
+                          style={{
+                            width: 72,
+                            height: 72,
+                            objectFit: "cover",
+                            borderRadius: 12,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {photoFile && (
+                      <div className={styles.newPhotoInformation}>
+                        Foto baru:
+                        <strong>{photoFile.name}</strong>
+                      </div>
+                    )}
+
+                    <input
+                      key={photoInputKey}
+                      id="item-photo-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className={styles.hiddenFileInput}
+                      onChange={async (event) => {
+                        const selectedFile =
+                          event.target.files?.[0] ?? null;
+
+                        if (!selectedFile) {
+                          setPhotoFile(null);
+                          return;
+                        }
+
+                        const compressedFile = await compressImage(
+                          selectedFile,
+                        ).catch(() => selectedFile);
+
+                        if (compressedFile.size > 5 * 1024 * 1024) {
+                          setError("Ukuran foto maksimal 5 MB");
+                          event.target.value = "";
+                          setPhotoFile(null);
+                          return;
+                        }
+
+                        setError("");
+                        setPhotoFile(compressedFile);
+                      }}
+                    />
+
+                    <div className={styles.customFileField}>
+                      <label
+                        htmlFor="item-photo-input"
+                        className={styles.chooseFileButton}
+                      >
+                        {existingPhotoPath ? "Ganti Foto" : "Pilih Foto"}
+                      </label>
+
+                      <span
+                        className={styles.selectedFileName}
+                        title={
+                          photoFile?.name ??
+                          (existingPhotoPath
+                            ? "Foto lama tetap digunakan"
+                            : "Belum ada foto dipilih")
+                        }
+                      >
+                        {photoFile
+                          ? photoFile.name
+                          : existingPhotoPath
+                            ? "Foto lama tetap digunakan"
+                            : "Belum ada foto dipilih"}
+                      </span>
+
+                      {photoFile && (
+                        <button
+                          type="button"
+                          className={styles.clearFileButton}
+                          onClick={() => {
+                            setPhotoFile(null);
+                            setPhotoInputKey((current) => current + 1);
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
 

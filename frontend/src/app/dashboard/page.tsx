@@ -204,6 +204,11 @@ export default function DashboardPage() {
         return;
       }
 
+      if (parsedUser.role === 'GUDANG') {
+        router.replace('/gudang');
+        return;
+      }
+
       setUser(parsedUser);
 
       void fetch('http://localhost:3001/api/auth/profile', {
