@@ -74,6 +74,15 @@ export class DatabaseKaryawanController {
     return this.service.detailKaryawan(id);
   }
 
+  @Post(':id/cek-wa')
+  async cekStatusWa(
+    @Aktor() aktor: AktorMcu,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    this.akses.wajibPeran(aktor, UserRole.HC);
+    return this.service.cekStatusWa(id);
+  }
+
   @Post()
   async buatKaryawan(@Aktor() aktor: AktorMcu, @Body() dto: BuatKaryawanDto) {
     this.akses.wajibPeran(aktor, UserRole.HC);
