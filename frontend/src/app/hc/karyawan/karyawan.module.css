@@ -285,6 +285,16 @@
   font-size: 11px;
 }
 
+.statusWaError {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #d53535;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: help;
+}
+
 .tombolCekWa {
   padding: 3px 8px;
   color: #34506f;
