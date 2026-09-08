@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,8 +9,15 @@ import {
   Patch,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync } from 'node:fs';
+import { extname, join } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateItemDto, UpdateItemDto } from './dto/item.dto';
 import { CreateStockInDto, UpdateStockInDto } from './dto/stock-in.dto';
@@ -18,6 +26,39 @@ import { CreateStockInBatchDto } from './dto/stock-in-batch.dto';
 import { CreateStockOutBatchDto } from './dto/stock-out-batch.dto';
 import { UpdateStockDto } from './dto/stock.dto';
 import { InventoryAreaService } from './inventory-area.service';
+
+const itemPhotoDirectory = join(process.cwd(), 'uploads', 'items');
+
+if (!existsSync(itemPhotoDirectory)) {
+  mkdirSync(itemPhotoDirectory, { recursive: true });
+}
+
+const itemPhotoUpload = FileInterceptor('photo', {
+  storage: diskStorage({
+    destination: itemPhotoDirectory,
+    filename: (_request, file, callback) => {
+      const extension = extname(file.originalname).toLowerCase();
+
+      callback(null, `${Date.now()}-${randomUUID()}${extension}`);
+    },
+  }),
+  fileFilter: (_request, file, callback) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      callback(
+        new BadRequestException('Foto hanya boleh JPG, PNG, atau WEBP'),
+        false,
+      );
+      return;
+    }
+
+    callback(null, true);
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
 
 @Controller('inventory-area/:scope')
 @UseGuards(JwtAuthGuard)
@@ -41,6 +82,20 @@ export class InventoryAreaController {
     @Body() dto: UpdateItemDto,
   ) {
     return this.service.updateItem(scope, id, dto);
+  }
+
+  @Post('items/:id/photo')
+  @UseInterceptors(itemPhotoUpload)
+  uploadItemPhoto(
+    @Param('scope') scope: string,
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Foto wajib dipilih');
+    }
+
+    return this.service.setItemPhoto(scope, id, file.filename);
   }
 
   @Delete('items/:id')
