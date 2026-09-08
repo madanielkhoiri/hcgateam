@@ -28,6 +28,7 @@ import { PengaduanLayananModule } from './pengaduan-layanan/pengaduan-layanan.mo
 // ==================================================
 
 import { InventoryModule } from './inventory/inventory.module';
+import { GudangModule } from './gudang/gudang.module';
 import { DailyActivitiesModule } from './daily-activities/daily-activities.module';
 import { PreActivityChecksModule } from './pre-activity-checks/pre-activity-checks.module';
 import { PostActivitiesModule } from './post-activities/post-activities.module';
@@ -67,6 +68,7 @@ import { KipModule } from './kip/kip.module';
 @Module({
   imports: [
     InventoryModule,
+    GudangModule,
     WhatsappModule,
     MailgunModule,
     SmtpModule,
