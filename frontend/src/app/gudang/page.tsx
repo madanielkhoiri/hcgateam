@@ -122,6 +122,9 @@ function GudangPageInner() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [hasil, setHasil] = useState<HasilCheckoutGudang | null>(null);
+  const [nomorTransaksi, setNomorTransaksi] = useState('');
+  const [waktuTransaksi, setWaktuTransaksi] = useState<Date | null>(null);
+  const [namaPengambilSukses, setNamaPengambilSukses] = useState('');
 
   useEffect(() => {
     const stored = getStoredUser();
@@ -244,7 +247,14 @@ function GudangPageInner() {
         items: barisKeranjang.map(({ item, qty }) => ({ itemId: item.id, quantity: qty })),
       });
 
+      const waktu = new Date();
+      const idAcuan = hasilCheckout.transaksi[0]?.id ?? Math.floor(Math.random() * 9000 + 1000);
+      const tanggalRingkas = `${String(waktu.getFullYear()).slice(2)}${String(waktu.getMonth() + 1).padStart(2, '0')}${String(waktu.getDate()).padStart(2, '0')}`;
+
       setHasil(hasilCheckout);
+      setNamaPengambilSukses(namaPengambil);
+      setWaktuTransaksi(waktu);
+      setNomorTransaksi(`SO-${tanggalRingkas}-${String(idAcuan).padStart(4, '0')}`);
       setLangkah('sukses');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Checkout gagal, coba lagi');
@@ -665,7 +675,7 @@ function GudangPageInner() {
   // ---------- Langkah: sukses ----------
   return (
     <div className={styles.shell}>
-      <div className={styles.emptyState} style={{ flex: 1 }}>
+      <div className={styles.listArea} style={{ alignItems: 'center', textAlign: 'center' }}>
         <div className={styles.successIcon}>
           <svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="#1f9d55" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 6L9 17l-5-5" />
@@ -678,7 +688,22 @@ function GudangPageInner() {
 
         {hasil && (
           <div className={styles.summaryCard} style={{ width: '100%', textAlign: 'left', marginTop: 10 }}>
-            <div className={styles.summaryTitle}>Ringkasan transaksi</div>
+            <div className={styles.summaryLine}>
+              <span style={{ fontSize: 11.5, fontWeight: 800, color: '#9aa8bf', textTransform: 'uppercase', letterSpacing: '0.04em' }}>No. Transaksi</span>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: '#10244a' }}>{nomorTransaksi}</span>
+            </div>
+            <div className={styles.summaryLine}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#10244a' }}>Pengambil</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#6f819d' }}>{namaPengambilSukses}</span>
+            </div>
+            <div className={styles.summaryLine}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#10244a' }}>Waktu</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#6f819d' }}>
+                {waktuTransaksi?.toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+
+            <div className={styles.summaryTitle} style={{ marginTop: 10 }}>Ringkasan barang</div>
             {hasil.transaksi.map((baris) => (
               <div key={baris.id} className={styles.summaryLine}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#10244a' }}>{baris.namaBarang}</span>
