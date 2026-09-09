@@ -20,7 +20,7 @@ import {
   getStoredUser,
   type PortalUser,
 } from '@/lib/access-control';
-import { karyawanApi, type Karyawan } from '@/lib/karyawan-api';
+import { karyawanApi, type Karyawan, type Departemen } from '@/lib/karyawan-api';
 import { epromApi, type Vendor } from '@/lib/eprom-api';
 import styles from './manajemen-akun.module.css';
 
@@ -99,6 +99,8 @@ export default function AccountManagementPage() {
   const [karyawanDropdownTerbuka, setKaryawanDropdownTerbuka] = useState(false);
   const [karyawanMencari, setKaryawanMencari] = useState(false);
 
+  const [departemenList, setDepartemenList] = useState<Departemen[]>([]);
+
   const [vendorMasterList, setVendorMasterList] = useState<Vendor[]>([]);
   const [vendorCari, setVendorCari] = useState('');
   const [vendorDropdownTerbuka, setVendorDropdownTerbuka] = useState(false);
@@ -149,6 +151,17 @@ export default function AccountManagementPage() {
       .then(setVendorMasterList)
       .catch(() => setVendorMasterList([]));
   }, [formModalOpen, form.role, vendorMasterList.length]);
+
+  useEffect(() => {
+    if (!formModalOpen || departemenList.length > 0) {
+      return;
+    }
+
+    karyawanApi
+      .ambil<Departemen[]>('/departemen')
+      .then(setDepartemenList)
+      .catch(() => setDepartemenList([]));
+  }, [formModalOpen, departemenList.length]);
 
   const vendorHasil = useMemo(() => {
     const keyword = vendorCari.trim().toLowerCase();
@@ -978,7 +991,7 @@ export default function AccountManagementPage() {
                 </label>
                 <label>
                   <span>Departemen</span>
-                  <input
+                  <select
                     value={form.departemen}
                     onChange={(event) =>
                       setForm((current) => ({
@@ -986,9 +999,18 @@ export default function AccountManagementPage() {
                         departemen: event.target.value,
                       }))
                     }
-                    autoComplete="off"
-                    placeholder="Contoh: HCG"
-                  />
+                  >
+                    <option value="">Pilih departemen...</option>
+                    {form.departemen &&
+                      !departemenList.some((d) => d.namaDepartemen === form.departemen) && (
+                        <option value={form.departemen}>{form.departemen}</option>
+                      )}
+                    {departemenList.map((d) => (
+                      <option key={d.id} value={d.namaDepartemen}>
+                        {d.namaDepartemen}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   <span>Jabatan</span>
