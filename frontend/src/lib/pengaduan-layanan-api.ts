@@ -10,17 +10,23 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export type DivisiPengaduan = 'HC' | 'GA' | 'CIVIL';
+export type LokasiPengaduan = 'TAMBANG' | 'MESS';
+export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK';
 
 export type BuatPengaduanInput = {
   divisi: DivisiPengaduan;
   rating: number;
   komentar?: string;
+  lokasi: LokasiPengaduan;
 };
 
 export type DetailPengaduan = {
   id: number;
   rating: number;
   komentar: string | null;
+  lokasi: LokasiPengaduan;
+  status: StatusPengaduan;
+  catatanAdmin: string | null;
   pengirim: string;
   createdAt: string;
 };
@@ -109,12 +115,42 @@ export const pengaduanLayananApi = {
 
     return (await response.json()) as RekapPengaduan;
   },
+
+  /** Approve/Hold/Reject oleh admin — catatan wajib untuk Hold & Reject, opsional untuk Approve. */
+  ubahStatus: async (
+    id: number,
+    status: Exclude<StatusPengaduan, 'MENUNGGU'>,
+    catatanAdmin?: string,
+  ): Promise<void> => {
+    const response = await fetch(`${API_URL}/pengaduan-layanan/${id}/status`, {
+      method: 'PATCH',
+      headers: headerAuth(),
+      body: JSON.stringify({ status, catatanAdmin }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new PengaduanLayananApiError(await bacaError(response), response.status);
+    }
+  },
 };
 
 export const LABEL_DIVISI_PENGADUAN: Record<DivisiPengaduan, string> = {
   HC: 'HC',
   GA: 'GA',
   CIVIL: 'Civil',
+};
+
+export const LABEL_LOKASI_PENGADUAN: Record<LokasiPengaduan, string> = {
+  TAMBANG: 'Tambang',
+  MESS: 'Mess',
+};
+
+export const LABEL_STATUS_PENGADUAN: Record<StatusPengaduan, string> = {
+  MENUNGGU: 'Menunggu',
+  DISETUJUI: 'Disetujui',
+  DITAHAN: 'Ditahan',
+  DITOLAK: 'Ditolak',
 };
 
 const NAMA_BULAN = [

@@ -73,7 +73,8 @@ model User {
   workOrders WorkOrder[]
   handovers  Handover[]
 
-  pengaduanLayanan PengaduanLayanan[]
+  pengaduanLayanan         PengaduanLayanan[] @relation("PengaduanPengirim")
+  pengaduanLayananDiproses PengaduanLayanan[] @relation("PengaduanDiproses")
 
   dailyActivities   DailyActivity[]         @relation("DailyActivityCreator")
   dailyProgresses   DailyActivityProgress[] @relation("DailyProgressCreator")
@@ -2964,17 +2965,38 @@ enum DivisiPengaduan {
   CIVIL
 }
 
+/** Lokasi kerja terkait pengaduan — dipilih pengirim saat submit. */
+enum LokasiPengaduan {
+  TAMBANG
+  MESS
+}
+
+/** Alur tindak lanjut admin: MENUNGGU (default) -> DISETUJUI/DITAHAN/DITOLAK. */
+enum StatusPengaduan {
+  MENUNGGU
+  DISETUJUI
+  DITAHAN
+  DITOLAK
+}
+
 model PengaduanLayanan {
-  id         Int             @id @default(autoincrement())
-  divisi     DivisiPengaduan
-  rating     Int
-  komentar   String?
-  pengirimId Int             @map("pengirim_id")
-  pengirim   User            @relation(fields: [pengirimId], references: [id])
-  createdAt  DateTime        @default(now()) @map("created_at")
+  id             Int             @id @default(autoincrement())
+  divisi         DivisiPengaduan
+  rating         Int
+  komentar       String?
+  lokasi         LokasiPengaduan
+  status         StatusPengaduan @default(MENUNGGU)
+  catatanAdmin   String?         @map("catatan_admin") @db.Text
+  pengirimId     Int             @map("pengirim_id")
+  pengirim       User            @relation("PengaduanPengirim", fields: [pengirimId], references: [id])
+  diprosesOlehId Int?            @map("diproses_oleh_id")
+  diprosesOleh   User?           @relation("PengaduanDiproses", fields: [diprosesOlehId], references: [id], onDelete: SetNull)
+  diprosesPada   DateTime?       @map("diproses_pada")
+  createdAt      DateTime        @default(now()) @map("created_at")
 
   @@index([divisi, createdAt])
   @@index([pengirimId])
+  @@index([status])
   @@map("pengaduan_layanan")
 }
 

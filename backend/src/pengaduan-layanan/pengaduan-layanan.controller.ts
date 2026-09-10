@@ -10,6 +10,9 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseIntPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -18,6 +21,7 @@ import {
 import { DivisiPengaduan, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreatePengaduanLayananDto } from './dto/create-pengaduan-layanan.dto';
+import { UbahStatusPengaduanLayananDto } from './dto/ubah-status-pengaduan-layanan.dto';
 import { PengaduanLayananAksesService } from './pengaduan-layanan-akses.service';
 import { PengaduanLayananService } from './pengaduan-layanan.service';
 
@@ -65,5 +69,15 @@ export class PengaduanLayananController {
       bulanRaw ? Number(bulanRaw) : undefined,
       tahunRaw ? Number(tahunRaw) : undefined,
     );
+  }
+
+  @Patch(':id/status')
+  ubahStatus(
+    @Req() request: AuthRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahStatusPengaduanLayananDto,
+  ) {
+    this.akses.wajibBolehKelolaStatus(request.user.role);
+    return this.service.ubahStatus(id, dto, request.user.id);
   }
 }

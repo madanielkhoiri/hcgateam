@@ -9,11 +9,21 @@ import {
   pengaduanLayananApi,
   PengaduanLayananApiError,
   LABEL_DIVISI_PENGADUAN,
+  LABEL_LOKASI_PENGADUAN,
+  LABEL_STATUS_PENGADUAN,
   namaBulan,
   type DivisiPengaduan,
   type RekapPengaduan,
+  type StatusPengaduan,
 } from '@/lib/pengaduan-layanan-api';
 import styles from './pengaduan-layanan.module.css';
+
+const KELAS_STATUS: Record<StatusPengaduan, string> = {
+  MENUNGGU: 'statusMenunggu',
+  DISETUJUI: 'statusDisetujui',
+  DITAHAN: 'statusDitahan',
+  DITOLAK: 'statusDitolak',
+};
 
 const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 
@@ -48,6 +58,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [rekap, setRekap] = useState<RekapPengaduan | null>(null);
   const [error, setError] = useState('');
   const [memuat, setMemuat] = useState(true);
+  const [prosesId, setProsesId] = useState<number | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -95,6 +106,46 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
       aktif = false;
     };
   }, [user, divisi, bulan, tahun]);
+
+  async function muatUlangRekap() {
+    try {
+      const hasil = await pengaduanLayananApi.rekap(divisi, bulan, tahun);
+      setRekap(hasil);
+    } catch (err) {
+      setError(
+        err instanceof PengaduanLayananApiError ? err.message : 'Gagal memuat ulang rekap performa.',
+      );
+    }
+  }
+
+  async function ubahStatus(id: number, status: 'DISETUJUI' | 'DITAHAN' | 'DITOLAK') {
+    let catatan: string | undefined;
+
+    if (status !== 'DISETUJUI') {
+      const label = status === 'DITAHAN' ? 'Hold' : 'Reject';
+      const input = window.prompt(`Catatan untuk ${label} (wajib diisi):`);
+      if (input === null) return;
+      if (!input.trim()) {
+        setError('Catatan wajib diisi untuk Hold/Reject.');
+        return;
+      }
+      catatan = input.trim();
+    }
+
+    setProsesId(id);
+    setError('');
+
+    try {
+      await pengaduanLayananApi.ubahStatus(id, status, catatan);
+      await muatUlangRekap();
+    } catch (err) {
+      setError(
+        err instanceof PengaduanLayananApiError ? err.message : 'Gagal mengubah status pengaduan.',
+      );
+    } finally {
+      setProsesId(null);
+    }
+  }
 
   if (!user) {
     return <main className={styles.page}>Memuat...</main>;
@@ -208,8 +259,11 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                     <tr>
                       <th>Tanggal</th>
                       <th>Pengirim</th>
+                      <th>Lokasi</th>
                       <th>Rating</th>
                       <th>Komentar</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -223,8 +277,49 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                           }).format(new Date(item.createdAt))}
                         </td>
                         <td>{item.pengirim}</td>
+                        <td>{LABEL_LOKASI_PENGADUAN[item.lokasi]}</td>
                         <td>{'★'.repeat(item.rating)}</td>
                         <td>{item.komentar || '-'}</td>
+                        <td>
+                          <span className={`${styles.statusBadge} ${styles[KELAS_STATUS[item.status]]}`}>
+                            {LABEL_STATUS_PENGADUAN[item.status]}
+                          </span>
+                          {item.catatanAdmin && (
+                            <div className={styles.catatanAdmin}>&ldquo;{item.catatanAdmin}&rdquo;</div>
+                          )}
+                        </td>
+                        <td>
+                          {item.status === 'MENUNGGU' ? (
+                            <div className={styles.aksiGroup}>
+                              <button
+                                type="button"
+                                className={`${styles.tombolAksi} ${styles.tombolApprove}`}
+                                disabled={prosesId === item.id}
+                                onClick={() => ubahStatus(item.id, 'DISETUJUI')}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.tombolAksi} ${styles.tombolHold}`}
+                                disabled={prosesId === item.id}
+                                onClick={() => ubahStatus(item.id, 'DITAHAN')}
+                              >
+                                Hold
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.tombolAksi} ${styles.tombolReject}`}
+                                disabled={prosesId === item.id}
+                                onClick={() => ubahStatus(item.id, 'DITOLAK')}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

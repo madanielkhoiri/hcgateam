@@ -23,4 +23,13 @@ export class PengaduanLayananAksesService {
       );
     }
   }
+
+  /** Approve/Hold/Reject pengaduan — peran sama dengan yang boleh lihat rekap. */
+  wajibBolehKelolaStatus(role: UserRole): void {
+    if (!ROLE_BOLEH_LIHAT_REKAP.includes(role)) {
+      throw new ForbiddenException(
+        'Tindak lanjut pengaduan hanya dapat dilakukan Admin/Super Admin/Section Head',
+      );
+    }
+  }
 }

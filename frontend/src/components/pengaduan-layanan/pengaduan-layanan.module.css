@@ -366,6 +366,150 @@
   vertical-align: top;
 }
 
+.statusBadge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusMenunggu {
+  color: #8a6d00;
+  background: #fff3cd;
+}
+
+.statusDisetujui {
+  color: #07984c;
+  background: #e4f7ec;
+}
+
+.statusDitahan {
+  color: #a0650a;
+  background: #fff1e0;
+}
+
+.statusDitolak {
+  color: #d53535;
+  background: #ffeded;
+}
+
+.catatanAdmin {
+  margin-top: 4px;
+  color: #5b6b8a;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.aksiGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tombolAksi {
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tombolAksi:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tombolApprove {
+  color: #07984c;
+  background: #e4f7ec;
+  border-color: #bfe8d2;
+}
+
+.tombolApprove:hover:not(:disabled) {
+  background: #d3f0e0;
+}
+
+.tombolHold {
+  color: #a0650a;
+  background: #fff1e0;
+  border-color: #f5d5a8;
+}
+
+.tombolHold:hover:not(:disabled) {
+  background: #ffe6c4;
+}
+
+.tombolReject {
+  color: #d53535;
+  background: #ffeded;
+  border-color: #ffcccc;
+}
+
+.tombolReject:hover:not(:disabled) {
+  background: #ffdddd;
+}
+
+.popupOverlay {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 36, 74, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.popupCard {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.popupClose {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #10244a;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 6px 16px rgba(16, 36, 74, 0.18);
+  cursor: pointer;
+}
+
+.lokasiRow {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.lokasiButton {
+  flex: 1;
+  padding: 10px;
+  color: #4a5b7a;
+  background: #f8fafd;
+  border: 1.5px solid #d7e2ef;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lokasiButtonAktif {
+  color: #ffffff;
+  background: #0868f6;
+  border-color: #0868f6;
+}
+
 @media (max-width: 640px) {
   .distribusiCard {
     grid-column: span 1;
