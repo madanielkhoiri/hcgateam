@@ -30,8 +30,10 @@ function buatService(overrides: {
   return { service, prisma, findMany, create, findUnique, update };
 }
 
+const FOTO_DUMMY = [{ urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }];
+
 describe('PengaduanLayananService.create', () => {
-  it('menyimpan divisi, rating, lokasi, dan pengirimId sesuai input (GA)', async () => {
+  it('menyimpan divisi, rating, lokasi, foto, dan pengirimId sesuai input (GA)', async () => {
     const { service, create } = buatService();
 
     await service.create(
@@ -43,6 +45,7 @@ describe('PengaduanLayananService.create', () => {
         lokasi: LokasiPengaduan.TAMBANG,
       },
       18,
+      FOTO_DUMMY,
     );
 
     expect(create).toHaveBeenCalledWith({
@@ -53,7 +56,9 @@ describe('PengaduanLayananService.create', () => {
         deskripsiAduan: 'AC ruang kerja rusak',
         lokasi: LokasiPengaduan.TAMBANG,
         pengirimId: 18,
+        foto: { create: FOTO_DUMMY },
       },
+      include: { foto: true },
     });
   });
 
@@ -61,10 +66,18 @@ describe('PengaduanLayananService.create', () => {
     const { service } = buatService();
 
     await expect(
-      service.create({ divisi: DivisiPengaduan.GA, rating: 5 }, 1),
+      service.create({ divisi: DivisiPengaduan.GA, rating: 5 }, 1, FOTO_DUMMY),
     ).rejects.toThrow(BadRequestException);
     await expect(
-      service.create({ divisi: DivisiPengaduan.CIVIL, rating: 5 }, 1),
+      service.create({ divisi: DivisiPengaduan.CIVIL, rating: 5 }, 1, FOTO_DUMMY),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('menolak tanpa foto sama sekali', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.create({ divisi: DivisiPengaduan.HC, rating: 5 }, 1, []),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -74,6 +87,7 @@ describe('PengaduanLayananService.create', () => {
     await service.create(
       { divisi: DivisiPengaduan.HC, rating: 4, lokasi: LokasiPengaduan.TAMBANG },
       1,
+      FOTO_DUMMY,
     );
 
     expect(create.mock.calls[0][0].data.lokasi).toBeNull();
@@ -85,6 +99,7 @@ describe('PengaduanLayananService.create', () => {
     await service.create(
       { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
       1,
+      FOTO_DUMMY,
     );
 
     expect(create.mock.calls[0][0].data.komentar).toBeNull();
@@ -96,6 +111,7 @@ describe('PengaduanLayananService.create', () => {
     await service.create(
       { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
       1,
+      FOTO_DUMMY,
     );
 
     expect(create.mock.calls[0][0].data.deskripsiAduan).toBeNull();
@@ -178,6 +194,7 @@ describe('PengaduanLayananService.rekap', () => {
         rating: 5,
         komentar: 'Bagus',
         deskripsiAduan: 'AC rusak',
+        foto: [{ id: 1, urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }],
         lokasi: LokasiPengaduan.TAMBANG,
         status: StatusPengaduan.MENUNGGU,
         catatanAdmin: null,
@@ -189,6 +206,7 @@ describe('PengaduanLayananService.rekap', () => {
         rating: 5,
         komentar: null,
         deskripsiAduan: null,
+        foto: [],
         lokasi: LokasiPengaduan.MESS,
         status: StatusPengaduan.MENUNGGU,
         catatanAdmin: null,
@@ -200,6 +218,7 @@ describe('PengaduanLayananService.rekap', () => {
         rating: 3,
         komentar: 'Lumayan',
         deskripsiAduan: null,
+        foto: [],
         lokasi: LokasiPengaduan.MESS,
         status: StatusPengaduan.MENUNGGU,
         catatanAdmin: null,
@@ -222,6 +241,7 @@ describe('PengaduanLayananService.rekap', () => {
       rating: 5,
       komentar: 'Bagus',
       deskripsiAduan: 'AC rusak',
+      foto: [{ id: 1, urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }],
       lokasi: LokasiPengaduan.TAMBANG,
       status: StatusPengaduan.MENUNGGU,
       catatanAdmin: null,
