@@ -49,6 +49,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [lokasi, setLokasi] = useState<LokasiPengaduan | null>(null);
   const [rating, setRating] = useState(0);
   const [komentar, setKomentar] = useState('');
+  const [deskripsiAduan, setDeskripsiAduan] = useState('');
   const [mengirim, setMengirim] = useState(false);
   const [error, setError] = useState('');
   const [terkirim, setTerkirim] = useState(false);
@@ -95,12 +96,14 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         divisi,
         rating,
         komentar: komentar.trim() || undefined,
+        deskripsiAduan: deskripsiAduan.trim() || undefined,
         lokasi: butuhLokasi ? lokasi ?? undefined : undefined,
       });
 
       setTerkirim(true);
       setRating(0);
       setKomentar('');
+      setDeskripsiAduan('');
       setLokasi(null);
       setLangkah('rating');
     } catch (err) {
@@ -167,9 +170,16 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             <CheckCircle2 size={40} color="#07984c" />
             <h2>Terima kasih atas penilaian Anda</h2>
             <p>Masukan ini akan membantu tim {labelDivisi} meningkatkan pelayanan.</p>
-            <button type="button" className={styles.tombolLagi} onClick={beriPenilaianLagi}>
-              Beri Penilaian Lagi
-            </button>
+            <div className={styles.suksesTombolRow}>
+              <button type="button" className={styles.tombolLagi} onClick={beriPenilaianLagi}>
+                Beri Penilaian Lagi
+              </button>
+              {bolehLihatRekap && (
+                <Link href={`${HALAMAN_MENU_PER_DIVISI[divisi]}/pengaduan/rekap`} className={styles.tombolKirim}>
+                  Lihat Rekap Performa
+                </Link>
+              )}
+            </div>
           </div>
         ) : langkah === 'rating' ? (
           <div className={styles.formCard}>
@@ -181,6 +191,15 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             </div>
 
             <StarRating value={rating} onChange={setRating} />
+
+            <textarea
+              className={styles.komentar}
+              placeholder="Ceritakan pengalaman Anda (opsional)..."
+              value={komentar}
+              onChange={(event) => setKomentar(event.target.value)}
+              rows={3}
+              maxLength={2000}
+            />
 
             {error && <p className={styles.error}>{error}</p>}
 
@@ -218,8 +237,8 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             <textarea
               className={styles.komentar}
               placeholder="Ceritakan masalah atau permintaan Anda (opsional)..."
-              value={komentar}
-              onChange={(event) => setKomentar(event.target.value)}
+              value={deskripsiAduan}
+              onChange={(event) => setDeskripsiAduan(event.target.value)}
               rows={4}
               maxLength={2000}
             />

@@ -19,4 +19,9 @@ export class CreatePengaduanLayananDto {
   @IsString()
   @MaxLength(2000)
   komentar?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  deskripsiAduan?: string;
 }

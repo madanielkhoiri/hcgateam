@@ -182,6 +182,23 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.suksesTombolRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.suksesTombolRow .tombolLagi,
+.suksesTombolRow .tombolKirim {
+  width: auto;
+  max-width: none;
+  margin-top: 0;
 }
 
 .error {
