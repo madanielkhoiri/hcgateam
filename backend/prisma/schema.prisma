@@ -2997,10 +2997,25 @@ model PengaduanLayanan {
   diprosesPada   DateTime?       @map("diproses_pada")
   createdAt      DateTime        @default(now()) @map("created_at")
 
+  foto PengaduanLayananFoto[]
+
   @@index([divisi, createdAt])
   @@index([pengirimId])
   @@index([status])
   @@map("pengaduan_layanan")
+}
+
+/** Foto wajib (minimal 1) yang dilampirkan saat mengisi Aduan Layanan. */
+model PengaduanLayananFoto {
+  id          Int              @id @default(autoincrement())
+  pengaduanId Int              @map("pengaduan_id")
+  pengaduan   PengaduanLayanan @relation(fields: [pengaduanId], references: [id], onDelete: Cascade)
+  urlFoto     String           @map("url_foto")
+  namaFile    String           @map("nama_file")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([pengaduanId])
+  @@map("pengaduan_layanan_foto")
 }
 
 // ==================================================

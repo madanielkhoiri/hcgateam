@@ -12,6 +12,7 @@ import {
   LABEL_LOKASI_PENGADUAN,
   LABEL_STATUS_PENGADUAN,
   namaBulan,
+  urlFotoPengaduan,
   type DivisiPengaduan,
   type RekapPengaduan,
   type StatusPengaduan,
@@ -263,6 +264,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                       <th>Rating</th>
                       <th>Komentar</th>
                       <th>Aduan Layanan</th>
+                      <th>Foto</th>
                       <th>Status</th>
                       <th>Aksi</th>
                     </tr>
@@ -282,6 +284,26 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                         <td>{'★'.repeat(item.rating)}</td>
                         <td>{item.komentar || '-'}</td>
                         <td>{item.deskripsiAduan || '-'}</td>
+                        <td>
+                          {item.foto.length > 0 ? (
+                            <div className={styles.fotoLinkRow}>
+                              {item.foto.map((f) => (
+                                <a
+                                  key={f.id}
+                                  href={urlFotoPengaduan(f.urlFoto)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={styles.fotoThumb}
+                                  title={f.namaFile}
+                                >
+                                  <img src={urlFotoPengaduan(f.urlFoto)} alt={f.namaFile} />
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td>
                           <span className={`${styles.statusBadge} ${styles[KELAS_STATUS[item.status]]}`}>
                             {LABEL_STATUS_PENGADUAN[item.status]}

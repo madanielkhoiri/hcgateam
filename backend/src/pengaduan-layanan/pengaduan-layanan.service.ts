@@ -10,11 +10,19 @@ const JUMLAH_BULAN_TREN = 6;
 export class PengaduanLayananService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreatePengaduanLayananDto, pengirimId: number) {
+  async create(
+    dto: CreatePengaduanLayananDto,
+    pengirimId: number,
+    foto: { urlFoto: string; namaFile: string }[],
+  ) {
     const butuhLokasi = dto.divisi !== DivisiPengaduan.HC;
 
     if (butuhLokasi && !dto.lokasi) {
       throw new BadRequestException('Lokasi (Tambang/Mess) wajib dipilih untuk divisi GA/Civil');
+    }
+
+    if (foto.length === 0) {
+      throw new BadRequestException('Minimal 1 foto wajib dilampirkan pada Aduan Layanan');
     }
 
     return this.prisma.pengaduanLayanan.create({
@@ -25,7 +33,9 @@ export class PengaduanLayananService {
         deskripsiAduan: dto.deskripsiAduan?.trim() || null,
         lokasi: butuhLokasi ? dto.lokasi : null,
         pengirimId,
+        foto: { create: foto },
       },
+      include: { foto: true },
     });
   }
 
@@ -63,7 +73,10 @@ export class PengaduanLayananService {
 
     const daftarBulanIni = await this.prisma.pengaduanLayanan.findMany({
       where: { divisi, createdAt: { gte: awalBulan, lt: akhirBulan } },
-      include: { pengirim: { select: { id: true, name: true } } },
+      include: {
+        pengirim: { select: { id: true, name: true } },
+        foto: { select: { id: true, urlFoto: true, namaFile: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -102,6 +115,7 @@ export class PengaduanLayananService {
         rating: item.rating,
         komentar: item.komentar,
         deskripsiAduan: item.deskripsiAduan,
+        foto: item.foto,
         lokasi: item.lokasi,
         status: item.status,
         catatanAdmin: item.catatanAdmin,
