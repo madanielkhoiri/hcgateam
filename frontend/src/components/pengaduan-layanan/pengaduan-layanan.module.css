@@ -464,26 +464,41 @@
 }
 
 .popupCard {
-  position: relative;
   width: min(480px, 100%);
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.popupClose {
-  position: absolute;
-  top: -14px;
-  right: -14px;
+.popupHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.popupHeaderKanan {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.popupCloseInline {
   display: grid;
+  flex-shrink: 0;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  color: #10244a;
-  background: #ffffff;
+  width: 28px;
+  height: 28px;
+  color: #5b6b8a;
+  background: #f0f3f8;
   border: none;
   border-radius: 50%;
-  box-shadow: 0 6px 16px rgba(16, 36, 74, 0.18);
   cursor: pointer;
+}
+
+.popupCloseInline:hover {
+  color: #10244a;
+  background: #e4e9f2;
 }
 
 .lokasiRow {

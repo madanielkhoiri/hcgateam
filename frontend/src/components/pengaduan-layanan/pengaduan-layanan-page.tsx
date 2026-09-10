@@ -157,12 +157,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
 
       <div className={styles.popupOverlay}>
         <div className={styles.popupCard}>
-          <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupClose} title="Tutup">
-            <X size={16} />
-          </Link>
-
         {terkirim ? (
           <div className={styles.sukses}>
+            <div className={styles.popupHeaderKanan}>
+              <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupCloseInline} title="Tutup">
+                <X size={16} />
+              </Link>
+            </div>
             <CheckCircle2 size={40} color="#07984c" />
             <h2>Terima kasih atas penilaian Anda</h2>
             <p>Masukan ini akan membantu tim {labelDivisi} meningkatkan pelayanan.</p>
@@ -172,7 +173,12 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           </div>
         ) : langkah === 'rating' ? (
           <div className={styles.formCard}>
-            <span className={styles.formLabel}>Beri rating pelayanan</span>
+            <div className={styles.popupHeader}>
+              <span className={styles.formLabel}>Beri rating pelayanan</span>
+              <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupCloseInline} title="Tutup">
+                <X size={16} />
+              </Link>
+            </div>
 
             <StarRating value={rating} onChange={setRating} />
 
@@ -184,7 +190,12 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           </div>
         ) : (
           <div className={styles.formCard}>
-            <span className={styles.formLabel}>Aduan Layanan</span>
+            <div className={styles.popupHeader}>
+              <span className={styles.formLabel}>Aduan Layanan</span>
+              <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupCloseInline} title="Tutup">
+                <X size={16} />
+              </Link>
+            </div>
             <p className={styles.aduanHint}>
               Ada masalah atau permintaan (mis. permintaan perbaikan) yang ingin dilaporkan?
             </p>
