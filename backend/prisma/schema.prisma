@@ -2983,7 +2983,10 @@ model PengaduanLayanan {
   id             Int             @id @default(autoincrement())
   divisi         DivisiPengaduan
   rating         Int
+  /** Catatan pengalaman saat kasih rating (step 1). */
   komentar       String?
+  /** Deskripsi masalah/permintaan pada Aduan Layanan (step 2) — terpisah dari catatan rating. */
+  deskripsiAduan String?          @map("deskripsi_aduan") @db.Text
   lokasi         LokasiPengaduan?
   status         StatusPengaduan @default(MENUNGGU)
   catatanAdmin   String?         @map("catatan_admin") @db.Text

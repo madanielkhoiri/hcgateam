@@ -262,6 +262,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                       <th>Lokasi</th>
                       <th>Rating</th>
                       <th>Komentar</th>
+                      <th>Aduan Layanan</th>
                       <th>Status</th>
                       <th>Aksi</th>
                     </tr>
@@ -280,6 +281,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                         <td>{item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}</td>
                         <td>{'★'.repeat(item.rating)}</td>
                         <td>{item.komentar || '-'}</td>
+                        <td>{item.deskripsiAduan || '-'}</td>
                         <td>
                           <span className={`${styles.statusBadge} ${styles[KELAS_STATUS[item.status]]}`}>
                             {LABEL_STATUS_PENGADUAN[item.status]}
