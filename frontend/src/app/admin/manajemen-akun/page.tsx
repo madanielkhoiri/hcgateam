@@ -941,6 +941,7 @@ export default function AccountManagementPage() {
                     <option value="DRIVER">Driver</option>
                     <option value="ELEKTRIK">Elektrik</option>
                     <option value="GUDANG">Staff Gudang</option>
+                    <option value="KORLAP">Koordinator Lapangan</option>
                     <option value="VENDOR">Vendor</option>
                     <option value="ADMIN">Admin</option>
                     <option value="SUPER_ADMIN">Admin HC</option>
