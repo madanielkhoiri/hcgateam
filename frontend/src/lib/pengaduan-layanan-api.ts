@@ -16,7 +16,10 @@ export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK';
 export type BuatPengaduanInput = {
   divisi: DivisiPengaduan;
   rating: number;
+  /** Catatan pengalaman saat kasih rating (step 1). */
   komentar?: string;
+  /** Deskripsi masalah/permintaan Aduan Layanan (step 2). */
+  deskripsiAduan?: string;
   /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC. */
   lokasi?: LokasiPengaduan;
 };
@@ -25,6 +28,7 @@ export type DetailPengaduan = {
   id: number;
   rating: number;
   komentar: string | null;
+  deskripsiAduan: string | null;
   lokasi: LokasiPengaduan | null;
   status: StatusPengaduan;
   catatanAdmin: string | null;

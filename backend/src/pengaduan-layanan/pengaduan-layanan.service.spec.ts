@@ -39,6 +39,7 @@ describe('PengaduanLayananService.create', () => {
         divisi: DivisiPengaduan.GA,
         rating: 4,
         komentar: '  Cepat tanggap  ',
+        deskripsiAduan: '  AC ruang kerja rusak  ',
         lokasi: LokasiPengaduan.TAMBANG,
       },
       18,
@@ -49,6 +50,7 @@ describe('PengaduanLayananService.create', () => {
         divisi: DivisiPengaduan.GA,
         rating: 4,
         komentar: 'Cepat tanggap',
+        deskripsiAduan: 'AC ruang kerja rusak',
         lokasi: LokasiPengaduan.TAMBANG,
         pengirimId: 18,
       },
@@ -86,6 +88,17 @@ describe('PengaduanLayananService.create', () => {
     );
 
     expect(create.mock.calls[0][0].data.komentar).toBeNull();
+  });
+
+  it('deskripsiAduan kosong disimpan sebagai null, bukan string kosong', async () => {
+    const { service, create } = buatService();
+
+    await service.create(
+      { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
+      1,
+    );
+
+    expect(create.mock.calls[0][0].data.deskripsiAduan).toBeNull();
   });
 });
 
@@ -164,6 +177,7 @@ describe('PengaduanLayananService.rekap', () => {
         id: 1,
         rating: 5,
         komentar: 'Bagus',
+        deskripsiAduan: 'AC rusak',
         lokasi: LokasiPengaduan.TAMBANG,
         status: StatusPengaduan.MENUNGGU,
         catatanAdmin: null,
@@ -174,6 +188,7 @@ describe('PengaduanLayananService.rekap', () => {
         id: 2,
         rating: 5,
         komentar: null,
+        deskripsiAduan: null,
         lokasi: LokasiPengaduan.MESS,
         status: StatusPengaduan.MENUNGGU,
         catatanAdmin: null,
@@ -184,6 +199,7 @@ describe('PengaduanLayananService.rekap', () => {
         id: 3,
         rating: 3,
         komentar: 'Lumayan',
+        deskripsiAduan: null,
         lokasi: LokasiPengaduan.MESS,
         status: StatusPengaduan.MENUNGGU,
         catatanAdmin: null,
@@ -205,6 +221,7 @@ describe('PengaduanLayananService.rekap', () => {
       id: 1,
       rating: 5,
       komentar: 'Bagus',
+      deskripsiAduan: 'AC rusak',
       lokasi: LokasiPengaduan.TAMBANG,
       status: StatusPengaduan.MENUNGGU,
       catatanAdmin: null,
