@@ -2965,7 +2965,7 @@ enum DivisiPengaduan {
   CIVIL
 }
 
-/** Lokasi kerja terkait pengaduan — dipilih pengirim saat submit. */
+/** Lokasi kerja terkait pengaduan — dipilih pengirim saat submit, wajib untuk GA/CIVIL, tidak berlaku untuk HC. */
 enum LokasiPengaduan {
   TAMBANG
   MESS
@@ -2984,7 +2984,7 @@ model PengaduanLayanan {
   divisi         DivisiPengaduan
   rating         Int
   komentar       String?
-  lokasi         LokasiPengaduan
+  lokasi         LokasiPengaduan?
   status         StatusPengaduan @default(MENUNGGU)
   catatanAdmin   String?         @map("catatan_admin") @db.Text
   pengirimId     Int             @map("pengirim_id")

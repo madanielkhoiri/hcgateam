@@ -5,8 +5,10 @@ export class CreatePengaduanLayananDto {
   @IsEnum(DivisiPengaduan)
   divisi: DivisiPengaduan;
 
+  /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC — divalidasi di service. */
+  @IsOptional()
   @IsEnum(LokasiPengaduan)
-  lokasi: LokasiPengaduan;
+  lokasi?: LokasiPengaduan;
 
   @IsInt()
   @Min(1)

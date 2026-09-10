@@ -17,14 +17,15 @@ export type BuatPengaduanInput = {
   divisi: DivisiPengaduan;
   rating: number;
   komentar?: string;
-  lokasi: LokasiPengaduan;
+  /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC. */
+  lokasi?: LokasiPengaduan;
 };
 
 export type DetailPengaduan = {
   id: number;
   rating: number;
   komentar: string | null;
-  lokasi: LokasiPengaduan;
+  lokasi: LokasiPengaduan | null;
   status: StatusPengaduan;
   catatanAdmin: string | null;
   pengirim: string;
