@@ -17,15 +17,15 @@ import {
   PengaduanLayananApiError,
   LABEL_DIVISI_PENGADUAN,
   LABEL_LOKASI_PENGADUAN,
+  ROLE_BOLEH_LIHAT_REKAP,
   type DivisiPengaduan,
   type LokasiPengaduan,
 } from '@/lib/pengaduan-layanan-api';
 import { StarRating } from './star-rating';
+import { DaftarPengaduanTabel } from './daftar-pengaduan-tabel';
 import styles from './pengaduan-layanan.module.css';
 
 const DAFTAR_LOKASI: LokasiPengaduan[] = ['TAMBANG', 'MESS'];
-
-const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 
 const ACCESS_KEY_PER_DIVISI: Record<DivisiPengaduan, string> = {
   HC: ACCESS_KEYS.HC,
@@ -181,6 +181,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           )}
         </div>
 
+        {bolehLihatRekap && <DaftarPengaduanTabel divisi={divisi} />}
       </div>
 
       <div className={styles.popupOverlay}>
