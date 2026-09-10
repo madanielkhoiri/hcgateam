@@ -40,6 +40,9 @@ enum UserRole {
   // keranjang), bukan form input biasa. Section Head/Admin boleh pakai
   // alur yang sama sebagai cara cepat, lihat GudangAksesService.
   GUDANG
+  // Koordinator Lapangan — ikut boleh kelola (approve/hold/reject) Aduan
+  // Layanan bersama Admin/Section Head/Elektrik.
+  KORLAP
 }
 
 model User {

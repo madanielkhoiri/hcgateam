@@ -9,6 +9,9 @@ import { getAccessToken } from './access-control';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
+/** Role yang boleh lihat rekap performa & kelola (approve/hold/reject) Aduan Layanan — samakan dengan backend PengaduanLayananAksesService. */
+export const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD', 'ELEKTRIK', 'KORLAP'];
+
 export type DivisiPengaduan = 'HC' | 'GA' | 'CIVIL';
 export type LokasiPengaduan = 'TAMBANG' | 'MESS';
 export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK';
