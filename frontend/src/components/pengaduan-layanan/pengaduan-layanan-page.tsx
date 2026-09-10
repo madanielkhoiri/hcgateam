@@ -39,9 +39,13 @@ const HALAMAN_MENU_PER_DIVISI: Record<DivisiPengaduan, string> = {
   CIVIL: '/civil',
 };
 
+type Langkah = 'rating' | 'aduan';
+
 export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const router = useRouter();
+  const butuhLokasi = divisi !== 'HC';
   const [user, setUser] = useState<PortalUser | null>(null);
+  const [langkah, setLangkah] = useState<Langkah>('rating');
   const [lokasi, setLokasi] = useState<LokasiPengaduan | null>(null);
   const [rating, setRating] = useState(0);
   const [komentar, setKomentar] = useState('');
@@ -67,14 +71,19 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     setUser(stored);
   }, [divisi, router]);
 
-  async function kirimPengaduan() {
-    if (!lokasi) {
-      setError('Pilih lokasi (Tambang atau Mess) terlebih dahulu.');
+  function lanjutKeAduan() {
+    if (rating < 1) {
+      setError('Pilih rating bintang terlebih dahulu.');
       return;
     }
 
-    if (rating < 1) {
-      setError('Pilih rating bintang terlebih dahulu.');
+    setError('');
+    setLangkah('aduan');
+  }
+
+  async function kirimPengaduan() {
+    if (butuhLokasi && !lokasi) {
+      setError('Pilih lokasi (Tambang atau Mess) terlebih dahulu.');
       return;
     }
 
@@ -86,13 +95,14 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         divisi,
         rating,
         komentar: komentar.trim() || undefined,
-        lokasi,
+        lokasi: butuhLokasi ? lokasi ?? undefined : undefined,
       });
 
       setTerkirim(true);
       setRating(0);
       setKomentar('');
       setLokasi(null);
+      setLangkah('rating');
     } catch (err) {
       setError(
         err instanceof PengaduanLayananApiError
@@ -102,6 +112,11 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     } finally {
       setMengirim(false);
     }
+  }
+
+  function beriPenilaianLagi() {
+    setTerkirim(false);
+    setLangkah('rating');
   }
 
   if (!user) {
@@ -151,33 +166,47 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             <CheckCircle2 size={40} color="#07984c" />
             <h2>Terima kasih atas penilaian Anda</h2>
             <p>Masukan ini akan membantu tim {labelDivisi} meningkatkan pelayanan.</p>
-            <button type="button" className={styles.tombolLagi} onClick={() => setTerkirim(false)}>
+            <button type="button" className={styles.tombolLagi} onClick={beriPenilaianLagi}>
               Beri Penilaian Lagi
             </button>
           </div>
-        ) : (
+        ) : langkah === 'rating' ? (
           <div className={styles.formCard}>
-            <span className={styles.formLabel}>Lokasi</span>
-            <div className={styles.lokasiRow}>
-              {DAFTAR_LOKASI.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={`${styles.lokasiButton} ${lokasi === item ? styles.lokasiButtonAktif : ''}`}
-                  onClick={() => setLokasi(item)}
-                >
-                  {LABEL_LOKASI_PENGADUAN[item]}
-                </button>
-              ))}
-            </div>
-
             <span className={styles.formLabel}>Beri rating pelayanan</span>
 
             <StarRating value={rating} onChange={setRating} />
 
+            {error && <p className={styles.error}>{error}</p>}
+
+            <button type="button" className={styles.tombolKirim} onClick={lanjutKeAduan}>
+              Lanjut
+            </button>
+          </div>
+        ) : (
+          <div className={styles.formCard}>
+            <span className={styles.formLabel}>Aduan Layanan</span>
+            <p className={styles.aduanHint}>
+              Ada masalah atau permintaan (mis. permintaan perbaikan) yang ingin dilaporkan?
+            </p>
+
+            {butuhLokasi && (
+              <div className={styles.lokasiRow}>
+                {DAFTAR_LOKASI.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`${styles.lokasiButton} ${lokasi === item ? styles.lokasiButtonAktif : ''}`}
+                    onClick={() => setLokasi(item)}
+                  >
+                    {LABEL_LOKASI_PENGADUAN[item]}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <textarea
               className={styles.komentar}
-              placeholder="Ceritakan pengalaman Anda (opsional)..."
+              placeholder="Ceritakan masalah atau permintaan Anda (opsional)..."
               value={komentar}
               onChange={(event) => setKomentar(event.target.value)}
               rows={4}
@@ -186,14 +215,24 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
 
             {error && <p className={styles.error}>{error}</p>}
 
-            <button
-              type="button"
-              className={styles.tombolKirim}
-              onClick={() => void kirimPengaduan()}
-              disabled={mengirim}
-            >
-              {mengirim ? 'Mengirim...' : 'Kirim Penilaian'}
-            </button>
+            <div className={styles.aduanTombolRow}>
+              <button
+                type="button"
+                className={styles.tombolLagi}
+                onClick={() => setLangkah('rating')}
+                disabled={mengirim}
+              >
+                Kembali
+              </button>
+              <button
+                type="button"
+                className={styles.tombolKirim}
+                onClick={() => void kirimPengaduan()}
+                disabled={mengirim}
+              >
+                {mengirim ? 'Mengirim...' : 'Kirim'}
+              </button>
+            </div>
           </div>
         )}
         </div>

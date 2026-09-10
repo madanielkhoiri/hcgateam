@@ -277,7 +277,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                           }).format(new Date(item.createdAt))}
                         </td>
                         <td>{item.pengirim}</td>
-                        <td>{LABEL_LOKASI_PENGADUAN[item.lokasi]}</td>
+                        <td>{item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}</td>
                         <td>{'★'.repeat(item.rating)}</td>
                         <td>{item.komentar || '-'}</td>
                         <td>

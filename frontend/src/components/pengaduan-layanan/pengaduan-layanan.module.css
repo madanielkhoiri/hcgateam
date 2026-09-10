@@ -510,6 +510,28 @@
   border-color: #0868f6;
 }
 
+.aduanHint {
+  margin: -8px 0 0;
+  color: #5b6b8a;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.aduanTombolRow {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.aduanTombolRow .tombolLagi {
+  flex: 1;
+  margin-top: 0;
+}
+
+.aduanTombolRow .tombolKirim {
+  flex: 2;
+}
+
 @media (max-width: 640px) {
   .distribusiCard {
     grid-column: span 1;
