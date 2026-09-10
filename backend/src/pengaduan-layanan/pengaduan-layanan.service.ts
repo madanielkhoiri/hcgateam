@@ -10,13 +10,19 @@ const JUMLAH_BULAN_TREN = 6;
 export class PengaduanLayananService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreatePengaduanLayananDto, pengirimId: number) {
+  async create(dto: CreatePengaduanLayananDto, pengirimId: number) {
+    const butuhLokasi = dto.divisi !== DivisiPengaduan.HC;
+
+    if (butuhLokasi && !dto.lokasi) {
+      throw new BadRequestException('Lokasi (Tambang/Mess) wajib dipilih untuk divisi GA/Civil');
+    }
+
     return this.prisma.pengaduanLayanan.create({
       data: {
         divisi: dto.divisi,
         rating: dto.rating,
         komentar: dto.komentar?.trim() || null,
-        lokasi: dto.lokasi,
+        lokasi: butuhLokasi ? dto.lokasi : null,
         pengirimId,
       },
     });

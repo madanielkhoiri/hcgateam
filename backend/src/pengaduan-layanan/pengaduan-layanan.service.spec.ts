@@ -31,12 +31,12 @@ function buatService(overrides: {
 }
 
 describe('PengaduanLayananService.create', () => {
-  it('menyimpan divisi, rating, lokasi, dan pengirimId sesuai input', async () => {
+  it('menyimpan divisi, rating, lokasi, dan pengirimId sesuai input (GA)', async () => {
     const { service, create } = buatService();
 
     await service.create(
       {
-        divisi: DivisiPengaduan.HC,
+        divisi: DivisiPengaduan.GA,
         rating: 4,
         komentar: '  Cepat tanggap  ',
         lokasi: LokasiPengaduan.TAMBANG,
@@ -46,13 +46,35 @@ describe('PengaduanLayananService.create', () => {
 
     expect(create).toHaveBeenCalledWith({
       data: {
-        divisi: DivisiPengaduan.HC,
+        divisi: DivisiPengaduan.GA,
         rating: 4,
         komentar: 'Cepat tanggap',
         lokasi: LokasiPengaduan.TAMBANG,
         pengirimId: 18,
       },
     });
+  });
+
+  it('menolak GA/CIVIL tanpa lokasi', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.create({ divisi: DivisiPengaduan.GA, rating: 5 }, 1),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.create({ divisi: DivisiPengaduan.CIVIL, rating: 5 }, 1),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('HC tidak wajib lokasi, dan lokasi selalu disimpan null walau dikirim', async () => {
+    const { service, create } = buatService();
+
+    await service.create(
+      { divisi: DivisiPengaduan.HC, rating: 4, lokasi: LokasiPengaduan.TAMBANG },
+      1,
+    );
+
+    expect(create.mock.calls[0][0].data.lokasi).toBeNull();
   });
 
   it('komentar kosong disimpan sebagai null, bukan string kosong', async () => {
