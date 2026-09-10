@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BarChart3, CheckCircle2, MessageSquareHeart } from 'lucide-react';
+import { ArrowLeft, BarChart3, CheckCircle2, MessageSquareHeart, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   ACCESS_KEYS,
@@ -16,10 +16,14 @@ import {
   pengaduanLayananApi,
   PengaduanLayananApiError,
   LABEL_DIVISI_PENGADUAN,
+  LABEL_LOKASI_PENGADUAN,
   type DivisiPengaduan,
+  type LokasiPengaduan,
 } from '@/lib/pengaduan-layanan-api';
 import { StarRating } from './star-rating';
 import styles from './pengaduan-layanan.module.css';
+
+const DAFTAR_LOKASI: LokasiPengaduan[] = ['TAMBANG', 'MESS'];
 
 const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 
@@ -38,6 +42,7 @@ const HALAMAN_MENU_PER_DIVISI: Record<DivisiPengaduan, string> = {
 export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
+  const [lokasi, setLokasi] = useState<LokasiPengaduan | null>(null);
   const [rating, setRating] = useState(0);
   const [komentar, setKomentar] = useState('');
   const [mengirim, setMengirim] = useState(false);
@@ -63,6 +68,11 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   }, [divisi, router]);
 
   async function kirimPengaduan() {
+    if (!lokasi) {
+      setError('Pilih lokasi (Tambang atau Mess) terlebih dahulu.');
+      return;
+    }
+
     if (rating < 1) {
       setError('Pilih rating bintang terlebih dahulu.');
       return;
@@ -76,11 +86,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         divisi,
         rating,
         komentar: komentar.trim() || undefined,
+        lokasi,
       });
 
       setTerkirim(true);
       setRating(0);
       setKomentar('');
+      setLokasi(null);
     } catch (err) {
       setError(
         err instanceof PengaduanLayananApiError
@@ -126,6 +138,14 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           )}
         </div>
 
+      </div>
+
+      <div className={styles.popupOverlay}>
+        <div className={styles.popupCard}>
+          <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupClose} title="Tutup">
+            <X size={16} />
+          </Link>
+
         {terkirim ? (
           <div className={styles.sukses}>
             <CheckCircle2 size={40} color="#07984c" />
@@ -137,6 +157,20 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           </div>
         ) : (
           <div className={styles.formCard}>
+            <span className={styles.formLabel}>Lokasi</span>
+            <div className={styles.lokasiRow}>
+              {DAFTAR_LOKASI.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`${styles.lokasiButton} ${lokasi === item ? styles.lokasiButtonAktif : ''}`}
+                  onClick={() => setLokasi(item)}
+                >
+                  {LABEL_LOKASI_PENGADUAN[item]}
+                </button>
+              ))}
+            </div>
+
             <span className={styles.formLabel}>Beri rating pelayanan</span>
 
             <StarRating value={rating} onChange={setRating} />
@@ -162,6 +196,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             </button>
           </div>
         )}
+        </div>
       </div>
     </main>
   );
