@@ -22,6 +22,14 @@ export type BuatPengaduanInput = {
   deskripsiAduan?: string;
   /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC. */
   lokasi?: LokasiPengaduan;
+  /** Wajib minimal 1 foto — bukti/ilustrasi Aduan Layanan. */
+  foto: File[];
+};
+
+export type FotoPengaduan = {
+  id: number;
+  urlFoto: string;
+  namaFile: string;
 };
 
 export type DetailPengaduan = {
@@ -29,6 +37,7 @@ export type DetailPengaduan = {
   rating: number;
   komentar: string | null;
   deskripsiAduan: string | null;
+  foto: FotoPengaduan[];
   lokasi: LokasiPengaduan | null;
   status: StatusPengaduan;
   catatanAdmin: string | null;
@@ -65,11 +74,14 @@ export class PengaduanLayananApiError extends Error {
   }
 }
 
-function headerAuth(): HeadersInit {
+function headerAuth(json = true): HeadersInit {
   const token = getAccessToken();
-  return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {};
+
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (json) headers['Content-Type'] = 'application/json';
+
+  return headers;
 }
 
 async function bacaError(response: Response): Promise<string> {
@@ -88,10 +100,18 @@ async function bacaError(response: Response): Promise<string> {
 
 export const pengaduanLayananApi = {
   kirim: async (input: BuatPengaduanInput): Promise<void> => {
+    const form = new FormData();
+    form.append('divisi', input.divisi);
+    form.append('rating', String(input.rating));
+    if (input.komentar) form.append('komentar', input.komentar);
+    if (input.deskripsiAduan) form.append('deskripsiAduan', input.deskripsiAduan);
+    if (input.lokasi) form.append('lokasi', input.lokasi);
+    input.foto.forEach((file) => form.append('foto', file));
+
     const response = await fetch(`${API_URL}/pengaduan-layanan`, {
       method: 'POST',
-      headers: headerAuth(),
-      body: JSON.stringify(input),
+      headers: headerAuth(false),
+      body: form,
       cache: 'no-store',
     });
 
@@ -165,4 +185,9 @@ const NAMA_BULAN = [
 
 export function namaBulan(bulan: number): string {
   return NAMA_BULAN[bulan - 1] ?? String(bulan);
+}
+
+/** URL publik foto Aduan Layanan (disimpan di uploads/pengaduan-layanan/...). */
+export function urlFotoPengaduan(pathRelatif: string): string {
+  return `${API_URL}/uploads/${pathRelatif}`;
 }

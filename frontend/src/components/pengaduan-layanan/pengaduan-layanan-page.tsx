@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BarChart3, CheckCircle2, MessageSquareHeart, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowLeft, BarChart3, CheckCircle2, ImagePlus, MessageSquareHeart, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ACCESS_KEYS,
   clearSession,
@@ -50,9 +50,11 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [rating, setRating] = useState(0);
   const [komentar, setKomentar] = useState('');
   const [deskripsiAduan, setDeskripsiAduan] = useState('');
+  const [foto, setFoto] = useState<File[]>([]);
   const [mengirim, setMengirim] = useState(false);
   const [error, setError] = useState('');
   const [terkirim, setTerkirim] = useState(false);
+  const inputFotoRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -82,9 +84,30 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     setLangkah('aduan');
   }
 
+  function tambahFoto(daftar: FileList | null) {
+    if (!daftar || daftar.length === 0) return;
+
+    // Materialize ke array biasa DULU — FileList itu live reference, kalau
+    // dibaca lewat closure di updater setFoto (dieksekusi belakangan) dia
+    // sudah keburu kosong karena input.value di-reset di baris bawah.
+    const fileBaru = Array.from(daftar);
+    setFoto((cur) => [...cur, ...fileBaru]);
+
+    if (inputFotoRef.current) inputFotoRef.current.value = '';
+  }
+
+  function hapusFoto(index: number) {
+    setFoto((cur) => cur.filter((_, i) => i !== index));
+  }
+
   async function kirimPengaduan() {
     if (butuhLokasi && !lokasi) {
       setError('Pilih lokasi (Tambang atau Mess) terlebih dahulu.');
+      return;
+    }
+
+    if (foto.length === 0) {
+      setError('Minimal 1 foto wajib dilampirkan.');
       return;
     }
 
@@ -98,6 +121,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         komentar: komentar.trim() || undefined,
         deskripsiAduan: deskripsiAduan.trim() || undefined,
         lokasi: butuhLokasi ? lokasi ?? undefined : undefined,
+        foto,
       });
 
       setTerkirim(true);
@@ -105,6 +129,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
       setKomentar('');
       setDeskripsiAduan('');
       setLokasi(null);
+      setFoto([]);
       setLangkah('rating');
     } catch (err) {
       setError(
@@ -242,6 +267,37 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
               rows={4}
               maxLength={2000}
             />
+
+            <div className={styles.fotoWrap}>
+              <span className={styles.formLabelKecil}>Foto (wajib, minimal 1)</span>
+
+              <input
+                ref={inputFotoRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                hidden
+                onChange={(event) => tambahFoto(event.target.files)}
+              />
+
+              <button type="button" className={styles.tombolTambahFoto} onClick={() => inputFotoRef.current?.click()}>
+                <ImagePlus size={15} />
+                Tambah Foto
+              </button>
+
+              {foto.length > 0 && (
+                <div className={styles.fotoPreviewRow}>
+                  {foto.map((file, index) => (
+                    <span key={`${file.name}-${index}`} className={styles.fotoChip}>
+                      {file.name}
+                      <button type="button" onClick={() => hapusFoto(index)} title="Hapus foto ini">
+                        <X size={11} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {error && <p className={styles.error}>{error}</p>}
 
