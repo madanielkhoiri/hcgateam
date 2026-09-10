@@ -18,4 +18,18 @@ describe('PengaduanLayananAksesService', () => {
       expect(() => akses.wajibBolehLihatRekap(role)).toThrow(ForbiddenException);
     },
   );
+
+  it.each([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+    'mengizinkan role %s kelola status (approve/hold/reject)',
+    (role) => {
+      expect(() => akses.wajibBolehKelolaStatus(role)).not.toThrow();
+    },
+  );
+
+  it.each([UserRole.KARYAWAN, UserRole.VENDOR])(
+    'menolak role %s kelola status dengan ForbiddenException',
+    (role) => {
+      expect(() => akses.wajibBolehKelolaStatus(role)).toThrow(ForbiddenException);
+    },
+  );
 });

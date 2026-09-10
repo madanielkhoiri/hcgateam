@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { DivisiPengaduan } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DivisiPengaduan, StatusPengaduan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengaduanLayananDto } from './dto/create-pengaduan-layanan.dto';
+import { UbahStatusPengaduanLayananDto } from './dto/ubah-status-pengaduan-layanan.dto';
 
 const JUMLAH_BULAN_TREN = 6;
 
@@ -15,8 +16,33 @@ export class PengaduanLayananService {
         divisi: dto.divisi,
         rating: dto.rating,
         komentar: dto.komentar?.trim() || null,
+        lokasi: dto.lokasi,
         pengirimId,
       },
+    });
+  }
+
+  /** Approve/Hold/Reject oleh admin — catatan wajib untuk Hold & Reject, opsional untuk Approve. */
+  async ubahStatus(id: number, dto: UbahStatusPengaduanLayananDto, aktorId: number) {
+    const pengaduan = await this.prisma.pengaduanLayanan.findUnique({ where: { id } });
+
+    if (!pengaduan) {
+      throw new NotFoundException('Pengaduan tidak ditemukan');
+    }
+
+    if (dto.status !== StatusPengaduan.DISETUJUI && !dto.catatanAdmin?.trim()) {
+      throw new BadRequestException('Catatan wajib diisi untuk Hold/Reject');
+    }
+
+    return this.prisma.pengaduanLayanan.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        catatanAdmin: dto.catatanAdmin?.trim() || null,
+        diprosesOlehId: aktorId,
+        diprosesPada: new Date(),
+      },
+      include: { diprosesOleh: { select: { id: true, name: true } } },
     });
   }
 
@@ -68,6 +94,9 @@ export class PengaduanLayananService {
         id: item.id,
         rating: item.rating,
         komentar: item.komentar,
+        lokasi: item.lokasi,
+        status: item.status,
+        catatanAdmin: item.catatanAdmin,
         pengirim: item.pengirim.name,
         createdAt: item.createdAt,
       })),
