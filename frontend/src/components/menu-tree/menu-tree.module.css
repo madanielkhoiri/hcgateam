@@ -148,12 +148,13 @@ a.primaryCard:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
   gap: 20px;
-  align-items: start;
 }
 
 .sectionCard {
   --accent: #0868f6;
   --soft: #eaf2ff;
+  display: flex;
+  flex-direction: column;
   padding: 22px;
   background: color-mix(in srgb, var(--soft) 55%, #ffffff);
   border: 1.5px solid color-mix(in srgb, var(--accent) 22%, #ffffff);
