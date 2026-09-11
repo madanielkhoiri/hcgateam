@@ -5,14 +5,17 @@
 }
 
 /* ==================================================
-   KARTU UTAMA - fitur tanpa sub-menu. auto-fill (bukan auto-fit) supaya
-   kartu tidak pernah melebar sendiri mengisi sisa baris saat jumlahnya
-   ganjil - lebar tiap kartu selalu sama, sisa ruang dibiarkan kosong.
+   KARTU UTAMA - fitur tanpa sub-menu. Flex + justify-content:center
+   (bukan CSS grid auto-fill/fit) - kartu tumbuh bareng-bareng sampai
+   batas max-width lalu berhenti, dan kalau jumlahnya sedikit (tidak
+   sampai memenuhi 1 baris), sisa ruang dibagi rata kiri-kanan lewat
+   justify-content, bukan menumpuk di kanan.
    ================================================== */
 
 .primaryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
 }
 
@@ -20,6 +23,8 @@
   --accent: #0868f6;
   --soft: #eaf2ff;
   position: relative;
+  flex: 1 1 255px;
+  max-width: 340px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -140,19 +145,23 @@ a.primaryCard:hover {
 
 /* ==================================================
    KARTU GRUP - Transport, GS, dll: satu kontainer bertinta warna per
-   grup, isinya baris rapi (bukan kotak-di-dalam-kotak). auto-fill lagi
-   supaya lebar kartu grup juga konsisten walau jumlahnya ganjil.
+   grup, isinya baris rapi (bukan kotak-di-dalam-kotak). Flex +
+   justify-content:center - sama seperti primaryGrid, supaya kalau cuma
+   ada 1-2 kartu grup, posisinya tetap di tengah, bukan mepet kiri.
    ================================================== */
 
 .sectionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
 }
 
 .sectionCard {
   --accent: #0868f6;
   --soft: #eaf2ff;
+  flex: 1 1 430px;
+  max-width: 650px;
   display: flex;
   flex-direction: column;
   padding: 22px;
@@ -339,12 +348,14 @@ a.leafRow:hover {
 }
 
 @media (max-width: 700px) {
-  .primaryGrid {
-    grid-template-columns: 1fr;
+  .primaryCard {
+    flex-basis: 100%;
+    max-width: none;
   }
 
-  .sectionGrid {
-    grid-template-columns: 1fr;
+  .sectionCard {
+    flex-basis: 100%;
+    max-width: none;
   }
 
   .leafRow {
