@@ -22,6 +22,19 @@ export type Postingan = {
   uploadedBy: { id: number; name: string; nrp: string | null };
 };
 
+export type RingkasanPostingan = {
+  total: number;
+  tampilBeranda: number;
+  tersembunyi: number;
+  postinganBulanIni: number;
+};
+
+export type TrenPostingan = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  tipeMedia: { poster: number; video: number };
+};
+
 export class PostinganApiError extends Error {
   status: number;
 
@@ -73,6 +86,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const postinganApi = {
   daftar: () => request<Postingan[]>(''),
   beranda: () => request<Postingan[]>('/beranda'),
+  ringkasan: () => request<RingkasanPostingan>('/dashboard/ringkasan'),
+  tren: () => request<TrenPostingan>('/dashboard/tren'),
   unggah: (data: {
     judul: string;
     deskripsi?: string;

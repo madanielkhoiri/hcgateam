@@ -36,6 +36,7 @@
   --hc-soft: #eaf2ff;
   --ga-soft: #e8f8ef;
   --sipil-soft: #fff0e4;
+  --administrasi-soft: #f4f0ff;
 
   --shadow-card:
     0 22px 55px rgba(43, 83, 137, 0.14);
@@ -126,6 +127,7 @@ a {
     --hc-soft: #eaf2ff;
     --ga-soft: #e8f8ef;
     --sipil-soft: #fff0e4;
+    --administrasi-soft: #f4f0ff;
 
     --shadow-card:
       0 22px 55px rgba(43, 83, 137, 0.14);

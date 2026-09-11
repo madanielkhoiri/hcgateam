@@ -2,12 +2,10 @@
 
 // ==================================================
 // FILE: frontend/src/app/hc/surat-penolakan-magang/layout.tsx
-// FUNGSI: Shell modul Surat Penolakan Magang (guard akses)
+// FUNGSI: Shell modul Surat Penolakan Magang (guard akses + sidebar)
 // ==================================================
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FileX2, UsersRound } from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -18,14 +16,20 @@ import {
 import {
   ACCESS_KEYS,
   clearSession,
-  formatRole,
   getAccessToken,
   getStoredUser,
   hasAccess,
   saveStoredUser,
   type PortalUser,
 } from '@/lib/access-control';
+import { ModuleShell, type ModuleShellMenuItem } from '@/components/module-shell/module-shell';
 import styles from '../anak-magang/anak-magang.module.css';
+
+const MENU_SURAT_PENOLAKAN: ModuleShellMenuItem[] = [
+  { label: 'Dashboard', href: '/hc/surat-penolakan-magang/dashboard', initial: 'DB' },
+  { label: 'Daftar Surat', href: '/hc/surat-penolakan-magang/daftar', initial: 'DS' },
+  { label: 'Buat Surat', href: '/hc/surat-penolakan-magang/buat', initial: 'BS' },
+];
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -120,28 +124,16 @@ export default function LayoutSuratPenolakanMagang({
 
   return (
     <SuratPenolakanContext.Provider value={{ user }}>
-      <div className={styles.shell}>
-        <header className={styles.topbar}>
-          <Link href="/hc/surat-penolakan-magang" className={styles.brand}>
-            <span className={styles.brandLogo}>
-              <FileX2 size={20} />
-            </span>
-            Surat Penolakan Magang
-          </Link>
-
-          <div className={styles.profile}>
-            <span className={styles.profileIcon}>
-              <UsersRound size={20} />
-            </span>
-            <div className={styles.akun}>
-              <strong>{user.name}</strong>
-              <span>{formatRole(user.role)}</span>
-            </div>
-          </div>
-        </header>
-
+      <ModuleShell
+        title="Surat Penolakan Magang"
+        subtitle="Human Capital"
+        deptBadge={{ text: 'HC', color: '#0868f6', soft: '#eaf2ff' }}
+        menuItems={MENU_SURAT_PENOLAKAN}
+        backHref="/hc"
+        backLabel="Kembali ke HC"
+      >
         <main className={styles.body}>{children}</main>
-      </div>
+      </ModuleShell>
     </SuratPenolakanContext.Provider>
   );
 }

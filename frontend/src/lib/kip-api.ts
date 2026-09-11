@@ -49,6 +49,22 @@ export type GpsLokasiKip = { lokasi: LokasiHousekeepingIndoor; latitude: number;
 
 export type StatusLokasi = { lokasi: LokasiHousekeepingIndoor; kip: Kip[]; gps: GpsLokasiKip | null };
 
+/** Ringkasan angka untuk kartu dashboard modul KIP. */
+export type RingkasanKip = {
+  totalKip: number;
+  lokasiTerpakai: number;
+  checklistSudahBulanIni: number;
+  checklistBelumBulanIni: number;
+  checklistTerlewat: number;
+};
+
+/** Tren checklist SUDAH per bulan (tahun berjalan) + breakdown status checklist tahun berjalan. */
+export type TrenDashboardKip = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  statusChecklist: { sudah: number; belum: number };
+};
+
 /** Ambil posisi GPS browser saat ini (promise-based). Gagal/ditolak → reject dengan pesan Indonesia. */
 export function ambilLokasiGps(): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) => {
@@ -111,6 +127,9 @@ async function request<T>(path: string, init: RequestInit = {}, wajibAuth = true
 }
 
 export const kipApi = {
+  ringkasanDashboard: () => request<RingkasanKip>('/kip/admin/dashboard/ringkasan'),
+  trenDashboard: () => request<TrenDashboardKip>('/kip/admin/dashboard/tren'),
+
   daftarKip: (filter?: { lokasi?: LokasiHousekeepingIndoor; tahun?: number }) => {
     const params = new URLSearchParams();
     if (filter?.lokasi) params.set('lokasi', filter.lokasi);

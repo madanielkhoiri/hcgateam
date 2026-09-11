@@ -101,6 +101,20 @@ export function urlFileHousekeepingIndoor(pathRelatif: string): string {
   return `${API_URL}/uploads/${pathRelatif}`;
 }
 
+export type RingkasanHousekeepingIndoor = {
+  totalLaporanBulanIni: number;
+  totalFotoBulanIni: number;
+  lokasiDilaporkanHariIni: number;
+  totalLokasi: number;
+  totalLaporanKeseluruhan: number;
+};
+
+export type TrenDashboardHousekeepingIndoor = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownLokasi: { lokasi: LokasiHousekeepingIndoor; total: number }[];
+};
+
 export const housekeepingIndoorApi = {
   daftar: (lokasi?: LokasiHousekeepingIndoor) =>
     request<HousekeepingIndoorLaporan[]>(`/housekeeping-indoor${lokasi ? `?lokasi=${lokasi}` : ''}`),
@@ -112,4 +126,6 @@ export const housekeepingIndoorApi = {
     return request<HousekeepingIndoorLaporan>('/housekeeping-indoor', { method: 'POST', body: form });
   },
   hapus: (id: number) => request<{ message: string }>(`/housekeeping-indoor/${id}`, { method: 'DELETE' }),
+  ringkasan: () => request<RingkasanHousekeepingIndoor>('/housekeeping-indoor/dashboard/ringkasan'),
+  trenDanLokasi: () => request<TrenDashboardHousekeepingIndoor>('/housekeeping-indoor/dashboard/tren'),
 };

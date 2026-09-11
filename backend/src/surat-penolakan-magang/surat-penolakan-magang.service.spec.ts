@@ -115,6 +115,39 @@ describe('SuratPenolakanMagangService.terbitkan', () => {
   });
 });
 
+describe('SuratPenolakanMagangService.ringkasanDashboard', () => {
+  it('menghitung total, tren bulanan (tahun berjalan), rata-rata per bulan, dan status PDF dengan benar', async () => {
+    const tahunIni = new Date().getUTCFullYear();
+
+    const prisma: any = {
+      suratPenolakanMagang: {
+        count: jest.fn()
+          .mockResolvedValueOnce(12) // totalSurat
+          .mockResolvedValueOnce(2), // suratBulanIni
+        findMany: jest.fn().mockResolvedValue([
+          { createdAt: new Date(Date.UTC(tahunIni, 0, 5)), filePdf: 'a.pdf' },
+          { createdAt: new Date(Date.UTC(tahunIni, 0, 10)), filePdf: null },
+          { createdAt: new Date(Date.UTC(tahunIni, 5, 1)), filePdf: 'b.pdf' },
+        ]),
+      },
+    };
+
+    const service = new SuratPenolakanMagangService(prisma, {} as any, {} as any);
+
+    const hasil = await service.ringkasanDashboard();
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.totalSurat).toBe(12);
+    expect(hasil.suratBulanIni).toBe(2);
+    expect(hasil.suratTahunIni).toBe(3);
+    expect(hasil.trenBulanan).toHaveLength(12);
+    expect(hasil.trenBulanan[0]).toEqual({ bulan: 1, total: 2 });
+    expect(hasil.trenBulanan[5]).toEqual({ bulan: 6, total: 1 });
+    expect(hasil.statusPdf).toEqual({ sudahTerbit: 2, belumTerbit: 1 });
+    expect(hasil.rataRataPerBulan).toBeGreaterThan(0);
+  });
+});
+
 describe('SuratPenolakanMagangService.cetakUlang', () => {
   it('melempar NotFoundException kalau surat tidak ada', async () => {
     const { service } = buatService({ suratDetail: null });

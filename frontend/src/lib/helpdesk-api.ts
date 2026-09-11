@@ -50,6 +50,21 @@ export type RingkasanHelpdesk = {
   antrian: number;
 };
 
+/** Ringkasan angka kartu dashboard Helpdesk Center - lihat helpdesk-dashboard.service.ts. */
+export type RingkasanDashboardHelpdesk = {
+  totalTiket: number;
+  terbuka: number;
+  diproses: number;
+  selesai: number;
+};
+
+/** Tren dashboard Helpdesk Center: tiket per bulan (tahun berjalan) + breakdown status. */
+export type TrenDashboardHelpdesk = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusTiketHelpdesk; total: number }[];
+};
+
 // ==================================================
 // KLIEN HTTP
 // ==================================================

@@ -32,6 +32,16 @@ export class AlbumController {
     return this.service.daftar();
   }
 
+  @Get('dashboard/ringkasan')
+  ringkasan() {
+    return this.service.ringkasan();
+  }
+
+  @Get('dashboard/tren')
+  trenBulanan() {
+    return this.service.trenBulanan();
+  }
+
   @Get(':id')
   detail(@Param('id', ParseIntPipe) id: number) {
     return this.service.detail(id);

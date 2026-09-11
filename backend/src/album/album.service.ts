@@ -145,4 +145,60 @@ export class AlbumService {
 
     return { message: 'Foto berhasil dihapus' };
   }
+
+  /** Angka ringkas untuk kartu dashboard modul Dokumentasi. */
+  async ringkasan() {
+    const sekarang = new Date();
+    const awalBulanIni = new Date(
+      Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
+    );
+
+    const [totalAlbum, totalFoto, albumBulanIni, albumKosong, kontributor] =
+      await Promise.all([
+        this.prisma.albumDokumentasi.count(),
+        this.prisma.albumFoto.count(),
+        this.prisma.albumDokumentasi.count({
+          where: { createdAt: { gte: awalBulanIni } },
+        }),
+        this.prisma.albumDokumentasi.count({
+          where: { foto: { none: {} } },
+        }),
+        this.prisma.albumDokumentasi.groupBy({ by: ['uploadedById'] }),
+      ]);
+
+    return {
+      totalAlbum,
+      totalFoto,
+      albumBulanIni,
+      albumBerisiFoto: totalAlbum - albumKosong,
+      albumKosong,
+      totalKontributor: kontributor.length,
+    };
+  }
+
+  /** Tren jumlah album dibuat per bulan (tahun berjalan) untuk grafik dashboard. */
+  async trenBulanan() {
+    const tahun = new Date().getUTCFullYear();
+    const awal = new Date(Date.UTC(tahun, 0, 1));
+    const akhir = new Date(Date.UTC(tahun + 1, 0, 1));
+
+    const album = await this.prisma.albumDokumentasi.findMany({
+      where: { createdAt: { gte: awal, lt: akhir } },
+      select: { createdAt: true },
+    });
+
+    const totalPerBulan = Array.from({ length: 12 }, () => 0);
+
+    for (const row of album) {
+      totalPerBulan[row.createdAt.getUTCMonth()] += 1;
+    }
+
+    return {
+      tahun,
+      trenBulanan: totalPerBulan.map((total, index) => ({
+        bulan: index + 1,
+        total,
+      })),
+    };
+  }
 }

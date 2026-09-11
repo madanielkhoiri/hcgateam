@@ -1,0 +1,97 @@
+/* ==================================================
+   FILE: frontend/src/app/civil/electric-kip/electric-kip.module.css
+   FUNGSI: Gaya bersama halaman modul Electric-KIP (dashboard, dsb) -
+   pola diambil dari hc/mcu/mcu.module.css supaya "rasa" dashboard sama.
+   ================================================== */
+
+.loading {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: #6d7f99;
+  font-size: 13px;
+}
+
+.body {
+  padding: 22px clamp(16px, 3vw, 32px) 56px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #7688a0;
+  font-size: 12px;
+}
+
+.breadcrumb a {
+  color: #d97706;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.breadcrumb strong {
+  color: #10244a;
+}
+
+.pageHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pageIcon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #d97706;
+  background: #fff2df;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(217, 119, 6, 0.13);
+}
+
+.pageTitle h1 {
+  margin: 0;
+  color: #a3540a;
+  font-size: clamp(21px, 3vw, 27px);
+  letter-spacing: -0.3px;
+}
+
+.pageTitle p {
+  margin: 5px 0 0;
+  max-width: 720px;
+  color: #6d7f99;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.memuat {
+  padding: 42px;
+  color: #7688a0;
+  font-size: 13px;
+  text-align: center;
+}
+
+.error {
+  padding: 11px 13px;
+  margin-bottom: 15px;
+  color: #b62b22;
+  background: #ffeaea;
+  border: 1px solid #ffd0cd;
+  border-radius: 10px;
+  font-size: 12px;
+}

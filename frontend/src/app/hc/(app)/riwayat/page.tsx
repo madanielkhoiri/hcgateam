@@ -221,7 +221,7 @@ function KontenRiwayatDeklarasi() {
  if (sedangMemuat) {
  return (
  <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
- <div className="rounded-2xl border border-red-100 bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
+ <div className="rounded-2xl border border-[#d8e4f2] bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
  Memuat riwayat deklarasi...
  </div>
  </main>
@@ -234,13 +234,13 @@ function KontenRiwayatDeklarasi() {
  <button
  type="button"
  onClick={() => router.push("/hc/deklarasi-dinas")}
- className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+ className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-[#d8e4f2] bg-white px-4 py-2 text-sm font-semibold text-[#0868f6] transition hover:bg-[#eaf2ff]"
  >
  <ArrowLeft className="h-4 w-4" />
  Kembali ke Dashboard
  </button>
 
- <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-red-700 via-red-600 to-rose-500 px-5 py-6 text-white shadow-[0_18px_60px_rgba(220,38,38,0.22)] md:px-8 md:py-7">
+ <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0d315c] via-[#0868f6] to-[#3b82f6] px-5 py-6 text-white shadow-[0_18px_60px_rgba(8,104,246,0.22)] md:px-8 md:py-7">
  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10" />
  <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-white/10" />
 
@@ -262,8 +262,8 @@ function KontenRiwayatDeklarasi() {
  </div>
 
  <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
- <div className="rounded-[28px] border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
- <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="rounded-[28px] border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <ReceiptText className="h-6 w-6" />
  </div>
 
@@ -276,8 +276,8 @@ function KontenRiwayatDeklarasi() {
  </div>
  </div>
 
- <div className="rounded-[28px] border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
- <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="rounded-[28px] border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <CalendarDays className="h-6 w-6" />
  </div>
 
@@ -290,8 +290,8 @@ function KontenRiwayatDeklarasi() {
  </div>
  </div>
 
- <div className="rounded-[28px] border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
- <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="rounded-[28px] border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <Filter className="h-6 w-6" />
  </div>
 
@@ -305,9 +305,9 @@ function KontenRiwayatDeklarasi() {
  </div>
  </div>
 
- <div className="mt-6 rounded-[32px] border border-red-100 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] md:p-6">
+ <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] md:p-6">
  <div className="mb-5 flex items-center gap-3">
- <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <Filter className="h-5 w-5" />
  </div>
 
@@ -331,7 +331,7 @@ function KontenRiwayatDeklarasi() {
  Cari riwayat deklarasi
  </label>
 
- <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 transition focus-within:border-red-400 focus-within:ring-4 focus-within:ring-red-50">
+ <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 transition focus-within:border-[#0868f6] focus-within:ring-4 focus-within:ring-[#eaf2ff]">
  <Search className="h-4 w-4 shrink-0 text-slate-400" />
 
  <input
@@ -359,7 +359,7 @@ function KontenRiwayatDeklarasi() {
  name="filterJenisRiwayat"
  value={filterJenis}
  onChange={(event) => setFilterJenis(event.target.value)}
- className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-50"
+ className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  >
  <option value="SEMUA">Semua Jenis</option>
  <option value="PERJALANAN_DINAS">Perjalanan Dinas</option>
@@ -380,7 +380,7 @@ function KontenRiwayatDeklarasi() {
  name="filterStatusRiwayat"
  value={filterStatus}
  onChange={(event) => setFilterStatus(event.target.value)}
- className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-50"
+ className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  >
  <option value="SEMUA">Semua Status</option>
  <option value="DRAFT">DRAFT</option>
@@ -404,7 +404,7 @@ function KontenRiwayatDeklarasi() {
  name="filterBulanRiwayat"
  value={filterBulan}
  onChange={(event) => setFilterBulan(event.target.value)}
- className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-50"
+ className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  >
  <option value="">Semua Bulan</option>
  {Array.from({ length: 12 }, (_, index) => (
@@ -430,7 +430,7 @@ function KontenRiwayatDeklarasi() {
  name="filterTahunRiwayat"
  value={filterTahun}
  onChange={(event) => setFilterTahun(event.target.value)}
- className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-50"
+ className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  >
  <option value="">Semua Tahun</option>
  {tahunTersedia.map((tahun) => (
@@ -443,7 +443,7 @@ function KontenRiwayatDeklarasi() {
  </div>
  </div>
 
- <div className="mt-6 rounded-[32px] border border-red-100 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] md:p-6">
+ <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] md:p-6">
  <div>
  <div className="text-xl font-black text-slate-900">
  Daftar Riwayat
@@ -462,7 +462,7 @@ function KontenRiwayatDeklarasi() {
 
  <div className="mt-5 space-y-4">
  {daftarDeklarasiTersaring.length === 0 ? (
- <div className="rounded-2xl border border-dashed border-red-200 bg-red-50/60 px-4 py-6 text-center text-sm font-semibold text-slate-500">
+ <div className="rounded-2xl border border-dashed border-[#d8e4f2] bg-[#eaf2ff]/60 px-4 py-6 text-center text-sm font-semibold text-slate-500">
  Riwayat deklarasi belum tersedia.
  </div>
  ) : (
@@ -512,7 +512,7 @@ function KontenRiwayatDeklarasi() {
  `/hc/deklarasi/detail/${deklarasi.id}`
  )
  }
- className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 transition hover:bg-red-700"
+ className="rounded-2xl bg-[#0868f6] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#cfe0fb] transition hover:bg-[#0757d1]"
  >
  Detail
  </button>
@@ -533,7 +533,7 @@ export default function HalamanRiwayatDeklarasi() {
  <Suspense
  fallback={
  <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
- <div className="rounded-2xl border border-red-100 bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
+ <div className="rounded-2xl border border-[#d8e4f2] bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
  Memuat riwayat deklarasi...
  </div>
  </main>

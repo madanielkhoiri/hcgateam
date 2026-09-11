@@ -131,6 +131,47 @@ export class McuDashboardService {
     };
   }
 
+  /** Tren jumlah jadwal MCU per bulan (tahun berjalan) + breakdown status rekomendasi, untuk dashboard modul. */
+  async trenDanStatus() {
+    const tahun = hariIni().getUTCFullYear();
+    const awal = new Date(Date.UTC(tahun, 0, 1));
+    const akhir = new Date(Date.UTC(tahun + 1, 0, 1));
+
+    const [jadwal, fit, followUp] = await Promise.all([
+      this.prisma.jadwalMcu.findMany({
+        where: { tanggalMcu: { gte: awal, lt: akhir } },
+        select: { tanggalMcu: true },
+      }),
+      this.prisma.rekomendasiMcu.count({
+        where: {
+          status: StatusRekomendasi.FIT,
+          tanggalSubmit: { gte: awal, lt: akhir },
+        },
+      }),
+      this.prisma.rekomendasiMcu.count({
+        where: {
+          status: StatusRekomendasi.FOLLOW_UP,
+          tanggalSubmit: { gte: awal, lt: akhir },
+        },
+      }),
+    ]);
+
+    const totalPerBulan = Array.from({ length: 12 }, () => 0);
+
+    for (const row of jadwal) {
+      totalPerBulan[row.tanggalMcu.getUTCMonth()] += 1;
+    }
+
+    return {
+      tahun,
+      trenBulanan: totalPerBulan.map((total, index) => ({
+        bulan: index + 1,
+        total,
+      })),
+      statusRekomendasi: { fit, followUp },
+    };
+  }
+
   /**
    * Durasi tiap tahapan proses (Bagian 4.9) untuk 50 kasus terakhir.
    */

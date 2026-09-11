@@ -841,3 +841,86 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================================================
+   MODULE SHELL - dipakai layout.tsx (bungkus ModuleShell)
+   dan dashboard/page.tsx
+   ================================================== */
+
+.moduleBody {
+  flex: 1;
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 22px 0 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.moduleMemuat {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  color: #6d83a0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7688a0;
+  font-size: 12px;
+}
+
+.breadcrumb a {
+  color: #0d9488;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.breadcrumb strong {
+  color: #0d315c;
+}
+
+.pageHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pageIcon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #0d7d75;
+  background: #e8f8f6;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(13, 148, 136, 0.13);
+}
+
+.pageTitle h1 {
+  margin: 0;
+  color: #0d7a51;
+  font-size: clamp(21px, 3vw, 27px);
+  letter-spacing: -0.3px;
+}
+
+.pageTitle p {
+  margin: 5px 0 0;
+  max-width: 720px;
+  color: #6d7f99;
+  font-size: 12.5px;
+  line-height: 1.55;
+}

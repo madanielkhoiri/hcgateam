@@ -5,9 +5,7 @@
 // FUNGSI: Shell modul Helpdesk Center (guard akses + info PIC)
 // ==================================================
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LifeBuoy, UsersRound } from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -18,14 +16,19 @@ import {
 import {
   ACCESS_KEYS,
   clearSession,
-  formatRole,
   getAccessToken,
   getStoredUser,
   hasAccess,
   saveStoredUser,
   type PortalUser,
 } from '@/lib/access-control';
+import { ModuleShell, type ModuleShellMenuItem } from '@/components/module-shell/module-shell';
 import styles from './helpdesk.module.css';
+
+const MENU_HELPDESK: ModuleShellMenuItem[] = [
+  { label: 'Dashboard', href: '/hc/helpdesk/dashboard', initial: 'DB' },
+  { label: 'Daftar Tiket', href: '/hc/helpdesk/daftar', initial: 'DT' },
+];
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -120,28 +123,16 @@ export default function LayoutHelpdesk({
 
   return (
     <HelpdeskContext.Provider value={konteks}>
-      <div className={styles.shell}>
-        <header className={styles.topbar}>
-          <Link href="/hc/helpdesk" className={styles.brand}>
-            <span className={styles.brandLogo}>
-              <LifeBuoy size={20} />
-            </span>
-            Helpdesk Center
-          </Link>
-
-          <div className={styles.profile}>
-            <span className={styles.profileIcon}>
-              <UsersRound size={20} />
-            </span>
-            <div className={styles.akun}>
-              <strong>{user.name}</strong>
-              <span>{formatRole(user.role)}</span>
-            </div>
-          </div>
-        </header>
-
+      <ModuleShell
+        title="Helpdesk Center"
+        subtitle="Human Capital"
+        deptBadge={{ text: 'HC', color: '#0868f6', soft: '#eaf2ff' }}
+        menuItems={MENU_HELPDESK}
+        backHref="/hc"
+        backLabel="Kembali ke HC"
+      >
         <main className={styles.body}>{children}</main>
-      </div>
+      </ModuleShell>
     </HelpdeskContext.Provider>
   );
 }

@@ -12,6 +12,14 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { ModuleShell, type ModuleShellMenuItem } from "@/components/module-shell/module-shell";
+
+const MENU_DEKLARASI_DINAS: ModuleShellMenuItem[] = [
+ { label: "Beranda", href: "/hc/deklarasi-dinas", initial: "BR" },
+ { label: "Buat Deklarasi", href: "/hc/deklarasi/buat", initial: "BD" },
+ { label: "Riwayat", href: "/hc/riwayat", initial: "RW" },
+ { label: "Akun Saya", href: "/hc/akun", initial: "AK" },
+];
 
 /* <--- layout karyawan dengan bottom navigation mobile seperti livin ---> */
 
@@ -80,9 +88,18 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
 
  return (
  <>
- {children}
+ <ModuleShell
+  title="Deklarasi Dinas"
+  subtitle="Human Capital"
+  deptBadge={{ text: "HC", color: "#0868f6", soft: "#eaf2ff" }}
+  menuItems={MENU_DEKLARASI_DINAS}
+  backHref="/hc"
+  backLabel="Kembali ke HC"
+ >
+  {children}
+ </ModuleShell>
 
- <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-red-100 bg-white/95 px-3 pb-3 pt-2 shadow-[0_-10px_40px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
+ <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#d8e4f2] bg-white/95 px-3 pb-3 pt-2 shadow-[0_-10px_40px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
  <div className="mx-auto grid max-w-md grid-cols-5 items-end gap-1 rounded-[28px] bg-white">
  {menuBawahKaryawan.map((menu) => (
  <button
@@ -91,16 +108,16 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
  onClick={menu.aksi}
  className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-2 py-2 text-center transition ${
  menu.aktif
- ? "text-red-600"
- : "text-slate-500 hover:bg-red-50 hover:text-red-600"
+ ? "text-[#0868f6]"
+ : "text-slate-500 hover:bg-[#eaf2ff] hover:text-[#0868f6]"
  } ${menu.tengah ? "-mt-8" : ""}`}
  >
  <div
  className={`flex items-center justify-center rounded-2xl transition ${
  menu.tengah
- ? "h-14 w-14 rounded-full border-4 border-white bg-red-600 text-white shadow-xl shadow-red-200"
+ ? "h-14 w-14 rounded-full border-4 border-white bg-[#0868f6] text-white shadow-xl shadow-[#cfe0fb]"
  : menu.aktif
- ? "h-10 w-10 bg-red-600 text-white shadow-lg shadow-red-200"
+ ? "h-10 w-10 bg-[#0868f6] text-white shadow-lg shadow-[#cfe0fb]"
  : "h-10 w-10 bg-slate-50 text-slate-500"
  }`}
  >
@@ -109,7 +126,7 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
 
  <div
  className={`mt-1 truncate text-[11px] font-black ${
- menu.aktif ? "text-red-600" : "text-slate-500"
+ menu.aktif ? "text-[#0868f6]" : "text-slate-500"
  }`}
  >
  {menu.judul}

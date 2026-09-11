@@ -24,6 +24,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AktorKip, KipService } from './kip.service';
+import { KipDashboardService } from './kip-dashboard.service';
 import { BuatKipDto, SimpanGpsLokasiDto } from './dto/kip.dto';
 
 /** Ambil info pelaku dari payload JWT (req.user) untuk audit log — bukan cuma ID. */
@@ -38,9 +39,24 @@ function ambilAktor(req: any): AktorKip {
 
 @Controller('kip')
 export class KipController {
-  constructor(private readonly service: KipService) {}
+  constructor(
+    private readonly service: KipService,
+    private readonly dashboard: KipDashboardService,
+  ) {}
 
   // ---------- Admin (JWT + accessKey CIVIL_ELECTRIC_KIP lewat routeAccessMap) ----------
+
+  @Get('admin/dashboard/ringkasan')
+  @UseGuards(JwtAuthGuard)
+  ringkasanDashboard() {
+    return this.dashboard.ringkasan();
+  }
+
+  @Get('admin/dashboard/tren')
+  @UseGuards(JwtAuthGuard)
+  trenDashboard() {
+    return this.dashboard.trenDanStatus();
+  }
 
   @Get('admin/kip')
   @UseGuards(JwtAuthGuard)

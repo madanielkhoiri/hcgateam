@@ -48,6 +48,21 @@ export type SuratTugasDinas = {
   disetujuiPjoOleh: AkunRingkas | null;
 };
 
+/** Ringkasan angka kartu dashboard Form Tugas Dinas - lihat surat-tugas-dinas-dashboard.service.ts. */
+export type RingkasanSuratTugas = {
+  totalSurat: number;
+  menungguSh: number;
+  menungguPjo: number;
+  disetujui: number;
+};
+
+/** Tren dashboard Form Tugas Dinas: surat per bulan (tahun berjalan) + breakdown status. */
+export type TrenDashboardSuratTugas = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusSuratTugas; total: number }[];
+};
+
 export class SuratTugasApiError extends Error {
   constructor(
     message: string,

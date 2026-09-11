@@ -136,7 +136,7 @@ export default function BuatSuratBalasanMagangPage() {
         })),
       });
 
-      router.push(`/hc/surat-balasan-magang?berhasil=${hasil.id}`);
+      router.push(`/hc/surat-balasan-magang/daftar?berhasil=${hasil.id}`);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
@@ -157,7 +157,7 @@ export default function BuatSuratBalasanMagangPage() {
 
   return (
     <>
-      <Link href="/hc/surat-balasan-magang" className={styles.backButton}>
+      <Link href="/hc/surat-balasan-magang/daftar" className={styles.backButton}>
         <ArrowLeft size={16} />
         Kembali
       </Link>
@@ -362,7 +362,7 @@ export default function BuatSuratBalasanMagangPage() {
 
       <div className={styles.headActions} style={{ marginTop: 18 }}>
         <Link
-          href="/hc/surat-balasan-magang"
+          href="/hc/surat-balasan-magang/daftar"
           className={`${styles.tombol} ${styles.tombolNetral}`}
         >
           Batal

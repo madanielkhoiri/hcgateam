@@ -1,0 +1,16 @@
+/* ==================================================
+   FILE: frontend/src/app/civil/pengaduan/pengaduan-shell.module.css
+   FUNGSI: Gaya loading layout.tsx modul Pengaduan Layanan (CIVIL) -
+   komponen inti (pengaduan-layanan-page.tsx, rekap-performa-page.tsx)
+   punya gaya sendiri, ini cuma untuk state sebelum guard akses selesai.
+   ================================================== */
+
+.loading {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: #6d7f99;
+  font-size: 13px;
+}

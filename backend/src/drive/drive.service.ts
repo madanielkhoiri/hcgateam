@@ -184,4 +184,81 @@ export class DriveService {
 
     return { message: 'File berhasil dihapus' };
   }
+
+  /** Angka ringkas untuk kartu dashboard (per scope, mis. CSR). */
+  async ringkasan(scope: string) {
+    const scopeValid = this.validasiScope(scope);
+    const sekarang = new Date();
+    const awalBulanIni = new Date(
+      Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
+    );
+
+    const [totalFolder, totalFile, fileBulanIni, kontributor] =
+      await Promise.all([
+        this.prisma.driveFolder.count({ where: { scope: scopeValid } }),
+        this.prisma.driveFile.count({
+          where: { folder: { scope: scopeValid } },
+        }),
+        this.prisma.driveFile.count({
+          where: {
+            folder: { scope: scopeValid },
+            uploadedAt: { gte: awalBulanIni },
+          },
+        }),
+        this.prisma.driveFile.groupBy({
+          by: ['uploadedById'],
+          where: { folder: { scope: scopeValid } },
+        }),
+      ]);
+
+    return {
+      totalFolder,
+      totalFile,
+      fileBulanIni,
+      totalKontributor: kontributor.length,
+    };
+  }
+
+  /** Tren jumlah file diunggah per bulan (tahun berjalan) + breakdown jenis file, untuk grafik dashboard. */
+  async trenDanJenis(scope: string) {
+    const scopeValid = this.validasiScope(scope);
+    const tahun = new Date().getUTCFullYear();
+    const awal = new Date(Date.UTC(tahun, 0, 1));
+    const akhir = new Date(Date.UTC(tahun + 1, 0, 1));
+
+    const file = await this.prisma.driveFile.findMany({
+      where: { folder: { scope: scopeValid } },
+      select: { namaFile: true, uploadedAt: true },
+    });
+
+    const totalPerBulan = Array.from({ length: 12 }, () => 0);
+    const jenis = { dokumen: 0, spreadsheet: 0, gambar: 0, lainnya: 0 };
+
+    for (const item of file) {
+      if (item.uploadedAt >= awal && item.uploadedAt < akhir) {
+        totalPerBulan[item.uploadedAt.getUTCMonth()] += 1;
+      }
+
+      const ekstensi = item.namaFile.split('.').pop()?.toLowerCase() ?? '';
+
+      if (['pdf', 'doc', 'docx'].includes(ekstensi)) {
+        jenis.dokumen += 1;
+      } else if (['xls', 'xlsx', 'csv'].includes(ekstensi)) {
+        jenis.spreadsheet += 1;
+      } else if (['jpg', 'jpeg', 'png', 'webp'].includes(ekstensi)) {
+        jenis.gambar += 1;
+      } else {
+        jenis.lainnya += 1;
+      }
+    }
+
+    return {
+      tahun,
+      trenBulanan: totalPerBulan.map((total, index) => ({
+        bulan: index + 1,
+        total,
+      })),
+      jenisFile: jenis,
+    };
+  }
 }

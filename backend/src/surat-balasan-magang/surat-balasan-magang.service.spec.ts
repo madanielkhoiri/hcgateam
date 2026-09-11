@@ -142,6 +142,43 @@ describe('SuratBalasanMagangService.terbitkan', () => {
   });
 });
 
+describe('SuratBalasanMagangService.ringkasanDashboard', () => {
+  it('menghitung total, tren bulanan (tahun berjalan), dan status PDF dengan benar', async () => {
+    const tahunIni = new Date().getUTCFullYear();
+
+    const prisma: any = {
+      suratBalasanMagang: {
+        count: jest.fn()
+          .mockResolvedValueOnce(20) // totalSurat
+          .mockResolvedValueOnce(3), // suratBulanIni
+        findMany: jest.fn().mockResolvedValue([
+          { createdAt: new Date(Date.UTC(tahunIni, 0, 5)), filePdf: 'a.pdf' },
+          { createdAt: new Date(Date.UTC(tahunIni, 0, 10)), filePdf: null },
+          { createdAt: new Date(Date.UTC(tahunIni, 5, 1)), filePdf: 'b.pdf' },
+        ]),
+      },
+      suratBalasanMagangBaris: {
+        count: jest.fn().mockResolvedValue(45),
+      },
+    };
+
+    const service = new SuratBalasanMagangService(prisma, {} as any, {} as any);
+
+    const hasil = await service.ringkasanDashboard();
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.totalSurat).toBe(20);
+    expect(hasil.totalMahasiswa).toBe(45);
+    expect(hasil.suratBulanIni).toBe(3);
+    expect(hasil.suratTahunIni).toBe(3);
+    expect(hasil.trenBulanan).toHaveLength(12);
+    expect(hasil.trenBulanan[0]).toEqual({ bulan: 1, total: 2 });
+    expect(hasil.trenBulanan[5]).toEqual({ bulan: 6, total: 1 });
+    expect(hasil.trenBulanan[1]).toEqual({ bulan: 2, total: 0 });
+    expect(hasil.statusPdf).toEqual({ sudahTerbit: 2, belumTerbit: 1 });
+  });
+});
+
 describe('SuratBalasanMagangService.cetakUlang', () => {
   it('melempar NotFoundException kalau surat tidak ada', async () => {
     const { service } = buatService({ suratDetail: null });

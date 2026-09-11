@@ -3,6 +3,13 @@
    FUNGSI: Sistem tampilan PORTAL IR (Upload Dokumen, Aspirasi Karyawan, IR Course)
    ================================================== */
 
+.body {
+  flex: 1;
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 22px 0 56px;
+}
+
 .page { display: flex; flex-direction: column; gap: 18px; padding-bottom: 40px; }
 
 .breadcrumb {

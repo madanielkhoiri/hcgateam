@@ -13,16 +13,24 @@ import { IrAspirasiController } from './aspirasi/ir-aspirasi.controller';
 import { IrAspirasiService } from './aspirasi/ir-aspirasi.service';
 import { IrCourseController } from './course/ir-course.controller';
 import { IrCourseService } from './course/ir-course.service';
+import { IrDashboardController } from './dashboard/ir-dashboard.controller';
+import { IrDashboardService } from './dashboard/ir-dashboard.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [IrDokumenController, IrAspirasiController, IrCourseController],
+  controllers: [
+    IrDokumenController,
+    IrAspirasiController,
+    IrCourseController,
+    IrDashboardController,
+  ],
   providers: [
     IrAksesService,
     IrFileService,
     IrDokumenService,
     IrAspirasiService,
     IrCourseService,
+    IrDashboardService,
   ],
 })
 export class IrModule {}

@@ -40,6 +40,16 @@ export class DriveController {
     );
   }
 
+  @Get('dashboard/ringkasan')
+  ringkasan(@Query('scope') scope: string) {
+    return this.service.ringkasan(scope);
+  }
+
+  @Get('dashboard/tren')
+  trenDanJenis(@Query('scope') scope: string) {
+    return this.service.trenDanJenis(scope);
+  }
+
   @Post('folder')
   buatFolder(
     @Aktor() aktor: AktorPostingan,

@@ -408,7 +408,7 @@ export default function AnakMagangPage() {
           ) : null}
 
           <Link
-            href="/hc/surat-balasan-magang"
+            href="/hc/surat-balasan-magang/daftar"
             className={`${styles.tombol} ${styles.tombolLembut}`}
           >
             <Mail size={15} />
@@ -416,7 +416,7 @@ export default function AnakMagangPage() {
           </Link>
 
           <Link
-            href="/hc/surat-penolakan-magang"
+            href="/hc/surat-penolakan-magang/daftar"
             className={`${styles.tombol} ${styles.tombolLembut}`}
           >
             <FileX2 size={15} />
