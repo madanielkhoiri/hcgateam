@@ -126,7 +126,6 @@ export function DaftarPengaduanTabel({
               <th>Tanggal</th>
               <th>Pengirim</th>
               <th>Lokasi</th>
-              <th>Rating</th>
               <th>Komentar</th>
               <th>Aduan Layanan</th>
               <th>Foto</th>
@@ -146,7 +145,6 @@ export function DaftarPengaduanTabel({
                 </td>
                 <td>{item.pengirim}</td>
                 <td>{item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}</td>
-                <td>{'★'.repeat(item.rating)}</td>
                 <td>{item.komentar || '-'}</td>
                 <td>{item.deskripsiAduan || '-'}</td>
                 <td>

@@ -368,7 +368,7 @@
 
 .tabel th {
   padding: 8px 10px;
-  text-align: left;
+  text-align: center;
   color: #5b6b8a;
   font-size: 11px;
   text-transform: uppercase;
@@ -381,11 +381,13 @@
   color: #10244a;
   border-bottom: 1px solid #f3f6fa;
   vertical-align: top;
+  text-align: center;
 }
 
 .fotoLinkRow {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 4px;
 }
 
@@ -443,6 +445,7 @@
 .aksiGroup {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 5px;
 }
 
