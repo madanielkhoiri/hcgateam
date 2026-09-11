@@ -536,6 +536,7 @@ export default function DashboardPage() {
       ================================================== */}
 
       <header className={styles.header}>
+       <div className={styles.headerInner}>
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
             <UsersRound size={24} />
@@ -685,6 +686,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+       </div>
       </header>
 
       <div className={styles.container}>
