@@ -87,6 +87,7 @@ export default function LayoutAdmin({ children }: LayoutAdminProps) {
   menuItems={MENU_ADMIN_DEKLARASI}
   backHref="/hc"
   backLabel="Kembali ke HC"
+  hideMobileNav
  >
   {children}
  </ModuleShell>

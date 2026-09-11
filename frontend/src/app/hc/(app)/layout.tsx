@@ -95,6 +95,7 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
   menuItems={MENU_DEKLARASI_DINAS}
   backHref="/hc"
   backLabel="Kembali ke HC"
+  hideMobileNav
  >
   {children}
  </ModuleShell>
