@@ -95,6 +95,7 @@ function formatTanggalPendek(iso: string) {
 const departmentCards: Array<{
   key: string;
   title: string;
+  description: string;
   href: string;
   icon: React.ElementType;
   cardClass: 'hcCard' | 'gaCard' | 'sipilCard' | 'administrasiCard';
@@ -103,6 +104,7 @@ const departmentCards: Array<{
   {
     key: 'HC',
     title: 'HC',
+    description: 'Human Capital · kepegawaian & SDM',
     href: '/hc',
     icon: UsersRound,
     cardClass: 'hcCard',
@@ -111,6 +113,7 @@ const departmentCards: Array<{
   {
     key: 'GA',
     title: 'GA',
+    description: 'General Affair · umum & fasilitas',
     href: '/ga',
     icon: Building2,
     cardClass: 'gaCard',
@@ -119,6 +122,7 @@ const departmentCards: Array<{
   {
     key: 'CIVIL',
     title: 'CIVIL',
+    description: 'Konstruksi & rekayasa lapangan',
     href: '/civil',
     icon: HardHat,
     cardClass: 'sipilCard',
@@ -127,6 +131,7 @@ const departmentCards: Array<{
   {
     key: 'ADMINISTRASI',
     title: 'ADMIN',
+    description: 'Dokumentasi, form & CSR',
     href: '/administrasi',
     icon: BookOpen,
     cardClass: 'administrasiCard',
@@ -769,6 +774,11 @@ export default function DashboardPage() {
             DEPARTEMEN UTAMA
         ================================================== */}
 
+        <div className={styles.eyebrow} style={{ marginTop: 26 }}>
+          <span>Akses Departemen</span>
+          <span className={styles.eyebrowLine} />
+        </div>
+
         <section className={styles.departmentGrid}>
           {departmentCards
             .filter((department) => hasAccess(user, department.accessKey))
@@ -782,12 +792,17 @@ export default function DashboardPage() {
                   className={`${styles.departmentCard} ${styles[department.cardClass]}`}
                   onClick={() => router.push(department.href)}
                 >
-                  <div className={styles.departmentIcon}>
-                    <Icon size={34} />
+                  <div className={styles.departmentTop}>
+                    <div className={styles.departmentIcon}>
+                      <Icon size={27} />
+                    </div>
+                    <ChevronRight size={18} />
                   </div>
 
-                  <strong>{department.title}</strong>
-                  <ChevronRight />
+                  <div className={styles.departmentText}>
+                    <strong>{department.title}</strong>
+                    <span>{department.description}</span>
+                  </div>
                 </button>
               );
             })}
@@ -797,7 +812,12 @@ export default function DashboardPage() {
             PAPAN POSTER & VIDEO INFORMASI
         ================================================== */}
 
-        <section className={styles.dashboardContent} style={{ marginTop: 18 }}>
+        <div className={styles.eyebrow} style={{ marginTop: 30 }}>
+          <span>Informasi &amp; Media</span>
+          <span className={styles.eyebrowLine} />
+        </div>
+
+        <section className={styles.dashboardContent}>
           <article className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
@@ -963,12 +983,18 @@ export default function DashboardPage() {
         ================================================== */}
 
         {bisaLihatPanelAdmin && (
+        <>
+        <div className={styles.eyebrow} style={{ marginTop: 30 }}>
+          <span>Ringkasan Admin</span>
+          <span className={styles.eyebrowLine} />
+        </div>
+
         <section className={styles.dashboardContent}>
           {/* ==================================================
               AKSES CEPAT
           ================================================== */}
 
-          <article className={styles.panel}>
+          <article className={`${styles.panel} ${styles.panelTinted}`}>
             <div className={styles.panelHeader}>
               <div>
                 <Link2 size={23} />
@@ -1082,7 +1108,7 @@ export default function DashboardPage() {
               AKTIVITAS TERBARU
           ================================================== */}
 
-          <article className={styles.panel}>
+          <article className={`${styles.panel} ${styles.panelTinted}`}>
             <div className={styles.panelHeader}>
               <div>
                 <HeartPulse size={23} />
@@ -1141,6 +1167,7 @@ export default function DashboardPage() {
             </div>
           </article>
         </section>
+        </>
         )}
       </div>
 

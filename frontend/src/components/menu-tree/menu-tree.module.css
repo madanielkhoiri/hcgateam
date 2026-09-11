@@ -1,106 +1,121 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
 }
 
 /* ==================================================
-   PEMBATAS (DIVIDER) - dipakai untuk section di setiap kedalaman,
-   mengikuti gaya judul halaman departemen (icon + judul + deskripsi).
+   KARTU UTAMA - fitur tanpa sub-menu. auto-fill (bukan auto-fit) supaya
+   kartu tidak pernah melebar sendiri mengisi sisa baris saat jumlahnya
+   ganjil - lebar tiap kartu selalu sama, sisa ruang dibiarkan kosong.
    ================================================== */
 
-.sectionBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.primaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: 16px;
 }
 
-.divider {
+.primaryCard {
   --accent: #0868f6;
   --soft: #eaf2ff;
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1.5px solid #e2ecf7;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 158px;
+  padding: 20px;
+  color: inherit;
+  background: #ffffff;
+  border: 1.5px solid #dfe8f3;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(36, 73, 116, 0.06);
+  text-decoration: none;
 }
 
-.dividerIcon {
+a.primaryCard {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+a.primaryCard:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 40%, #dfe8f3);
+  box-shadow: 0 16px 32px rgba(36, 73, 116, 0.13);
+}
+
+.primaryCardKosong {
+  opacity: 0.85;
+}
+
+.primaryTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.primaryIcon {
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
   color: var(--accent);
   background: var(--soft);
   border-radius: 12px;
 }
 
-.dividerIcon[data-depth='0'] { width: 42px; height: 42px; }
-.dividerIcon[data-depth='1'] { width: 36px; height: 36px; border-radius: 10px; }
-.dividerIcon[data-depth='2'],
-.dividerIcon[data-depth='3'] { width: 31px; height: 31px; border-radius: 9px; }
+.primaryArrow {
+  color: var(--accent);
+}
 
-.dividerText {
+.primaryContent {
   min-width: 0;
 }
 
-.dividerTitle {
-  margin: 0;
-  color: #10244a;
-  letter-spacing: -0.2px;
+.primaryKicker {
+  display: block;
+  margin-bottom: 3px;
+  color: #8697b2;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.dividerTitle[data-depth='0'] { font-size: 17px; }
-.dividerTitle[data-depth='1'] { font-size: 14.5px; }
-.dividerTitle[data-depth='2'],
-.dividerTitle[data-depth='3'] { font-size: 13px; }
+.primaryTitle {
+  margin: 0;
+  color: var(--accent);
+  font-size: 15px;
+}
 
-.dividerDesc {
-  margin: 3px 0 0;
-  color: #6d7f99;
-  font-size: 11px;
+.primaryTitle[data-kosong='true'] {
+  color: #5b6c85;
+}
+
+.primaryDesc {
+  margin: 5px 0 0;
+  color: #687a94;
+  font-size: 11.5px;
   line-height: 1.5;
 }
 
-/* Isi section diindentasi bertahap dengan garis panduan vertikal,
-   supaya kedalaman terlihat jelas tanpa kotak-dalam-kotak. */
-.sectionBody {
-  padding-left: 20px;
-  margin-left: 4px;
-  border-left: 2px solid #e2ecf7;
+.primaryStatus {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 10px;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
 }
 
-/* ==================================================
-   GRID CARD - hanya berisi node yang benar-benar bisa diklik
-   atau placeholder polos, dikumpulkan per level.
-   ================================================== */
-
-.cardGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 16px;
-}
-
-.cardGrid[data-depth='0'] {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-}
-
-.card {
-  --accent: #0868f6;
-  --soft: #eaf2ff;
-  position: relative;
-  min-height: 128px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 13px;
-  padding: 16px;
-  color: inherit;
-  background: rgba(255, 255, 255, 0.97);
-  border: 1.5px solid #d8e5f2;
-  border-left: 4px solid var(--accent);
-  border-radius: 14px;
-  box-shadow: 0 10px 22px rgba(36, 73, 116, 0.06);
-  text-decoration: none;
+.primaryStatus[data-kosong='true'] {
+  color: #8494a9;
+  background: #eef2f7;
 }
 
 .pendingBadge {
@@ -123,90 +138,222 @@
   box-shadow: 0 2px 6px rgba(213, 53, 53, 0.4);
 }
 
-a.card {
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
+/* ==================================================
+   KARTU GRUP - Transport, GS, dll: satu kontainer bertinta warna per
+   grup, isinya baris rapi (bukan kotak-di-dalam-kotak). auto-fill lagi
+   supaya lebar kartu grup juga konsisten walau jumlahnya ganjil.
+   ================================================== */
+
+.sectionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+  gap: 20px;
+  align-items: start;
 }
 
-a.card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--accent) 42%, #d8e5f2);
-  box-shadow: 0 16px 32px rgba(36, 73, 116, 0.13);
+.sectionCard {
+  --accent: #0868f6;
+  --soft: #eaf2ff;
+  padding: 22px;
+  background: color-mix(in srgb, var(--soft) 55%, #ffffff);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, #ffffff);
+  border-radius: 20px;
 }
 
-.cardKosong {
-  border-left-style: dashed;
-  border-left-color: #c3cee0;
-  box-shadow: none;
-  opacity: 0.85;
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 16px;
+  margin-bottom: 6px;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--accent) 22%, #ffffff);
 }
 
-.cardIcon {
+.sectionIcon {
   width: 44px;
   height: 44px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
   color: var(--accent);
   background: var(--soft);
-  border-radius: 13px;
+  border-radius: 12px;
 }
 
-.cardContent {
+.sectionText {
   min-width: 0;
 }
 
-.cardTitle {
+.sectionTitle {
   margin: 0;
-  color: var(--accent);
-  font-size: 14px;
+  color: var(--text-main, #10244a);
+  font-size: 16.5px;
 }
 
-.cardTitle[data-kosong='true'] {
-  color: #5b6c85;
-}
-
-.cardDesc {
-  margin: 5px 0 0;
-  color: #687a94;
-  font-size: 11px;
+.sectionDesc {
+  margin: 3px 0 0;
+  color: #5c7080;
+  font-size: 11.5px;
   line-height: 1.5;
 }
 
-.cardStatus {
+.subgroup {
+  margin-top: 4px;
+}
+
+.subLabel {
+  margin: 14px 0 2px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ==================================================
+   BARIS LEAF - item yang benar-benar bisa diklik, di dalam kartu grup.
+   ================================================== */
+
+.leafRow {
+  --accent: #0868f6;
+  --soft: #eaf2ff;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 4px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(16, 36, 74, 0.07);
+}
+
+.sectionCard > .leafRow:last-child,
+.subgroup:last-child > .leafRow:last-child {
+  border-bottom: 0;
+}
+
+a.leafRow {
+  transition: background 0.15s ease;
+}
+
+a.leafRow:hover {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+}
+
+.leafIconWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.leafIcon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--soft);
+  border-radius: 10px;
+}
+
+.leafIcon[data-kosong='true'] {
+  color: #8f9bab;
+  background: #eef1f4;
+}
+
+.pendingBadgeKecil {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d53535;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  border: 2px solid #fff;
+}
+
+.leafContent {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.leafKicker {
+  color: #8697b2;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.leafTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #10244a;
+}
+
+.leafTitle[data-kosong='true'] {
+  color: #5b6c85;
+}
+
+.leafDesc {
+  color: #687a94;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.leafStatus {
   display: inline-flex;
-  margin-top: 8px;
-  padding: 3px 9px;
+  flex-shrink: 0;
+  padding: 3px 10px;
   color: var(--accent);
   background: var(--soft);
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.cardStatus[data-kosong='true'] {
+.leafStatus[data-kosong='true'] {
   color: #8494a9;
   background: #eef2f7;
 }
 
-.cardArrow {
+.leafArrow {
   flex-shrink: 0;
   color: var(--accent);
 }
 
+.leafArrowKosong {
+  display: block;
+  width: 16px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 700px) {
-  .cardGrid,
-  .cardGrid[data-depth='0'] {
+  .primaryGrid {
     grid-template-columns: 1fr;
   }
 
-  .sectionBody {
-    padding-left: 14px;
+  .sectionGrid {
+    grid-template-columns: 1fr;
   }
 
-  .cardArrow {
+  .leafRow {
+    grid-template-columns: auto 1fr;
+    row-gap: 6px;
+  }
+
+  .leafStatus,
+  .leafArrow,
+  .leafArrowKosong {
     display: none;
   }
 }
