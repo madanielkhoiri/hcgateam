@@ -1503,7 +1503,7 @@ export default function HalamanDetailDeklarasi() {
 
  return (
  <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
- <div className="rounded-2xl border border-red-100 bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
+ <div className="rounded-2xl border border-[#d8e4f2] bg-white px-6 py-4 text-sm font-semibold text-slate-600 shadow-lg">
  Memuat detail deklarasi?...
  </div>
  </main>
@@ -1513,7 +1513,7 @@ export default function HalamanDetailDeklarasi() {
  if (pesanError && !deklarasi) {
  return (
  <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
- <div className="max-w-md rounded-[28px] border border-red-100 bg-white p-6 text-center shadow-xl">
+ <div className="max-w-md rounded-[28px] border border-[#d8e4f2] bg-white p-6 text-center shadow-xl">
  <div className="text-xl font-black text-slate-900">
  Data tidak ditemukan
  </div>
@@ -1525,7 +1525,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => router.push(halamanKembali)}
- className="mt-5 rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+ className="mt-5 rounded-2xl bg-[#0868f6] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0757d1]"
  >
  {teksKembali}
  </button>
@@ -1873,13 +1873,13 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => router.push(halamanKembali)}
- className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+ className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-[#d8e4f2] bg-white px-4 py-2 text-sm font-semibold text-[#0868f6] transition hover:bg-[#eaf2ff]"
  >
  <ArrowLeft className="h-4 w-4" />
  {teksKembali}
  </button>
 
- <div className="rounded-[32px] bg-gradient-to-r from-red-700 via-red-600 to-rose-500 p-6 text-white shadow-[0_24px_80px_rgba(220,38,38,0.25)] md:p-8">
+ <div className="rounded-[32px] bg-gradient-to-r from-[#0d315c] via-[#0868f6] to-[#3b82f6] p-6 text-white shadow-[0_24px_80px_rgba(8,104,246,0.25)] md:p-8">
  <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
  <div>
  <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
@@ -1926,7 +1926,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => cetakPdfFinal("FORM_SETTLEMENT")}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-red-900/20 transition hover:bg-emerald-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-blue-900/20 transition hover:bg-emerald-50"
  >
  <Printer className="h-4 w-4" />
  Cetak Form Settlement
@@ -1935,7 +1935,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => cetakDatabaseSettlementFixScopeSekarang()}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-700 shadow-lg shadow-red-900/20 transition hover:bg-blue-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-700 shadow-lg shadow-blue-900/20 transition hover:bg-blue-50"
  >
  <Printer className="h-4 w-4" />
  Cetak Database Settlement
@@ -1945,7 +1945,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => cetakPdfFinal()}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-red-900/20 transition hover:bg-emerald-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-blue-900/20 transition hover:bg-emerald-50"
  >
  <Printer className="h-4 w-4" />
  Cetak PDF Final
@@ -2054,8 +2054,8 @@ export default function HalamanDetailDeklarasi() {
  )}
 
  <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
- <div className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
- <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="rounded-3xl border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <FileText className="h-6 w-6" />
  </div>
  <div className="text-sm text-slate-500">Jenis Deklarasi</div>
@@ -2064,8 +2064,8 @@ export default function HalamanDetailDeklarasi() {
  </div>
  </div>
 
- <div className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
- <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="rounded-3xl border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <CalendarDays className="h-6 w-6" />
  </div>
  <div className="text-sm text-slate-500">Tanggal Kegiatan</div>
@@ -2074,8 +2074,8 @@ export default function HalamanDetailDeklarasi() {
  </div>
  </div>
 
- <div className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
- <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="rounded-3xl border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <ReceiptText className="h-6 w-6" />
  </div>
  <div className="text-sm text-slate-500">Total Penggunaan Nota</div>
@@ -2089,9 +2089,9 @@ export default function HalamanDetailDeklarasi() {
  </div>
  </div>
 
- <div className="mt-6 rounded-[32px] border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
  <div className="mb-5 flex items-center gap-3">
- <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <Wallet className="h-5 w-5" />
  </div>
  <div>
@@ -2155,9 +2155,9 @@ export default function HalamanDetailDeklarasi() {
  )}
  </div>
 
- <div className="mt-6 rounded-[32px] border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
  <div className="mb-5 flex items-center gap-3">
- <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <MapPin className="h-5 w-5" />
  </div>
  <div>
@@ -2198,7 +2198,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  </div>
 
- <div className="mt-6 rounded-[32px] border border-red-100 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+ <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
  <div>
  <div className="text-xl font-black text-slate-900">
@@ -2253,7 +2253,7 @@ export default function HalamanDetailDeklarasi() {
 
  <div className="min-w-0 flex-1">
  <div className="flex flex-wrap items-center gap-2">
- <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-600">
+ <span className="rounded-full bg-[#eaf2ff] px-3 py-1 text-xs font-black text-[#0868f6]">
  Nota {nomorNota}
  </span>
 
@@ -2582,7 +2582,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => setGambarPreview("")}
- className="absolute right-4 top-4 z-10 rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white shadow-lg hover:bg-red-700"
+ className="absolute right-4 top-4 z-10 rounded-2xl bg-[#0868f6] px-4 py-2 text-sm font-black text-white shadow-lg hover:bg-[#0757d1]"
  >
  Tutup
  </button>

@@ -34,6 +34,20 @@ export type AlbumDetail = {
   foto: AlbumFoto[];
 };
 
+export type RingkasanAlbum = {
+  totalAlbum: number;
+  totalFoto: number;
+  albumBulanIni: number;
+  albumBerisiFoto: number;
+  albumKosong: number;
+  totalKontributor: number;
+};
+
+export type TrenAlbum = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+};
+
 export class AlbumApiError extends Error {
   status: number;
 
@@ -84,6 +98,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const albumApi = {
   daftar: () => request<AlbumRingkas[]>(''),
+  ringkasan: () => request<RingkasanAlbum>('/dashboard/ringkasan'),
+  tren: () => request<TrenAlbum>('/dashboard/tren'),
   detail: (id: number) => request<AlbumDetail>(`/${id}`),
   buat: (judul: string, deskripsi?: string) =>
     request<{ id: number }>('', {

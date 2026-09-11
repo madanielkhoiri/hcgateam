@@ -23,6 +23,11 @@ export class McuDashboardController {
     return this.service.ringkasan();
   }
 
+  @Get('dashboard/tren')
+  trenDanStatus() {
+    return this.service.trenDanStatus();
+  }
+
   @Get('durasi-proses')
   durasiProses() {
     return this.service.durasiProses();

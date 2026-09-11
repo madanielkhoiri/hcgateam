@@ -5,9 +5,7 @@
 // FUNGSI: Shell modul Database Anak Magang (guard akses)
 // ==================================================
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, UsersRound } from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -18,14 +16,18 @@ import {
 import {
   ACCESS_KEYS,
   clearSession,
-  formatRole,
   getAccessToken,
   getStoredUser,
   hasAccess,
   saveStoredUser,
   type PortalUser,
 } from '@/lib/access-control';
+import { ModuleShell, type ModuleShellMenuItem } from '@/components/module-shell/module-shell';
 import styles from './anak-magang.module.css';
+
+const MENU_ANAK_MAGANG: ModuleShellMenuItem[] = [
+  { label: 'Dashboard', href: '/hc/anak-magang/dashboard', initial: 'DB' },
+];
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -114,28 +116,16 @@ export default function LayoutAnakMagang({
 
   return (
     <AnakMagangContext.Provider value={{ user }}>
-      <div className={styles.shell}>
-        <header className={styles.topbar}>
-          <Link href="/hc/anak-magang" className={styles.brand}>
-            <span className={styles.brandLogo}>
-              <GraduationCap size={20} />
-            </span>
-            Database Anak Magang
-          </Link>
-
-          <div className={styles.profile}>
-            <span className={styles.profileIcon}>
-              <UsersRound size={20} />
-            </span>
-            <div className={styles.akun}>
-              <strong>{user.name}</strong>
-              <span>{formatRole(user.role)}</span>
-            </div>
-          </div>
-        </header>
-
+      <ModuleShell
+        title="Database Anak Magang"
+        subtitle="Human Capital"
+        deptBadge={{ text: 'HC', color: '#0868f6', soft: '#eaf2ff' }}
+        menuItems={MENU_ANAK_MAGANG}
+        backHref="/hc"
+        backLabel="Kembali ke HC"
+      >
         <main className={styles.body}>{children}</main>
-      </div>
+      </ModuleShell>
     </AnakMagangContext.Provider>
   );
 }

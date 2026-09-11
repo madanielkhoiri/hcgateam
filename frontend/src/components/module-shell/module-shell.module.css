@@ -1,0 +1,235 @@
+/* ==================================================
+   FILE: frontend/src/components/module-shell/module-shell.module.css
+   FUNGSI: Struktur & ukuran di-copy dari inventory-layout.module.css
+   supaya seluruh modul (baru maupun lama) punya "rasa" sidebar yang sama.
+   ================================================== */
+
+.shell {
+  --sidebar-width: 284px;
+  --sidebar-collapsed-width: 82px;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  color: #10244a;
+  background: #f3f7fc;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.shellCollapsed {
+  grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+  position: fixed;
+  z-index: 200;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  display: grid;
+  grid-template-rows: 76px minmax(0, 1fr) auto;
+  background: #ffffff;
+  border-right: 1px solid #dce6f2;
+  box-shadow: 8px 0 30px rgba(32, 64, 102, 0.05);
+  transition: width 0.22s ease;
+}
+
+.sidebarCollapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 18px;
+  border-bottom: 1px solid #e7edf5;
+}
+
+.sidebarCollapsed .sidebarHeader {
+  justify-content: center;
+  padding: 0;
+}
+
+.brandLogo {
+  width: 43px;
+  height: 43px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(8, 104, 246, 0.22);
+}
+
+.brandText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.brandText strong {
+  font-size: 15.5px;
+  font-weight: 850;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brandText span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9aa8bf;
+}
+
+/* ================= NAVIGATION ================= */
+
+.navigation {
+  min-height: 0;
+  padding: 16px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #c8d5e5 transparent;
+}
+
+.navigation::-webkit-scrollbar {
+  width: 5px;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  background: #c8d5e5;
+  border-radius: 999px;
+}
+
+.navigationLabel {
+  margin: 0 13px 9px;
+  color: #98a6b9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.navItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  margin-bottom: 5px;
+  padding: 0 13px;
+  border-radius: 10px;
+  color: #526984;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.navItem:hover {
+  background: #f4f7fb;
+}
+
+.navBadge {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: #eef2f8;
+  color: #8393ac;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.sidebarCollapsed .navItem {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebarCollapsed .navItem span:not(.navBadge) {
+  display: none;
+}
+
+/* ================= FOOTER ================= */
+
+.sidebarFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid #e7edf5;
+}
+
+.backLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border-radius: 10px;
+  color: #63758d;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  background: #f4f7fb;
+}
+
+.collapseButton {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #63758d;
+  background: #f4f7fb;
+  border: 1px solid #e1e8f1;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.collapseButton:hover {
+  color: #08794a;
+  background: #edf8f2;
+}
+
+/* ================= CONTENT AREA ================= */
+
+.contentArea {
+  min-width: 0;
+  grid-column: 2;
+}
+
+/* Di layar sempit, sidebar disembunyikan - modul yang punya navigasi mobile
+   sendiri (bottom-nav, dsb) tetap jalan seperti biasa. Modul lain cukup
+   full-width tanpa sidebar di HP untuk sementara. */
+@media (max-width: 767px) {
+  .shell,
+  .shellCollapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+}

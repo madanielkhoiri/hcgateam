@@ -5,9 +5,7 @@
 // FUNGSI: Shell modul MCU Periodik (guard akses + peran)
 // ==================================================
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { HeartPulse } from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -18,7 +16,6 @@ import {
 import {
   ACCESS_KEYS,
   clearSession,
-  formatRole,
   getAccessToken,
   getStoredUser,
   hasAccess,
@@ -26,7 +23,23 @@ import {
   type PortalUser,
 } from '@/lib/access-control';
 import { mcuApi, type PeranMcu, type PeranSaya } from '@/lib/mcu-api';
+import { ModuleShell, type ModuleShellMenuItem } from '@/components/module-shell/module-shell';
 import styles from './mcu.module.css';
+
+const MENU_MCU: ModuleShellMenuItem[] = [
+  { label: 'Dashboard', href: '/hc/mcu/dashboard', initial: 'DB' },
+  { label: 'Jadwal', href: '/hc/mcu/jadwal', initial: 'JD' },
+  { label: 'Hasil MCU', href: '/hc/mcu/hasil', initial: 'HM' },
+  { label: 'Follow Up', href: '/hc/mcu/follow-up', initial: 'FU' },
+  { label: 'Rekomendasi', href: '/hc/mcu/rekomendasi', initial: 'RK' },
+  { label: 'Induksi Ulang', href: '/hc/mcu/induksi-ulang', initial: 'IU' },
+  { label: 'Surat Pengantar', href: '/hc/mcu/surat-pengantar', initial: 'SP' },
+  { label: 'Klinik', href: '/hc/mcu/klinik', initial: 'KL' },
+  { label: 'History', href: '/hc/mcu/history', initial: 'HS' },
+  { label: 'Notifikasi', href: '/hc/mcu/notifikasi', initial: 'NT' },
+  { label: 'Retensi', href: '/hc/mcu/retensi', initial: 'RT' },
+  { label: 'Karyawan', href: '/hc/mcu/karyawan', initial: 'KR' },
+];
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -138,37 +151,30 @@ export default function LayoutMcu({ children }: { children: ReactNode }) {
 
   return (
     <McuContext.Provider value={konteks}>
-      <div className={styles.shell}>
-        <header className={styles.topbar}>
-          <Link href="/hc/mcu" className={styles.brand}>
-            <span className={styles.brandLogo}>
-              <HeartPulse size={20} />
-            </span>
-            MCU Periodik
-          </Link>
-
-          <div className={styles.topbarMeta}>
-            <div className={styles.peranList}>
-              {profil?.labelPeran.length ? (
-                profil.labelPeran.map((label) => (
-                  <span key={label} className={styles.peranChip}>
-                    {label}
-                  </span>
-                ))
-              ) : (
-                <span className={styles.peranChip}>Peran MCU belum diset</span>
-              )}
-            </div>
-
-            <div className={styles.akun}>
-              <strong>{user.name}</strong>
-              <span>{formatRole(user.role)}</span>
-            </div>
+      <ModuleShell
+        title="Modul MCU"
+        subtitle="Human Capital"
+        deptBadge={{ text: 'HC', color: '#0868f6', soft: '#eaf2ff' }}
+        menuItems={MENU_MCU}
+        backHref="/hc"
+        backLabel="Kembali ke HC"
+      >
+        <main className={styles.body}>
+          <div className={styles.peranList}>
+            {profil?.labelPeran.length ? (
+              profil.labelPeran.map((label) => (
+                <span key={label} className={styles.peranChip}>
+                  {label}
+                </span>
+              ))
+            ) : (
+              <span className={styles.peranChip}>Peran MCU belum diset</span>
+            )}
           </div>
-        </header>
 
-        <main className={styles.body}>{children}</main>
-      </div>
+          {children}
+        </main>
+      </ModuleShell>
     </McuContext.Provider>
   );
 }

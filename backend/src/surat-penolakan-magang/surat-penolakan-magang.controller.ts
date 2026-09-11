@@ -20,6 +20,11 @@ export class SuratPenolakanMagangController {
     return this.service.daftar();
   }
 
+  @Get('dashboard/ringkasan')
+  ringkasanDashboard() {
+    return this.service.ringkasanDashboard();
+  }
+
   @Get(':id')
   detail(@Param('id', ParseIntPipe) id: number) {
     return this.service.detail(id);

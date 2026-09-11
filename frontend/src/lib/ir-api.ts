@@ -86,6 +86,21 @@ export type IrCoursePenonton = {
   }[];
 };
 
+/** Ringkasan angka kartu dashboard PORTAL IR - lihat ir-dashboard.service.ts. */
+export type RingkasanIr = {
+  totalDokumen: number;
+  pertanyaanAktif: number;
+  totalVideo: number;
+  totalJawaban: number;
+};
+
+/** Tren dashboard PORTAL IR: dokumen per bulan (tahun berjalan) + breakdown kategori. */
+export type TrenDashboardIr = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownKategori: { kategori: KategoriDokumenIr; total: number }[];
+};
+
 // ==================================================
 // KLIEN HTTP
 // ==================================================
@@ -208,6 +223,11 @@ export const irApi = {
       request(`/course/video/${id}/tonton`, { method: 'POST' }),
     penonton: (id: number) =>
       request<IrCoursePenonton>(`/course/video/${id}/penonton`),
+  },
+
+  dashboard: {
+    ringkasan: () => request<RingkasanIr>('/dashboard/ringkasan'),
+    tren: () => request<TrenDashboardIr>('/dashboard/tren'),
   },
 };
 

@@ -27,6 +27,19 @@ export type DriveFile = {
   uploadedBy: { id: number; name: string; nrp: string | null };
 };
 
+export type RingkasanDrive = {
+  totalFolder: number;
+  totalFile: number;
+  fileBulanIni: number;
+  totalKontributor: number;
+};
+
+export type TrenDrive = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  jenisFile: { dokumen: number; spreadsheet: number; gambar: number; lainnya: number };
+};
+
 export class DriveApiError extends Error {
   status: number;
 
@@ -80,6 +93,10 @@ export const driveApi = {
     request<{ folders: DriveFolder[]; files: DriveFile[] }>(
       `?scope=${scope}${parentFolderId ? `&parentFolderId=${parentFolderId}` : ''}`,
     ),
+  ringkasan: (scope: ScopeDrive) =>
+    request<RingkasanDrive>(`/dashboard/ringkasan?scope=${scope}`),
+  tren: (scope: ScopeDrive) =>
+    request<TrenDrive>(`/dashboard/tren?scope=${scope}`),
   buatFolder: (scope: ScopeDrive, namaFolder: string, parentFolderId?: number) =>
     request<DriveFolder>('/folder', {
       method: 'POST',

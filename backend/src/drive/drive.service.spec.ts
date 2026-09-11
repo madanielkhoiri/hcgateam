@@ -216,6 +216,76 @@ describe('DriveService.unggahFile', () => {
   });
 });
 
+describe('DriveService.ringkasan', () => {
+  it('menolak scope tidak valid', async () => {
+    const { service } = buatService();
+
+    await expect(service.ringkasan('SALAH')).rejects.toThrow(BadRequestException);
+  });
+
+  it('menghitung seluruh angka kartu dashboard untuk scope diminta', async () => {
+    const count = jest.fn()
+      .mockResolvedValueOnce(6) // totalFolder
+      .mockResolvedValueOnce(30) // totalFile
+      .mockResolvedValueOnce(4); // fileBulanIni
+    const groupBy = jest.fn().mockResolvedValue([{ uploadedById: 1 }, { uploadedById: 2 }, { uploadedById: 3 }]);
+
+    const prisma = {
+      driveFolder: { count },
+      driveFile: { count, groupBy },
+    } as unknown as PrismaService;
+    const file = { simpan: jest.fn(), hapus: jest.fn() } as unknown as DriveFileService;
+    const service = new DriveService(prisma, file);
+
+    const hasil = await service.ringkasan('CSR');
+
+    expect(hasil).toEqual({
+      totalFolder: 6,
+      totalFile: 30,
+      fileBulanIni: 4,
+      totalKontributor: 3,
+    });
+    expect(groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ by: ['uploadedById'], where: { folder: { scope: ScopeDrive.CSR } } }),
+    );
+  });
+});
+
+describe('DriveService.trenDanJenis', () => {
+  it('menolak scope tidak valid', async () => {
+    const { service } = buatService();
+
+    await expect(service.trenDanJenis('SALAH')).rejects.toThrow(BadRequestException);
+  });
+
+  it('menjumlahkan file per bulan (tahun berjalan) dan breakdown jenis dari ekstensi nama file', async () => {
+    const tahunIni = new Date().getUTCFullYear();
+
+    const findMany = jest.fn().mockResolvedValue([
+      { namaFile: 'proposal.pdf', uploadedAt: new Date(Date.UTC(tahunIni, 2, 1)) },
+      { namaFile: 'laporan.docx', uploadedAt: new Date(Date.UTC(tahunIni, 2, 10)) },
+      { namaFile: 'anggaran.xlsx', uploadedAt: new Date(Date.UTC(tahunIni, 5, 1)) },
+      { namaFile: 'foto.jpg', uploadedAt: new Date(Date.UTC(tahunIni - 1, 5, 1)) },
+      { namaFile: 'data.zip', uploadedAt: new Date(Date.UTC(tahunIni, 6, 1)) },
+    ]);
+
+    const prisma = {
+      driveFile: { findMany },
+    } as unknown as PrismaService;
+    const file = { simpan: jest.fn(), hapus: jest.fn() } as unknown as DriveFileService;
+    const service = new DriveService(prisma, file);
+
+    const hasil = await service.trenDanJenis('CSR');
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.trenBulanan[2]).toEqual({ bulan: 3, total: 2 });
+    expect(hasil.trenBulanan[5]).toEqual({ bulan: 6, total: 1 });
+    expect(hasil.trenBulanan[6]).toEqual({ bulan: 7, total: 1 });
+    // File tahun lalu tidak dihitung ke tren bulanan, tapi tetap dihitung ke breakdown jenis
+    expect(hasil.jenisFile).toEqual({ dokumen: 2, spreadsheet: 1, gambar: 1, lainnya: 1 });
+  });
+});
+
 describe('DriveService.hapusFile', () => {
   it('menolak role selain kelola', async () => {
     const { service } = buatService();
