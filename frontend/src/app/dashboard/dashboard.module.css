@@ -337,14 +337,20 @@
    DEPARTEMEN UTAMA
 ================================================== */
 
+/* Flex + justify-content:center (bukan CSS grid auto-fill/auto-fit) -
+   kalau kartu lebih sedikit dari yang "muat" di lebar container, sisa
+   ruang dibagi rata kiri-kanan, bukan menumpuk semua di kanan. */
 .departmentGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 18px;
 }
 
 .departmentCard {
   position: relative;
+  flex: 1 1 240px;
+  max-width: 380px;
   min-height: 132px;
   display: flex;
   flex-direction: column;
@@ -1022,11 +1028,12 @@
   }
 
   .departmentGrid {
-    grid-template-columns: 1fr;
     gap: 11px;
   }
 
   .departmentCard {
+    flex-basis: 100%;
+    max-width: none;
     min-height: auto;
     gap: 10px;
     padding: 14px 16px;
