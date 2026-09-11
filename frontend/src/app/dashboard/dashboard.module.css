@@ -158,7 +158,7 @@
   height: auto;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
   align-items: center;
   padding: 36px 90px;
   color: white;
@@ -867,7 +867,7 @@
   .hero {
     min-height: 225px;
     height: auto;
-    grid-template-columns: 1fr 0.75fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr);
     padding: 30px 65px;
   }
 
@@ -953,7 +953,7 @@
     width: 100%;
     height: auto;
     aspect-ratio: 16 / 9;
-    grid-template-columns: 1fr 0.75fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr);
     padding: 22px 38px;
     border-radius: 15px;
   }
@@ -1165,7 +1165,7 @@
 
 @media (max-width: 430px) {
   .hero {
-    grid-template-columns: 1.15fr 0.85fr;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
     padding: 17px 32px;
   }
 
