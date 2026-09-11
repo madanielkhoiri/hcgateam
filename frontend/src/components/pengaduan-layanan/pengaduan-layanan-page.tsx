@@ -54,6 +54,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [mengirim, setMengirim] = useState(false);
   const [error, setError] = useState('');
   const [terkirim, setTerkirim] = useState(false);
+  const [popupTutup, setPopupTutup] = useState(false);
   const inputFotoRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -154,6 +155,18 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const bolehLihatRekap = ROLE_BOLEH_LIHAT_REKAP.includes(user.role);
   const labelDivisi = LABEL_DIVISI_PENGADUAN[divisi];
 
+  // Admin/Section Head/Elektrik/Korlap punya tabel kelola Aduan Layanan di
+  // halaman ini juga — silang cukup tutup popup-nya, jangan dilempar keluar
+  // ke menu utama divisi seperti karyawan biasa (yang memang datang dari sana).
+  function tutupPopup() {
+    if (bolehLihatRekap) {
+      setPopupTutup(true);
+      return;
+    }
+
+    router.push(HALAMAN_MENU_PER_DIVISI[divisi]);
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.container}>
@@ -173,6 +186,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             </div>
           </div>
 
+          {bolehLihatRekap && popupTutup && (
+            <button type="button" className={styles.rekapButton} onClick={() => setPopupTutup(false)}>
+              <MessageSquareHeart size={16} />
+              Beri Penilaian
+            </button>
+          )}
+
           {bolehLihatRekap && (
             <Link href={`${HALAMAN_MENU_PER_DIVISI[divisi]}/pengaduan/rekap`} className={styles.rekapButton}>
               <BarChart3 size={16} />
@@ -184,14 +204,15 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         {bolehLihatRekap && <DaftarPengaduanTabel divisi={divisi} />}
       </div>
 
+      {!popupTutup && (
       <div className={styles.popupOverlay}>
         <div className={styles.popupCard}>
         {terkirim ? (
           <div className={styles.sukses}>
             <div className={styles.popupHeaderKanan}>
-              <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupCloseInline} title="Tutup">
+              <button type="button" onClick={tutupPopup} className={styles.popupCloseInline} title="Tutup">
                 <X size={16} />
-              </Link>
+              </button>
             </div>
             <CheckCircle2 size={40} color="#07984c" />
             <h2>Terima kasih atas penilaian Anda</h2>
@@ -211,9 +232,9 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           <div className={styles.formCard}>
             <div className={styles.popupHeader}>
               <span className={styles.formLabel}>Beri rating pelayanan</span>
-              <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupCloseInline} title="Tutup">
+              <button type="button" onClick={tutupPopup} className={styles.popupCloseInline} title="Tutup">
                 <X size={16} />
-              </Link>
+              </button>
             </div>
 
             <StarRating value={rating} onChange={setRating} />
@@ -237,9 +258,9 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           <div className={styles.formCard}>
             <div className={styles.popupHeader}>
               <span className={styles.formLabel}>Aduan Layanan</span>
-              <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.popupCloseInline} title="Tutup">
+              <button type="button" onClick={tutupPopup} className={styles.popupCloseInline} title="Tutup">
                 <X size={16} />
-              </Link>
+              </button>
             </div>
             <p className={styles.aduanHint}>
               Ada masalah atau permintaan (mis. permintaan perbaikan) yang ingin dilaporkan?
@@ -324,6 +345,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         )}
         </div>
       </div>
+      )}
     </main>
   );
 }
