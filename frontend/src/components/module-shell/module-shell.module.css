@@ -220,9 +220,24 @@
   grid-column: 2;
 }
 
-/* Di layar sempit, sidebar disembunyikan - modul yang punya navigasi mobile
-   sendiri (bottom-nav, dsb) tetap jalan seperti biasa. Modul lain cukup
-   full-width tanpa sidebar di HP untuk sementara. */
+/* ================= MOBILE TOP BAR ================= */
+
+.mobileTopBar {
+  display: none;
+}
+
+/* ================= DRAWER (mobile) ================= */
+
+.drawerScrim {
+  display: none;
+}
+
+.drawerPanel {
+  display: none;
+}
+
+/* Di layar sempit, sidebar kolom disembunyikan dan diganti top bar +
+   drawer (isi menu sama persis, cuma jadi overlay geser dari kiri). */
 @media (max-width: 767px) {
   .shell,
   .shellCollapsed {
@@ -231,5 +246,155 @@
 
   .sidebar {
     display: none;
+  }
+
+  .contentArea {
+    grid-column: 1;
+    padding-bottom: 74px;
+  }
+
+  .mobileTopBar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 58px;
+    padding: 0 14px;
+    background: #ffffff;
+    border-bottom: 1px solid #dce6f2;
+    box-shadow: 0 4px 16px rgba(32, 64, 102, 0.05);
+  }
+
+  .mobileBrandLogo {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .mobileBrandText {
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .mobileBrandText strong {
+    font-size: 14px;
+    font-weight: 850;
+    color: #10244a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobileBrandText span {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9aa8bf;
+  }
+
+  .drawerScrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    padding: 0;
+    border: none;
+    background: rgba(16, 36, 74, 0.45);
+    cursor: pointer;
+  }
+
+  .drawerPanel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 201;
+    width: min(302px, 84vw);
+    background: #ffffff;
+    box-shadow: 12px 0 40px rgba(16, 36, 74, 0.2);
+    display: grid;
+    grid-template-rows: 74px minmax(0, 1fr) auto;
+  }
+
+  .drawerPanel .sidebarHeader {
+    padding-right: 10px;
+  }
+
+  .drawerCloseButton {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: #f4f7fb;
+    border: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  .mobileBottomNav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: #ffffff;
+    border-top: 1px solid #dce6f2;
+    box-shadow: 0 -8px 24px rgba(32, 64, 102, 0.08);
+  }
+
+  .mobileBottomNavItem {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 7px 2px;
+    border: none;
+    background: transparent;
+    border-radius: 14px;
+    color: inherit;
+    text-decoration: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .mobileBottomNavBadge {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: #eef2f8;
+    color: #8393ac;
+    font-size: 9px;
+    font-weight: 900;
+  }
+
+  .mobileBottomNavLabel {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: #8393ac;
+    font-size: 9.5px;
+    font-weight: 750;
   }
 }
