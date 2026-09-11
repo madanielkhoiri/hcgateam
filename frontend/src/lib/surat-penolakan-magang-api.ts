@@ -32,6 +32,16 @@ export type SuratPenolakanMagang = {
   dibuatOleh: AkunRingkas;
 };
 
+export type RingkasanDashboardSuratPenolakan = {
+  tahun: number;
+  totalSurat: number;
+  suratBulanIni: number;
+  suratTahunIni: number;
+  rataRataPerBulan: number;
+  trenBulanan: Array<{ bulan: number; total: number }>;
+  statusPdf: { sudahTerbit: number; belumTerbit: number };
+};
+
 export class SuratPenolakanMagangApiError extends Error {
   constructor(
     message: string,

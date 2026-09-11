@@ -253,7 +253,7 @@ export default function HalamanBuatDeklarasi() {
  <button
  type="button"
  onClick={() => router.push("/hc/deklarasi-dinas")}
- className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+ className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-[#d8e4f2] bg-white px-4 py-2 text-sm font-semibold text-[#0868f6] transition hover:bg-[#eaf2ff]"
  >
  <ArrowLeft className="h-4 w-4" />
  Kembali ke Dashboard
@@ -268,7 +268,7 @@ export default function HalamanBuatDeklarasi() {
  </p>
  </div>
 
- <div className="rounded-3xl bg-gradient-to-br from-red-600 to-rose-500 px-5 py-4 text-white shadow-lg shadow-red-100">
+ <div className="rounded-3xl bg-gradient-to-br from-[#0868f6] to-[#3b82f6] px-5 py-4 text-white shadow-lg shadow-[#cfe0fb]">
  <div className="text-xs text-white/80">Login sebagai</div>
  <div className="mt-1 font-bold">{pengguna?.nama || "-"}</div>
  <div className="text-sm text-white/90">
@@ -277,9 +277,9 @@ export default function HalamanBuatDeklarasi() {
  </div>
  </div>
 
- <div className="rounded-[32px] border border-red-100 bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)] md:p-8">
+ <div className="rounded-[32px] border border-[#d8e4f2] bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)] md:p-8">
  <div className="mb-7 flex items-center gap-4">
- <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-red-50 text-red-600">
+ <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[#eaf2ff] text-[#0868f6]">
  <FileText className="h-7 w-7" />
  </div>
  <div>
@@ -311,7 +311,7 @@ export default function HalamanBuatDeklarasi() {
 
  pilihSaldoAktif(saldoTerpilih);
  }}
- className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  disabled={sedangMemuatSaldo}
  >
  <option value="">
@@ -330,7 +330,7 @@ export default function HalamanBuatDeklarasi() {
  </select>
 
  {daftarSaldoAktif.length === 0 && !sedangMemuatSaldo ? (
- <p className="mt-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
+ <p className="mt-2 rounded-2xl border border-[#d8e4f2] bg-[#eaf2ff] px-4 py-3 text-xs font-semibold text-[#0868f6]">
  Belum ada saldo aktif. Hubungi admin/FA untuk input saldo.
  </p>
  ) : null}
@@ -354,7 +354,7 @@ export default function HalamanBuatDeklarasi() {
  | "UANG_OPERASIONAL"
  )
  }
- className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  >
  <option value="PERJALANAN_DINAS">Perjalanan Dinas</option>
  <option value="UANG_OPERASIONAL">Uang Operasional</option>
@@ -373,7 +373,7 @@ export default function HalamanBuatDeklarasi() {
  type="date"
  value={tanggalKegiatan}
  onChange={(event) => setTanggalKegiatan(event.target.value)}
- className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  required
  />
  </div>
@@ -392,7 +392,7 @@ export default function HalamanBuatDeklarasi() {
  value={lokasi}
  onChange={(event) => setLokasi(event.target.value)}
  placeholder="Contoh: Palangkaraya"
- className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  required
  />
  </div>
@@ -410,7 +410,7 @@ export default function HalamanBuatDeklarasi() {
  onChange={(event) => setKeterangan(event.target.value)}
  placeholder="Tulis keterangan kegiatan deklarasi"
  rows={4}
- className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+ className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
  required
  />
  </div>
@@ -433,7 +433,7 @@ export default function HalamanBuatDeklarasi() {
  <button
  type="submit"
  disabled={sedangSimpan || sedangMemuatSaldo}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0868f6] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0757d1] disabled:cursor-not-allowed disabled:opacity-70"
  >
  {sedangSimpan ? (
  <>
@@ -490,7 +490,7 @@ export default function HalamanBuatDeklarasi() {
 
  <AlertDialogAction
  onClick={() => setModalBerhasilTerbuka(false)}
- className="rounded-2xl bg-red-600 text-white hover:bg-red-700"
+ className="rounded-2xl bg-[#0868f6] text-white hover:bg-[#0757d1]"
  >
  Buat Lagi
  </AlertDialogAction>

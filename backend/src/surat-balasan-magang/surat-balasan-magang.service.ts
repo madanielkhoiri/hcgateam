@@ -154,6 +154,58 @@ export class SuratBalasanMagangService {
     });
   }
 
+  /** Ringkasan angka + tren untuk dashboard modul Surat Balasan Magang. */
+  async ringkasanDashboard() {
+    const sekarang = new Date();
+    const tahun = sekarang.getUTCFullYear();
+    const bulan = sekarang.getUTCMonth();
+
+    const awalTahun = new Date(Date.UTC(tahun, 0, 1));
+    const akhirTahun = new Date(Date.UTC(tahun + 1, 0, 1));
+    const awalBulan = new Date(Date.UTC(tahun, bulan, 1));
+    const akhirBulan = new Date(Date.UTC(tahun, bulan + 1, 1));
+
+    const [totalSurat, suratBulanIni, totalMahasiswa, suratTahunIni] =
+      await Promise.all([
+        this.prisma.suratBalasanMagang.count(),
+        this.prisma.suratBalasanMagang.count({
+          where: { createdAt: { gte: awalBulan, lt: akhirBulan } },
+        }),
+        this.prisma.suratBalasanMagangBaris.count(),
+        this.prisma.suratBalasanMagang.findMany({
+          where: { createdAt: { gte: awalTahun, lt: akhirTahun } },
+          select: { createdAt: true, filePdf: true },
+        }),
+      ]);
+
+    const trenBulanan = Array.from({ length: 12 }, () => 0);
+    let sudahTerbit = 0;
+    let belumTerbit = 0;
+
+    for (const surat of suratTahunIni) {
+      trenBulanan[surat.createdAt.getUTCMonth()] += 1;
+
+      if (surat.filePdf) {
+        sudahTerbit += 1;
+      } else {
+        belumTerbit += 1;
+      }
+    }
+
+    return {
+      tahun,
+      totalSurat,
+      totalMahasiswa,
+      suratBulanIni,
+      suratTahunIni: suratTahunIni.length,
+      trenBulanan: trenBulanan.map((total, index) => ({
+        bulan: index + 1,
+        total,
+      })),
+      statusPdf: { sudahTerbit, belumTerbit },
+    };
+  }
+
   private formatNomorSurat(nomorUrut: number, tahun: number): string {
     const urut = String(nomorUrut).padStart(2, '0');
     return `${urut}/S-Out/HCGA/PPA-Adw/${this.angkaRomawi(new Date().getUTCMonth() + 1)}/${tahun}`;

@@ -265,6 +265,12 @@ export type RingkasanMcu = {
   induksiTerjadwal: number;
 };
 
+export type TrenDashboardMcu = {
+  tahun: number;
+  trenBulanan: Array<{ bulan: number; total: number }>;
+  statusRekomendasi: { fit: number; followUp: number };
+};
+
 export type PeranSaya = {
   akunId: number;
   peran: PeranMcu[];

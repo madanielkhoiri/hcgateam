@@ -38,6 +38,16 @@ export class PostinganController {
     return this.service.untukBeranda();
   }
 
+  @Get('dashboard/ringkasan')
+  ringkasan() {
+    return this.service.ringkasan();
+  }
+
+  @Get('dashboard/tren')
+  trenDanTipe() {
+    return this.service.trenDanTipe();
+  }
+
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {
