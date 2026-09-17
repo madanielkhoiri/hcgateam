@@ -7,6 +7,7 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -72,9 +73,9 @@ async function bacaError(response: Response): Promise<string> {
   }
 }
 
-/** Foto barang/bukti diserve statis lewat /api/uploads/... — lihat main.ts useStaticAssets. */
+/** Foto barang/bukti — wajib login, lihat uploads-url.ts. */
 export function urlFotoGudang(filename: string, folder: 'items' | 'gudang-checkout'): string {
-  return `${API_URL}/uploads/${folder}/${filename}`;
+  return urlUploads(`${folder}/${filename}`);
 }
 
 export const gudangApi = {

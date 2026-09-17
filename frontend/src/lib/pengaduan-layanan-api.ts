@@ -5,6 +5,7 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -190,7 +191,7 @@ export function namaBulan(bulan: number): string {
   return NAMA_BULAN[bulan - 1] ?? String(bulan);
 }
 
-/** URL publik foto Aduan Layanan (disimpan di uploads/pengaduan-layanan/...). */
+/** URL foto Aduan Layanan (disimpan di uploads/pengaduan-layanan/...) — wajib login, lihat uploads-url.ts. */
 export function urlFotoPengaduan(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }

@@ -46,9 +46,9 @@ describe("housekeepingIndoorApi.daftar", () => {
  it("dengan filter lokasi menambahkan query string", async () => {
  const fetchMock = mockFetchSekali({ ok: true, json: async () => [] });
 
- await housekeepingIndoorApi.daftar("PLANT");
+ await housekeepingIndoorApi.daftar({ lokasi: "PLANT" });
 
- expect(fetchMock.mock.calls[0][0]).toContain("?lokasi=PLANT");
+ expect(fetchMock.mock.calls[0][0]).toContain("lokasi=PLANT");
  });
 });
 

@@ -30,6 +30,7 @@ import {
   type Klinik,
   type SuratPengantar,
 } from '@/lib/mcu-api';
+import { urlUploads } from '@/lib/uploads-url';
 import { useMcu } from '../layout';
 import styles from '../mcu.module.css';
 
@@ -46,9 +47,6 @@ type BarisPilihan = {
   jenisPemeriksaan: string;
   tanggalMcu: string;
 };
-
-const UPLOADS_URL =
-  process.env.NEXT_PUBLIC_UPLOADS_URL ?? 'http://localhost:3001/api/uploads';
 
 export default function SuratPengantarPage() {
   const { punyaPeran } = useMcu();
@@ -453,7 +451,7 @@ export default function SuratPengantarPage() {
                       <div className={styles.rowAksi}>
                         {item.filePdf ? (
                           <a
-                            href={`${UPLOADS_URL}/${item.filePdf}`}
+                            href={urlUploads(item.filePdf)}
                             target="_blank"
                             rel="noreferrer"
                             className={`${styles.tombol} ${styles.tombolNetral} ${styles.tombolKecil}`}

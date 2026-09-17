@@ -142,3 +142,55 @@ a {
     background: var(--page-bg);
   }
 }
+
+/* ==================================================
+   ANIMASI MODAL/OVERLAY - dipakai bareng hook
+   useAnimatedVisibility (lihat components/animated-modal).
+   Class global (bukan CSS module) supaya bisa ditempel di modal
+   manapun tanpa perlu import CSS module baru.
+   ================================================== */
+
+.overlayEnter {
+  animation: overlayFadeIn 0.18s ease both;
+}
+
+.overlayExit {
+  animation: overlayFadeOut 0.18s ease both;
+}
+
+.modalPanelEnter {
+  animation: modalPanelIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.modalPanelExit {
+  animation: modalPanelOut 0.16s ease both;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modalPanelIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modalPanelOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlayEnter,
+  .overlayExit,
+  .modalPanelEnter,
+  .modalPanelExit {
+    animation: none;
+  }
+}

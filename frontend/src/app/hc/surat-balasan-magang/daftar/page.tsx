@@ -13,9 +13,13 @@ import { AlertCircle, ArrowLeft, Download, Mail, Plus } from 'lucide-react';
 import {
   formatTanggal,
   suratBalasanMagangApi,
+  type HasilHalaman,
   type SuratBalasanMagang,
 } from '@/lib/surat-balasan-magang-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from '../../anak-magang/anak-magang.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 export default function DaftarSuratBalasanMagangPage() {
   const [daftar, setDaftar] = useState<SuratBalasanMagang[]>([]);
@@ -24,45 +28,47 @@ export default function DaftarSuratBalasanMagangPage() {
 
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalSurat, setTotalSurat] = useState(0);
 
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
 
     try {
-      const hasil = await suratBalasanMagangApi.ambil<SuratBalasanMagang[]>('');
-      setDaftar(hasil);
+      const parameter = new URLSearchParams({
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
+
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      const hasil = await suratBalasanMagangApi.ambil<HasilHalaman<SuratBalasanMagang>>(
+        `?${parameter.toString()}`,
+      );
+      setDaftar(hasil.data);
+      setTotalSurat(hasil.total);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
       setMemuat(false);
     }
-  }, []);
+  }, [filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
+  // Balik ke halaman 1 tiap kali filter bulan/tahun berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [filterBulan, filterTahun]);
+
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const daftarTampil = useMemo(() => {
-    return daftar.filter((item) => {
-      const tanggal = new Date(item.createdAt);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [daftar, filterBulan, filterTahun]);
 
   return (
     <>
@@ -105,7 +111,7 @@ export default function DaftarSuratBalasanMagangPage() {
         <div className={styles.panelHead}>
           <div>
             <h2>Daftar Surat Balasan</h2>
-            <p>{daftarTampil.length} dari {daftar.length} surat ditampilkan.</p>
+            <p>{totalSurat} surat, ditampilkan {daftar.length} per halaman.</p>
           </div>
         </div>
 
@@ -143,7 +149,7 @@ export default function DaftarSuratBalasanMagangPage() {
 
         {memuat ? (
           <div className={styles.memuat}>Memuat data...</div>
-        ) : daftarTampil.length === 0 ? (
+        ) : daftar.length === 0 ? (
           <div className={styles.kosong}>
             <Mail size={30} />
             <strong>Belum ada surat balasan</strong>
@@ -164,7 +170,7 @@ export default function DaftarSuratBalasanMagangPage() {
               </thead>
 
               <tbody>
-                {daftarTampil.map((item) => (
+                {daftar.map((item) => (
                   <tr key={item.id}>
                     <td>{item.nomor}</td>
                     <td>{item.tujuanJurusan}</td>
@@ -195,6 +201,12 @@ export default function DaftarSuratBalasanMagangPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalSurat, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </section>
     </>
   );

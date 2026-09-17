@@ -8,6 +8,8 @@ import { getAccessToken } from './access-control';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
+export type { HasilHalaman } from './pagination';
+
 export type StatusAnakMagang = 'AKTIF' | 'NONAKTIF';
 export type GenderAnakMagang = 'MALE' | 'FEMALE';
 

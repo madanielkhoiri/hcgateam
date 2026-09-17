@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken, type PortalUser } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -231,9 +232,9 @@ export const irApi = {
   },
 };
 
-/** URL publik file yang disimpan lewat IrFileService, disajikan statis lewat /api/uploads/. */
+/** URL file yang disimpan lewat IrFileService — wajib login, lihat uploads-url.ts. */
 export function urlFileIr(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export function isIrPengelola(user: PortalUser | null): boolean {

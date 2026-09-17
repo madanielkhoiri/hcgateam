@@ -120,6 +120,7 @@ export function DaftarPengaduanTabel({
       ) : !rekap || rekap.daftar.length === 0 ? (
         <p className={styles.kosong}>Belum ada pengaduan pada periode ini.</p>
       ) : (
+        <div className={styles.tabelScroll}>
         <table className={styles.tabel}>
           <thead>
             <tr>
@@ -211,6 +212,7 @@ export function DaftarPengaduanTabel({
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

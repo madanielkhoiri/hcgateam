@@ -8,12 +8,15 @@
 // civil/project) supaya konsisten - JANGAN diubah per modul, cukup
 // beda menuItems/warna departemen lewat props.
 //
-// Di layar mobile (<768px) sidebar kolom disembunyikan dan diganti top
-// bar (judul modul) + bottom nav (4 menu utama, tampil terus di bawah
-// layar) + drawer (menu lengkap, dibuka lewat tombol "Lainnya" kalau
-// menu-nya lebih dari 4). Modul yang sudah punya navigasi mobile
-// sendiri (mis. Deklarasi Dinas dengan bottom-nav) bisa set
-// hideMobileNav supaya tidak dobel.
+// Di layar mobile (<768px) sidebar kolom disembunyikan dan diganti:
+// - top bar: judul modul + tombol garis-3 (hamburger) yang buka drawer
+//   berisi SEMUA menu modul ini (menyesuaikan tiap modul).
+// - bottom nav: menu utama modul ini (langsung dari menuItems, bukan
+//   placeholder "Lainnya") supaya tetap terlihat isinya per modul.
+// Modul yang sudah punya bottom-nav sendiri (mis. Deklarasi Dinas) bisa
+// set hideMobileNav supaya bottom nav bawaan ini tidak dobel - tapi top
+// bar + hamburger + drawer TETAP tampil (satu-satunya jalan buka menu
+// lengkap + tombol "Kembali ke <departemen>" di HP untuk modul itu).
 //
 // PENTING: ini cuma shell TAMPILAN. Auth-check/role-context per modul
 // (kalau ada, mis. McuContext di hc/mcu/layout.tsx) tetap dikelola di
@@ -23,6 +26,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
+import { PageTransition } from '@/components/page-transition/page-transition';
 import styles from './module-shell.module.css';
 
 export type ModuleShellMenuItem = {
@@ -48,9 +52,9 @@ type ModuleShellProps = {
   menuItems: ModuleShellMenuItem[];
   backHref: string;
   backLabel?: string;
-  /** Set true kalau modul ini sudah punya navigasi mobile sendiri (mis.
-   * bottom-nav Deklarasi Dinas) supaya top bar + drawer bawaan tidak
-   * ikut dirender dan menumpuk dengan punya modul. */
+  /** Set true kalau modul ini sudah punya bottom-nav sendiri (mis.
+   * Deklarasi Dinas) supaya bottom nav bawaan tidak ikut dirender dan
+   * menumpuk. Top bar + hamburger + drawer tetap tampil. */
   hideMobileNav?: boolean;
   children: ReactNode;
 };
@@ -79,10 +83,8 @@ export function ModuleShell({
       : pathname === item.href || pathname?.startsWith(`${item.href}/`);
   }
 
-  const BOTTOM_NAV_MAX = 4;
+  const BOTTOM_NAV_MAX = 5;
   const bottomNavItems = menuItems.slice(0, BOTTOM_NAV_MAX);
-  const overflowItems = menuItems.slice(BOTTOM_NAV_MAX);
-  const overflowActive = overflowItems.some(isActive);
 
   function renderNavItems(onNavigate?: () => void) {
     return menuItems.map((item) => {
@@ -172,18 +174,29 @@ export function ModuleShell({
         </div>
       </aside>
 
-      {!hideMobileNav && (
-        <div className={styles.mobileTopBar}>
-          <div className={styles.mobileBrandLogo} style={{ background: deptBadge.color }}>
-            {deptBadge.text}
-          </div>
+      <div className={styles.mobileTopBar}>
+        <button
+          type="button"
+          className={styles.mobileMenuButton}
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Buka semua menu"
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#10244a" strokeWidth={2.3} strokeLinecap="round">
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
+          </svg>
+        </button>
 
-          <div className={styles.mobileBrandText}>
-            <strong>{title}</strong>
-            {subtitle && <span>{subtitle}</span>}
-          </div>
+        <div className={styles.mobileBrandLogo} style={{ background: deptBadge.color }}>
+          {deptBadge.text}
         </div>
-      )}
+
+        <div className={styles.mobileBrandText}>
+          <strong>{title}</strong>
+          {subtitle && <span>{subtitle}</span>}
+        </div>
+      </div>
 
       {!hideMobileNav && (
         <nav className={styles.mobileBottomNav}>
@@ -216,40 +229,10 @@ export function ModuleShell({
               </Link>
             );
           })}
-
-          {overflowItems.length > 0 && (
-            <button
-              type="button"
-              className={styles.mobileBottomNavItem}
-              style={overflowActive ? { background: deptBadge.soft } : undefined}
-              onClick={() => setDrawerOpen(true)}
-            >
-              <span
-                className={styles.mobileBottomNavBadge}
-                style={
-                  overflowActive
-                    ? { background: deptBadge.color, color: '#ffffff' }
-                    : undefined
-                }
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24">
-                  <circle cx="5" cy="12" r="2" fill="currentColor" />
-                  <circle cx="12" cy="12" r="2" fill="currentColor" />
-                  <circle cx="19" cy="12" r="2" fill="currentColor" />
-                </svg>
-              </span>
-              <span
-                className={styles.mobileBottomNavLabel}
-                style={overflowActive ? { color: deptBadge.color } : undefined}
-              >
-                Lainnya
-              </span>
-            </button>
-          )}
         </nav>
       )}
 
-      {!hideMobileNav && drawerOpen && (
+      {drawerOpen && (
         <>
           <button
             type="button"
@@ -297,7 +280,9 @@ export function ModuleShell({
         </>
       )}
 
-      <div className={styles.contentArea}>{children}</div>
+      <div className={styles.contentArea}>
+        <PageTransition>{children}</PageTransition>
+      </div>
     </div>
   );
 }

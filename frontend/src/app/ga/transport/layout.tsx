@@ -7,7 +7,6 @@ import {
   Bus,
   ChevronLeft,
   Fuel,
-  Home,
   Menu,
   PanelLeftClose,
   Ticket,
@@ -25,6 +24,9 @@ import {
   hasAccess,
   type PortalUser,
 } from '@/lib/access-control';
+import { MobileBottomNav } from '@/components/module-shell/mobile-bottom-nav';
+import { PageTransition } from '@/components/page-transition/page-transition';
+import { buatInisial } from '@/lib/buat-inisial';
 import styles from './transport-layout.module.css';
 
 type ScopeTransport = 'sarana' | 'tiket' | 'travel';
@@ -46,8 +48,14 @@ const menuSarana = [
 
 const menuTiket = [
   {
-    label: 'Tiket',
-    href: '/ga/transport/tiket',
+    label: 'Dashboard',
+    href: '/ga/transport/tiket/dashboard',
+    icon: BarChart3,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
+  },
+  {
+    label: 'Daftar Tiket',
+    href: '/ga/transport/tiket/daftar',
     icon: Ticket,
     accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
   },
@@ -55,15 +63,21 @@ const menuTiket = [
 
 const menuTravel = [
   {
-    label: 'Travel',
-    href: '/ga/transport/travel',
+    label: 'Dashboard',
+    href: '/ga/transport/travel/dashboard',
+    icon: BarChart3,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_TRAVEL,
+  },
+  {
+    label: 'Daftar Travel',
+    href: '/ga/transport/travel/daftar',
     icon: Bus,
     accessKey: ACCESS_KEYS.GA_TRANSPORT_TRAVEL,
   },
 ];
 
 const LABEL_SCOPE: Record<ScopeTransport, string> = {
-  sarana: 'Sarana',
+  sarana: 'Transportasi',
   tiket: 'Tiket',
   travel: 'Travel',
 };
@@ -82,6 +96,10 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
       : 'sarana';
 
   const menus = scope === 'tiket' ? menuTiket : scope === 'travel' ? menuTravel : menuSarana;
+
+  const bottomNavItems = menus
+    .filter(({ accessKey }) => !user || hasAccess(user, accessKey))
+    .map(({ label, href }) => ({ label, href, initial: buatInisial(label) }));
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
@@ -130,10 +148,6 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
         <nav>
-          <Link href="/dashboard" className={styles.simple}>
-            <Home size={20} />
-            {!collapsed && <span>Dashboard</span>}
-          </Link>
           <Link href="/ga" className={styles.simple}>
             <ChevronLeft size={20} />
             {!collapsed && <span>Pilihan GA</span>}
@@ -191,8 +205,12 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main className={styles.main}>{children}</main>
+        <main className={styles.main}>
+          <PageTransition>{children}</PageTransition>
+        </main>
       </div>
+
+      <MobileBottomNav items={bottomNavItems} deptColor="#0a9f59" deptSoft="#e8f8ef" />
     </div>
   );
 }

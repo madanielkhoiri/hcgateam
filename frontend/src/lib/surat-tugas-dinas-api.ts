@@ -4,9 +4,12 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+export type { HasilHalaman } from './pagination';
 
 export type StatusSuratTugas =
   | 'MENUNGGU_SH'
@@ -132,7 +135,7 @@ export const suratTugasApi = {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }),
 
-  urlPdf: (filePdf: string) => `${API_URL}/uploads/${filePdf}`,
+  urlPdf: (filePdf: string) => urlUploads(filePdf),
 };
 
 export function formatTanggal(nilai: string | null | undefined): string {

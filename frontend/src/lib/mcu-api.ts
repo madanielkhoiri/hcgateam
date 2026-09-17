@@ -23,6 +23,8 @@ export type PeranMcu =
 
 export type StatusKerja = 'AKTIF' | 'DIRUMAHKAN' | 'RESIGN';
 export type StatusKesehatanDirumahkan = 'SAKIT' | 'FIT_SAKIT';
+/** Dipakai otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA tiket & travel. */
+export type GenderKaryawan = 'LAKI_LAKI' | 'PEREMPUAN';
 export type JenisMcu = 'AWAL' | 'BERKALA' | 'KHUSUS';
 export type StatusPendaftaran =
   | 'DRAFT'
@@ -55,6 +57,8 @@ export const SEMUA_PERAN_MCU: PeranMcu[] = [
   'KLINIK',
 ];
 
+export type { HasilHalaman } from './pagination';
+
 export type Departemen = {
   id: number;
   namaDepartemen: string;
@@ -68,6 +72,7 @@ export type Karyawan = {
   id: number;
   nik: string;
   nama: string;
+  gender: GenderKaryawan | null;
   departemenId: number;
   jabatan: string | null;
   email: string | null;

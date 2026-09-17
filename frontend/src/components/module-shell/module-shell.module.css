@@ -236,6 +236,12 @@
   display: none;
 }
 
+/* ================= BOTTOM NAV (mobile) ================= */
+
+.mobileBottomNav {
+  display: none;
+}
+
 /* Di layar sempit, sidebar kolom disembunyikan dan diganti top bar +
    drawer (isi menu sama persis, cuma jadi overlay geser dari kiri). */
 @media (max-width: 767px) {
@@ -265,6 +271,18 @@
     background: #ffffff;
     border-bottom: 1px solid #dce6f2;
     box-shadow: 0 4px 16px rgba(32, 64, 102, 0.05);
+  }
+
+  .mobileMenuButton {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #f4f7fb;
+    border: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
   }
 
   .mobileBrandLogo {
@@ -311,6 +329,7 @@
     border: none;
     background: rgba(16, 36, 74, 0.45);
     cursor: pointer;
+    animation: drawerScrimIn 0.22s ease both;
   }
 
   .drawerPanel {
@@ -324,6 +343,24 @@
     box-shadow: 12px 0 40px rgba(16, 36, 74, 0.2);
     display: grid;
     grid-template-rows: 74px minmax(0, 1fr) auto;
+    animation: drawerPanelIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes drawerScrimIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes drawerPanelIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawerScrim,
+    .drawerPanel {
+      animation: none;
+    }
   }
 
   .drawerPanel .sidebarHeader {

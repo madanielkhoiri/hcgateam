@@ -71,7 +71,7 @@ export default function TravelDetailAdminPage() {
   return (
     <section>
       <Link
-        href="/ga/transport/travel"
+        href="/ga/transport/travel/daftar"
         style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 14, color: '#385675', fontSize: 13, fontWeight: 700 }}
       >
         <ArrowLeft size={16} /> Kembali ke daftar Travel

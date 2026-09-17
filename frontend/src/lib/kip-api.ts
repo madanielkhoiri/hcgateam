@@ -7,6 +7,7 @@
 
 import { getAccessToken } from './access-control';
 import type { LokasiHousekeepingIndoor } from './housekeeping-indoor-api';
+import { urlUploads } from './uploads-url';
 
 export type { LokasiHousekeepingIndoor } from './housekeeping-indoor-api';
 export {
@@ -219,7 +220,7 @@ export const kipApi = {
   },
 };
 
-/** URL publik foto bukti inspeksi yang disimpan lewat KipFileService, disajikan statis lewat /api/uploads/. */
+/** URL foto bukti inspeksi yang disimpan lewat KipFileService — wajib login, lihat uploads-url.ts. */
 export function urlFotoKip(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
