@@ -963,6 +963,12 @@ enum StatusKesehatanDirumahkan {
   FIT_SAKIT
 }
 
+/** Dipakai untuk otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA (tiket & travel). */
+enum GenderKaryawan {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
 enum JenisMcu {
   AWAL
   BERKALA
@@ -1069,6 +1075,7 @@ model Karyawan {
   id                        Int                        @id @default(autoincrement())
   nik                       String                     @unique
   nama                      String
+  gender                    GenderKaryawan?
   departemenId              Int                        @map("departemen_id")
   jabatan                   String?
   email                     String?
