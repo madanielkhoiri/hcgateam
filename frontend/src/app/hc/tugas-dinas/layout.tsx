@@ -27,6 +27,7 @@ import styles from './tugas-dinas.module.css';
 
 const MENU_TUGAS_DINAS: ModuleShellMenuItem[] = [
   { label: 'Dashboard', href: '/hc/tugas-dinas/dashboard', initial: 'DB' },
+  { label: 'Buat Tugas Dinas', href: '/hc/tugas-dinas/buat', initial: 'BT' },
 ];
 
 const API_URL =

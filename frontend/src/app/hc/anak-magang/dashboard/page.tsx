@@ -32,12 +32,16 @@ import {
   LABEL_STATUS_ANAK_MAGANG,
   type AnakMagang,
   type GenderAnakMagang,
+  type HasilHalaman,
   type RingkasanAnakMagang,
   type StatusAnakMagang,
   type TrenDashboardAnakMagang,
 } from '@/lib/anak-magang-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useAnakMagang } from '../layout';
 import styles from '../anak-magang.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 const NAMA_BULAN = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -204,6 +208,8 @@ export default function DashboardAnakMagangPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalAnakMagang, setTotalAnakMagang] = useState(0);
 
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
   const [idDiedit, setIdDiedit] = useState<number | null>(null);
@@ -233,22 +239,33 @@ export default function DashboardAnakMagangPage() {
         parameter.set('cari', cari.trim());
       }
 
-      const kueri = parameter.toString();
-      const hasil = await anakMagangApi.ambil<AnakMagang[]>(
-        kueri ? `?${kueri}` : '',
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      parameter.set('halaman', String(halaman));
+      parameter.set('ukuranHalaman', String(UKURAN_HALAMAN));
+
+      const hasil = await anakMagangApi.ambil<HasilHalaman<AnakMagang>>(
+        `?${parameter.toString()}`,
       );
 
-      setDaftar(hasil);
+      setDaftar(hasil.data);
+      setTotalAnakMagang(hasil.total);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
       setMemuat(false);
     }
-  }, [cari, filterStatus]);
+  }, [cari, filterStatus, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  // Balik ke halaman 1 tiap kali pencarian/filter berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [cari, filterStatus, filterBulan, filterTahun]);
 
   useEffect(() => {
     let aktif = true;
@@ -276,26 +293,6 @@ export default function DashboardAnakMagangPage() {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const daftarTampil = useMemo(() => {
-    return daftar.filter((item) => {
-      if (!item.tanggalMulai) {
-        return !filterBulan && !filterTahun;
-      }
-
-      const tanggal = new Date(item.tanggalMulai);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [daftar, filterBulan, filterTahun]);
 
   function bukaTambah() {
     setIdDiedit(null);
@@ -540,7 +537,7 @@ export default function DashboardAnakMagangPage() {
         <div className={styles.panelHead}>
           <div>
             <h2>Daftar Anak Magang</h2>
-            <p>{daftarTampil.length} dari {daftar.length} data ditampilkan.</p>
+            <p>{totalAnakMagang} data, ditampilkan {daftar.length} per halaman.</p>
           </div>
         </div>
 
@@ -597,7 +594,7 @@ export default function DashboardAnakMagangPage() {
 
         {memuat ? (
           <div className={styles.memuat}>Memuat data...</div>
-        ) : daftarTampil.length === 0 ? (
+        ) : daftar.length === 0 ? (
           <div className={styles.kosong}>
             <Inbox size={30} />
             <strong>Belum ada data anak magang</strong>
@@ -619,7 +616,7 @@ export default function DashboardAnakMagangPage() {
               </thead>
 
               <tbody>
-                {daftarTampil.map((item) => (
+                {daftar.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className={styles.tableNama}>
@@ -669,6 +666,12 @@ export default function DashboardAnakMagangPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalAnakMagang, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </section>
 
       {dialogTerbuka ? (

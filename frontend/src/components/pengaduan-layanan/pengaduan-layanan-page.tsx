@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, BarChart3, CheckCircle2, ImagePlus, MessageSquareHeart, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useAnimatedVisibility } from '@/components/animated-modal/use-animated-visibility';
 import {
   ACCESS_KEYS,
   clearSession,
@@ -55,6 +56,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [error, setError] = useState('');
   const [terkirim, setTerkirim] = useState(false);
   const [popupTutup, setPopupTutup] = useState(false);
+  const popupAnim = useAnimatedVisibility(!popupTutup);
   const inputFotoRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -204,9 +206,9 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         {bolehLihatRekap && <DaftarPengaduanTabel divisi={divisi} />}
       </div>
 
-      {!popupTutup && (
-      <div className={styles.popupOverlay}>
-        <div className={styles.popupCard}>
+      {popupAnim.mounted && (
+      <div className={`${styles.popupOverlay} ${popupAnim.closing ? 'overlayExit' : 'overlayEnter'}`}>
+        <div className={`${styles.popupCard} ${popupAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}>
         {terkirim ? (
           <div className={styles.sukses}>
             <div className={styles.popupHeaderKanan}>

@@ -12,6 +12,8 @@ const API_URL =
 // TIPE DATA
 // ==================================================
 
+export type { HasilHalaman } from './pagination';
+
 export type StatusTiketHelpdesk = 'TERBUKA' | 'DIPROSES' | 'SELESAI';
 export type LevelTiketHelpdesk = 'RENDAH' | 'SEDANG' | 'TINGGI';
 

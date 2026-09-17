@@ -25,11 +25,15 @@ import {
   labelStatus,
   mcuApi,
   unduhBerkas,
+  type HasilHalaman,
   type HasilMcu,
 } from '@/lib/mcu-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useMcu } from '../layout';
 import { compressImage } from '@/lib/compress-image';
 import styles from '../mcu.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 type JadwalMenunggu = {
   id: number;
@@ -59,50 +63,50 @@ export default function HasilMcuPage() {
 
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalHasil, setTotalHasil] = useState(0);
 
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
 
     try {
-      const [daftarHasil, daftarMenunggu] = await Promise.all([
-        mcuApi.ambil<HasilMcu[]>('/hasil'),
+      const parameter = new URLSearchParams({
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
+
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      const [hasilData, daftarMenunggu] = await Promise.all([
+        mcuApi.ambil<HasilHalaman<HasilMcu>>(`/hasil?${parameter.toString()}`),
         mcuApi.ambil<JadwalMenunggu[]>('/hasil/menunggu-upload'),
       ]);
 
-      setHasil(daftarHasil);
+      setHasil(hasilData.data);
+      setTotalHasil(hasilData.total);
       setMenunggu(daftarMenunggu);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
       setMemuat(false);
     }
-  }, []);
+  }, [filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
+  // Balik ke halaman 1 tiap kali filter bulan/tahun berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [filterBulan, filterTahun]);
+
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const hasilTampil = useMemo(() => {
-    return hasil.filter((item) => {
-      const tanggal = new Date(item.tanggalUpload);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [hasil, filterBulan, filterTahun]);
 
   async function unggah() {
     if (!jadwalDipilih || !berkas) {
@@ -241,7 +245,7 @@ export default function HasilMcuPage() {
 
       <Panel
         judul="Hasil MCU Tersimpan"
-        keterangan={`${hasilTampil.length} dari ${hasil.length} hasil MCU tercatat.`}
+        keterangan={`${totalHasil} hasil MCU, ditampilkan ${hasil.length} per halaman.`}
       >
         <div className={styles.filterBar}>
           <select
@@ -277,7 +281,7 @@ export default function HasilMcuPage() {
 
         {memuat ? (
           <Memuat />
-        ) : hasilTampil.length === 0 ? (
+        ) : hasil.length === 0 ? (
           <Kosong
             judul="Belum ada hasil MCU"
             keterangan="Hasil MCU akan muncul setelah klinik atau HC mengunggahnya."
@@ -299,7 +303,7 @@ export default function HasilMcuPage() {
               </thead>
 
               <tbody>
-                {hasilTampil.map((item) => {
+                {hasil.map((item) => {
                   const rekomTerakhir =
                     item.rekomendasi[item.rekomendasi.length - 1] ?? null;
 
@@ -368,6 +372,12 @@ export default function HasilMcuPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalHasil, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </Panel>
 
       {jadwalDipilih ? (

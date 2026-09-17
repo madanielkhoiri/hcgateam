@@ -27,14 +27,18 @@ import {
 import {
   formatTanggalWaktu,
   helpdeskApi,
+  type HasilHalaman,
   type PohonKategoriHelpdesk,
   type RingkasanHelpdesk,
   type StatusTiketHelpdesk,
   type TiketHelpdesk,
 } from '@/lib/helpdesk-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useHelpdesk } from '../layout';
 import { compressImage } from '@/lib/compress-image';
 import styles from '../helpdesk.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 const TAB_STATUS: Array<{ key: StatusTiketHelpdesk; label: string }> = [
   { key: 'TERBUKA', label: 'Open' },
@@ -64,6 +68,8 @@ export default function HelpdeskPage() {
 
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalTiket, setTotalTiket] = useState(0);
 
   const daftarSubKategori = formKategori
     ? Object.keys(pohonKategori[formKategori] ?? {})
@@ -79,13 +85,23 @@ export default function HelpdeskPage() {
     setGalat(null);
 
     try {
-      const [daftarTiket, ringkasanData, kategoriData] = await Promise.all([
-        helpdeskApi.ambil<TiketHelpdesk[]>(`?status=${tab}`),
+      const parameter = new URLSearchParams({
+        status: tab,
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
+
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      const [hasilTiket, ringkasanData, kategoriData] = await Promise.all([
+        helpdeskApi.ambil<HasilHalaman<TiketHelpdesk>>(`?${parameter.toString()}`),
         helpdeskApi.ambil<RingkasanHelpdesk>('/ringkasan'),
         helpdeskApi.ambil<PohonKategoriHelpdesk>('/kategori'),
       ]);
 
-      setTiket(daftarTiket);
+      setTiket(hasilTiket.data);
+      setTotalTiket(hasilTiket.total);
       setRingkasan(ringkasanData);
       setPohonKategori(kategoriData);
     } catch (error) {
@@ -93,32 +109,21 @@ export default function HelpdeskPage() {
     } finally {
       setMemuat(false);
     }
-  }, [tab]);
+  }, [tab, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
+  // Balik ke halaman 1 tiap kali tab status atau filter bulan/tahun berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [tab, filterBulan, filterTahun]);
+
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const tiketTampil = useMemo(() => {
-    return tiket.filter((item) => {
-      const tanggal = new Date(item.dibuatPada);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [tiket, filterBulan, filterTahun]);
 
   function bukaBuat() {
     setFormKategori('');
@@ -237,7 +242,7 @@ export default function HelpdeskPage() {
       </div>
 
       <Panel
-        judul={`Daftar Laporan - ${TAB_STATUS.find((item) => item.key === tab)?.label} (${tiketTampil.length} dari ${tiket.length})`}
+        judul={`Daftar Laporan - ${TAB_STATUS.find((item) => item.key === tab)?.label} (${totalTiket} tiket)`}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
           <select
@@ -273,7 +278,7 @@ export default function HelpdeskPage() {
 
         {memuat ? (
           <Memuat />
-        ) : tiketTampil.length === 0 ? (
+        ) : tiket.length === 0 ? (
           <Kosong
             judul="Belum ada tiket"
             keterangan="Tiket pada status ini akan tampil di sini."
@@ -297,7 +302,7 @@ export default function HelpdeskPage() {
               </thead>
 
               <tbody>
-                {tiketTampil.map((item) => (
+                {tiket.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <Link
@@ -364,6 +369,12 @@ export default function HelpdeskPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalTiket, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </Panel>
 
       {dialogBuat ? (

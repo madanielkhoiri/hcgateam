@@ -23,6 +23,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -61,21 +63,28 @@ export default function LoginPage() {
       storage.setItem('hcga_access_token', result.accessToken);
       storage.setItem('hcga_user', JSON.stringify(result.user));
 
-      router.replace('/dashboard');
-      router.refresh();
+      setLoading(false);
+      setSuccess(true);
+
+      // Beri jeda supaya animasi "berhasil" sempat terlihat, baru
+      // halaman fade-out dan pindah - bukan loncat instan begitu API selesai.
+      window.setTimeout(() => setLeaving(true), 550);
+      window.setTimeout(() => {
+        router.replace('/dashboard');
+        router.refresh();
+      }, 820);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
           : 'Terjadi kesalahan saat login',
       );
-    } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${leaving ? styles.pageLeaving : ''}`}>
       <header className={styles.header}>
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
@@ -180,13 +189,13 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className={styles.loginButton}
-              disabled={loading}
+              className={`${styles.loginButton} ${success ? styles.loginButtonSuccess : ''}`}
+              disabled={loading || success}
             >
-              <LogIn size={19} />
+              {success ? <Check size={19} strokeWidth={3} /> : <LogIn size={19} />}
 
               <span>
-                {loading ? 'Memproses...' : 'Masuk'}
+                {success ? 'Berhasil!' : loading ? 'Memproses...' : 'Masuk'}
               </span>
             </button>
 
