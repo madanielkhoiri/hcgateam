@@ -11,6 +11,8 @@ import type { StatusKerja } from './mcu-api';
 
 export type {
   Departemen,
+  GenderKaryawan,
+  HasilHalaman,
   Karyawan,
   StatusKerja,
   StatusKesehatanDirumahkan,

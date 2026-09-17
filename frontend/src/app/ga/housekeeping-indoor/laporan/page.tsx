@@ -27,10 +27,14 @@ import {
   LABEL_LOKASI_HOUSEKEEPING_INDOOR,
   LOKASI_HOUSEKEEPING_INDOOR,
   LokasiHousekeepingIndoor,
+  RingkasanHousekeepingIndoor,
   housekeepingIndoorApi,
   urlFileHousekeepingIndoor,
 } from '@/lib/housekeeping-indoor-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from '../housekeeping-indoor.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 function formatTanggal(value: string): string {
   return new Date(value).toLocaleDateString('id-ID', {
@@ -58,6 +62,9 @@ export default function LaporanHousekeepingIndoorPage() {
   const [filterLokasi, setFilterLokasi] = useState<LokasiHousekeepingIndoor | ''>('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [ringkasan, setRingkasan] = useState<RingkasanHousekeepingIndoor | null>(null);
 
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(blankForm);
@@ -72,7 +79,19 @@ export default function LaporanHousekeepingIndoorPage() {
   async function muat() {
     try {
       setError('');
-      setData(await housekeepingIndoorApi.daftar());
+      const [hasil, dataRingkasan] = await Promise.all([
+        housekeepingIndoorApi.daftar({
+          lokasi: filterLokasi || undefined,
+          bulan: filterBulan || undefined,
+          tahun: filterTahun || undefined,
+          halaman,
+          ukuranHalaman: UKURAN_HALAMAN,
+        }),
+        housekeepingIndoorApi.ringkasan(),
+      ]);
+      setData(hasil.data);
+      setTotalData(hasil.total);
+      setRingkasan(dataRingkasan);
     } catch (err) {
       setError(err instanceof HousekeepingIndoorApiError ? err.message : 'Data laporan gagal dimuat');
     }
@@ -80,38 +99,29 @@ export default function LaporanHousekeepingIndoorPage() {
 
   useEffect(() => {
     void muat();
-  }, []);
+  }, [filterLokasi, filterBulan, filterTahun, halaman]);
+
+  // Balik ke halaman 1 tiap kali filter berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [filterLokasi, filterBulan, filterTahun]);
 
   const tahunTersedia = useMemo(() => {
     const sekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, i) => sekarang - 5 + i);
   }, []);
 
-  const dataTampil = useMemo(
-    () =>
-      data
-        .filter((item) => !filterLokasi || item.lokasi === filterLokasi)
-        .filter((item) => {
-          if (!filterBulan && !filterTahun) return true;
-          const tanggal = new Date(item.createdAt);
-          if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) return false;
-          if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) return false;
-          return true;
-        }),
-    [data, filterLokasi, filterBulan, filterTahun],
-  );
-
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
 
-  const stat = useMemo(() => {
-    const hariIni = new Date().toDateString();
-    const totalFoto = data.reduce((total, item) => total + item.foto.length, 0);
-    const lokasiHariIni = new Set(
-      data.filter((item) => new Date(item.createdAt).toDateString() === hariIni).map((item) => item.lokasi),
-    ).size;
-    return { totalLaporan: data.length, totalFoto, lokasiHariIni };
-  }, [data]);
+  // Statistik keseluruhan (bukan cuma halaman yang sedang tampil) diambil
+  // dari endpoint ringkasan dashboard, bukan dihitung dari `data` lokal.
+  const stat = {
+    totalLaporan: ringkasan?.totalLaporanKeseluruhan ?? 0,
+    totalFotoBulanIni: ringkasan?.totalFotoBulanIni ?? 0,
+    lokasiHariIni: ringkasan?.lokasiDilaporkanHariIni ?? 0,
+    totalLokasi: ringkasan?.totalLokasi ?? LOKASI_HOUSEKEEPING_INDOOR.length,
+  };
 
   function bukaModal() {
     setForm(blankForm);
@@ -208,11 +218,11 @@ export default function LaporanHousekeepingIndoorPage() {
             <span>Total Laporan</span>
           </div>
           <div className={styles.statCard}>
-            <strong>{stat.totalFoto}</strong>
-            <span>Total Foto Terkumpul</span>
+            <strong>{stat.totalFotoBulanIni}</strong>
+            <span>Foto Bulan Ini</span>
           </div>
           <div className={styles.statCard}>
-            <strong>{stat.lokasiHariIni} / 6</strong>
+            <strong>{stat.lokasiHariIni} / {stat.totalLokasi}</strong>
             <span>Lokasi Dilaporkan Hari Ini</span>
           </div>
         </div>
@@ -279,7 +289,7 @@ export default function LaporanHousekeepingIndoorPage() {
       {error && <p className={styles.pageError}>{error}</p>}
 
       <div className={styles.grid}>
-        {dataTampil.map((item) => (
+        {data.map((item) => (
           <article key={item.id} className={styles.card}>
             <div className={styles.cardCover} onClick={() => setGaleri(item)}>
               {item.foto[0] ? (
@@ -309,10 +319,16 @@ export default function LaporanHousekeepingIndoorPage() {
           </article>
         ))}
 
-        {!dataTampil.length && !error && (
+        {!data.length && !error && (
           <div className={styles.empty}>Belum ada laporan kebersihan untuk filter ini.</div>
         )}
       </div>
+
+      <PaginationBar
+        halaman={halaman}
+        totalHalaman={hitungTotalHalaman(totalData, UKURAN_HALAMAN)}
+        onGanti={setHalaman}
+      />
 
       {modal && (
         <div className={styles.modalBack} onClick={() => setModal(false)}>

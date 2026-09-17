@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken, type PortalUser } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -123,7 +124,7 @@ export const postinganApi = {
 };
 
 export function urlMediaPostingan(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export function bolehKelolaPostingan(user: PortalUser | null): boolean {

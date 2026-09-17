@@ -4,6 +4,10 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import type { HasilHalaman } from './pagination';
+import { urlUploads } from './uploads-url';
+
+export type { HasilHalaman } from './pagination';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -98,7 +102,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export function urlFileHousekeepingIndoor(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export type RingkasanHousekeepingIndoor = {
@@ -116,8 +120,22 @@ export type TrenDashboardHousekeepingIndoor = {
 };
 
 export const housekeepingIndoorApi = {
-  daftar: (lokasi?: LokasiHousekeepingIndoor) =>
-    request<HousekeepingIndoorLaporan[]>(`/housekeeping-indoor${lokasi ? `?lokasi=${lokasi}` : ''}`),
+  daftar: (params?: {
+    lokasi?: LokasiHousekeepingIndoor;
+    bulan?: string;
+    tahun?: string;
+    halaman?: number;
+    ukuranHalaman?: number;
+  }) => {
+    const parameter = new URLSearchParams();
+    if (params?.lokasi) parameter.set('lokasi', params.lokasi);
+    if (params?.bulan) parameter.set('bulan', params.bulan);
+    if (params?.tahun) parameter.set('tahun', params.tahun);
+    if (params?.halaman) parameter.set('halaman', String(params.halaman));
+    if (params?.ukuranHalaman) parameter.set('ukuranHalaman', String(params.ukuranHalaman));
+    const kueri = parameter.toString();
+    return request<HasilHalaman<HousekeepingIndoorLaporan>>(`/housekeeping-indoor${kueri ? `?${kueri}` : ''}`);
+  },
   buat: (data: { lokasi: LokasiHousekeepingIndoor; namaPetugas: string }, files: File[]) => {
     const form = new FormData();
     form.append('lokasi', data.lokasi);

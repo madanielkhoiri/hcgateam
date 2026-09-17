@@ -26,12 +26,17 @@ import SimplePieChart from '@/components/dashboard-charts/simple-pie-chart';
 import {
   karyawanApi,
   type Departemen,
+  type GenderKaryawan,
+  type HasilHalaman,
   type Karyawan,
   type RingkasanDatabaseKaryawan,
   type TrenDashboardKaryawan,
 } from '@/lib/karyawan-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useKaryawan } from '../layout';
 import styles from '../karyawan.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 const NAMA_BULAN = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -53,6 +58,7 @@ const LABEL_STATUS: Record<string, string> = {
 type FormKaryawan = {
   nik: string;
   nama: string;
+  gender: GenderKaryawan | '';
   departemenId: string;
   jabatan: string;
   email: string;
@@ -62,10 +68,16 @@ type FormKaryawan = {
 const formKosong: FormKaryawan = {
   nik: '',
   nama: '',
+  gender: '',
   departemenId: '',
   jabatan: '',
   email: '',
   noTelepon: '',
+};
+
+const LABEL_GENDER: Record<GenderKaryawan, string> = {
+  LAKI_LAKI: 'Laki-laki',
+  PEREMPUAN: 'Perempuan',
 };
 
 function Pesan({
@@ -124,6 +136,8 @@ export default function DashboardKaryawanPage() {
 
   const [cari, setCari] = useState('');
   const [filterDept, setFilterDept] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalKaryawan, setTotalKaryawan] = useState(0);
 
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
   const [idDiedit, setIdDiedit] = useState<number | null>(null);
@@ -153,25 +167,33 @@ export default function DashboardKaryawanPage() {
         parameter.set('cari', cari.trim());
       }
 
-      const kueri = parameter.toString();
+      parameter.set('halaman', String(halaman));
+      parameter.set('ukuranHalaman', String(UKURAN_HALAMAN));
 
-      const [daftarKaryawan, daftarDept] = await Promise.all([
-        karyawanApi.ambil<Karyawan[]>(`${kueri ? `?${kueri}` : ''}`),
+      const [hasil, daftarDept] = await Promise.all([
+        karyawanApi.ambil<HasilHalaman<Karyawan>>(`?${parameter.toString()}`),
         karyawanApi.ambil<Departemen[]>('/departemen'),
       ]);
 
-      setKaryawan(daftarKaryawan);
+      setKaryawan(hasil.data);
+      setTotalKaryawan(hasil.total);
       setDepartemen(daftarDept);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
       setMemuat(false);
     }
-  }, [cari, filterDept]);
+  }, [cari, filterDept, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  // Balik ke halaman 1 tiap kali pencarian/filter berubah, supaya tidak
+  // "nyangkut" di halaman yang mungkin sudah tidak ada untuk hasil barunya.
+  useEffect(() => {
+    setHalaman(1);
+  }, [cari, filterDept]);
 
   useEffect(() => {
     let aktif = true;
@@ -236,6 +258,7 @@ export default function DashboardKaryawanPage() {
     setForm({
       nik: item.nik,
       nama: item.nama,
+      gender: item.gender ?? '',
       departemenId: String(item.departemenId),
       jabatan: item.jabatan ?? '',
       email: item.email ?? '',
@@ -251,6 +274,7 @@ export default function DashboardKaryawanPage() {
     const muatan = {
       nik: form.nik.trim(),
       nama: form.nama.trim(),
+      gender: form.gender || undefined,
       departemenId: Number(form.departemenId),
       jabatan: form.jabatan.trim() || undefined,
       email: form.email.trim() || undefined,
@@ -387,7 +411,7 @@ export default function DashboardKaryawanPage() {
         <div className={styles.panelHead}>
           <div>
             <h2>Daftar Karyawan</h2>
-            <p>{karyawan.length} karyawan ditampilkan.</p>
+            <p>{totalKaryawan} karyawan, ditampilkan {karyawan.length} per halaman.</p>
           </div>
         </div>
 
@@ -429,6 +453,7 @@ export default function DashboardKaryawanPage() {
               <thead>
                 <tr>
                   <th>Karyawan</th>
+                  <th>Gender</th>
                   <th>Departemen</th>
                   <th>Jabatan</th>
                   <th>No. Telepon</th>
@@ -448,6 +473,7 @@ export default function DashboardKaryawanPage() {
                       </div>
                     </td>
 
+                    <td>{item.gender ? LABEL_GENDER[item.gender] : '-'}</td>
                     <td>{item.departemen.namaDepartemen}</td>
                     <td>{item.jabatan ?? '-'}</td>
                     <td>{item.noTelepon ?? '-'}</td>
@@ -511,6 +537,12 @@ export default function DashboardKaryawanPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalKaryawan, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </section>
 
       {dialogTerbuka ? (
@@ -558,6 +590,23 @@ export default function DashboardKaryawanPage() {
                     setForm({ ...form, nama: event.target.value })
                   }
                 />
+              </Field>
+
+              <Field label="Gender (otomatis sapaan Bapak/Ibu di notifikasi WA)">
+                <select
+                  className={styles.select}
+                  value={form.gender}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      gender: event.target.value as FormKaryawan['gender'],
+                    })
+                  }
+                >
+                  <option value="">Belum diisi</option>
+                  <option value="LAKI_LAKI">Laki-laki</option>
+                  <option value="PEREMPUAN">Perempuan</option>
+                </select>
               </Field>
 
               <Field label="Departemen">

@@ -24,12 +24,16 @@ import SimplePieChart from '@/components/dashboard-charts/simple-pie-chart';
 import {
   formatTanggal,
   suratTugasApi,
+  type HasilHalaman,
   type RingkasanSuratTugas,
   type StatusSuratTugas,
   type SuratTugasDinas,
   type TrenDashboardSuratTugas,
 } from '@/lib/surat-tugas-dinas-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from '../tugas-dinas.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 const NAMA_BULAN = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -66,6 +70,8 @@ export default function DashboardTugasDinasPage() {
 
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalSurat, setTotalSurat] = useState(0);
 
   const [ringkasan, setRingkasan] = useState<RingkasanSuratTugas | null>(null);
   const [tren, setTren] = useState<TrenDashboardSuratTugas | null>(null);
@@ -75,20 +81,35 @@ export default function DashboardTugasDinasPage() {
     setGalat(null);
 
     try {
-      const hasil = await suratTugasApi.ambil<SuratTugasDinas[]>(
-        tab ? `?status=${tab}` : '',
+      const parameter = new URLSearchParams({
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
+
+      if (tab) parameter.set('status', tab);
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      const hasil = await suratTugasApi.ambil<HasilHalaman<SuratTugasDinas>>(
+        `?${parameter.toString()}`,
       );
-      setDaftar(hasil);
+      setDaftar(hasil.data);
+      setTotalSurat(hasil.total);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
       setMemuat(false);
     }
-  }, [tab]);
+  }, [tab, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
+
+  // Balik ke halaman 1 tiap kali tab status atau filter bulan/tahun berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [tab, filterBulan, filterTahun]);
 
   useEffect(() => {
     let aktif = true;
@@ -116,22 +137,6 @@ export default function DashboardTugasDinasPage() {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const daftarTampil = useMemo(() => {
-    return daftar.filter((item) => {
-      const tanggal = new Date(item.tanggalMulai);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [daftar, filterBulan, filterTahun]);
 
   const statCards: StatCard[] = ringkasan
     ? [
@@ -248,7 +253,7 @@ export default function DashboardTugasDinasPage() {
 
       <Panel
         judul="Daftar Surat Tugas Dinas"
-        keterangan={`${daftarTampil.length} dari ${daftar.length} surat ditampilkan.`}
+        keterangan={`${totalSurat} surat, ditampilkan ${daftar.length} per halaman.`}
       >
         <div className={styles.filterBar}>
           <select
@@ -284,7 +289,7 @@ export default function DashboardTugasDinasPage() {
 
         {memuat ? (
           <Memuat />
-        ) : daftarTampil.length === 0 ? (
+        ) : daftar.length === 0 ? (
           <Kosong
             judul="Belum ada surat tugas"
             keterangan="Buat surat tugas dinas baru untuk mulai."
@@ -305,7 +310,7 @@ export default function DashboardTugasDinasPage() {
               </thead>
 
               <tbody>
-                {daftarTampil.map((item) => (
+                {daftar.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <Link
@@ -333,6 +338,12 @@ export default function DashboardTugasDinasPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalSurat, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </Panel>
     </>
   );

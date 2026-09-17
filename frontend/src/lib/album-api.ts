@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -121,5 +122,5 @@ export const albumApi = {
 };
 
 export function urlFotoAlbum(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }

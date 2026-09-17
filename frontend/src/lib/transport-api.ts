@@ -4,9 +4,13 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import type { HasilHalaman } from './pagination';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+export type { HasilHalaman } from './pagination';
 
 // ==================================================
 // TIPE DATA
@@ -95,6 +99,22 @@ export type TripDriver = TravelJadwal & {
 
 export type TravelSaya = TravelPenumpang & { travel: TravelJadwal };
 
+export type DashboardTiket = {
+  totalTiket: number;
+  tiketBulanIni: number;
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownJenis: { jenis: JenisTiket; total: number }[];
+};
+
+export type DashboardTravel = {
+  totalJadwal: number;
+  jadwalBulanIni: number;
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusTravel; total: number }[];
+};
+
 // ==================================================
 // KLIEN HTTP
 // ==================================================
@@ -152,14 +172,24 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** URL publik file yang disimpan lewat TiketFileService/TravelFileService, disajikan statis lewat /api/uploads/. */
+/** URL file yang disimpan lewat TiketFileService/TravelFileService — wajib login, lihat uploads-url.ts. */
 export function urlFileTransport(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export const transportApi = {
   tiket: {
-    daftarAdmin: () => request<TransportTiket[]>('/tiket/admin'),
+    dashboard: () => request<DashboardTiket>('/tiket/admin/dashboard'),
+    daftarAdmin: (params?: { cari?: string; bulan?: string; tahun?: string; halaman?: number; ukuranHalaman?: number }) => {
+      const parameter = new URLSearchParams();
+      if (params?.cari) parameter.set('cari', params.cari);
+      if (params?.bulan) parameter.set('bulan', params.bulan);
+      if (params?.tahun) parameter.set('tahun', params.tahun);
+      if (params?.halaman) parameter.set('halaman', String(params.halaman));
+      if (params?.ukuranHalaman) parameter.set('ukuranHalaman', String(params.ukuranHalaman));
+      const kueri = parameter.toString();
+      return request<HasilHalaman<TransportTiket>>(`/tiket/admin${kueri ? `?${kueri}` : ''}`);
+    },
     karyawanRingkas: (search?: string) =>
       request<KaryawanRingkas[]>(`/tiket/admin/karyawan${search ? `?search=${encodeURIComponent(search)}` : ''}`),
     kirim: (
@@ -208,6 +238,7 @@ export const transportApi = {
   },
 
   travel: {
+    dashboard: () => request<DashboardTravel>('/travel/admin/dashboard'),
     daftarDriver: () => request<Driver[]>('/travel/admin/driver'),
     buatDriver: (data: { nama: string; noTelepon?: string; username?: string; password?: string }) =>
       request<Driver>('/travel/admin/driver', { method: 'POST', body: JSON.stringify(data) }),
@@ -218,7 +249,16 @@ export const transportApi = {
     karyawanRingkas: (search?: string) =>
       request<KaryawanRingkas[]>(`/travel/admin/karyawan${search ? `?search=${encodeURIComponent(search)}` : ''}`),
 
-    daftarJadwalAdmin: () => request<TravelJadwal[]>('/travel/admin/jadwal'),
+    daftarJadwalAdmin: (params?: { status?: string; bulan?: string; tahun?: string; halaman?: number; ukuranHalaman?: number }) => {
+      const parameter = new URLSearchParams();
+      if (params?.status) parameter.set('status', params.status);
+      if (params?.bulan) parameter.set('bulan', params.bulan);
+      if (params?.tahun) parameter.set('tahun', params.tahun);
+      if (params?.halaman) parameter.set('halaman', String(params.halaman));
+      if (params?.ukuranHalaman) parameter.set('ukuranHalaman', String(params.ukuranHalaman));
+      const kueri = parameter.toString();
+      return request<HasilHalaman<TravelJadwal>>(`/travel/admin/jadwal${kueri ? `?${kueri}` : ''}`);
+    },
     detailJadwalAdmin: (id: number) => request<TravelJadwal>(`/travel/admin/jadwal/${id}`),
     buatJadwal: (data: {
       armada: string;

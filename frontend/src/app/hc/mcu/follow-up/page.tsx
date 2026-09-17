@@ -33,11 +33,15 @@ import {
   mcuApi,
   unduhBerkas,
   type FollowUp,
+  type HasilHalaman,
   type Klinik,
 } from '@/lib/mcu-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useMcu } from '../layout';
 import { compressImage } from '@/lib/compress-image';
 import styles from '../mcu.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 export default function FollowUpPage() {
   const { punyaPeran } = useMcu();
@@ -55,6 +59,9 @@ export default function FollowUpPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalDaftar, setTotalDaftar] = useState(0);
+  const [jumlahTerlambat, setJumlahTerlambat] = useState(0);
 
   const [dialogBatas, setDialogBatas] = useState<FollowUp | null>(null);
   const [dialogTanggal, setDialogTanggal] = useState<FollowUp | null>(null);
@@ -71,53 +78,47 @@ export default function FollowUpPage() {
     setGalat(null);
 
     try {
-      const kueri = filterStatus ? `?status=${filterStatus}` : '';
+      const parameter = new URLSearchParams({
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
 
-      const [daftarFu, daftarKlinik] = await Promise.all([
-        mcuApi.ambil<FollowUp[]>(`/follow-up${kueri}`),
+      if (filterStatus) parameter.set('status', filterStatus);
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      // "Jumlah terlambat" dihitung terpisah (tanpa halaman) supaya tetap
+      // benar untuk SELURUH data, bukan cuma yang sedang ditampilkan.
+      const [hasilFu, daftarKlinik, daftarTerlambat] = await Promise.all([
+        mcuApi.ambil<HasilHalaman<FollowUp>>(`/follow-up?${parameter.toString()}`),
         mcuApi.ambil<Klinik[]>('/klinik?hanyaAktif=true'),
+        mcuApi.ambil<FollowUp[]>('/follow-up?terlambat=true'),
       ]);
 
-      setDaftar(daftarFu);
+      setDaftar(hasilFu.data);
+      setTotalDaftar(hasilFu.total);
       setKlinik(daftarKlinik);
+      setJumlahTerlambat(daftarTerlambat.length);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
       setMemuat(false);
     }
-  }, [filterStatus]);
+  }, [filterStatus, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
-  const jumlahTerlambat = useMemo(
-    () => daftar.filter((item) => item.melewatiBatas).length,
-    [daftar],
-  );
+  // Balik ke halaman 1 tiap kali filter berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [filterStatus, filterBulan, filterTahun]);
 
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const daftarTampil = useMemo(() => {
-    return daftar.filter((item) => {
-      const tanggal = new Date(
-        item.rekomendasi.hasilMcu.jadwalMcu.tanggalMcu,
-      );
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [daftar, filterBulan, filterTahun]);
 
   async function simpanBatas() {
     if (!dialogBatas) {
@@ -305,7 +306,7 @@ export default function FollowUpPage() {
 
       <Panel
         judul="Daftar Kasus Follow Up"
-        keterangan={`${daftarTampil.length} dari ${daftar.length} kasus, ${jumlahTerlambat} melewati batas waktu.`}
+        keterangan={`${totalDaftar} kasus, ditampilkan ${daftar.length} per halaman, ${jumlahTerlambat} melewati batas waktu.`}
       >
         <div className={styles.filterBar}>
           <select
@@ -357,7 +358,7 @@ export default function FollowUpPage() {
 
         {memuat ? (
           <Memuat />
-        ) : daftarTampil.length === 0 ? (
+        ) : daftar.length === 0 ? (
           <Kosong
             judul="Belum ada kasus Follow Up"
             keterangan="Kasus FU dibuat otomatis saat Dokter menerbitkan rekomendasi Follow Up."
@@ -380,7 +381,7 @@ export default function FollowUpPage() {
               </thead>
 
               <tbody>
-                {daftarTampil.map((item) => {
+                {daftar.map((item) => {
                   const hasilTerakhir =
                     item.hasilFollowUp[0] ?? null;
 
@@ -543,6 +544,12 @@ export default function FollowUpPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalDaftar, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </Panel>
 
       {dialogBatas ? (

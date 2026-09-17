@@ -360,8 +360,14 @@
   text-align: center;
 }
 
+.tabelScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .tabel {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   font-size: 12px;
 }

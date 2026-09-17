@@ -30,12 +30,16 @@ import {
   formatWaktu,
   mcuApi,
   unduhBerkas,
+  type HasilHalaman,
   type Rekomendasi,
   type StatusRekomendasi,
 } from '@/lib/mcu-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useMcu } from '../layout';
 import { compressImage } from '@/lib/compress-image';
 import styles from '../mcu.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 type AntreanHasil = {
   id: number;
@@ -96,19 +100,31 @@ export default function RekomendasiPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalRekomendasi, setTotalRekomendasi] = useState(0);
 
   const muat = useCallback(async () => {
     setMemuat(true);
     setGalat(null);
 
     try {
-      const [daftarRekom, daftarAntrean, daftarAntreanFu] = await Promise.all([
-        mcuApi.ambil<Rekomendasi[]>('/rekomendasi'),
+      const parameter = new URLSearchParams({
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
+
+      if (filterStatus) parameter.set('status', filterStatus);
+      if (filterBulan) parameter.set('bulan', filterBulan);
+      if (filterTahun) parameter.set('tahun', filterTahun);
+
+      const [hasilRekom, daftarAntrean, daftarAntreanFu] = await Promise.all([
+        mcuApi.ambil<HasilHalaman<Rekomendasi>>(`/rekomendasi?${parameter.toString()}`),
         mcuApi.ambil<AntreanHasil[]>('/rekomendasi/antrean-review'),
         mcuApi.ambil<AntreanHasilFu[]>('/follow-up/antrean-review-ulang'),
       ]);
 
-      setRekomendasi(daftarRekom);
+      setRekomendasi(hasilRekom.data);
+      setTotalRekomendasi(hasilRekom.total);
       setAntrean(daftarAntrean);
       setAntreanFu(daftarAntreanFu);
     } catch (error) {
@@ -116,36 +132,21 @@ export default function RekomendasiPage() {
     } finally {
       setMemuat(false);
     }
-  }, []);
+  }, [filterStatus, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
+  // Balik ke halaman 1 tiap kali filter berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [filterStatus, filterBulan, filterTahun]);
+
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const rekomendasiTampil = useMemo(() => {
-    return rekomendasi.filter((item) => {
-      if (filterStatus && item.status !== filterStatus) {
-        return false;
-      }
-
-      const tanggal = new Date(item.tanggalSubmit);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [rekomendasi, filterStatus, filterBulan, filterTahun]);
 
   function bukaReview(
     idHasilMcu: number,
@@ -430,7 +431,7 @@ export default function RekomendasiPage() {
 
       <Panel
         judul="Rekomendasi Terbit"
-        keterangan={`${rekomendasiTampil.length} dari ${rekomendasi.length} rekomendasi tercatat.`}
+        keterangan={`${totalRekomendasi} rekomendasi, ditampilkan ${rekomendasi.length} per halaman.`}
       >
         <div className={styles.filterBar}>
           <select
@@ -477,7 +478,7 @@ export default function RekomendasiPage() {
 
         {memuat ? (
           <Memuat />
-        ) : rekomendasiTampil.length === 0 ? (
+        ) : rekomendasi.length === 0 ? (
           <Kosong
             judul="Belum ada rekomendasi"
             keterangan="Rekomendasi muncul setelah Dokter menyelesaikan review hasil MCU."
@@ -498,7 +499,7 @@ export default function RekomendasiPage() {
               </thead>
 
               <tbody>
-                {rekomendasiTampil.map((item) => (
+                {rekomendasi.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className={styles.tableNama}>
@@ -563,6 +564,12 @@ export default function RekomendasiPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalRekomendasi, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </Panel>
 
       {reviewTerbuka ? (

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAnimatedVisibility } from '@/components/animated-modal/use-animated-visibility';
 import { ACCESS_KEYS, hasAccess, saveStoredUser } from '@/lib/access-control';
 import {
   postinganApi,
@@ -171,6 +172,17 @@ export default function DashboardPage() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+
+  const profileModalAnim = useAnimatedVisibility(profileModalOpen);
+  const passwordModalAnim = useAnimatedVisibility(passwordModalOpen);
+  const mediaPreviewAnim = useAnimatedVisibility(mediaPreview !== null);
+  const [lastMediaPreview, setLastMediaPreview] = useState<Postingan | null>(null);
+
+  useEffect(() => {
+    if (mediaPreview) setLastMediaPreview(mediaPreview);
+  }, [mediaPreview]);
+
+  const mediaPreviewToShow = mediaPreview ?? lastMediaPreview;
 
   const [profileName, setProfileName] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
@@ -1173,10 +1185,10 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {profileModalOpen && (
-        <div className={styles.modalOverlay}>
+      {profileModalAnim.mounted && (
+        <div className={`${styles.modalOverlay} ${profileModalAnim.closing ? 'overlayExit' : 'overlayEnter'}`}>
           <section
-            className={styles.accountModal}
+            className={`${styles.accountModal} ${profileModalAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="profile-modal-title"
@@ -1279,10 +1291,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {passwordModalOpen && (
-        <div className={styles.modalOverlay}>
+      {passwordModalAnim.mounted && (
+        <div className={`${styles.modalOverlay} ${passwordModalAnim.closing ? 'overlayExit' : 'overlayEnter'}`}>
           <section
-            className={styles.accountModal}
+            className={`${styles.accountModal} ${passwordModalAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="password-modal-title"
@@ -1396,16 +1408,16 @@ export default function DashboardPage() {
           </section>
         </div>
       )}
-      {mediaPreview && (
+      {mediaPreviewAnim.mounted && mediaPreviewToShow && (
         <div
-          className={styles.mediaOverlay}
+          className={`${styles.mediaOverlay} ${mediaPreviewAnim.closing ? 'overlayExit' : 'overlayEnter'}`}
           onClick={(event) => {
             if (event.target === event.currentTarget) setMediaPreview(null);
           }}
         >
-          <div className={styles.mediaBox}>
+          <div className={`${styles.mediaBox} ${mediaPreviewAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}>
             <div className={styles.mediaBoxHead}>
-              <strong>{mediaPreview.judul}</strong>
+              <strong>{mediaPreviewToShow.judul}</strong>
               <button
                 type="button"
                 className={styles.mediaBoxClose}
@@ -1417,16 +1429,16 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.mediaBoxBody}>
-              {mediaPreview.tipe === 'VIDEO' ? (
+              {mediaPreviewToShow.tipe === 'VIDEO' ? (
                 <video
-                  src={urlMediaPostingan(mediaPreview.urlMedia)}
+                  src={urlMediaPostingan(mediaPreviewToShow.urlMedia)}
                   controls
                   autoPlay
                 />
               ) : (
                 <img
-                  src={urlMediaPostingan(mediaPreview.urlMedia)}
-                  alt={mediaPreview.judul}
+                  src={urlMediaPostingan(mediaPreviewToShow.urlMedia)}
+                  alt={mediaPreviewToShow.judul}
                 />
               )}
             </div>
