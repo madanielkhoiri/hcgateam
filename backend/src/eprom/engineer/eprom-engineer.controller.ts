@@ -21,6 +21,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
 import {
@@ -32,6 +33,7 @@ import {
 
 @Controller('eprom/engineer')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_PROJECT')
 export class EpromEngineerController {
   constructor(private readonly service: EpromEngineerService) {}
 

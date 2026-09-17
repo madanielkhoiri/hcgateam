@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreateItemDto, UpdateItemDto } from './dto/item.dto';
 import { CreateStockInDto, UpdateStockInDto } from './dto/stock-in.dto';
 import { CreateStockOutDto, UpdateStockOutDto } from './dto/stock-out.dto';
@@ -24,6 +25,7 @@ import { DeviasiStokService } from './deviasi-stok.service';
 
 @Controller('inventory')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_INVENTORY')
 export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,

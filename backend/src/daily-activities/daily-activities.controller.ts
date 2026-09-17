@@ -14,9 +14,11 @@ import {
 import {
   DailyActivityStatus,
   DailyActivityType,
+  DailyApprovalStatus,
   UserRole,
 } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { DailyActivitiesService } from './daily-activities.service';
 import { CreateDailyActivityDto } from './dto/create-daily-activity.dto';
 import { EditDailyActivityDto } from './dto/edit-daily-activity.dto';
@@ -33,6 +35,7 @@ type AuthenticatedRequest = {
 
 @Controller('daily-activities')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_AKTIVITAS_HARIAN')
 export class DailyActivitiesController {
   constructor(
     private readonly dailyActivitiesService: DailyActivitiesService,
@@ -42,8 +45,23 @@ export class DailyActivitiesController {
   findAll(
     @Query('type') type?: DailyActivityType,
     @Query('status') status?: DailyActivityStatus,
+    @Query('approvalStatus') approvalStatus?: DailyApprovalStatus,
+    @Query('cari') cari?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
-    return this.dailyActivitiesService.findAll(type, status);
+    return this.dailyActivitiesService.findAll({
+      activityType: type,
+      status,
+      approvalStatus,
+      cari,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
+    });
   }
 
   @Get(':id')

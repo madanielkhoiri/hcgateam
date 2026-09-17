@@ -3,12 +3,14 @@ import { UseInterceptors, Controller, Get, Param, ParseIntPipe, UseGuards } from
 import { DatabaseSettlementService } from './database-settlement.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 
 
 // <--- fitur controller database settlement uang operasional --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('database-settlement')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_DEKLARASI')
 export class DatabaseSettlementController {
   constructor(
     private readonly databaseSettlementService: DatabaseSettlementService,

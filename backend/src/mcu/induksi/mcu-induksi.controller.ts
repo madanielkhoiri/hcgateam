@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { StatusInduksiUlang } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
 import {
@@ -26,6 +27,7 @@ import {
 
 @Controller('mcu/induksi-ulang')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuInduksiController {
   constructor(private readonly service: McuInduksiService) {}
 

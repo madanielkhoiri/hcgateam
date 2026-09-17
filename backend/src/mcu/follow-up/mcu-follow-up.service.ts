@@ -22,6 +22,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
 import { McuFileService } from '../common/mcu-file.service';
@@ -123,24 +124,72 @@ export class McuFollowUpService {
     private readonly notifikasi: McuNotifikasiService,
   ) {}
 
+  /**
+   * `halaman` opsional: kalau tidak dikirim, kembalikan array biasa (dipakai
+   * untuk hitung total "terlambat" independen dari halaman yang sedang
+   * ditampilkan). Kalau `halaman` dikirim, kembalikan bentuk
+   * { data, total, halaman, ukuranHalaman } untuk tabel utama.
+   */
   async daftar(filter: {
     status?: StatusFollowUp;
     karyawanId?: number;
     terlambat?: boolean;
+    bulan?: number;
+    tahun?: number;
+    halaman?: string;
+    ukuranHalaman?: string;
   }) {
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate
+    // — didasarkan tanggal MCU asal (rekomendasi -> hasilMcu -> jadwalMcu).
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggalMcu = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where = {
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
+      ...(filter.terlambat
+        ? {
+            batasWaktuFu: { not: null, lt: hariIni() },
+            status: {
+              notIn: [StatusFollowUp.SELESAI, StatusFollowUp.TERLAKSANA],
+            },
+          }
+        : {}),
+      ...(rentangTanggalMcu
+        ? { rekomendasi: { hasilMcu: { jadwalMcu: { tanggalMcu: rentangTanggalMcu } } } }
+        : {}),
+    };
+
+    if (filter.halaman) {
+      const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+      const [daftar, total] = await Promise.all([
+        this.prisma.followUp.findMany({
+          where,
+          include: FU_INCLUDE,
+          orderBy: [{ batasWaktuFu: 'asc' }, { id: 'desc' }],
+          skip: param.skip,
+          take: param.take,
+        }),
+        this.prisma.followUp.count({ where }),
+      ]);
+
+      return hasilHalaman(
+        daftar.map((item) => this.lengkapiStatusBatas(item)),
+        total,
+        param,
+      );
+    }
+
     const daftar = await this.prisma.followUp.findMany({
-      where: {
-        ...(filter.status ? { status: filter.status } : {}),
-        ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
-        ...(filter.terlambat
-          ? {
-              batasWaktuFu: { not: null, lt: hariIni() },
-              status: {
-                notIn: [StatusFollowUp.SELESAI, StatusFollowUp.TERLAKSANA],
-              },
-            }
-          : {}),
-      },
+      where,
       include: FU_INCLUDE,
       orderBy: [{ batasWaktuFu: 'asc' }, { id: 'desc' }],
     });

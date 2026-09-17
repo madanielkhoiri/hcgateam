@@ -22,6 +22,7 @@ import { CreatePostActivityDto } from './dto/create-post-activity.dto';
 import { UpdatePostActivityDto } from './dto/update-post-activity.dto';
 import { PostActivitiesService } from './post-activities.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { PostActivityPdfService } from './post-activity-pdf.service';
 
 type UploadedPostActivityFiles = {
@@ -52,6 +53,7 @@ function safeFilename(originalName: string) {
 
 @UseGuards(JwtAuthGuard)
 @Controller('post-activities')
+@RequireAccessKey('GA_PROJECT')
 export class PostActivitiesController {
   constructor(
     private readonly postActivitiesService: PostActivitiesService,

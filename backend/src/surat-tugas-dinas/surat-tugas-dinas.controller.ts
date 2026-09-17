@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import {
   BuatSuratTugasDinasDto,
   TolakSuratTugasDinasDto,
@@ -32,12 +33,27 @@ type AuthRequest = {
 
 @Controller('surat-tugas-dinas')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_TUGAS_DINAS')
 export class SuratTugasDinasController {
   constructor(private readonly service: SuratTugasDinasService) {}
 
   @Get()
-  daftar(@Req() request: AuthRequest, @Query('status') status?: string) {
-    return this.service.daftar(request.user, status);
+  daftar(
+    @Req() request: AuthRequest,
+    @Query('status') status?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+  ) {
+    return this.service.daftar(
+      request.user,
+      status,
+      halaman,
+      ukuranHalaman,
+      bulan ? Number(bulan) : undefined,
+      tahun ? Number(tahun) : undefined,
+    );
   }
 
   @Get(':id')

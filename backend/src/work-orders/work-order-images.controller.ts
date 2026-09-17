@@ -3,9 +3,11 @@ import type { Response } from 'express';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 
 @Controller('work-order-images')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_PEKERJAAN')
 export class WorkOrderImagesController {
   @Get(':filename')
   getImage(@Param('filename') filename: string, @Res() response: Response) {

@@ -19,6 +19,7 @@ import { extname } from 'path';
 import { NotaService } from './nota.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 
 
 function pastikanFolderNotaAda() {
@@ -37,6 +38,7 @@ function pastikanFolderNotaAda() {
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('nota')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_DEKLARASI')
 export class NotaController {
   constructor(private readonly notaService: NotaService) {}
 

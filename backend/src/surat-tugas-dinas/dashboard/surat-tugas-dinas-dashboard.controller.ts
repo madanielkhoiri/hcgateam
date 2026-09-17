@@ -6,6 +6,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { SuratTugasDinasDashboardService } from './surat-tugas-dinas-dashboard.service';
 
 type AuthRequest = {
@@ -17,6 +18,7 @@ type AuthRequest = {
 
 @Controller('surat-tugas-dinas/dashboard')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_TUGAS_DINAS')
 export class SuratTugasDinasDashboardController {
   constructor(private readonly service: SuratTugasDinasDashboardService) {}
 

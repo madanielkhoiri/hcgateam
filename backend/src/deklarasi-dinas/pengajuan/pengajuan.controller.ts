@@ -24,6 +24,7 @@ import { UpdateStatusPengajuanDto } from './dto/update-status-pengajuan.dto';
 import { PengajuanService } from './pengajuan.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 
 
 function pastikanFolderPengajuanAda() {
@@ -78,6 +79,7 @@ function filterFileDokumenDanGambar(
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('pengajuan')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_DEKLARASI')
 export class PengajuanController {
   constructor(private readonly pengajuanService: PengajuanService) {}
 

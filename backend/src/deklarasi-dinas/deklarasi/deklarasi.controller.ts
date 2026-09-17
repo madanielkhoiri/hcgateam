@@ -6,12 +6,14 @@ import { EditDeklarasiDto } from './dto/edit-deklarasi.dto';
 import { UbahStatusDeklarasiDto } from './dto/ubah-status-deklarasi.dto';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 
 
 // <--- fitur controller deklarasi perjalanan dinas --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('deklarasi')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_DEKLARASI')
 export class DeklarasiController {
   constructor(private readonly deklarasiService: DeklarasiService) {}
 

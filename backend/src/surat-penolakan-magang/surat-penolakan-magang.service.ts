@@ -8,6 +8,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { McuAksesService } from '../mcu/common/mcu-akses.service';
 import { AktorMcu } from '../mcu/common/mcu-aktor';
 import { BuatSuratPenolakanMagangDto } from './dto/surat-penolakan-magang.dto';
@@ -21,14 +22,42 @@ export class SuratPenolakanMagangService {
     private readonly pdf: SuratPenolakanMagangPdfService,
   ) {}
 
-  async daftar() {
-    return this.prisma.suratPenolakanMagang.findMany({
-      include: {
-        anakMagang: { select: { id: true, nama: true, nrp: true } },
-        dibuatOleh: { select: { id: true, name: true, role: true } },
-      },
-      orderBy: { id: 'desc' },
-    });
+  async daftar(filter: {
+    halaman?: string;
+    ukuranHalaman?: string;
+    bulan?: number;
+    tahun?: number;
+  } = {}) {
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where = rentangTanggal ? { createdAt: rentangTanggal } : {};
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.suratPenolakanMagang.findMany({
+        where,
+        include: {
+          anakMagang: { select: { id: true, nama: true, nrp: true } },
+          dibuatOleh: { select: { id: true, name: true, role: true } },
+        },
+        orderBy: { id: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.suratPenolakanMagang.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async detail(id: number) {

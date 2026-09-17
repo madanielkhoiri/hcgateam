@@ -21,12 +21,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { TipeLinkMeeting } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
 import { BuatMeetingDto, BuatMomDto, EpromMeetingService } from './eprom-meeting.service';
 
 @Controller('eprom/meeting')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_PROJECT')
 export class EpromMeetingController {
   constructor(private readonly service: EpromMeetingService) {}
 

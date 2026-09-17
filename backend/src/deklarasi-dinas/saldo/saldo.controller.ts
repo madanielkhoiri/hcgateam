@@ -19,6 +19,7 @@ import { BuatSaldoDto } from './buat-saldo.dto';
 import { SaldoService } from './saldo.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 
 
 function pastikanFolderPengembalianAda() {
@@ -64,6 +65,7 @@ function filterFileGambar(
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('saldo')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_DEKLARASI')
 export class SaldoController {
   constructor(private readonly saldoService: SaldoService) {}
 

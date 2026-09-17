@@ -11,10 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { McuDashboardService } from './mcu-dashboard.service';
 
 @Controller('mcu')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuDashboardController {
   constructor(private readonly service: McuDashboardService) {}
 
