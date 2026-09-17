@@ -17,6 +17,7 @@ import {
 import type { Response } from 'express';
 import { StatusRekomendasi } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
 import {
@@ -26,6 +27,7 @@ import {
 
 @Controller('mcu/rekomendasi')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuRekomendasiController {
   constructor(private readonly service: McuRekomendasiService) {}
 
@@ -34,11 +36,19 @@ export class McuRekomendasiController {
     @Query('status') status?: StatusRekomendasi,
     @Query('karyawanId') karyawanId?: string,
     @Query('belumDiteruskan') belumDiteruskan?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
     return this.service.daftar({
       status,
       karyawanId: karyawanId ? Number(karyawanId) : undefined,
       belumDiteruskan: belumDiteruskan === 'true',
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
     });
   }
 

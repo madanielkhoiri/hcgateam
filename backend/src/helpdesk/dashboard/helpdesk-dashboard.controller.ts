@@ -6,6 +6,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { HelpdeskDashboardService } from './helpdesk-dashboard.service';
 
 type AuthRequest = {
@@ -17,6 +18,7 @@ type AuthRequest = {
 
 @Controller('helpdesk/dashboard')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_HELPDESK')
 export class HelpdeskDashboardController {
   constructor(private readonly service: HelpdeskDashboardService) {}
 

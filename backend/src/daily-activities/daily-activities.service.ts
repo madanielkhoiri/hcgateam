@@ -12,6 +12,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { CreateDailyActivityDto } from './dto/create-daily-activity.dto';
 import { EditDailyActivityDto } from './dto/edit-daily-activity.dto';
 import { UpdateDailyActivityProgressDto } from './dto/update-daily-activity-progress.dto';
@@ -30,43 +31,84 @@ export class DailyActivitiesService {
     private readonly imagesService: DailyActivityImagesService,
   ) {}
 
-  async findAll(
-    activityType?: DailyActivityType,
-    status?: DailyActivityStatus,
-  ) {
-    return this.prisma.dailyActivity.findMany({
-      where: {
-        ...(activityType ? { activityType } : {}),
-        ...(status ? { status } : {}),
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            role: true,
+  async findAll(filter: {
+    activityType?: DailyActivityType;
+    status?: DailyActivityStatus;
+    approvalStatus?: DailyApprovalStatus;
+    cari?: string;
+    bulan?: number;
+    tahun?: number;
+    halaman?: string;
+    ukuranHalaman?: string;
+  }) {
+    // Pencarian & filter bulan/tahun dipindah ke sini (dulu di frontend,
+    // cuma memfilter baris yang sudah termuat) supaya tetap benar walau
+    // daftarnya dipaginate.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const kata = filter.cari?.trim();
+    const kolomCari = ['workName', 'location', 'lastPic'] as const;
+
+    const where = {
+      ...(filter.activityType ? { activityType: filter.activityType } : {}),
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.approvalStatus ? { approvalStatus: filter.approvalStatus } : {}),
+      ...(rentangTanggal ? { startDate: rentangTanggal } : {}),
+      ...(kata
+        ? {
+            OR: kolomCari.map((kolom) => ({
+              [kolom]: { contains: kata, mode: 'insensitive' as const },
+            })),
+          }
+        : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.dailyActivity.findMany({
+        where,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              role: true,
+            },
+          },
+          _count: {
+            select: {
+              progressHistories: true,
+              approvals: true,
+            },
           },
         },
-        _count: {
-          select: {
-            progressHistories: true,
-            approvals: true,
+        orderBy: [
+          {
+            lastProgressDate: 'desc',
           },
-        },
-      },
-      orderBy: [
-        {
-          lastProgressDate: 'desc',
-        },
-        {
-          startDate: 'desc',
-        },
-        {
-          id: 'desc',
-        },
-      ],
-    });
+          {
+            startDate: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.dailyActivity.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async findOne(id: number) {

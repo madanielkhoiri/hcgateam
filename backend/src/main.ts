@@ -6,10 +6,13 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { JwtService } from '@nestjs/jwt';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { UsersService } from './users/users.service';
+import { buatUploadsAuthMiddleware } from './common/uploads-auth.middleware';
 
 // ==================================================
 // HTTPS LOKAL (opsional, dev) — HANYA nyala kalau env HTTPS_LOKAL=1 di-set
@@ -125,6 +128,15 @@ async function bootstrap() {
     },
     credentials: true,
   });
+
+  // Wajibkan login untuk membuka file di uploads/ — dipasang SEBELUM
+  // useStaticAssets supaya jalan lebih dulu untuk prefix yang sama.
+  // Tanpa ini, file MCU/tanda tangan/dokumen dinas bisa diakses siapa saja
+  // yang tahu URL-nya, tanpa login sama sekali (lihat uploads-auth.middleware.ts).
+  app.use(
+    '/api/uploads',
+    buatUploadsAuthMiddleware(app.get(JwtService), app.get(UsersService)),
+  );
 
   // Static file harus didaftarkan setelah CORS. PDF.js mengambil dokumen
   // uploads lewat fetch lintas origin (frontend :3000 -> backend :3001).

@@ -18,6 +18,7 @@ import { diskStorage } from 'multer';
 import { randomUUID } from 'node:crypto';
 import { extname, join } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { ElectricStockOutService } from './electric-stock-out.service';
 
 const electricPhotoUpload = FileInterceptor('photo', {
@@ -47,6 +48,7 @@ const electricPhotoUpload = FileInterceptor('photo', {
 
 @Controller('inventory-area/ELECTRIC/stock-outs')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_INVENTORY', 'CIVIL_INVENTORY_ELECTRIC')
 export class ElectricStockOutController {
   constructor(private readonly service: ElectricStockOutService) {}
 

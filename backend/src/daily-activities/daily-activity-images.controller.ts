@@ -15,6 +15,7 @@ import type { Response } from 'express';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import {
   DailyActivityImagesService,
   DailyImageCategory,
@@ -22,6 +23,7 @@ import {
 } from './daily-activity-images.service';
 
 @Controller('daily-activity-images')
+@RequireAccessKey('GA_AKTIVITAS_HARIAN')
 export class DailyActivityImagesController {
   constructor(private readonly imagesService: DailyActivityImagesService) {}
 

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreateHandoverDto } from './dto/create-handover.dto';
 import { UpdateHandoverDto } from './dto/update-handover.dto';
 import { HandoverPdfService } from './handover-pdf.service';
@@ -28,6 +29,7 @@ type AuthenticatedRequest = Request & {
 
 @Controller('handovers')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_PEKERJAAN')
 export class HandoversController {
   constructor(
     private readonly service: HandoversService,

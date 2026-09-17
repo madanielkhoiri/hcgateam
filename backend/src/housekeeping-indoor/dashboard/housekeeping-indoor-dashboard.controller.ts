@@ -5,10 +5,12 @@
 
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { HousekeepingIndoorDashboardService } from './housekeeping-indoor-dashboard.service';
 
 @Controller('housekeeping-indoor/dashboard')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_GS_HOUSEKEEPING_INDOOR')
 export class HousekeepingIndoorDashboardController {
   constructor(private readonly service: HousekeepingIndoorDashboardService) {}
 

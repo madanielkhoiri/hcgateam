@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -60,6 +61,10 @@ const itemPhotoUpload = FileInterceptor('photo', {
   },
 });
 
+// SENGAJA TIDAK pakai @RequireAccessKey() di sini — accessKey yang
+// dibutuhkan tergantung nilai param :scope (ELECTRIC butuh kunci
+// tambahan CIVIL_INVENTORY_ELECTRIC), jadi diatur lewat pengecualian
+// khusus DYNAMIC_SCOPE_ROUTES di jwt-auth.guard.ts, bukan decorator statis.
 @Controller('inventory-area/:scope')
 @UseGuards(JwtAuthGuard)
 export class InventoryAreaController {
@@ -122,8 +127,21 @@ export class InventoryAreaController {
   }
 
   @Get('stock-ins')
-  getStockIns(@Param('scope') scope: string) {
-    return this.service.getStockIns(scope);
+  getStockIns(
+    @Param('scope') scope: string,
+    @Query('cari') cari?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+  ) {
+    return this.service.getStockIns(scope, {
+      cari,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
+    });
   }
 
   @Post('stock-ins')
@@ -157,8 +175,21 @@ export class InventoryAreaController {
   }
 
   @Get('stock-outs')
-  getStockOuts(@Param('scope') scope: string) {
-    return this.service.getStockOuts(scope);
+  getStockOuts(
+    @Param('scope') scope: string,
+    @Query('cari') cari?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+  ) {
+    return this.service.getStockOuts(scope, {
+      cari,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
+    });
   }
 
   @Post('stock-outs')
