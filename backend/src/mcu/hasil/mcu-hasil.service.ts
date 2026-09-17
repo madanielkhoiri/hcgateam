@@ -19,6 +19,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
 import { McuFileService } from '../common/mcu-file.service';
@@ -59,17 +60,47 @@ export class McuHasilService {
   ) {}
 
   /** Daftar hasil MCU; metadata boleh dilihat HC, Dokter, dan Admin Dept. */
-  async daftar(filter: { statusReview?: StatusReview; karyawanId?: number }) {
-    return this.prisma.hasilMcu.findMany({
-      where: {
-        ...(filter.statusReview ? { statusReview: filter.statusReview } : {}),
-        ...(filter.karyawanId
-          ? { jadwalMcu: { karyawanId: filter.karyawanId } }
-          : {}),
-      },
-      include: HASIL_INCLUDE,
-      orderBy: { tanggalUpload: 'desc' },
-    });
+  async daftar(filter: {
+    statusReview?: StatusReview;
+    karyawanId?: number;
+    bulan?: number;
+    tahun?: number;
+    halaman?: string;
+    ukuranHalaman?: string;
+  }) {
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where = {
+      ...(filter.statusReview ? { statusReview: filter.statusReview } : {}),
+      ...(filter.karyawanId
+        ? { jadwalMcu: { karyawanId: filter.karyawanId } }
+        : {}),
+      ...(rentangTanggal ? { tanggalUpload: rentangTanggal } : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.hasilMcu.findMany({
+        where,
+        include: HASIL_INCLUDE,
+        orderBy: { tanggalUpload: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.hasilMcu.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   /** Jadwal yang sudah terlaksana tetapi hasilnya belum diupload. */

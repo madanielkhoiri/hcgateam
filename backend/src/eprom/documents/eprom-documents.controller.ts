@@ -25,12 +25,14 @@ import type { Response } from 'express';
 import archiver from 'archiver';
 import { ScopeDocumentFolder, TipeFileEprom } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
 import { BuatFolderDto, EpromDocumentsService } from './eprom-documents.service';
 
 @Controller('eprom/documents')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_PROJECT')
 export class EpromDocumentsController {
   constructor(private readonly service: EpromDocumentsService) {}
 

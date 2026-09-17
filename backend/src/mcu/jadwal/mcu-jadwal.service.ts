@@ -32,6 +32,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
 import { HARI_LOCK_PENDAFTARAN } from '../mcu.constants';
@@ -147,31 +148,45 @@ export class McuJadwalService {
     karyawanId?: number;
     dariTanggal?: string;
     sampaiTanggal?: string;
+    halaman?: string;
+    ukuranHalaman?: string;
   }) {
-    const daftar = await this.prisma.jadwalMcu.findMany({
-      where: {
-        ...(filter.status ? { statusPendaftaran: filter.status } : {}),
-        ...(filter.jenisMcu ? { jenisMcu: filter.jenisMcu } : {}),
-        ...(filter.departemenId ? { departemenId: filter.departemenId } : {}),
-        ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
-        ...(filter.dariTanggal || filter.sampaiTanggal
-          ? {
-              tanggalMcu: {
-                ...(filter.dariTanggal
-                  ? { gte: tanggalSaja(filter.dariTanggal) }
-                  : {}),
-                ...(filter.sampaiTanggal
-                  ? { lte: tanggalSaja(filter.sampaiTanggal) }
-                  : {}),
-              },
-            }
-          : {}),
-      },
-      include: JADWAL_INCLUDE,
-      orderBy: [{ tanggalMcu: 'desc' }, { id: 'desc' }],
-    });
+    const where = {
+      ...(filter.status ? { statusPendaftaran: filter.status } : {}),
+      ...(filter.jenisMcu ? { jenisMcu: filter.jenisMcu } : {}),
+      ...(filter.departemenId ? { departemenId: filter.departemenId } : {}),
+      ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
+      ...(filter.dariTanggal || filter.sampaiTanggal
+        ? {
+            tanggalMcu: {
+              ...(filter.dariTanggal
+                ? { gte: tanggalSaja(filter.dariTanggal) }
+                : {}),
+              ...(filter.sampaiTanggal
+                ? { lte: tanggalSaja(filter.sampaiTanggal) }
+                : {}),
+            },
+          }
+        : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
 
-    return daftar.map((jadwal) => this.lengkapiStatusLock(jadwal));
+    const [daftar, total] = await Promise.all([
+      this.prisma.jadwalMcu.findMany({
+        where,
+        include: JADWAL_INCLUDE,
+        orderBy: [{ tanggalMcu: 'desc' }, { id: 'desc' }],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.jadwalMcu.count({ where }),
+    ]);
+
+    return hasilHalaman(
+      daftar.map((jadwal) => this.lengkapiStatusLock(jadwal)),
+      total,
+      param,
+    );
   }
 
   async detail(id: number) {

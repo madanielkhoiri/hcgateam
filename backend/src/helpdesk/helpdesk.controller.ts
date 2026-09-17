@@ -23,6 +23,7 @@ import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { SelesaikanTiketDto } from './dto/selesaikan-tiket.dto';
 import { HelpdeskService } from './helpdesk.service';
 
@@ -45,6 +46,7 @@ function pastikanFolderHelpdeskAda() {
 
 @Controller('helpdesk')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_HELPDESK')
 export class HelpdeskController {
   constructor(private readonly service: HelpdeskService) {}
 
@@ -59,8 +61,22 @@ export class HelpdeskController {
   }
 
   @Get()
-  daftar(@Req() request: AuthRequest, @Query('status') status?: string) {
-    return this.service.daftar(request.user, status);
+  daftar(
+    @Req() request: AuthRequest,
+    @Query('status') status?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+  ) {
+    return this.service.daftar(
+      request.user,
+      status,
+      halaman,
+      ukuranHalaman,
+      bulan ? Number(bulan) : undefined,
+      tahun ? Number(tahun) : undefined,
+    );
   }
 
   @Get(':id')

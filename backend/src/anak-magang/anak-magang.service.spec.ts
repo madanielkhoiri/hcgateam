@@ -9,6 +9,7 @@ function anakMagangFixture(overrides: Record<string, unknown> = {}) {
 
 function buatService(overrides: { item?: unknown } = {}) {
   const findMany = jest.fn().mockResolvedValue([]);
+  const count = jest.fn().mockResolvedValue(0);
   const findUnique = jest
     .fn()
     .mockResolvedValue('item' in overrides ? overrides.item : anakMagangFixture());
@@ -16,12 +17,12 @@ function buatService(overrides: { item?: unknown } = {}) {
   const update = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
 
   const prisma = {
-    anakMagang: { findMany, findUnique, create, update },
+    anakMagang: { findMany, count, findUnique, create, update },
   } as unknown as PrismaService;
 
   const service = new AnakMagangService(prisma);
 
-  return { service, prisma, findMany, findUnique, create, update };
+  return { service, prisma, findMany, count, findUnique, create, update };
 }
 
 describe('AnakMagangService.daftar', () => {

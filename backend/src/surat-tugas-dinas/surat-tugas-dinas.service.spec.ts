@@ -193,7 +193,8 @@ describe('SuratTugasDinasService.tolak', () => {
 describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
   it('karyawan biasa cuma melihat surat buatannya sendiri', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
-    const prisma = { suratTugasDinas: { findMany } } as unknown as PrismaService;
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
     const service = new SuratTugasDinasService(prisma, pdf);
 
@@ -206,7 +207,8 @@ describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
 
   it('Section Head/PJO/Admin melihat SEMUA surat, bukan cuma buatan sendiri', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
-    const prisma = { suratTugasDinas: { findMany } } as unknown as PrismaService;
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
     const service = new SuratTugasDinasService(prisma, pdf);
 

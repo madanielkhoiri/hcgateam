@@ -12,6 +12,7 @@
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import {
   CreateTransportDto,
   UpdateTransportDto,
@@ -20,6 +21,7 @@ import { TransportService } from './transport.service';
 
 @Controller('transport')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_TRANSPORT')
 export class TransportController {
   constructor(private readonly service: TransportService) {}
 

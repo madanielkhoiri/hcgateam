@@ -20,6 +20,7 @@ import { mkdirSync } from 'node:fs';
 import { extname } from 'node:path';
 import { diskStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreatePackMealOrderDto } from './dto/create-pack-meal-order.dto';
 import { UpdatePackMealOrderDto } from './dto/update-pack-meal-order.dto';
 import { OrderPackMealService } from './order-pack-meal.service';
@@ -76,6 +77,7 @@ const approvedFormUpload = FileInterceptor('approvedForm', {
 
 @Controller('order-pack-meal')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_ORDER_PACK_MEAL')
 export class OrderPackMealController {
   constructor(private readonly service: OrderPackMealService) {}
 
