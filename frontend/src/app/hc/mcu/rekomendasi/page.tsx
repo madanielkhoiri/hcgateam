@@ -32,6 +32,7 @@ import {
   unduhBerkas,
   type HasilHalaman,
   type Rekomendasi,
+  type RekomendasiSaya,
   type StatusRekomendasi,
 } from '@/lib/mcu-api';
 import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
@@ -40,6 +41,179 @@ import { compressImage } from '@/lib/compress-image';
 import styles from '../mcu.module.css';
 
 const UKURAN_HALAMAN = 20;
+
+// ==================================================
+// HALAMAN — pilih tampilan sesuai role akun.
+// Petugas (HC/Admin Dept/Dokter) dapat konsol admin lengkap; Karyawan
+// (dan role lain tanpa akses admin) dapat ringkasan status miliknya
+// sendiri saja lewat endpoint /rekomendasi/saya.
+// ==================================================
+
+export default function RekomendasiPage() {
+  const { punyaPeran } = useMcu();
+  const adalahPetugas = punyaPeran('HC', 'ADMIN_DEPT', 'DOKTER');
+
+  if (!adalahPetugas) {
+    return <RekomendasiSayaPage />;
+  }
+
+  return <RekomendasiAdminPage />;
+}
+
+// ==================================================
+// TAMPILAN KARYAWAN — status FIT/Follow Up miliknya sendiri saja,
+// tanpa catatan medis. Data dari GET /mcu/rekomendasi/saya, yang
+// server-nya sudah membatasi ke karyawan pemilik akun (lihat
+// McuRekomendasiService.rekomendasiKaryawan).
+// ==================================================
+
+function RekomendasiSayaPage() {
+  const [data, setData] = useState<RekomendasiSaya | null>(null);
+  const [memuat, setMemuat] = useState(true);
+  const [galat, setGalat] = useState<string | null>(null);
+
+  useEffect(() => {
+    let aktif = true;
+
+    mcuApi
+      .ambil<RekomendasiSaya>('/rekomendasi/saya')
+      .then((hasil) => {
+        if (aktif) setData(hasil);
+      })
+      .catch((error: Error) => {
+        if (aktif) setGalat(error.message);
+      })
+      .finally(() => {
+        if (aktif) setMemuat(false);
+      });
+
+    return () => {
+      aktif = false;
+    };
+  }, []);
+
+  async function unduhRujukan(item: RekomendasiSaya['rekomendasi'][number]) {
+    setGalat(null);
+
+    try {
+      await unduhBerkas(
+        `/rekomendasi/${item.id}/surat-rujukan`,
+        `surat-rujukan-${item.nomorSuratRujukan ?? item.id}.pdf`,
+      );
+    } catch (error) {
+      setGalat((error as Error).message);
+    }
+  }
+
+  return (
+    <>
+      <div className={styles.breadcrumb}>
+        <Link href="/hc/mcu">MCU Periodik</Link>
+        <span>/</span>
+        <strong>Rekomendasi Saya</strong>
+      </div>
+
+      <div className={styles.pageHead}>
+        <div className={styles.pageTitle}>
+          <span className={styles.pageIcon}>
+            <Stethoscope size={26} />
+          </span>
+
+          <div>
+            <h1>Rekomendasi MCU Saya</h1>
+            <p>
+              Status FIT/Follow Up dari hasil MCU yang sudah diteruskan HC ke
+              akun Anda. Catatan medis lengkap hanya dapat dilihat HC & Dokter.
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.headActions}>
+          <Link
+            href="/hc/mcu"
+            className={`${styles.tombol} ${styles.tombolNetral}`}
+          >
+            <ArrowLeft size={15} />
+            Kembali
+          </Link>
+        </div>
+      </div>
+
+      {galat ? <Pesan jenis="error">{galat}</Pesan> : null}
+
+      <Panel judul="Riwayat Rekomendasi">
+        {memuat ? (
+          <Memuat />
+        ) : !data || data.rekomendasi.length === 0 ? (
+          <Kosong
+            judul="Belum ada rekomendasi"
+            keterangan="Rekomendasi muncul di sini setelah HC meneruskan hasil review Dokter ke akun Anda."
+          />
+        ) : (
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Tanggal MCU</th>
+                  <th>Jenis MCU</th>
+                  <th>Siklus</th>
+                  <th>Status</th>
+                  <th>Diteruskan</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {data.rekomendasi.map((item) => (
+                  <tr key={item.id}>
+                    <td>{formatTanggal(item.hasilMcu.jadwalMcu.tanggalMcu)}</td>
+                    <td>{item.hasilMcu.jadwalMcu.jenisMcu}</td>
+                    <td>Ke-{item.siklusKe}</td>
+
+                    <td>
+                      <BadgeStatus nilai={item.status} />
+                    </td>
+
+                    <td>
+                      {item.diteruskanKeKaryawanAt
+                        ? formatTanggal(item.diteruskanKeKaryawanAt)
+                        : '-'}
+                    </td>
+
+                    <td>
+                      {item.suratRujukanFu ? (
+                        <button
+                          type="button"
+                          className={`${styles.tombol} ${styles.tombolNetral} ${styles.tombolKecil}`}
+                          onClick={() => unduhRujukan(item)}
+                        >
+                          <Download size={12} />
+                          Surat Rujukan
+                        </button>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      {data?.rekomendasi.some(
+        (item) => item.status === 'FOLLOW_UP' && item.followUp?.status !== 'SELESAI',
+      ) ? (
+        <Pesan jenis="info">
+          Anda memiliki Follow Up yang perlu ditindaklanjuti — silakan buka
+          menu <strong>Follow Up</strong> untuk memilih tanggal pelaksanaan
+          sesuai batas waktu dari HC.
+        </Pesan>
+      ) : null}
+    </>
+  );
+}
 
 type AntreanHasil = {
   id: number;
@@ -69,7 +243,7 @@ type AntreanHasilFu = {
   };
 };
 
-export default function RekomendasiPage() {
+function RekomendasiAdminPage() {
   const { punyaPeran } = useMcu();
   const adalahDokter = punyaPeran('DOKTER');
   const bolehTeruskan = punyaPeran('ADMIN_DEPT', 'HC');
@@ -97,6 +271,7 @@ export default function RekomendasiPage() {
   const [suratRujukanFu, setSuratRujukanFu] = useState<string | null>(null);
   const [mengunggah, setMengunggah] = useState<string | null>(null);
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
@@ -116,6 +291,7 @@ export default function RekomendasiPage() {
       if (filterStatus) parameter.set('status', filterStatus);
       if (filterBulan) parameter.set('bulan', filterBulan);
       if (filterTahun) parameter.set('tahun', filterTahun);
+      if (cari.trim()) parameter.set('cari', cari.trim());
 
       const [hasilRekom, daftarAntrean, daftarAntreanFu] = await Promise.all([
         mcuApi.ambil<HasilHalaman<Rekomendasi>>(`/rekomendasi?${parameter.toString()}`),
@@ -132,7 +308,7 @@ export default function RekomendasiPage() {
     } finally {
       setMemuat(false);
     }
-  }, [filterStatus, filterBulan, filterTahun, halaman]);
+  }, [cari, filterStatus, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
@@ -141,7 +317,7 @@ export default function RekomendasiPage() {
   // Balik ke halaman 1 tiap kali filter berubah.
   useEffect(() => {
     setHalaman(1);
-  }, [filterStatus, filterBulan, filterTahun]);
+  }, [cari, filterStatus, filterBulan, filterTahun]);
 
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
@@ -434,6 +610,14 @@ export default function RekomendasiPage() {
         keterangan={`${totalRekomendasi} rekomendasi, ditampilkan ${rekomendasi.length} per halaman.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 170 }}

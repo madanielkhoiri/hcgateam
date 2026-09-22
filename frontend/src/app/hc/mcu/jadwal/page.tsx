@@ -72,6 +72,7 @@ export default function JadwalMcuPage() {
   const [galat, setGalat] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDept, setFilterDept] = useState('');
   const [halaman, setHalaman] = useState(1);
@@ -110,6 +111,7 @@ export default function JadwalMcuPage() {
       const { dari, sampai } = rentangDariBulanTahun(filterBulan, filterTahun);
       if (dari) parameter.set('dariTanggal', dari);
       if (sampai) parameter.set('sampaiTanggal', sampai);
+      if (cari.trim()) parameter.set('cari', cari.trim());
 
       parameter.set('halaman', String(halaman));
       parameter.set('ukuranHalaman', String(UKURAN_HALAMAN));
@@ -132,7 +134,7 @@ export default function JadwalMcuPage() {
     } finally {
       setMemuat(false);
     }
-  }, [filterStatus, filterDept, filterBulan, filterTahun, halaman]);
+  }, [cari, filterStatus, filterDept, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
@@ -141,7 +143,7 @@ export default function JadwalMcuPage() {
   // Balik ke halaman 1 tiap kali filter berubah.
   useEffect(() => {
     setHalaman(1);
-  }, [filterStatus, filterDept, filterBulan, filterTahun]);
+  }, [cari, filterStatus, filterDept, filterBulan, filterTahun]);
 
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
@@ -333,6 +335,14 @@ export default function JadwalMcuPage() {
         keterangan={`${totalJadwal} jadwal, ditampilkan ${jadwal.length} per halaman.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 180 }}

@@ -27,6 +27,7 @@ import styles from './tugas-dinas.module.css';
 
 const MENU_TUGAS_DINAS: ModuleShellMenuItem[] = [
   { label: 'Dashboard', href: '/hc/tugas-dinas/dashboard', initial: 'DB' },
+  { label: 'Daftar Surat Tugas', href: '/hc/tugas-dinas/daftar', initial: 'DS' },
   { label: 'Buat Tugas Dinas', href: '/hc/tugas-dinas/buat', initial: 'BT' },
 ];
 
