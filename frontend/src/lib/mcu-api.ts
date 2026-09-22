@@ -203,6 +203,39 @@ export type Rekomendasi = {
   induksiUlang: { id: number; status: StatusInduksiUlang } | null;
 };
 
+/** Bentuk ringkas dari GET /mcu/rekomendasi/saya — tanpa catatan medis, cuma yang sudah diteruskan. */
+export type RekomendasiSaya = {
+  karyawan: Karyawan;
+  rekomendasi: Array<{
+    id: number;
+    status: StatusRekomendasi;
+    siklusKe: number;
+    tanggalSubmit: string;
+    diteruskanKeKaryawanAt: string | null;
+    suratRujukanFu: string | null;
+    nomorSuratRujukan: string | null;
+    followUp: {
+      id: number;
+      status: StatusFollowUp;
+      batasWaktuFu: string | null;
+      tanggalPilihanKaryawan: string | null;
+    } | null;
+    hasilMcu: {
+      jadwalMcu: { tanggalMcu: string; jenisMcu: JenisMcu };
+    };
+  }>;
+};
+
+/** Bentuk ringkas dari GET /mcu/hasil/saya — metadata saja, tanpa path file mentah langsung. */
+export type HasilMcuSaya = {
+  id: number;
+  tanggalUpload: string;
+  statusReview: StatusReview;
+  namaFileAsli: string | null;
+  fileDihapusAt: string | null;
+  jadwalMcu: { tanggalMcu: string; jenisMcu: JenisMcu };
+};
+
 export type FollowUp = {
   id: number;
   karyawanId: number;
