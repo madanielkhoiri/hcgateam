@@ -50,6 +50,8 @@ function buatService(overrides: {
   karyawan?: unknown;
   jadwalBerjalan?: unknown;
   jadwalFindUnique?: unknown;
+  jadwalFindMany?: jest.Mock;
+  jadwalCount?: jest.Mock;
   klinik?: unknown;
   create?: jest.Mock;
   update?: jest.Mock;
@@ -59,6 +61,8 @@ function buatService(overrides: {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data, karyawan: karyawanFixture(), klinik: null }));
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ ...(jadwalFixture() as object), ...data }));
   const updateMany = overrides.updateMany ?? jest.fn().mockResolvedValue({ count: 0 });
+  const findMany = overrides.jadwalFindMany ?? jest.fn().mockResolvedValue([]);
+  const count = overrides.jadwalCount ?? jest.fn().mockResolvedValue(0);
 
   const prisma = {
     karyawan: {
@@ -67,6 +71,8 @@ function buatService(overrides: {
     jadwalMcu: {
       findFirst: jest.fn().mockResolvedValue(overrides.jadwalBerjalan ?? null),
       findUnique: jest.fn().mockResolvedValue('jadwalFindUnique' in overrides ? overrides.jadwalFindUnique : jadwalFixture()),
+      findMany,
+      count,
       create,
       update,
       updateMany,
@@ -86,7 +92,7 @@ function buatService(overrides: {
 
   const service = new McuJadwalService(prisma, akses, notifikasi);
 
-  return { service, prisma, create, update, updateMany };
+  return { service, prisma, create, update, updateMany, findMany, count };
 }
 
 const DTO_DASAR = { karyawanId: 7, tanggalMcu: isoTanggal(tambahHari(hariIni(), 10)) };
@@ -328,7 +334,7 @@ describe('McuJadwalService.detail — status lock terhitung benar', () => {
       }),
     });
 
-    const hasil = await service.detail(1);
+    const hasil = await service.detail(1, aktor(UserRole.HC));
 
     expect(hasil.terkunci).toBe(true);
   });
@@ -341,8 +347,94 @@ describe('McuJadwalService.detail — status lock terhitung benar', () => {
       }),
     });
 
-    const hasil = await service.detail(1);
+    const hasil = await service.detail(1, aktor(UserRole.HC));
 
     expect(hasil.terkunci).toBe(false);
+  });
+});
+
+describe('McuJadwalService.daftar — scoping Karyawan wajib sisi server', () => {
+  it('Karyawan dipaksa lihat jadwal miliknya sendiri, mengabaikan karyawanId dari client', async () => {
+    const { service, findMany } = buatService({ karyawan: karyawanFixture() });
+
+    await service.daftar({ karyawanId: 999 }, aktor(UserRole.KARYAWAN, 70));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ karyawanId: 7 }) }),
+    );
+  });
+
+  it('Karyawan yang belum tertaut ke data Karyawan dapat hasil kosong (karyawanId mustahil), bukan error atau data semua orang', async () => {
+    const { service, findMany } = buatService({ karyawan: null });
+
+    await service.daftar({}, aktor(UserRole.KARYAWAN, 999));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ karyawanId: -1 }) }),
+    );
+  });
+
+  it('HC tetap bebas filter karyawanId manapun (tidak dipaksa scoping)', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({ karyawanId: 42 }, aktor(UserRole.HC));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ karyawanId: 42 }) }),
+    );
+  });
+
+  it('HC tanpa filter karyawanId melihat semua jadwal (tidak ikut dipaksa)', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({}, aktor(UserRole.HC));
+
+    const panggilan = findMany.mock.calls[0][0];
+    expect(panggilan.where.karyawanId).toBeUndefined();
+  });
+});
+
+describe('McuJadwalService.daftar — pencarian nama/NIK karyawan', () => {
+  it('tanpa filter cari, where tidak menyertakan kunci karyawan', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({}, aktor(UserRole.HC));
+
+    const panggilan = findMany.mock.calls[0][0];
+    expect(panggilan.where.karyawan).toBeUndefined();
+  });
+
+  it('menerapkan pencarian nama/NIK karyawan (case-insensitive)', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({ cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          karyawan: {
+            OR: [
+              { nama: { contains: 'budi', mode: 'insensitive' } },
+              { nik: { contains: 'budi', mode: 'insensitive' } },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('menggabungkan filter status dan cari sekaligus', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({ status: StatusPendaftaran.DRAFT, cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          statusPendaftaran: StatusPendaftaran.DRAFT,
+          karyawan: expect.any(Object),
+        }),
+      }),
+    );
   });
 });

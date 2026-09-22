@@ -231,6 +231,50 @@ describe('HelpdeskService.daftar — akses per role', () => {
       expect.objectContaining({ where: { status: StatusTiketHelpdesk.SELESAI } }),
     );
   });
+
+  it('tanpa filter cari kalau tidak diberikan', async () => {
+    const { service, prisma } = buatService();
+
+    await service.daftar(aktor(UserRole.ADMIN));
+
+    expect(prisma.tiketHelpdesk.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {} }),
+    );
+  });
+
+  it('menerapkan pencarian nomor tiket/masalah/deskripsi/nama pembuat (case-insensitive)', async () => {
+    const { service, prisma } = buatService();
+
+    await service.daftar(aktor(UserRole.ADMIN), undefined, undefined, undefined, undefined, undefined, 'budi');
+
+    expect(prisma.tiketHelpdesk.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { nomorTiket: { contains: 'budi', mode: 'insensitive' } },
+            { masalah: { contains: 'budi', mode: 'insensitive' } },
+            { deskripsi: { contains: 'budi', mode: 'insensitive' } },
+            { pembuat: { name: { contains: 'budi', mode: 'insensitive' } } },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('menggabungkan filter status dan cari sekaligus', async () => {
+    const { service, prisma } = buatService();
+
+    await service.daftar(aktor(UserRole.ADMIN), 'SELESAI', undefined, undefined, undefined, undefined, 'budi');
+
+    expect(prisma.tiketHelpdesk.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: StatusTiketHelpdesk.SELESAI,
+          OR: expect.any(Array),
+        }),
+      }),
+    );
+  });
 });
 
 describe('HelpdeskService.ringkasan', () => {

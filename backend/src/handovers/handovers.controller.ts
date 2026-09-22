@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -37,8 +38,8 @@ export class HandoversController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query('cari') cari?: string) {
+    return this.service.findAll(cari?.trim() || undefined);
   }
 
   @Get(':id/pdf')

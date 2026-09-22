@@ -12,12 +12,25 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ScopeDrive } from '@prisma/client';
+import { ScopeDrive, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DriveFileService } from './drive-file.service';
 import { AktorPostingan, bolehKelolaPostingan } from '../postingan/postingan-aktor';
 
 const SCOPE_VALID = Object.values(ScopeDrive);
+
+/** accessKey card yang dibutuhkan untuk BACA tiap scope Drive — lihat access.constants.ts. */
+const ACCESS_KEY_PER_SCOPE: Record<ScopeDrive, string> = {
+  CSR: 'ADMINISTRASI_CSR',
+  FORM_DOWNLOAD: 'ADMINISTRASI_FORM',
+};
+
+/** Role yang bypass accessKey di mana pun di aplikasi ini (lihat auth/jwt-auth.guard.ts). */
+const ROLE_BYPASS_ACCESS_KEY: UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.SECTION_HEAD,
+];
 
 @Injectable()
 export class DriveService {
@@ -42,8 +55,31 @@ export class DriveService {
     return scope as ScopeDrive;
   }
 
-  async isiFolder(scope: string, parentFolderId?: number) {
+  /**
+   * Wajibkan akun punya accessKey card yang sesuai scope-nya (CSR beda dari
+   * FORM_DOWNLOAD) — DriveController TIDAK pakai @RequireAccessKey() statis
+   * karena scope-nya baru diketahui saat request (mirip alasan
+   * InventoryDashboardController/InventoryAreaController di jwt-auth.guard.ts),
+   * jadi validasinya dilakukan di sini supaya tidak bisa lintas-scope.
+   */
+  private wajibAksesScope(aktor: AktorPostingan, scope: ScopeDrive): void {
+    if (ROLE_BYPASS_ACCESS_KEY.includes(aktor.role)) {
+      return;
+    }
+
+    const dibutuhkan = ACCESS_KEY_PER_SCOPE[scope];
+    const dimiliki = aktor.accessKeys ?? [];
+
+    if (!dimiliki.includes(dibutuhkan)) {
+      throw new ForbiddenException(
+        'Akses modul untuk akun ini sedang dinonaktifkan',
+      );
+    }
+  }
+
+  async isiFolder(aktor: AktorPostingan, scope: string, parentFolderId?: number) {
     const scopeValid = this.validasiScope(scope);
+    this.wajibAksesScope(aktor, scopeValid);
 
     const [folders, files] = await Promise.all([
       this.prisma.driveFolder.findMany({
@@ -186,8 +222,10 @@ export class DriveService {
   }
 
   /** Angka ringkas untuk kartu dashboard (per scope, mis. CSR). */
-  async ringkasan(scope: string) {
+  async ringkasan(aktor: AktorPostingan, scope: string) {
     const scopeValid = this.validasiScope(scope);
+    this.wajibAksesScope(aktor, scopeValid);
+
     const sekarang = new Date();
     const awalBulanIni = new Date(
       Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
@@ -220,8 +258,10 @@ export class DriveService {
   }
 
   /** Tren jumlah file diunggah per bulan (tahun berjalan) + breakdown jenis file, untuk grafik dashboard. */
-  async trenDanJenis(scope: string) {
+  async trenDanJenis(aktor: AktorPostingan, scope: string) {
     const scopeValid = this.validasiScope(scope);
+    this.wajibAksesScope(aktor, scopeValid);
+
     const tahun = new Date().getUTCFullYear();
     const awal = new Date(Date.UTC(tahun, 0, 1));
     const akhir = new Date(Date.UTC(tahun + 1, 0, 1));

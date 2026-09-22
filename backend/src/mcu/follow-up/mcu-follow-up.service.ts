@@ -130,15 +130,26 @@ export class McuFollowUpService {
    * ditampilkan). Kalau `halaman` dikirim, kembalikan bentuk
    * { data, total, halaman, ukuranHalaman } untuk tabel utama.
    */
-  async daftar(filter: {
-    status?: StatusFollowUp;
-    karyawanId?: number;
-    terlambat?: boolean;
-    bulan?: number;
-    tahun?: number;
-    halaman?: string;
-    ukuranHalaman?: string;
-  }) {
+  async daftar(
+    filter: {
+      status?: StatusFollowUp;
+      karyawanId?: number;
+      terlambat?: boolean;
+      bulan?: number;
+      tahun?: number;
+      cari?: string;
+      halaman?: string;
+      ukuranHalaman?: string;
+    },
+    aktor: AktorMcu,
+  ) {
+    // Karyawan biasa cuma boleh lihat FU miliknya sendiri — scoping WAJIB
+    // dari sisi server (bukan percaya query param karyawanId dari client).
+    const karyawanIdEfektif =
+      aktor.role === UserRole.KARYAWAN
+        ? (await this.akses.karyawanDariAkun(aktor))?.id ?? -1
+        : filter.karyawanId;
+
     // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
     // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate
     // — didasarkan tanggal MCU asal (rekomendasi -> hasilMcu -> jadwalMcu).
@@ -154,7 +165,7 @@ export class McuFollowUpService {
 
     const where = {
       ...(filter.status ? { status: filter.status } : {}),
-      ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
+      ...(karyawanIdEfektif ? { karyawanId: karyawanIdEfektif } : {}),
       ...(filter.terlambat
         ? {
             batasWaktuFu: { not: null, lt: hariIni() },
@@ -165,6 +176,16 @@ export class McuFollowUpService {
         : {}),
       ...(rentangTanggalMcu
         ? { rekomendasi: { hasilMcu: { jadwalMcu: { tanggalMcu: rentangTanggalMcu } } } }
+        : {}),
+      ...(filter.cari
+        ? {
+            karyawan: {
+              OR: [
+                { nama: { contains: filter.cari, mode: 'insensitive' as const } },
+                { nik: { contains: filter.cari, mode: 'insensitive' as const } },
+              ],
+            },
+          }
         : {}),
     };
 
@@ -197,7 +218,7 @@ export class McuFollowUpService {
     return daftar.map((item) => this.lengkapiStatusBatas(item));
   }
 
-  async detail(id: number) {
+  async detail(id: number, aktor: AktorMcu) {
     const followUp = await this.prisma.followUp.findUnique({
       where: { id },
       include: FU_INCLUDE,
@@ -205,6 +226,14 @@ export class McuFollowUpService {
 
     if (!followUp) {
       throw new NotFoundException('Data Follow Up tidak ditemukan');
+    }
+
+    if (aktor.role === UserRole.KARYAWAN) {
+      const karyawan = await this.akses.karyawanDariAkun(aktor);
+
+      if (!karyawan || followUp.karyawanId !== karyawan.id) {
+        throw new NotFoundException('Data Follow Up tidak ditemukan');
+      }
     }
 
     return this.lengkapiStatusBatas(followUp);
@@ -220,7 +249,7 @@ export class McuFollowUpService {
       );
     }
 
-    return this.daftar({ karyawanId: karyawan.id });
+    return this.daftar({ karyawanId: karyawan.id }, aktor);
   }
 
   /**
@@ -230,7 +259,7 @@ export class McuFollowUpService {
   async tetapkanBatas(id: number, dto: TetapkanBatasFuDto, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.HC);
 
-    const followUp = await this.detail(id);
+    const followUp = await this.detail(id, aktor);
     const batas = tanggalSaja(dto.batasWaktuFu);
     const tanggalMcu = followUp.rekomendasi.hasilMcu.jadwalMcu.tanggalMcu;
     const batasMaksimal = tambahBulan(tanggalMcu, BULAN_MAKS_SIKLUS_FU);
@@ -281,7 +310,7 @@ export class McuFollowUpService {
 
   /** Karyawan memilih tanggal FU dalam batas yang ditetapkan HC. */
   async pilihTanggal(id: number, dto: PilihTanggalFuDto, aktor: AktorMcu) {
-    const followUp = await this.detail(id);
+    const followUp = await this.detail(id, aktor);
     const peran = this.akses.peranAktor(aktor);
     const petugas: UserRole[] = [UserRole.HC, UserRole.ADMIN_DEPT];
     const olehPetugas = peran.some((item) => petugas.includes(item));
@@ -357,7 +386,7 @@ export class McuFollowUpService {
    * Hasil masuk antrean review ulang Dokter untuk melanjutkan loop.
    */
   async unggahHasil(id: number, file: Express.Multer.File, aktor: AktorMcu) {
-    const followUp = await this.detail(id);
+    const followUp = await this.detail(id, aktor);
     const peran = this.akses.peranAktor(aktor);
     const petugas: UserRole[] = [
       UserRole.HC,
@@ -450,7 +479,9 @@ export class McuFollowUpService {
   }
 
   /** Antrean hasil FU yang menunggu review ulang Dokter. */
-  async antreanReviewUlang() {
+  async antreanReviewUlang(aktor: AktorMcu) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER);
+
     return this.prisma.hasilFollowUp.findMany({
       where: {
         statusReview: { in: [StatusReview.MENUNGGU, StatusReview.DIREVIEW] },
@@ -481,7 +512,7 @@ export class McuFollowUpService {
   async reminderFuTerlambat(id: number, dto: ReminderFuDto, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.HC);
 
-    const followUp = await this.detail(id);
+    const followUp = await this.detail(id, aktor);
 
     if (followUp.status === StatusFollowUp.SELESAI) {
       throw new BadRequestException('Follow Up ini sudah ditutup');

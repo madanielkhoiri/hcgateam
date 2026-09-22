@@ -105,15 +105,27 @@ export class McuRekomendasiService {
     private readonly notifikasi: McuNotifikasiService,
   ) {}
 
-  async daftar(filter: {
-    status?: StatusRekomendasi;
-    karyawanId?: number;
-    belumDiteruskan?: boolean;
-    bulan?: number;
-    tahun?: number;
-    halaman?: string;
-    ukuranHalaman?: string;
-  }) {
+  /**
+   * Daftar administratif (termasuk catatan medis lengkap) — HANYA HC,
+   * Dokter, Admin Dept. Karyawan lihat rekomendasi lewat rekomendasiKaryawan()
+   * (/rekomendasi/saya) yang sudah membatasi field & cuma yang sudah
+   * diteruskan — bukan lewat daftar ini.
+   */
+  async daftar(
+    filter: {
+      status?: StatusRekomendasi;
+      karyawanId?: number;
+      belumDiteruskan?: boolean;
+      bulan?: number;
+      tahun?: number;
+      cari?: string;
+      halaman?: string;
+      ukuranHalaman?: string;
+    },
+    aktor: AktorMcu,
+  ) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER, UserRole.ADMIN_DEPT);
+
     // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
     // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
     const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
@@ -128,8 +140,24 @@ export class McuRekomendasiService {
 
     const where = {
       ...(filter.status ? { status: filter.status } : {}),
-      ...(filter.karyawanId
-        ? { hasilMcu: { jadwalMcu: { karyawanId: filter.karyawanId } } }
+      ...(filter.karyawanId || filter.cari
+        ? {
+            hasilMcu: {
+              jadwalMcu: {
+                ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
+                ...(filter.cari
+                  ? {
+                      karyawan: {
+                        OR: [
+                          { nama: { contains: filter.cari, mode: 'insensitive' as const } },
+                          { nik: { contains: filter.cari, mode: 'insensitive' as const } },
+                        ],
+                      },
+                    }
+                  : {}),
+              },
+            },
+          }
         : {}),
       ...(filter.belumDiteruskan ? { diteruskanKeKaryawanAt: null } : {}),
       ...(rentangTanggal ? { tanggalSubmit: rentangTanggal } : {}),
@@ -150,6 +178,7 @@ export class McuRekomendasiService {
     return hasilHalaman(data, total, param);
   }
 
+  /** Fetch mentah tanpa gerbang role — pemanggil (mis. pathSuratRujukan) wajib cek otorisasi sendiri. */
   async detail(id: number) {
     const rekomendasi = await this.prisma.rekomendasiMcu.findUnique({
       where: { id },
@@ -163,8 +192,17 @@ export class McuRekomendasiService {
     return rekomendasi;
   }
 
+  /** Detail lengkap (termasuk catatan medis) untuk tampilan admin — HANYA HC/Dokter/Admin Dept. */
+  async detailAdmin(id: number, aktor: AktorMcu) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER, UserRole.ADMIN_DEPT);
+
+    return this.detail(id);
+  }
+
   /** Antrean hasil MCU yang menunggu keputusan Dokter. */
-  async antreanReview() {
+  async antreanReview(aktor: AktorMcu) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER);
+
     return this.prisma.hasilMcu.findMany({
       where: {
         statusReview: { in: [StatusReview.MENUNGGU, StatusReview.DIREVIEW] },

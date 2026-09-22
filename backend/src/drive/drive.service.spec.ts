@@ -5,8 +5,8 @@ import { AktorPostingan } from '../postingan/postingan-aktor';
 import { DriveFileService } from './drive-file.service';
 import { DriveService } from './drive.service';
 
-function aktor(role: UserRole): AktorPostingan {
-  return { id: 9, role };
+function aktor(role: UserRole, accessKeys: string[] = []): AktorPostingan {
+  return { id: 9, role, accessKeys };
 }
 
 function folderFixture(overrides: Record<string, unknown> = {}) {
@@ -70,13 +70,13 @@ describe('DriveService.isiFolder', () => {
   it('menolak scope tidak valid', async () => {
     const { service } = buatService();
 
-    await expect(service.isiFolder('SALAH')).rejects.toThrow(BadRequestException);
+    await expect(service.isiFolder(aktor(UserRole.ADMIN), 'SALAH')).rejects.toThrow(BadRequestException);
   });
 
   it('menyertakan daftar file hanya kalau parentFolderId diberikan', async () => {
     const { service, prisma } = buatService({ fileFindMany: [{ id: 1 }] });
 
-    const hasil = await service.isiFolder('CSR', 1);
+    const hasil = await service.isiFolder(aktor(UserRole.ADMIN), 'CSR', 1);
 
     expect(prisma.driveFile.findMany).toHaveBeenCalled();
     expect(hasil.files).toEqual([{ id: 1 }]);
@@ -85,10 +85,40 @@ describe('DriveService.isiFolder', () => {
   it('tidak query file kalau tidak ada parentFolderId', async () => {
     const { service, prisma } = buatService();
 
-    const hasil = await service.isiFolder('CSR');
+    const hasil = await service.isiFolder(aktor(UserRole.ADMIN), 'CSR');
 
     expect(prisma.driveFile.findMany).not.toHaveBeenCalled();
     expect(hasil.files).toEqual([]);
+  });
+
+  it('menolak akun tanpa accessKey ADMINISTRASI_CSR untuk scope CSR', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.isiFolder(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_FORM']), 'CSR'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('menolak akun tanpa accessKey ADMINISTRASI_FORM untuk scope FORM_DOWNLOAD', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.isiFolder(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_CSR']), 'FORM_DOWNLOAD'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('mengizinkan akun ber-accessKey yang sesuai scope-nya', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.isiFolder(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_CSR']), 'CSR'),
+    ).resolves.toBeDefined();
+  });
+
+  it('role ADMIN/SUPER_ADMIN/SECTION_HEAD bypass accessKey scope', async () => {
+    const { service } = buatService();
+
+    await expect(service.isiFolder(aktor(UserRole.SUPER_ADMIN), 'FORM_DOWNLOAD')).resolves.toBeDefined();
   });
 });
 
@@ -220,7 +250,15 @@ describe('DriveService.ringkasan', () => {
   it('menolak scope tidak valid', async () => {
     const { service } = buatService();
 
-    await expect(service.ringkasan('SALAH')).rejects.toThrow(BadRequestException);
+    await expect(service.ringkasan(aktor(UserRole.ADMIN), 'SALAH')).rejects.toThrow(BadRequestException);
+  });
+
+  it('menolak akun tanpa accessKey yang sesuai scope', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.ringkasan(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_FORM']), 'CSR'),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('menghitung seluruh angka kartu dashboard untuk scope diminta', async () => {
@@ -237,7 +275,7 @@ describe('DriveService.ringkasan', () => {
     const file = { simpan: jest.fn(), hapus: jest.fn() } as unknown as DriveFileService;
     const service = new DriveService(prisma, file);
 
-    const hasil = await service.ringkasan('CSR');
+    const hasil = await service.ringkasan(aktor(UserRole.ADMIN), 'CSR');
 
     expect(hasil).toEqual({
       totalFolder: 6,
@@ -255,7 +293,7 @@ describe('DriveService.trenDanJenis', () => {
   it('menolak scope tidak valid', async () => {
     const { service } = buatService();
 
-    await expect(service.trenDanJenis('SALAH')).rejects.toThrow(BadRequestException);
+    await expect(service.trenDanJenis(aktor(UserRole.ADMIN), 'SALAH')).rejects.toThrow(BadRequestException);
   });
 
   it('menjumlahkan file per bulan (tahun berjalan) dan breakdown jenis dari ekstensi nama file', async () => {
@@ -275,7 +313,7 @@ describe('DriveService.trenDanJenis', () => {
     const file = { simpan: jest.fn(), hapus: jest.fn() } as unknown as DriveFileService;
     const service = new DriveService(prisma, file);
 
-    const hasil = await service.trenDanJenis('CSR');
+    const hasil = await service.trenDanJenis(aktor(UserRole.ADMIN), 'CSR');
 
     expect(hasil.tahun).toBe(tahunIni);
     expect(hasil.trenBulanan[2]).toEqual({ bulan: 3, total: 2 });

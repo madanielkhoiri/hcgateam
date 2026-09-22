@@ -45,6 +45,7 @@ export class SuratTugasDinasController {
     @Query('ukuranHalaman') ukuranHalaman?: string,
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
+    @Query('cari') cari?: string,
   ) {
     return this.service.daftar(
       request.user,
@@ -53,6 +54,7 @@ export class SuratTugasDinasController {
       ukuranHalaman,
       bulan ? Number(bulan) : undefined,
       tahun ? Number(tahun) : undefined,
+      cari?.trim() || undefined,
     );
   }
 

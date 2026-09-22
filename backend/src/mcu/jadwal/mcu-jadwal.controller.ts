@@ -39,30 +39,36 @@ export class McuJadwalController {
 
   @Get()
   daftar(
+    @Aktor() aktor: AktorMcu,
     @Query('status') status?: StatusPendaftaran,
     @Query('jenisMcu') jenisMcu?: JenisMcu,
     @Query('departemenId') departemenId?: string,
     @Query('karyawanId') karyawanId?: string,
     @Query('dariTanggal') dariTanggal?: string,
     @Query('sampaiTanggal') sampaiTanggal?: string,
+    @Query('cari') cari?: string,
     @Query('halaman') halaman?: string,
     @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
-    return this.service.daftar({
-      status,
-      jenisMcu,
-      departemenId: departemenId ? Number(departemenId) : undefined,
-      karyawanId: karyawanId ? Number(karyawanId) : undefined,
-      dariTanggal,
-      sampaiTanggal,
-      halaman,
-      ukuranHalaman,
-    });
+    return this.service.daftar(
+      {
+        status,
+        jenisMcu,
+        departemenId: departemenId ? Number(departemenId) : undefined,
+        karyawanId: karyawanId ? Number(karyawanId) : undefined,
+        dariTanggal,
+        sampaiTanggal,
+        cari: cari?.trim() || undefined,
+        halaman,
+        ukuranHalaman,
+      },
+      aktor,
+    );
   }
 
   @Get(':id')
-  detail(@Param('id', ParseIntPipe) id: number) {
-    return this.service.detail(id);
+  detail(@Aktor() aktor: AktorMcu, @Param('id', ParseIntPipe) id: number) {
+    return this.service.detail(id, aktor);
   }
 
   @Post()

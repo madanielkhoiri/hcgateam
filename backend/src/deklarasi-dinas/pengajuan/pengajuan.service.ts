@@ -9,7 +9,8 @@ import { SaldoService } from '../saldo/saldo.service';
 import { BuatPengajuanDto } from './dto/buat-pengajuan.dto';
 import { UpdateStatusPengajuanDto } from './dto/update-status-pengajuan.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, Pengajuan } from '@prisma/client';
+import { Prisma, Pengajuan, UserRole } from '@prisma/client';
+import { wajibPenyetujuDeklarasi } from '../bantuan/deklarasi-akses.bantuan';
 
 // <--- fitur service pengajuan STD, RAB, approval FA, notif WA, dan bukti transfer --->
 @Injectable()
@@ -174,7 +175,10 @@ export class PengajuanService {
   async updateStatusPengajuan(
     idPengajuan: number,
     data: UpdateStatusPengajuanDto,
+    aktor: { role: UserRole },
   ) {
+    wajibPenyetujuDeklarasi(aktor.role);
+
     const pengajuan = await this.ambilPengajuanBerdasarkanId(idPengajuan);
 
     if (!data.status_pengajuan) {
@@ -253,7 +257,10 @@ export class PengajuanService {
       tanggal_transfer?: string;
       keterangan?: string;
     },
+    aktor: { role: UserRole },
   ) {
+    wajibPenyetujuDeklarasi(aktor.role);
+
     let pengajuan = await this.ambilPengajuanBerdasarkanId(idPengajuan);
 
     if (!fileBuktiTransfer) {
@@ -315,7 +322,9 @@ export class PengajuanService {
   // <--- end --->
 
   // <--- hapus pengajuan dan file STD/RAB/bukti transfer --->
-  async hapusPengajuan(idPengajuan: number) {
+  async hapusPengajuan(idPengajuan: number, aktor: { role: UserRole }) {
+    wajibPenyetujuDeklarasi(aktor.role);
+
     const pengajuan = await this.ambilPengajuanBerdasarkanId(idPengajuan);
 
     if (
