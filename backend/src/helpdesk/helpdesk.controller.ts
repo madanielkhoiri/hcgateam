@@ -68,6 +68,7 @@ export class HelpdeskController {
     @Query('ukuranHalaman') ukuranHalaman?: string,
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
+    @Query('cari') cari?: string,
   ) {
     return this.service.daftar(
       request.user,
@@ -76,6 +77,7 @@ export class HelpdeskController {
       ukuranHalaman,
       bulan ? Number(bulan) : undefined,
       tahun ? Number(tahun) : undefined,
+      cari?.trim() || undefined,
     );
   }
 

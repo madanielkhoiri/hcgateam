@@ -80,6 +80,7 @@ export class SuratTugasDinasService {
     ukuranHalamanRaw?: string,
     bulan?: number,
     tahun?: number,
+    cari?: string,
   ) {
     const statusValid = (
       Object.values(StatusSuratTugas) as string[]
@@ -100,10 +101,28 @@ export class SuratTugasDinasService {
         }
       : undefined;
 
-    const where = {
+    const where: Prisma.SuratTugasDinasWhereInput = {
       ...(statusValid ? { status: statusValid } : {}),
       ...(this.bolehLihatSemua(aktor) ? {} : { dibuatOlehId: aktor.id }),
       ...(rentangTanggalMulai ? { tanggalMulai: rentangTanggalMulai } : {}),
+      ...(cari
+        ? {
+            OR: [
+              { nomor: { contains: cari, mode: 'insensitive' } },
+              { tujuanLokasi: { contains: cari, mode: 'insensitive' } },
+              {
+                karyawan: {
+                  some: {
+                    OR: [
+                      { nama: { contains: cari, mode: 'insensitive' } },
+                      { nrp: { contains: cari, mode: 'insensitive' } },
+                    ],
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     };
     const param = paramHalaman(halamanRaw, ukuranHalamanRaw);
 

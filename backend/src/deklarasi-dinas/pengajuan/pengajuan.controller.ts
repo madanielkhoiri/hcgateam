@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -177,11 +178,13 @@ export class PengajuanController {
       keterangan?: string;
     },
     @UploadedFile() fileBuktiTransfer: Express.Multer.File,
+    @Req() req: any,
   ) {
     return this.pengajuanService.uploadBuktiTransfer(
       Number(idPengajuan),
       fileBuktiTransfer,
       data,
+      req.user,
     );
   }
   // <--- end --->
@@ -216,18 +219,20 @@ export class PengajuanController {
   updateStatusPengajuan(
     @Param('idPengajuan') idPengajuan: string,
     @Body() data: UpdateStatusPengajuanDto,
+    @Req() req: any,
   ) {
     return this.pengajuanService.updateStatusPengajuan(
       Number(idPengajuan),
       data,
+      req.user,
     );
   }
   // <--- end --->
 
   // <--- hapus pengajuan --->
   @Delete(':idPengajuan')
-  hapusPengajuan(@Param('idPengajuan') idPengajuan: string) {
-    return this.pengajuanService.hapusPengajuan(Number(idPengajuan));
+  hapusPengajuan(@Param('idPengajuan') idPengajuan: string, @Req() req: any) {
+    return this.pengajuanService.hapusPengajuan(Number(idPengajuan), req.user);
   }
   // <--- end --->
 }

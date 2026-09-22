@@ -9,6 +9,10 @@ import { UserRole } from '@prisma/client';
 export type AktorPostingan = {
   id: number;
   role: UserRole;
+  /** Diisi otomatis dari JWT (lihat auth/jwt.strategy.ts) — opsional di tipe ini
+   * karena tidak semua pemakai AktorPostingan butuh accessKeys, tapi field-nya
+   * selalu ada di runtime karena decorator Aktor() meneruskan request.user apa adanya. */
+  accessKeys?: string[];
 };
 
 export const Aktor = createParamDecorator(

@@ -193,6 +193,7 @@ export class HelpdeskService {
     ukuranHalamanRaw?: string,
     bulan?: number,
     tahun?: number,
+    cari?: string,
   ) {
     const statusValid =
       status &&
@@ -214,10 +215,20 @@ export class HelpdeskService {
         }
       : undefined;
 
-    const where = {
+    const where: Prisma.TiketHelpdeskWhereInput = {
       ...(statusValid ? { status: statusValid } : {}),
       ...(this.isPic(aktor) ? {} : { pembuatId: aktor.id }),
       ...(rentangTanggal ? { dibuatPada: rentangTanggal } : {}),
+      ...(cari
+        ? {
+            OR: [
+              { nomorTiket: { contains: cari, mode: 'insensitive' } },
+              { masalah: { contains: cari, mode: 'insensitive' } },
+              { deskripsi: { contains: cari, mode: 'insensitive' } },
+              { pembuat: { name: { contains: cari, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
     };
     const param = paramHalaman(halamanRaw, ukuranHalamanRaw);
 
