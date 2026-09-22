@@ -33,31 +33,43 @@ export class McuHasilController {
 
   @Get()
   daftar(
+    @Aktor() aktor: AktorMcu,
     @Query('statusReview') statusReview?: StatusReview,
     @Query('karyawanId') karyawanId?: string,
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
+    @Query('cari') cari?: string,
     @Query('halaman') halaman?: string,
     @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
-    return this.service.daftar({
-      statusReview,
-      karyawanId: karyawanId ? Number(karyawanId) : undefined,
-      bulan: bulan ? Number(bulan) : undefined,
-      tahun: tahun ? Number(tahun) : undefined,
-      halaman,
-      ukuranHalaman,
-    });
+    return this.service.daftar(
+      {
+        statusReview,
+        karyawanId: karyawanId ? Number(karyawanId) : undefined,
+        bulan: bulan ? Number(bulan) : undefined,
+        tahun: tahun ? Number(tahun) : undefined,
+        cari: cari?.trim() || undefined,
+        halaman,
+        ukuranHalaman,
+      },
+      aktor,
+    );
   }
 
   @Get('menunggu-upload')
-  jadwalMenungguHasil() {
-    return this.service.jadwalMenungguHasil();
+  jadwalMenungguHasil(@Aktor() aktor: AktorMcu) {
+    return this.service.jadwalMenungguHasil(aktor);
+  }
+
+  /** Riwayat hasil MCU akun Karyawan sendiri, per tahun. */
+  @Get('saya')
+  hasilSaya(@Aktor() aktor: AktorMcu, @Query('tahun') tahun?: string) {
+    return this.service.hasilSaya(aktor, { tahun: tahun ? Number(tahun) : undefined });
   }
 
   @Get(':id')
-  detail(@Param('id', ParseIntPipe) id: number) {
-    return this.service.detail(id);
+  detail(@Aktor() aktor: AktorMcu, @Param('id', ParseIntPipe) id: number) {
+    return this.service.detailAdmin(id, aktor);
   }
 
   @Post('jadwal/:jadwalId/unggah')
@@ -70,7 +82,7 @@ export class McuHasilController {
     return this.service.unggah(jadwalId, file, aktor);
   }
 
-  /** Unduh file mentah - hanya HC & Dokter. */
+  /** Unduh file mentah — HC/Dokter lintas karyawan; Karyawan hanya file miliknya sendiri. */
   @Get(':id/file')
   async file(
     @Aktor() aktor: AktorMcu,
