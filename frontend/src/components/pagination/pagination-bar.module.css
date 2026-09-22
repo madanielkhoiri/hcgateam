@@ -1,0 +1,33 @@
+.bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+}
+
+.tombol {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #d8e4f2;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #385675;
+  cursor: pointer;
+}
+
+.tombol:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.tombol:not(:disabled):hover {
+  background: #f3f8fd;
+}
+
+.info {
+  font-size: 12.5px;
+  color: #385675;
+  white-space: nowrap;
+}

@@ -23,6 +23,8 @@ export type PeranMcu =
 
 export type StatusKerja = 'AKTIF' | 'DIRUMAHKAN' | 'RESIGN';
 export type StatusKesehatanDirumahkan = 'SAKIT' | 'FIT_SAKIT';
+/** Dipakai otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA tiket & travel. */
+export type GenderKaryawan = 'LAKI_LAKI' | 'PEREMPUAN';
 export type JenisMcu = 'AWAL' | 'BERKALA' | 'KHUSUS';
 export type StatusPendaftaran =
   | 'DRAFT'
@@ -55,6 +57,8 @@ export const SEMUA_PERAN_MCU: PeranMcu[] = [
   'KLINIK',
 ];
 
+export type { HasilHalaman } from './pagination';
+
 export type Departemen = {
   id: number;
   namaDepartemen: string;
@@ -68,6 +72,7 @@ export type Karyawan = {
   id: number;
   nik: string;
   nama: string;
+  gender: GenderKaryawan | null;
   departemenId: number;
   jabatan: string | null;
   email: string | null;
@@ -198,6 +203,39 @@ export type Rekomendasi = {
   induksiUlang: { id: number; status: StatusInduksiUlang } | null;
 };
 
+/** Bentuk ringkas dari GET /mcu/rekomendasi/saya — tanpa catatan medis, cuma yang sudah diteruskan. */
+export type RekomendasiSaya = {
+  karyawan: Karyawan;
+  rekomendasi: Array<{
+    id: number;
+    status: StatusRekomendasi;
+    siklusKe: number;
+    tanggalSubmit: string;
+    diteruskanKeKaryawanAt: string | null;
+    suratRujukanFu: string | null;
+    nomorSuratRujukan: string | null;
+    followUp: {
+      id: number;
+      status: StatusFollowUp;
+      batasWaktuFu: string | null;
+      tanggalPilihanKaryawan: string | null;
+    } | null;
+    hasilMcu: {
+      jadwalMcu: { tanggalMcu: string; jenisMcu: JenisMcu };
+    };
+  }>;
+};
+
+/** Bentuk ringkas dari GET /mcu/hasil/saya — metadata saja, tanpa path file mentah langsung. */
+export type HasilMcuSaya = {
+  id: number;
+  tanggalUpload: string;
+  statusReview: StatusReview;
+  namaFileAsli: string | null;
+  fileDihapusAt: string | null;
+  jadwalMcu: { tanggalMcu: string; jenisMcu: JenisMcu };
+};
+
 export type FollowUp = {
   id: number;
   karyawanId: number;
@@ -263,6 +301,12 @@ export type RingkasanMcu = {
   followUpTerlambat: number;
   induksiMenunggu: number;
   induksiTerjadwal: number;
+};
+
+export type TrenDashboardMcu = {
+  tahun: number;
+  trenBulanan: Array<{ bulan: number; total: number }>;
+  statusRekomendasi: { fit: number; followUp: number };
 };
 
 export type PeranSaya = {

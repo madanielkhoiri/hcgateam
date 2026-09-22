@@ -1,6 +1,7 @@
 import { Controller, Get, Param, UseGuards, UseInterceptors } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { PenggunaService } from './pengguna.service';
 import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 
@@ -10,6 +11,7 @@ import { SnakeCaseInterceptor } from '../bantuan/snake-case.interceptor';
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('pengguna')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_DEKLARASI')
 export class PenggunaController {
   constructor(private readonly penggunaService: PenggunaService) {}
 

@@ -19,6 +19,7 @@ import { basename, extname, join } from 'node:path';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 const uploadDirectory = join(process.cwd(), 'uploads', 'handovers');
@@ -40,6 +41,7 @@ function createFilename(originalName: string): string {
 
 @Controller('handovers')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_PEKERJAAN')
 export class HandoverImagesController {
   constructor(private readonly prisma: PrismaService) {}
 

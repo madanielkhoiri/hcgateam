@@ -5,12 +5,14 @@
 
 import { Controller, Get, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
 import { EpromProjectService } from './eprom-project.service';
 
 @Controller('eprom/projects')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_PROJECT')
 export class EpromProjectController {
   constructor(private readonly service: EpromProjectService) {}
 

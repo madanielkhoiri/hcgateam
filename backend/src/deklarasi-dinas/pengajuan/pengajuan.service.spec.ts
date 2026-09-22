@@ -1,7 +1,12 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SaldoService } from '../saldo/saldo.service';
 import { PengajuanService } from './pengajuan.service';
+
+function aktor(role: UserRole = UserRole.ADMIN): { role: UserRole } {
+  return { role };
+}
 
 function penggunaFixture(overrides: Record<string, unknown> = {}) {
   return { id: 1, nrp: '12345', name: 'Budi', isActive: true, ...overrides };
@@ -249,13 +254,13 @@ describe('PengajuanService.updateStatusPengajuan', () => {
   it('menolak tanpa status_pengajuan', async () => {
     const { service } = buatService();
 
-    await expect(service.updateStatusPengajuan(1, {} as any)).rejects.toThrow('Status pengajuan wajib dipilih');
+    await expect(service.updateStatusPengajuan(1, {} as any, aktor())).rejects.toThrow('Status pengajuan wajib dipilih');
   });
 
   it('menolak ubah pengajuan yang sudah SELESAI', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'SELESAI' }) });
 
-    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK' } as any)).rejects.toThrow(
+    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK' } as any, aktor())).rejects.toThrow(
       'sudah selesai tidak dapat diubah',
     );
   });
@@ -263,7 +268,7 @@ describe('PengajuanService.updateStatusPengajuan', () => {
   it('menolak ubah pengajuan MENUNGGU_TRANSFER ke status lain', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER' }) });
 
-    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK' } as any)).rejects.toThrow(
+    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK' } as any, aktor())).rejects.toThrow(
       'sudah menunggu transfer tidak dapat diubah',
     );
   });
@@ -271,7 +276,7 @@ describe('PengajuanService.updateStatusPengajuan', () => {
   it('DITOLAK wajib mengisi catatan_admin', async () => {
     const { service } = buatService();
 
-    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK' } as any)).rejects.toThrow(
+    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK' } as any, aktor())).rejects.toThrow(
       'Alasan penolakan wajib diisi',
     );
   });
@@ -279,7 +284,7 @@ describe('PengajuanService.updateStatusPengajuan', () => {
   it('MENUNGGU_TRANSFER hanya boleh dari status DIAJUKAN', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'DITOLAK' }) });
 
-    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'MENUNGGU_TRANSFER' } as any)).rejects.toThrow(
+    await expect(service.updateStatusPengajuan(1, { status_pengajuan: 'MENUNGGU_TRANSFER' } as any, aktor())).rejects.toThrow(
       'Hanya pengajuan berstatus Diajukan',
     );
   });
@@ -287,7 +292,7 @@ describe('PengajuanService.updateStatusPengajuan', () => {
   it('MENUNGGU_TRANSFER memberi catatan default kalau tidak diisi', async () => {
     const { service, update } = buatService();
 
-    await service.updateStatusPengajuan(1, { status_pengajuan: 'MENUNGGU_TRANSFER' } as any);
+    await service.updateStatusPengajuan(1, { status_pengajuan: 'MENUNGGU_TRANSFER' } as any, aktor());
 
     expect(update).toHaveBeenCalledWith({
       where: { id: 1 },
@@ -298,7 +303,7 @@ describe('PengajuanService.updateStatusPengajuan', () => {
   it('DITOLAK berhasil dengan catatan ter-trim', async () => {
     const { service, update } = buatService();
 
-    await service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK', catatan_admin: '  Data kurang  ' } as any);
+    await service.updateStatusPengajuan(1, { status_pengajuan: 'DITOLAK', catatan_admin: '  Data kurang  ' } as any, aktor());
 
     expect(update).toHaveBeenCalledWith({
       where: { id: 1 },
@@ -311,7 +316,7 @@ describe('PengajuanService.uploadBuktiTransfer', () => {
   it('menolak tanpa file bukti transfer', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER' }) });
 
-    await expect(service.uploadBuktiTransfer(1, undefined, { nominal_transfer: 1000 })).rejects.toThrow(
+    await expect(service.uploadBuktiTransfer(1, undefined, { nominal_transfer: 1000 }, aktor())).rejects.toThrow(
       'Bukti transfer wajib diupload',
     );
   });
@@ -319,7 +324,7 @@ describe('PengajuanService.uploadBuktiTransfer', () => {
   it('menolak kalau status bukan MENUNGGU_TRANSFER', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'DIAJUKAN' }) });
 
-    await expect(service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 1000 })).rejects.toThrow(
+    await expect(service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 1000 }, aktor())).rejects.toThrow(
       'hanya dapat diupload ketika status pengajuan Menunggu Transfer',
     );
   });
@@ -329,7 +334,7 @@ describe('PengajuanService.uploadBuktiTransfer', () => {
       pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER', idSaldo: 5 }),
     });
 
-    await expect(service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 1000 })).rejects.toThrow(
+    await expect(service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 1000 }, aktor())).rejects.toThrow(
       'sudah memiliki saldo transfer',
     );
   });
@@ -337,7 +342,7 @@ describe('PengajuanService.uploadBuktiTransfer', () => {
   it('menolak nominal transfer <= 0 atau bukan angka', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER' }) });
 
-    await expect(service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 0 })).rejects.toThrow(
+    await expect(service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 0 }, aktor())).rejects.toThrow(
       'Nominal transfer wajib lebih dari 0',
     );
   });
@@ -347,7 +352,7 @@ describe('PengajuanService.uploadBuktiTransfer', () => {
       pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER' }),
     });
 
-    await service.uploadBuktiTransfer(1, fileFixture('bukti.jpg'), { nominal_transfer: 50000, tanggal_transfer: '2026-01-05' });
+    await service.uploadBuktiTransfer(1, fileFixture('bukti.jpg'), { nominal_transfer: 50000, tanggal_transfer: '2026-01-05' }, aktor());
 
     expect(saldoService.buatSaldo).toHaveBeenCalledWith(
       expect.objectContaining({ id_pengguna: 1, nominal_transfer: 50000 }),
@@ -363,21 +368,45 @@ describe('PengajuanService.hapusPengajuan', () => {
   it('menolak hapus pengajuan berstatus MENUNGGU_TRANSFER', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER' }) });
 
-    await expect(service.hapusPengajuan(1)).rejects.toThrow('sudah masuk proses transfer tidak dapat dihapus');
+    await expect(service.hapusPengajuan(1, aktor())).rejects.toThrow('sudah masuk proses transfer tidak dapat dihapus');
   });
 
   it('menolak hapus pengajuan berstatus SELESAI', async () => {
     const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'SELESAI' }) });
 
-    await expect(service.hapusPengajuan(1)).rejects.toThrow('sudah masuk proses transfer tidak dapat dihapus');
+    await expect(service.hapusPengajuan(1, aktor())).rejects.toThrow('sudah masuk proses transfer tidak dapat dihapus');
   });
 
   it('berhasil menghapus pengajuan berstatus DIAJUKAN', async () => {
     const { service, deleteFn } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'DIAJUKAN' }) });
 
-    const hasil = await service.hapusPengajuan(1);
+    const hasil = await service.hapusPengajuan(1, aktor());
 
     expect(deleteFn).toHaveBeenCalledWith({ where: { id: 1 } });
     expect(hasil.message).toMatch(/berhasil dihapus/);
+  });
+});
+
+describe('PengajuanService — role penyetuju wajib dicek (sebelumnya tidak ada sama sekali)', () => {
+  it('updateStatusPengajuan menolak role Karyawan biasa', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.updateStatusPengajuan(1, { status_pengajuan: 'MENUNGGU_TRANSFER' } as any, aktor(UserRole.KARYAWAN)),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('uploadBuktiTransfer menolak role Karyawan biasa', async () => {
+    const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'MENUNGGU_TRANSFER' }) });
+
+    await expect(
+      service.uploadBuktiTransfer(1, fileFixture(), { nominal_transfer: 1000 }, aktor(UserRole.KARYAWAN)),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('hapusPengajuan menolak role Karyawan biasa', async () => {
+    const { service } = buatService({ pengajuanDetail: pengajuanFixture({ statusPengajuan: 'DIAJUKAN' }) });
+
+    await expect(service.hapusPengajuan(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
   });
 });

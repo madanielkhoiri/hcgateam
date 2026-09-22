@@ -18,12 +18,21 @@ import {
   hasAccess,
   type PortalUser,
 } from '@/lib/access-control';
+import { MobileBottomNav } from '@/components/module-shell/mobile-bottom-nav';
+import { PageTransition } from '@/components/page-transition/page-transition';
+import { buatInisial } from '@/lib/buat-inisial';
 import styles from '../project/project-layout.module.css';
 
 const navItems = [
   { label: 'Dashboard', href: '/civil/tps-3r/dashboard', icon: Gauge },
   { label: 'Tabel Laporan', href: '/civil/tps-3r/tabel', icon: Table2 },
 ];
+
+const bottomNavItems = navItems.map((item) => ({
+  label: item.label,
+  href: item.href,
+  initial: buatInisial(item.label),
+}));
 
 export default function Tps3rLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -144,8 +153,12 @@ export default function Tps3rLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className={styles.pageContent}>{children}</div>
+        <div className={styles.pageContent}>
+          <PageTransition>{children}</PageTransition>
+        </div>
       </section>
+
+      <MobileBottomNav items={bottomNavItems} deptColor="#e0752a" deptSoft="#fff0e4" />
     </div>
   );
 }

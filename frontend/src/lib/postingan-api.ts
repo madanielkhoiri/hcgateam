@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken, type PortalUser } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -20,6 +21,19 @@ export type Postingan = {
   urutan: number;
   createdAt: string;
   uploadedBy: { id: number; name: string; nrp: string | null };
+};
+
+export type RingkasanPostingan = {
+  total: number;
+  tampilBeranda: number;
+  tersembunyi: number;
+  postinganBulanIni: number;
+};
+
+export type TrenPostingan = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  tipeMedia: { poster: number; video: number };
 };
 
 export class PostinganApiError extends Error {
@@ -73,6 +87,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const postinganApi = {
   daftar: () => request<Postingan[]>(''),
   beranda: () => request<Postingan[]>('/beranda'),
+  ringkasan: () => request<RingkasanPostingan>('/dashboard/ringkasan'),
+  tren: () => request<TrenPostingan>('/dashboard/tren'),
   unggah: (data: {
     judul: string;
     deskripsi?: string;
@@ -108,7 +124,7 @@ export const postinganApi = {
 };
 
 export function urlMediaPostingan(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export function bolehKelolaPostingan(user: PortalUser | null): boolean {

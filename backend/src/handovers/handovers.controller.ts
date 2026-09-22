@@ -7,12 +7,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreateHandoverDto } from './dto/create-handover.dto';
 import { UpdateHandoverDto } from './dto/update-handover.dto';
 import { HandoverPdfService } from './handover-pdf.service';
@@ -28,6 +30,7 @@ type AuthenticatedRequest = Request & {
 
 @Controller('handovers')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_PEKERJAAN')
 export class HandoversController {
   constructor(
     private readonly service: HandoversService,
@@ -35,8 +38,8 @@ export class HandoversController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query('cari') cari?: string) {
+    return this.service.findAll(cari?.trim() || undefined);
   }
 
   @Get(':id/pdf')

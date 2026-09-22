@@ -32,6 +32,8 @@ function buatService(overrides: {
       _count: { _all: 0 },
     });
 
+  const count = jest.fn().mockResolvedValue(0);
+
   const prisma = {
     laporanTps3r: {
       findMany,
@@ -40,12 +42,13 @@ function buatService(overrides: {
       update,
       delete: deleteFn,
       aggregate,
+      count,
     },
   } as unknown as PrismaService;
 
   const service = new CivilTps3rService(prisma);
 
-  return { service, prisma, findMany, findUnique, create, update, deleteFn, aggregate };
+  return { service, prisma, findMany, findUnique, create, update, deleteFn, aggregate, count };
 }
 
 describe('CivilTps3rService.daftar', () => {

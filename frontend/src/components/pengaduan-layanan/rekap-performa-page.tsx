@@ -9,13 +9,13 @@ import {
   pengaduanLayananApi,
   PengaduanLayananApiError,
   LABEL_DIVISI_PENGADUAN,
+  ROLE_BOLEH_LIHAT_REKAP,
   namaBulan,
   type DivisiPengaduan,
   type RekapPengaduan,
 } from '@/lib/pengaduan-layanan-api';
+import { DaftarPengaduanTabel } from './daftar-pengaduan-tabel';
 import styles from './pengaduan-layanan.module.css';
-
-const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 
 const HALAMAN_MENU_PER_DIVISI: Record<DivisiPengaduan, string> = {
   HC: '/hc',
@@ -197,40 +197,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
               </div>
             </div>
 
-            <div className={styles.daftarCard}>
-              <span className={styles.statLabel}>Daftar Pengaduan Bulan Ini</span>
-
-              {rekap.daftar.length === 0 ? (
-                <p className={styles.kosong}>Belum ada pengaduan pada periode ini.</p>
-              ) : (
-                <table className={styles.tabel}>
-                  <thead>
-                    <tr>
-                      <th>Tanggal</th>
-                      <th>Pengirim</th>
-                      <th>Rating</th>
-                      <th>Komentar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rekap.daftar.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          {new Intl.DateTimeFormat('id-ID', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          }).format(new Date(item.createdAt))}
-                        </td>
-                        <td>{item.pengirim}</td>
-                        <td>{'★'.repeat(item.rating)}</td>
-                        <td>{item.komentar || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            <DaftarPengaduanTabel divisi={divisi} bulan={bulan} tahun={tahun} />
           </>
         ) : null}
       </div>

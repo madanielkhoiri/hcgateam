@@ -23,7 +23,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { AktorKip, KipService } from './kip.service';
+import { KipDashboardService } from './kip-dashboard.service';
 import { BuatKipDto, SimpanGpsLokasiDto } from './dto/kip.dto';
 
 /** Ambil info pelaku dari payload JWT (req.user) untuk audit log — bukan cuma ID. */
@@ -38,36 +40,58 @@ function ambilAktor(req: any): AktorKip {
 
 @Controller('kip')
 export class KipController {
-  constructor(private readonly service: KipService) {}
+  constructor(
+    private readonly service: KipService,
+    private readonly dashboard: KipDashboardService,
+  ) {}
 
   // ---------- Admin (JWT + accessKey CIVIL_ELECTRIC_KIP lewat routeAccessMap) ----------
 
+  @Get('admin/dashboard/ringkasan')
+  @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
+  ringkasanDashboard() {
+    return this.dashboard.ringkasan();
+  }
+
+  @Get('admin/dashboard/tren')
+  @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
+  trenDashboard() {
+    return this.dashboard.trenDanStatus();
+  }
+
   @Get('admin/kip')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   daftarKip(@Query('lokasi') lokasi?: string, @Query('tahun') tahun?: string) {
     return this.service.daftarKip(lokasi, tahun ? Number(tahun) : undefined);
   }
 
   @Post('admin/kip')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   buatKip(@Body() dto: BuatKipDto, @Req() req: any) {
     return this.service.buatKip(dto, ambilAktor(req));
   }
 
   @Patch('admin/kip/:id')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   ubahKip(@Param('id', ParseIntPipe) id: number, @Body() dto: BuatKipDto, @Req() req: any) {
     return this.service.ubahKip(id, dto, ambilAktor(req));
   }
 
   @Delete('admin/kip/:id')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   hapusKip(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.hapusKip(id, ambilAktor(req));
   }
 
   @Get('admin/qr/:lokasi')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   @Header('Content-Type', 'image/svg+xml')
   qrSvg(@Param('lokasi') lokasi: string, @Query('target') target: string) {
     return this.service.qrSvg(lokasi, target);
@@ -76,6 +100,7 @@ export class KipController {
   /** QR universal — sama untuk semua lokasi, boleh dicetak berkali-kali sebagai stok. */
   @Get('admin/qr-universal')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   @Header('Content-Type', 'image/svg+xml')
   qrSvgUniversal(@Query('target') target: string) {
     return this.service.qrSvgUniversal(target);
@@ -84,6 +109,7 @@ export class KipController {
   /** Simpan titik GPS acuan lokasi — dipanggil sekali saat admin cetak barcode sambil berdiri di lokasi tsb. */
   @Post('admin/lokasi-gps/:lokasi')
   @UseGuards(JwtAuthGuard)
+  @RequireAccessKey('CIVIL_ELECTRIC_KIP')
   simpanGpsLokasi(@Param('lokasi') lokasi: string, @Body() dto: SimpanGpsLokasiDto) {
     return this.service.simpanGpsLokasi(lokasi, dto);
   }

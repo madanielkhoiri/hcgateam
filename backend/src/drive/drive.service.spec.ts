@@ -5,8 +5,8 @@ import { AktorPostingan } from '../postingan/postingan-aktor';
 import { DriveFileService } from './drive-file.service';
 import { DriveService } from './drive.service';
 
-function aktor(role: UserRole): AktorPostingan {
-  return { id: 9, role };
+function aktor(role: UserRole, accessKeys: string[] = []): AktorPostingan {
+  return { id: 9, role, accessKeys };
 }
 
 function folderFixture(overrides: Record<string, unknown> = {}) {
@@ -70,13 +70,13 @@ describe('DriveService.isiFolder', () => {
   it('menolak scope tidak valid', async () => {
     const { service } = buatService();
 
-    await expect(service.isiFolder('SALAH')).rejects.toThrow(BadRequestException);
+    await expect(service.isiFolder(aktor(UserRole.ADMIN), 'SALAH')).rejects.toThrow(BadRequestException);
   });
 
   it('menyertakan daftar file hanya kalau parentFolderId diberikan', async () => {
     const { service, prisma } = buatService({ fileFindMany: [{ id: 1 }] });
 
-    const hasil = await service.isiFolder('CSR', 1);
+    const hasil = await service.isiFolder(aktor(UserRole.ADMIN), 'CSR', 1);
 
     expect(prisma.driveFile.findMany).toHaveBeenCalled();
     expect(hasil.files).toEqual([{ id: 1 }]);
@@ -85,10 +85,40 @@ describe('DriveService.isiFolder', () => {
   it('tidak query file kalau tidak ada parentFolderId', async () => {
     const { service, prisma } = buatService();
 
-    const hasil = await service.isiFolder('CSR');
+    const hasil = await service.isiFolder(aktor(UserRole.ADMIN), 'CSR');
 
     expect(prisma.driveFile.findMany).not.toHaveBeenCalled();
     expect(hasil.files).toEqual([]);
+  });
+
+  it('menolak akun tanpa accessKey ADMINISTRASI_CSR untuk scope CSR', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.isiFolder(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_FORM']), 'CSR'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('menolak akun tanpa accessKey ADMINISTRASI_FORM untuk scope FORM_DOWNLOAD', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.isiFolder(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_CSR']), 'FORM_DOWNLOAD'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('mengizinkan akun ber-accessKey yang sesuai scope-nya', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.isiFolder(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_CSR']), 'CSR'),
+    ).resolves.toBeDefined();
+  });
+
+  it('role ADMIN/SUPER_ADMIN/SECTION_HEAD bypass accessKey scope', async () => {
+    const { service } = buatService();
+
+    await expect(service.isiFolder(aktor(UserRole.SUPER_ADMIN), 'FORM_DOWNLOAD')).resolves.toBeDefined();
   });
 });
 
@@ -213,6 +243,84 @@ describe('DriveService.unggahFile', () => {
     expect(fileCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ folderId: 1, namaFile: 'a.pdf', urlFile: 'drive/baru.pdf', uploadedById: 9 }) }),
     );
+  });
+});
+
+describe('DriveService.ringkasan', () => {
+  it('menolak scope tidak valid', async () => {
+    const { service } = buatService();
+
+    await expect(service.ringkasan(aktor(UserRole.ADMIN), 'SALAH')).rejects.toThrow(BadRequestException);
+  });
+
+  it('menolak akun tanpa accessKey yang sesuai scope', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.ringkasan(aktor(UserRole.KARYAWAN, ['ADMINISTRASI_FORM']), 'CSR'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('menghitung seluruh angka kartu dashboard untuk scope diminta', async () => {
+    const count = jest.fn()
+      .mockResolvedValueOnce(6) // totalFolder
+      .mockResolvedValueOnce(30) // totalFile
+      .mockResolvedValueOnce(4); // fileBulanIni
+    const groupBy = jest.fn().mockResolvedValue([{ uploadedById: 1 }, { uploadedById: 2 }, { uploadedById: 3 }]);
+
+    const prisma = {
+      driveFolder: { count },
+      driveFile: { count, groupBy },
+    } as unknown as PrismaService;
+    const file = { simpan: jest.fn(), hapus: jest.fn() } as unknown as DriveFileService;
+    const service = new DriveService(prisma, file);
+
+    const hasil = await service.ringkasan(aktor(UserRole.ADMIN), 'CSR');
+
+    expect(hasil).toEqual({
+      totalFolder: 6,
+      totalFile: 30,
+      fileBulanIni: 4,
+      totalKontributor: 3,
+    });
+    expect(groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ by: ['uploadedById'], where: { folder: { scope: ScopeDrive.CSR } } }),
+    );
+  });
+});
+
+describe('DriveService.trenDanJenis', () => {
+  it('menolak scope tidak valid', async () => {
+    const { service } = buatService();
+
+    await expect(service.trenDanJenis(aktor(UserRole.ADMIN), 'SALAH')).rejects.toThrow(BadRequestException);
+  });
+
+  it('menjumlahkan file per bulan (tahun berjalan) dan breakdown jenis dari ekstensi nama file', async () => {
+    const tahunIni = new Date().getUTCFullYear();
+
+    const findMany = jest.fn().mockResolvedValue([
+      { namaFile: 'proposal.pdf', uploadedAt: new Date(Date.UTC(tahunIni, 2, 1)) },
+      { namaFile: 'laporan.docx', uploadedAt: new Date(Date.UTC(tahunIni, 2, 10)) },
+      { namaFile: 'anggaran.xlsx', uploadedAt: new Date(Date.UTC(tahunIni, 5, 1)) },
+      { namaFile: 'foto.jpg', uploadedAt: new Date(Date.UTC(tahunIni - 1, 5, 1)) },
+      { namaFile: 'data.zip', uploadedAt: new Date(Date.UTC(tahunIni, 6, 1)) },
+    ]);
+
+    const prisma = {
+      driveFile: { findMany },
+    } as unknown as PrismaService;
+    const file = { simpan: jest.fn(), hapus: jest.fn() } as unknown as DriveFileService;
+    const service = new DriveService(prisma, file);
+
+    const hasil = await service.trenDanJenis(aktor(UserRole.ADMIN), 'CSR');
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.trenBulanan[2]).toEqual({ bulan: 3, total: 2 });
+    expect(hasil.trenBulanan[5]).toEqual({ bulan: 6, total: 1 });
+    expect(hasil.trenBulanan[6]).toEqual({ bulan: 7, total: 1 });
+    // File tahun lalu tidak dihitung ke tren bulanan, tapi tetap dihitung ke breakdown jenis
+    expect(hasil.jenisFile).toEqual({ dokumen: 2, spreadsheet: 1, gambar: 1, lainnya: 1 });
   });
 });
 

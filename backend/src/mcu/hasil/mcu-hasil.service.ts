@@ -19,6 +19,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
 import { McuFileService } from '../common/mcu-file.service';
@@ -58,22 +59,80 @@ export class McuHasilService {
     private readonly notifikasi: McuNotifikasiService,
   ) {}
 
-  /** Daftar hasil MCU; metadata boleh dilihat HC, Dokter, dan Admin Dept. */
-  async daftar(filter: { statusReview?: StatusReview; karyawanId?: number }) {
-    return this.prisma.hasilMcu.findMany({
-      where: {
-        ...(filter.statusReview ? { statusReview: filter.statusReview } : {}),
-        ...(filter.karyawanId
-          ? { jadwalMcu: { karyawanId: filter.karyawanId } }
-          : {}),
-      },
-      include: HASIL_INCLUDE,
-      orderBy: { tanggalUpload: 'desc' },
-    });
+  /**
+   * Daftar hasil MCU; metadata boleh dilihat HC, Dokter, Admin Dept, dan
+   * Klinik (terkoneksi, untuk lihat antrean uploadnya sendiri) — BUKAN
+   * Karyawan, karena ini daftar administratif lintas karyawan, bukan
+   * riwayat pribadi (lihat komentar file di atas: file mentah + metadata
+   * status review bukan konsumsi Karyawan).
+   */
+  async daftar(
+    filter: {
+      statusReview?: StatusReview;
+      karyawanId?: number;
+      bulan?: number;
+      tahun?: number;
+      cari?: string;
+      halaman?: string;
+      ukuranHalaman?: string;
+    },
+    aktor: AktorMcu,
+  ) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER, UserRole.ADMIN_DEPT, UserRole.KLINIK);
+
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where = {
+      ...(filter.statusReview ? { statusReview: filter.statusReview } : {}),
+      ...(filter.karyawanId || filter.cari
+        ? {
+            jadwalMcu: {
+              ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
+              ...(filter.cari
+                ? {
+                    karyawan: {
+                      OR: [
+                        { nama: { contains: filter.cari, mode: 'insensitive' as const } },
+                        { nik: { contains: filter.cari, mode: 'insensitive' as const } },
+                      ],
+                    },
+                  }
+                : {}),
+            },
+          }
+        : {}),
+      ...(rentangTanggal ? { tanggalUpload: rentangTanggal } : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.hasilMcu.findMany({
+        where,
+        include: HASIL_INCLUDE,
+        orderBy: { tanggalUpload: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.hasilMcu.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   /** Jadwal yang sudah terlaksana tetapi hasilnya belum diupload. */
-  async jadwalMenungguHasil() {
+  async jadwalMenungguHasil(aktor: AktorMcu) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER, UserRole.ADMIN_DEPT, UserRole.KLINIK);
+
     return this.prisma.jadwalMcu.findMany({
       where: {
         hasilMcu: null,
@@ -91,6 +150,7 @@ export class McuHasilService {
     });
   }
 
+  /** Fetch mentah tanpa gerbang role — pemanggil (mis. pathFile) wajib cek otorisasi sendiri. */
   async detail(id: number) {
     const hasil = await this.prisma.hasilMcu.findUnique({
       where: { id },
@@ -102,6 +162,51 @@ export class McuHasilService {
     }
 
     return hasil;
+  }
+
+  /** Detail lengkap untuk tampilan admin — HANYA HC/Dokter/Admin Dept/Klinik. */
+  async detailAdmin(id: number, aktor: AktorMcu) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER, UserRole.ADMIN_DEPT, UserRole.KLINIK);
+
+    return this.detail(id);
+  }
+
+  /**
+   * Riwayat hasil MCU milik akun Karyawan sendiri — cuma metadata (tanggal,
+   * status review, nama file), TIDAK termasuk path file mentahnya. Untuk
+   * unduh file pakai pathFile() yang juga cek kepemilikan.
+   */
+  async hasilSaya(aktor: AktorMcu, filter: { tahun?: number } = {}) {
+    const karyawan = await this.akses.karyawanDariAkun(aktor);
+
+    if (!karyawan) {
+      throw new NotFoundException(
+        'Akun ini belum tertaut ke data karyawan manapun',
+      );
+    }
+
+    const rentang = filter.tahun
+      ? {
+          gte: new Date(Date.UTC(filter.tahun, 0, 1)),
+          lt: new Date(Date.UTC(filter.tahun + 1, 0, 1)),
+        }
+      : undefined;
+
+    return this.prisma.hasilMcu.findMany({
+      where: {
+        jadwalMcu: { karyawanId: karyawan.id },
+        ...(rentang ? { tanggalUpload: rentang } : {}),
+      },
+      select: {
+        id: true,
+        tanggalUpload: true,
+        statusReview: true,
+        namaFileAsli: true,
+        fileDihapusAt: true,
+        jadwalMcu: { select: { tanggalMcu: true, jenisMcu: true } },
+      },
+      orderBy: { tanggalUpload: 'desc' },
+    });
   }
 
   /**
@@ -185,11 +290,23 @@ export class McuHasilService {
     return hasil;
   }
 
-  /** Buka file mentah - dibatasi untuk HC dan Dokter. */
+  /**
+   * Buka file mentah — HC/Dokter boleh lintas karyawan; Karyawan HANYA
+   * boleh unduh hasil MCU miliknya sendiri (dicek lewat jadwalMcu.karyawanId,
+   * bukan percaya siapa pun yang tahu id-nya).
+   */
   async pathFile(id: number, aktor: AktorMcu) {
-    this.akses.wajibBolehLihatFileMedis(aktor);
-
     const hasil = await this.detail(id);
+
+    if (aktor.role === UserRole.KARYAWAN) {
+      const karyawan = await this.akses.karyawanDariAkun(aktor);
+
+      if (!karyawan || hasil.jadwalMcu.karyawanId !== karyawan.id) {
+        throw new NotFoundException('Hasil MCU tidak ditemukan');
+      }
+    } else {
+      this.akses.wajibBolehLihatFileMedis(aktor);
+    }
 
     if (hasil.fileDihapusAt) {
       throw new NotFoundException(

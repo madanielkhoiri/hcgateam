@@ -20,6 +20,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
 import { diskStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreateP5mDto } from './dto/create-p5m.dto';
 import { UpdateP5mDto } from './dto/update-p5m.dto';
 import { P5mPdfService } from './p5m-pdf.service';
@@ -49,6 +50,7 @@ const uploadStorage = diskStorage({
 
 @Controller('p5m')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_SAFETY_MEETING')
 export class P5mController {
   constructor(
     private readonly service: P5mService,

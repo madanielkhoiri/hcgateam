@@ -15,6 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { IrAksesService } from '../common/ir-akses.service';
 import { Aktor } from '../common/ir-aktor';
 import type { AktorIr } from '../common/ir-aktor';
@@ -27,6 +28,7 @@ import { IrAspirasiService } from './ir-aspirasi.service';
 
 @Controller('ir/aspirasi')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_IR')
 export class IrAspirasiController {
   constructor(
     private readonly service: IrAspirasiService,

@@ -18,18 +18,30 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { Aktor } from '../postingan/postingan-aktor';
 import type { AktorPostingan } from '../postingan/postingan-aktor';
 import { AlbumService } from './album.service';
 
 @Controller('album')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('ADMINISTRASI_DOKUMENTASI')
 export class AlbumController {
   constructor(private readonly service: AlbumService) {}
 
   @Get()
   daftar() {
     return this.service.daftar();
+  }
+
+  @Get('dashboard/ringkasan')
+  ringkasan() {
+    return this.service.ringkasan();
+  }
+
+  @Get('dashboard/tren')
+  trenBulanan() {
+    return this.service.trenBulanan();
   }
 
   @Get(':id')

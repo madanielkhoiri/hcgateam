@@ -10,8 +10,11 @@ import {
 } from "react";
 import styles from "./jobs.module.css";
 import { compressImages } from "@/lib/compress-image";
+import { urlUploads } from "@/lib/uploads-url";
+import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+const UKURAN_HALAMAN = 20;
 
 type WorkOrderStatus = "OPEN" | "ON_PROGRESS" | "CLOSE";
 
@@ -131,6 +134,7 @@ function approvalLabel(status: StatusApprovalWorkOrder): string {
 
 function bisaMenyetujuiTahap(row: WorkOrder, user: LoginUser | null): boolean {
   if (!user) return false;
+  if (row.statusApproval === "DISETUJUI" || row.statusApproval === "DITOLAK") return false;
   if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") return true;
   if (row.statusApproval === "MENUNGGU_GL") return user.role === "GRUP_LEADER";
   if (row.statusApproval === "MENUNGGU_SH") return user.role === "SECTION_HEAD";
@@ -166,9 +170,7 @@ function photoUrl(filename: string): string {
   const cleanFilename =
     filename.replace(/\\/g, "/").split("/").pop() ?? filename;
 
-  return `${API_URL}/uploads/work-orders/${encodeURIComponent(
-    cleanFilename,
-  )}`;
+  return urlUploads(`work-orders/${encodeURIComponent(cleanFilename)}`);
 }
 
 export default function WorkOrdersPage() {
@@ -190,10 +192,13 @@ export default function WorkOrdersPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [halaman, setHalaman] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
@@ -253,9 +258,21 @@ export default function WorkOrdersPage() {
     setError("");
 
     try {
-      const result = await request("work-orders");
+      const parameter = new URLSearchParams({
+        halaman: String(halaman),
+        ukuranHalaman: String(UKURAN_HALAMAN),
+      });
 
-      setRows(Array.isArray(result) ? result : []);
+      if (searchDebounced) parameter.set("cari", searchDebounced);
+      if (month) parameter.set("bulan", month);
+      if (year) parameter.set("tahun", year);
+      if (statusFilter) parameter.set("status", statusFilter);
+      if (priorityFilter) parameter.set("priority", priorityFilter);
+
+      const result = await request(`work-orders?${parameter.toString()}`);
+
+      setRows(Array.isArray(result?.data) ? result.data : []);
+      setTotalRows(typeof result?.total === "number" ? result.total : 0);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -265,12 +282,26 @@ export default function WorkOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [request]);
+  }, [request, searchDebounced, month, year, statusFilter, priorityFilter, halaman]);
 
   useEffect(() => {
     setUser(getCurrentUser());
+  }, []);
+
+  // Debounce pencarian teks supaya tidak fetch tiap ketikan huruf.
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchDebounced(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     void loadRows();
   }, [loadRows]);
+
+  // Balik ke halaman 1 tiap kali pencarian/filter berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [searchDebounced, month, year, statusFilter, priorityFilter]);
 
   useEffect(() => {
     const urls = newFiles.map((file) => URL.createObjectURL(file));
@@ -287,47 +318,6 @@ export default function WorkOrdersPage() {
 
     return Array.from({ length: 7 }, (_, index) => current - 5 + index);
   }, []);
-
-  const filteredRows = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    return rows
-      .filter((row) => {
-        if (!keyword) {
-          return true;
-        }
-
-        return [
-          row.workOrderNumber,
-          row.workOrderName,
-          row.department,
-          row.description,
-          row.userDepartmentName,
-          row.status,
-          row.priority,
-          row.pic,
-        ].some((value) => String(value).toLowerCase().includes(keyword));
-      })
-      .filter((row) => {
-        if (!month && !year) {
-          return true;
-        }
-
-        const rowDate = new Date(row.requestedAt);
-
-        if (year && rowDate.getFullYear() !== Number(year)) {
-          return false;
-        }
-
-        if (month && rowDate.getMonth() + 1 !== Number(month)) {
-          return false;
-        }
-
-        return true;
-      })
-      .filter((row) => !statusFilter || row.status === statusFilter)
-      .filter((row) => !priorityFilter || row.priority === priorityFilter);
-  }, [rows, search, month, year, statusFilter, priorityFilter]);
 
   function resetFilters() {
     setSearch("");
@@ -836,7 +826,7 @@ export default function WorkOrdersPage() {
             </button>
           </div>
 
-          <span>{filteredRows.length} data</span>
+          <span>{totalRows} data, ditampilkan {rows.length} per halaman</span>
         </div>
 
         <div className={styles.tableScroll}>
@@ -866,7 +856,7 @@ export default function WorkOrdersPage() {
                     <div className={styles.emptyState}>Memuat data...</div>
                   </td>
                 </tr>
-              ) : filteredRows.length === 0 ? (
+              ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={13}>
                     <div className={styles.emptyState}>
@@ -875,7 +865,7 @@ export default function WorkOrdersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, index) => (
+                rows.map((row, index) => (
                   <tr key={row.id}>
                     <td>{index + 1}</td>
 
@@ -1065,6 +1055,12 @@ export default function WorkOrdersPage() {
             </tbody>
           </table>
         </div>
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalRows, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </div>
 
       {modalOpen && (

@@ -152,6 +152,56 @@ describe('PostinganService.ubah', () => {
   });
 });
 
+describe('PostinganService.ringkasan', () => {
+  it('menghitung seluruh angka kartu dashboard sesuai urutan query', async () => {
+    const count = jest.fn()
+      .mockResolvedValueOnce(20) // total
+      .mockResolvedValueOnce(15) // tampilBeranda
+      .mockResolvedValueOnce(5) // tersembunyi
+      .mockResolvedValueOnce(4); // postinganBulanIni
+
+    const prisma = {
+      postingan: { count },
+    } as unknown as PrismaService;
+    const service = new PostinganService(prisma, {} as PostinganFileService);
+
+    const hasil = await service.ringkasan();
+
+    expect(hasil).toEqual({
+      total: 20,
+      tampilBeranda: 15,
+      tersembunyi: 5,
+      postinganBulanIni: 4,
+    });
+  });
+});
+
+describe('PostinganService.trenDanTipe', () => {
+  it('menjumlahkan postingan dibuat per bulan dan breakdown tipe media', async () => {
+    const tahunIni = new Date().getUTCFullYear();
+
+    const findMany = jest.fn().mockResolvedValue([
+      { createdAt: new Date(Date.UTC(tahunIni, 1, 5)) },
+      { createdAt: new Date(Date.UTC(tahunIni, 1, 20)) },
+    ]);
+    const count = jest.fn()
+      .mockResolvedValueOnce(12) // poster
+      .mockResolvedValueOnce(8); // video
+
+    const prisma = {
+      postingan: { findMany, count },
+    } as unknown as PrismaService;
+    const service = new PostinganService(prisma, {} as PostinganFileService);
+
+    const hasil = await service.trenDanTipe();
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.trenBulanan[1]).toEqual({ bulan: 2, total: 2 });
+    expect(hasil.trenBulanan[0]).toEqual({ bulan: 1, total: 0 });
+    expect(hasil.tipeMedia).toEqual({ poster: 12, video: 8 });
+  });
+});
+
 describe('PostinganService.hapus', () => {
   it('menolak role selain kelola', async () => {
     const { service } = buatService();

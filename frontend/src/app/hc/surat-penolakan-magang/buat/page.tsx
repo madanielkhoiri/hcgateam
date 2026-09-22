@@ -110,7 +110,7 @@ export default function BuatSuratPenolakanMagangPage() {
         },
       );
 
-      router.push(`/hc/surat-penolakan-magang?berhasil=${hasil.id}`);
+      router.push(`/hc/surat-penolakan-magang/daftar?berhasil=${hasil.id}`);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
@@ -122,7 +122,7 @@ export default function BuatSuratPenolakanMagangPage() {
 
   return (
     <>
-      <Link href="/hc/surat-penolakan-magang" className={styles.backButton}>
+      <Link href="/hc/surat-penolakan-magang/daftar" className={styles.backButton}>
         <ArrowLeft size={16} />
         Kembali
       </Link>
@@ -229,7 +229,7 @@ export default function BuatSuratPenolakanMagangPage() {
 
       <div className={styles.headActions} style={{ marginTop: 18 }}>
         <Link
-          href="/hc/surat-penolakan-magang"
+          href="/hc/surat-penolakan-magang/daftar"
           className={`${styles.tombol} ${styles.tombolNetral}`}
         >
           Batal

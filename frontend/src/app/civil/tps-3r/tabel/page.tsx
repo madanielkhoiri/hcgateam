@@ -13,7 +13,10 @@ import {
   type LaporanTps3r,
   type LaporanTps3rInput,
 } from '@/lib/tps3r-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from '../../project/tender/tender.module.css';
+
+const UKURAN_HALAMAN = 20;
 
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -47,6 +50,8 @@ export default function Tps3rTabelPage() {
   const [tahun, setTahun] = useState('');
 
   const [laporanList, setLaporanList] = useState<LaporanTps3r[]>([]);
+  const [halaman, setHalaman] = useState(1);
+  const [totalLaporan, setTotalLaporan] = useState(0);
   const [memuat, setMemuat] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,16 +64,24 @@ export default function Tps3rTabelPage() {
     setMemuat(true);
     setError(null);
     tps3rApi
-      .daftar(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined)
-      .then(setLaporanList)
+      .daftar(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined, halaman, UKURAN_HALAMAN)
+      .then((hasil) => {
+        setLaporanList(hasil.data);
+        setTotalLaporan(hasil.total);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Gagal memuat data'))
       .finally(() => setMemuat(false));
   }
 
   useEffect(() => {
-    muatUlang();
+    setHalaman(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bulan, tahun]);
+
+  useEffect(() => {
+    muatUlang();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bulan, tahun, halaman]);
 
   function bukaTambah() {
     setEditingId(null);
@@ -210,6 +223,12 @@ export default function Tps3rTabelPage() {
           </table>
         )}
       </div>
+
+      <PaginationBar
+        halaman={halaman}
+        totalHalaman={hitungTotalHalaman(totalLaporan, UKURAN_HALAMAN)}
+        onGanti={setHalaman}
+      />
 
       {formOpen && (
         <Modal title={editingId ? 'Ubah Laporan' : 'Tambah Laporan'} onClose={() => setFormOpen(false)}>

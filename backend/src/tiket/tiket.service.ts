@@ -3,13 +3,15 @@
 // FUNGSI: Kirim tiket cuti (admin GA) & riwayat cuti karyawan (self-service)
 // ==================================================
 
-import { JenisTiket } from '@prisma/client';
+import { GenderKaryawan, JenisTiket } from '@prisma/client';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TiketFileService } from './tiket-file.service';
 import { BuatTiketDto, RescheduleTiketDto } from './dto/tiket.dto';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { SmtpService } from '../smtp/smtp.service';
+import { sapaanKaryawan } from '../common/sapaan.util';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 
 const formatTanggal = (tanggal: Date) =>
   tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -48,17 +50,122 @@ export class TiketService {
     });
   }
 
-  async daftarAdmin() {
-    return this.prisma.transportTiket.findMany({
-      include: {
-        karyawan: {
-          select: { id: true, nama: true, nik: true, departemen: { select: { namaDepartemen: true } } },
+  async daftarAdmin(filter: {
+    cari?: string;
+    bulan?: number;
+    tahun?: number;
+    halaman?: string;
+    ukuranHalaman?: string;
+  } = {}) {
+    // Filter pencarian & bulan/tahun dipindah ke sini (dulu di frontend,
+    // cuma memfilter baris yang sudah termuat) supaya tetap benar walau
+    // daftarnya dipaginate. "Acuan tanggal" ikut logic lama: tanggalMulai,
+    // fallback ke tanggalSelesai kalau tanggalMulai kosong.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const kondisiCari = filter.cari?.trim()
+      ? {
+          OR: [
+            { karyawan: { nama: { contains: filter.cari.trim(), mode: 'insensitive' as const } } },
+            { karyawan: { nik: { contains: filter.cari.trim(), mode: 'insensitive' as const } } },
+            {
+              karyawan: {
+                departemen: { namaDepartemen: { contains: filter.cari.trim(), mode: 'insensitive' as const } },
+              },
+            },
+          ],
+        }
+      : undefined;
+    const kondisiTanggal = rentangTanggal
+      ? {
+          OR: [
+            { tanggalMulai: rentangTanggal },
+            { tanggalMulai: null, tanggalSelesai: rentangTanggal },
+          ],
+        }
+      : undefined;
+
+    // Dua kondisi OR digabung lewat AND (bukan spread langsung) karena
+    // object literal cuma bisa punya satu key `OR` — spread langsung akan
+    // membuat salah satunya menimpa yang lain.
+    const where = {
+      ...(kondisiCari || kondisiTanggal
+        ? { AND: [kondisiCari, kondisiTanggal].filter((k): k is NonNullable<typeof k> => Boolean(k)) }
+        : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.transportTiket.findMany({
+        where,
+        include: {
+          karyawan: {
+            select: { id: true, nama: true, nik: true, departemen: { select: { namaDepartemen: true } } },
+          },
+          pengirim: { select: { id: true, name: true } },
+          files: true,
         },
-        pengirim: { select: { id: true, name: true } },
-        files: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.transportTiket.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
+  }
+
+  async dashboard() {
+    const sekarang = new Date();
+    const tahun = sekarang.getUTCFullYear();
+    const awalTahun = new Date(Date.UTC(tahun, 0, 1));
+    const akhirTahun = new Date(Date.UTC(tahun + 1, 0, 1));
+    const awalBulan = new Date(Date.UTC(tahun, sekarang.getUTCMonth(), 1));
+    const akhirBulan = new Date(Date.UTC(tahun, sekarang.getUTCMonth() + 1, 1));
+
+    const [totalTiket, tiketBulanIni, tiketTahunIni, jenisBreakdown] = await Promise.all([
+      this.prisma.transportTiket.count(),
+      this.prisma.transportTiket.count({
+        where: { createdAt: { gte: awalBulan, lt: akhirBulan } },
+      }),
+      this.prisma.transportTiket.findMany({
+        where: { createdAt: { gte: awalTahun, lt: akhirTahun } },
+        select: { createdAt: true },
+      }),
+      this.prisma.transportTiket.groupBy({
+        by: ['jenisTiket'],
+        _count: { _all: true },
+      }),
+    ]);
+
+    const totalPerBulan = Array.from({ length: 12 }, () => 0);
+
+    for (const row of tiketTahunIni) {
+      totalPerBulan[row.createdAt.getUTCMonth()] += 1;
+    }
+
+    const totalJenis = (jenis: JenisTiket) =>
+      jenisBreakdown.find((row) => row.jenisTiket === jenis)?._count._all ?? 0;
+
+    return {
+      totalTiket,
+      tiketBulanIni,
+      tahun,
+      trenBulanan: totalPerBulan.map((total, index) => ({ bulan: index + 1, total })),
+      breakdownJenis: [
+        { jenis: JenisTiket.PULANG_PERGI, total: totalJenis(JenisTiket.PULANG_PERGI) },
+        { jenis: JenisTiket.BERANGKAT_SAJA, total: totalJenis(JenisTiket.BERANGKAT_SAJA) },
+        { jenis: JenisTiket.PULANG_SAJA, total: totalJenis(JenisTiket.PULANG_SAJA) },
+      ],
+    };
   }
 
   async kirim(dto: BuatTiketDto, files: Express.Multer.File[] = [], aktorId: number) {
@@ -128,6 +235,7 @@ export class TiketService {
   private async notifikasiTiketBaru(
     karyawan: {
       nama: string;
+      gender: GenderKaryawan | null;
       noTelepon: string | null;
       email: string | null;
       akun: { phoneNumber: string | null; email: string | null } | null;
@@ -141,29 +249,46 @@ export class TiketService {
     },
     files: Express.Multer.File[],
   ) {
-    const bagian: string[] = [];
+    const baris: string[] = [];
 
     if (tiket.tanggalMulai && tiket.jamMulai) {
-      bagian.push(`Berangkat ${formatTanggal(tiket.tanggalMulai)} pukul ${tiket.jamMulai} WITA`);
+      baris.push(`🛫 Keberangkatan : ${formatTanggal(tiket.tanggalMulai)}, pukul ${tiket.jamMulai} WITA`);
     }
 
     if (tiket.tanggalSelesai && tiket.jamSelesai) {
-      bagian.push(`Pulang ${formatTanggal(tiket.tanggalSelesai)} pukul ${tiket.jamSelesai} WITA`);
+      baris.push(`🛬 Kepulangan     : ${formatTanggal(tiket.tanggalSelesai)}, pukul ${tiket.jamSelesai} WITA`);
     }
 
-    const keteranganMenyusul =
-      tiket.jenisTiket !== JenisTiket.PULANG_PERGI ? ' Jadwal satu arah lagi menyusul dikonfirmasi kemudian.' : '';
+    const keteranganMenyusulWa =
+      tiket.jenisTiket !== JenisTiket.PULANG_PERGI
+        ? '\n\nJadwal satu arah lagi menyusul dikonfirmasi kemudian.'
+        : '';
+    const keteranganMenyusulEmail =
+      tiket.jenisTiket !== JenisTiket.PULANG_PERGI
+        ? ' Jadwal satu arah lagi menyusul dikonfirmasi kemudian.'
+        : '';
 
-    const ringkasan = `${bagian.join(', ')}.${keteranganMenyusul}`;
+    const ringkasanEmail: string[] = [];
+
+    if (tiket.tanggalMulai && tiket.jamMulai) {
+      ringkasanEmail.push(`Berangkat ${formatTanggal(tiket.tanggalMulai)} pukul ${tiket.jamMulai} WITA`);
+    }
+
+    if (tiket.tanggalSelesai && tiket.jamSelesai) {
+      ringkasanEmail.push(`Pulang ${formatTanggal(tiket.tanggalSelesai)} pukul ${tiket.jamSelesai} WITA`);
+    }
 
     if (this.whatsapp.aktif) {
       const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
 
       if (nomor) {
-        await this.whatsapp.kirim(
-          nomor,
-          `Halo ${karyawan.nama}, ada tiket dinas baru untuk Anda: ${ringkasan} Silakan download filenya di Portal ONE FOR ALL ya.`,
-        );
+        const pesan =
+          `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
+          `*Tiket Dinas* Anda\n\n` +
+          `${baris.join('\n')}${keteranganMenyusulWa}\n\n` +
+          `Mohon perhatikan jadwal berikut dan silakan unduh e-tiketnya di Portal ONE FOR ALL, terima kasih 🙏`;
+
+        await this.whatsapp.kirim(nomor, pesan);
       }
     }
 
@@ -174,7 +299,7 @@ export class TiketService {
         await this.smtp.kirim({
           to: email,
           subjek: 'Tiket Dinas Baru — Portal ONE FOR ALL',
-          teks: `Halo ${karyawan.nama},\n\nAda tiket dinas baru untuk Anda: ${ringkasan}\n\nFile tiket terlampir pada email ini.\n\nTerima kasih.`,
+          teks: `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama},\n\nAda tiket dinas baru untuk Anda: ${ringkasanEmail.join(', ')}.${keteranganMenyusulEmail}\n\nFile tiket terlampir pada email ini.\n\nTerima kasih.`,
           lampiran: files.map((f) => ({ namaFile: f.originalname, data: f.buffer })),
         });
       }
@@ -298,7 +423,12 @@ export class TiketService {
 
   /** Notifikasi WA khusus reschedule — beda dari tiket baru, sebut jelas jadwal lama & baru (atau konfirmasi baru) + lampirkan e-tiket terbaru. */
   private async notifikasiReschedule(
-    karyawan: { nama: string; noTelepon: string | null; akun: { phoneNumber: string | null } | null },
+    karyawan: {
+      nama: string;
+      gender: GenderKaryawan | null;
+      noTelepon: string | null;
+      akun: { phoneNumber: string | null } | null;
+    },
     perubahan: {
       ubahBerangkat: boolean;
       ubahPulang: boolean;
@@ -329,30 +459,32 @@ export class TiketService {
       jamLama: string | null,
       baru: Date | null,
       jamBaru: string | null,
+      ikon: string,
       label: string,
     ): string | null => {
       if (!baru || !jamBaru) return null;
 
       if (lama && jamLama) {
-        return `Jadwal ${label} berubah: dari ${formatTanggal(lama)} pukul ${jamLama} WITA menjadi ${formatTanggal(baru)} pukul ${jamBaru} WITA`;
+        return `${ikon} ${label} : ${formatTanggal(lama)} pukul ${jamLama} WITA → ${formatTanggal(baru)} pukul ${jamBaru} WITA`;
       }
 
-      return `Jadwal ${label} sudah dikonfirmasi: ${formatTanggal(baru)} pukul ${jamBaru} WITA`;
+      return `${ikon} ${label} : ${formatTanggal(baru)} pukul ${jamBaru} WITA (baru dikonfirmasi)`;
     };
 
     const bagian = [
       perubahan.ubahBerangkat
-        ? barisPerubahan(perubahan.mulaiLama, perubahan.jamMulaiLama, perubahan.mulaiBaru, perubahan.jamMulaiBaru, 'KEBERANGKATAN')
+        ? barisPerubahan(perubahan.mulaiLama, perubahan.jamMulaiLama, perubahan.mulaiBaru, perubahan.jamMulaiBaru, '🛫', 'Keberangkatan')
         : null,
       perubahan.ubahPulang
-        ? barisPerubahan(perubahan.selesaiLama, perubahan.jamSelesaiLama, perubahan.selesaiBaru, perubahan.jamSelesaiBaru, 'KEPULANGAN')
+        ? barisPerubahan(perubahan.selesaiLama, perubahan.jamSelesaiLama, perubahan.selesaiBaru, perubahan.jamSelesaiBaru, '🛬', 'Kepulangan')
         : null,
     ].filter((item): item is string => Boolean(item));
 
     const pesan =
-      `Halo ${karyawan.nama}, ada perubahan jadwal tiket dinas Anda` +
-      `${alasan?.trim() ? ` (${alasan.trim()})` : ''}. ` +
-      `${bagian.join('. ')}. Mohon perhatikan perubahan ini.`;
+      `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
+      `*Perubahan Jadwal Tiket Dinas* Anda${alasan?.trim() ? ` (${alasan.trim()})` : ''}\n\n` +
+      `${bagian.join('\n')}\n\n` +
+      `Mohon perhatikan perubahan jadwal berikut dan mohon konfirmasinya jika tidak sesuai, terima kasih 🙏`;
 
     const urlLampiran = fileLampiran ? this.whatsapp.urlPublikLampiran(fileLampiran.fileUrl) : null;
 
@@ -449,6 +581,12 @@ export class TiketService {
    * NIK (sekali saja, saat akunnya belum tertaut ke Karyawan manapun) —
    * dipakai self-service Tiket & Travel karena belum ada halaman admin
    * manapun yang bisa menautkan Karyawan.akunId.
+   *
+   * NIK yang diketik WAJIB cocok dengan NRP/username akun yang sedang
+   * login sendiri (persis seperti pencocokan otomatis di
+   * karyawanSayaOtomatis) — sebelumnya endpoint ini menerima NIK siapa
+   * saja yang belum tertaut, jadi akun manapun bisa "mengklaim" data
+   * Karyawan orang lain duluan hanya dengan tahu/menebak NRP-nya.
    */
   async tautkanNik(aktorId: number, nikMentah: string) {
     const nik = nikMentah.trim();
@@ -461,6 +599,19 @@ export class TiketService {
 
     if (sudahTertaut) {
       throw new BadRequestException('Akun ini sudah tertaut ke data Karyawan');
+    }
+
+    const akun = await this.prisma.user.findUnique({
+      where: { id: aktorId },
+      select: { nrp: true, username: true },
+    });
+
+    const identitasAkun = [akun?.nrp?.trim(), akun?.username?.trim()].filter(Boolean);
+
+    if (!identitasAkun.some((identitas) => identitas === nik)) {
+      throw new BadRequestException(
+        'NRP yang dimasukkan tidak cocok dengan akun Anda. Hubungi HC/Admin bila NRP akun Anda salah.',
+      );
     }
 
     const karyawan = await this.prisma.karyawan.findUnique({ where: { nik } });

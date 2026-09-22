@@ -53,7 +53,7 @@ body {
  padding: 0;
  min-height: 100%;
  background:
- radial-gradient(circle at top left, rgba(220, 38, 38, 0.08), transparent 26%),
+ radial-gradient(circle at top left, rgba(8, 104, 246, 0.08), transparent 26%),
  linear-gradient(to bottom, #ffffff, #f8fafc);
  color: var(--warna-teks);
  font-family: var(--font-nunito), Arial, Helvetica, sans-serif;

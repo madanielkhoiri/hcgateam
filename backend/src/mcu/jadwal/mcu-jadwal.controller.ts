@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { JenisMcu, StatusPendaftaran, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
@@ -29,6 +30,7 @@ import {
 
 @Controller('mcu/jadwal')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuJadwalController {
   constructor(
     private readonly service: McuJadwalService,
@@ -37,26 +39,36 @@ export class McuJadwalController {
 
   @Get()
   daftar(
+    @Aktor() aktor: AktorMcu,
     @Query('status') status?: StatusPendaftaran,
     @Query('jenisMcu') jenisMcu?: JenisMcu,
     @Query('departemenId') departemenId?: string,
     @Query('karyawanId') karyawanId?: string,
     @Query('dariTanggal') dariTanggal?: string,
     @Query('sampaiTanggal') sampaiTanggal?: string,
+    @Query('cari') cari?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
-    return this.service.daftar({
-      status,
-      jenisMcu,
-      departemenId: departemenId ? Number(departemenId) : undefined,
-      karyawanId: karyawanId ? Number(karyawanId) : undefined,
-      dariTanggal,
-      sampaiTanggal,
-    });
+    return this.service.daftar(
+      {
+        status,
+        jenisMcu,
+        departemenId: departemenId ? Number(departemenId) : undefined,
+        karyawanId: karyawanId ? Number(karyawanId) : undefined,
+        dariTanggal,
+        sampaiTanggal,
+        cari: cari?.trim() || undefined,
+        halaman,
+        ukuranHalaman,
+      },
+      aktor,
+    );
   }
 
   @Get(':id')
-  detail(@Param('id', ParseIntPipe) id: number) {
-    return this.service.detail(id);
+  detail(@Aktor() aktor: AktorMcu, @Param('id', ParseIntPipe) id: number) {
+    return this.service.detail(id, aktor);
   }
 
   @Post()

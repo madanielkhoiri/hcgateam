@@ -9,9 +9,11 @@ import {
   useState,
 } from "react";
 import { compressImage, compressImages } from "@/utils/compress-image";
+import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 import styles from "./daily-activities.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+const UKURAN_HALAMAN = 20;
 
 type ActivityType = "DAILY_ACTIVITY" | "GRASS_CUTTING";
 
@@ -209,10 +211,13 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [approvalFilter, setApprovalFilter] = useState("");
+  const [halaman, setHalaman] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -263,9 +268,35 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
     setError("");
 
     try {
-      const result = await request(`daily-activities?type=${activityType}`);
+      const params = new URLSearchParams({ type: activityType });
 
-      setRows(Array.isArray(result) ? result : []);
+      params.set("halaman", String(halaman));
+      params.set("ukuranHalaman", String(UKURAN_HALAMAN));
+
+      if (searchDebounced.trim()) {
+        params.set("cari", searchDebounced.trim());
+      }
+
+      if (month) {
+        params.set("bulan", month);
+      }
+
+      if (year) {
+        params.set("tahun", year);
+      }
+
+      if (statusFilter) {
+        params.set("status", statusFilter);
+      }
+
+      if (approvalFilter) {
+        params.set("approvalStatus", approvalFilter);
+      }
+
+      const result = await request(`daily-activities?${params.toString()}`);
+
+      setRows(Array.isArray(result?.data) ? result.data : []);
+      setTotalRows(typeof result?.total === "number" ? result.total : 0);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -275,10 +306,32 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
     } finally {
       setLoading(false);
     }
-  }, [activityType, request]);
+  }, [
+    activityType,
+    request,
+    halaman,
+    searchDebounced,
+    month,
+    year,
+    statusFilter,
+    approvalFilter,
+  ]);
 
   useEffect(() => {
     setUser(getCurrentUser());
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchDebounced(search), 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setHalaman(1);
+  }, [searchDebounced, month, year, statusFilter, approvalFilter]);
+
+  useEffect(() => {
     void loadRows();
   }, [loadRows]);
 
@@ -287,48 +340,6 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
 
     return Array.from({ length: 7 }, (_, index) => current - 5 + index);
   }, []);
-
-  const filteredRows = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    return rows
-      .filter((row) => {
-        if (!keyword) {
-          return true;
-        }
-
-        return [
-          row.workName,
-          row.location,
-          row.lastPic,
-          row.status,
-          row.approvalStatus,
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(keyword));
-      })
-      .filter((row) => {
-        if (!month && !year) {
-          return true;
-        }
-
-        const rowDate = new Date(row.startDate);
-
-        if (year && rowDate.getUTCFullYear() !== Number(year)) {
-          return false;
-        }
-
-        if (month && rowDate.getUTCMonth() + 1 !== Number(month)) {
-          return false;
-        }
-
-        return true;
-      })
-      .filter((row) => !statusFilter || row.status === statusFilter)
-      .filter(
-        (row) => !approvalFilter || row.approvalStatus === approvalFilter,
-      );
-  }, [rows, search, month, year, statusFilter, approvalFilter]);
 
   function resetFilters() {
     setSearch("");
@@ -798,7 +809,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
               )}
 
               {!loading &&
-                filteredRows.map((row, index) => (
+                rows.map((row, index) => (
                   <tr key={row.id}>
                     <td>{index + 1}</td>
                     <td>
@@ -927,7 +938,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
                   </tr>
                 ))}
 
-              {!loading && filteredRows.length === 0 && (
+              {!loading && rows.length === 0 && (
                 <tr>
                   <td colSpan={12}>Belum ada data {title}.</td>
                 </tr>
@@ -935,6 +946,12 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
             </tbody>
           </table>
         </div>
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalRows, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </div>
 
       {createOpen && (

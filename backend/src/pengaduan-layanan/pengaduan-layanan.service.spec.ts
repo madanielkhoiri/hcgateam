@@ -1,53 +1,175 @@
-import { DivisiPengaduan } from '@prisma/client';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { DivisiPengaduan, LokasiPengaduan, StatusPengaduan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PengaduanLayananService } from './pengaduan-layanan.service';
 
 function buatService(overrides: {
   findMany?: jest.Mock;
   create?: jest.Mock;
+  findUnique?: jest.Mock;
+  update?: jest.Mock;
 } = {}) {
   const findMany = overrides.findMany ?? jest.fn().mockResolvedValue([]);
   const create =
     overrides.create ??
     jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+  const findUnique = overrides.findUnique ?? jest.fn().mockResolvedValue({ id: 1 });
+  const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
 
   const prisma = {
     pengaduanLayanan: {
       findMany,
       create,
+      findUnique,
+      update,
     },
   } as unknown as PrismaService;
 
   const service = new PengaduanLayananService(prisma);
 
-  return { service, prisma, findMany, create };
+  return { service, prisma, findMany, create, findUnique, update };
 }
 
+const FOTO_DUMMY = [{ urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }];
+
 describe('PengaduanLayananService.create', () => {
-  it('menyimpan divisi, rating, dan pengirimId sesuai input', async () => {
+  it('menyimpan divisi, rating, lokasi, foto, dan pengirimId sesuai input (GA)', async () => {
     const { service, create } = buatService();
 
     await service.create(
-      { divisi: DivisiPengaduan.HC, rating: 4, komentar: '  Cepat tanggap  ' },
+      {
+        divisi: DivisiPengaduan.GA,
+        rating: 4,
+        komentar: '  Cepat tanggap  ',
+        deskripsiAduan: '  AC ruang kerja rusak  ',
+        lokasi: LokasiPengaduan.TAMBANG,
+      },
       18,
+      FOTO_DUMMY,
     );
 
     expect(create).toHaveBeenCalledWith({
       data: {
-        divisi: DivisiPengaduan.HC,
+        divisi: DivisiPengaduan.GA,
         rating: 4,
         komentar: 'Cepat tanggap',
+        deskripsiAduan: 'AC ruang kerja rusak',
+        lokasi: LokasiPengaduan.TAMBANG,
         pengirimId: 18,
+        foto: { create: FOTO_DUMMY },
       },
+      include: { foto: true },
     });
+  });
+
+  it('menolak GA/CIVIL tanpa lokasi', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.create({ divisi: DivisiPengaduan.GA, rating: 5 }, 1, FOTO_DUMMY),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.create({ divisi: DivisiPengaduan.CIVIL, rating: 5 }, 1, FOTO_DUMMY),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('menolak tanpa foto sama sekali', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.create({ divisi: DivisiPengaduan.HC, rating: 5 }, 1, []),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('HC tidak wajib lokasi, dan lokasi selalu disimpan null walau dikirim', async () => {
+    const { service, create } = buatService();
+
+    await service.create(
+      { divisi: DivisiPengaduan.HC, rating: 4, lokasi: LokasiPengaduan.TAMBANG },
+      1,
+      FOTO_DUMMY,
+    );
+
+    expect(create.mock.calls[0][0].data.lokasi).toBeNull();
   });
 
   it('komentar kosong disimpan sebagai null, bukan string kosong', async () => {
     const { service, create } = buatService();
 
-    await service.create({ divisi: DivisiPengaduan.GA, rating: 5 }, 1);
+    await service.create(
+      { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
+      1,
+      FOTO_DUMMY,
+    );
 
     expect(create.mock.calls[0][0].data.komentar).toBeNull();
+  });
+
+  it('deskripsiAduan kosong disimpan sebagai null, bukan string kosong', async () => {
+    const { service, create } = buatService();
+
+    await service.create(
+      { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
+      1,
+      FOTO_DUMMY,
+    );
+
+    expect(create.mock.calls[0][0].data.deskripsiAduan).toBeNull();
+  });
+});
+
+describe('PengaduanLayananService.ubahStatus', () => {
+  it('melempar NotFoundException kalau pengaduan tidak ada', async () => {
+    const { service } = buatService({ findUnique: jest.fn().mockResolvedValue(null) });
+
+    await expect(
+      service.ubahStatus(99, { status: StatusPengaduan.DISETUJUI }, 1),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak Hold tanpa catatan', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.ubahStatus(1, { status: StatusPengaduan.DITAHAN }, 1),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('menolak Reject tanpa catatan', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.ubahStatus(1, { status: StatusPengaduan.DITOLAK, catatanAdmin: '   ' }, 1),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('Approve boleh tanpa catatan', async () => {
+    const { service, update } = buatService();
+
+    await service.ubahStatus(1, { status: StatusPengaduan.DISETUJUI }, 7);
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({
+          status: StatusPengaduan.DISETUJUI,
+          catatanAdmin: null,
+          diprosesOlehId: 7,
+        }),
+      }),
+    );
+  });
+
+  it('Hold dengan catatan tersimpan trim', async () => {
+    const { service, update } = buatService();
+
+    await service.ubahStatus(1, { status: StatusPengaduan.DITAHAN, catatanAdmin: '  perlu cek dulu  ' }, 7);
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: StatusPengaduan.DITAHAN, catatanAdmin: 'perlu cek dulu' }),
+      }),
+    );
   });
 });
 
@@ -67,9 +189,42 @@ describe('PengaduanLayananService.rekap', () => {
 
   it('menghitung rata-rata dan distribusi bintang dengan benar', async () => {
     const daftar = [
-      { id: 1, rating: 5, komentar: 'Bagus', createdAt: new Date(2026, 7, 5), pengirim: { id: 1, name: 'Andi' } },
-      { id: 2, rating: 5, komentar: null, createdAt: new Date(2026, 7, 6), pengirim: { id: 2, name: 'Budi' } },
-      { id: 3, rating: 3, komentar: 'Lumayan', createdAt: new Date(2026, 7, 7), pengirim: { id: 3, name: 'Cici' } },
+      {
+        id: 1,
+        rating: 5,
+        komentar: 'Bagus',
+        deskripsiAduan: 'AC rusak',
+        foto: [{ id: 1, urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }],
+        lokasi: LokasiPengaduan.TAMBANG,
+        status: StatusPengaduan.MENUNGGU,
+        catatanAdmin: null,
+        createdAt: new Date(2026, 7, 5),
+        pengirim: { id: 1, name: 'Andi' },
+      },
+      {
+        id: 2,
+        rating: 5,
+        komentar: null,
+        deskripsiAduan: null,
+        foto: [],
+        lokasi: LokasiPengaduan.MESS,
+        status: StatusPengaduan.MENUNGGU,
+        catatanAdmin: null,
+        createdAt: new Date(2026, 7, 6),
+        pengirim: { id: 2, name: 'Budi' },
+      },
+      {
+        id: 3,
+        rating: 3,
+        komentar: 'Lumayan',
+        deskripsiAduan: null,
+        foto: [],
+        lokasi: LokasiPengaduan.MESS,
+        status: StatusPengaduan.MENUNGGU,
+        catatanAdmin: null,
+        createdAt: new Date(2026, 7, 7),
+        pengirim: { id: 3, name: 'Cici' },
+      },
     ];
     const findMany = jest.fn()
       .mockResolvedValueOnce(daftar)
@@ -85,6 +240,11 @@ describe('PengaduanLayananService.rekap', () => {
       id: 1,
       rating: 5,
       komentar: 'Bagus',
+      deskripsiAduan: 'AC rusak',
+      foto: [{ id: 1, urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }],
+      lokasi: LokasiPengaduan.TAMBANG,
+      status: StatusPengaduan.MENUNGGU,
+      catatanAdmin: null,
       pengirim: 'Andi',
       createdAt: daftar[0].createdAt,
     });

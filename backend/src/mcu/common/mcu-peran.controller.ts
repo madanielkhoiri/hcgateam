@@ -19,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { LABEL_PERAN, McuAksesService } from './mcu-akses.service';
 import { Aktor } from './mcu-aktor';
 import type { AktorMcu } from './mcu-aktor';
@@ -26,6 +27,7 @@ import { McuFileService } from './mcu-file.service';
 
 @Controller('mcu')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuPeranController {
   constructor(
     private readonly akses: McuAksesService,
