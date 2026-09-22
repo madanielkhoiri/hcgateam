@@ -27,6 +27,7 @@ import styles from './anak-magang.module.css';
 
 const MENU_ANAK_MAGANG: ModuleShellMenuItem[] = [
   { label: 'Dashboard', href: '/hc/anak-magang/dashboard', initial: 'DB' },
+  { label: 'Database Anak Magang', href: '/hc/anak-magang/daftar', initial: 'DA' },
 ];
 
 const API_URL =

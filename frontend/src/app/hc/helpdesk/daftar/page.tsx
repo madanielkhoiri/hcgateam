@@ -66,6 +66,7 @@ export default function HelpdeskPage() {
   const [formDeskripsi, setFormDeskripsi] = useState('');
   const [formLampiran, setFormLampiran] = useState<File | null>(null);
 
+  const [cari, setCari] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
   const [halaman, setHalaman] = useState(1);
@@ -91,6 +92,7 @@ export default function HelpdeskPage() {
         ukuranHalaman: String(UKURAN_HALAMAN),
       });
 
+      if (cari.trim()) parameter.set('cari', cari.trim());
       if (filterBulan) parameter.set('bulan', filterBulan);
       if (filterTahun) parameter.set('tahun', filterTahun);
 
@@ -109,16 +111,16 @@ export default function HelpdeskPage() {
     } finally {
       setMemuat(false);
     }
-  }, [tab, filterBulan, filterTahun, halaman]);
+  }, [tab, cari, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
-  // Balik ke halaman 1 tiap kali tab status atau filter bulan/tahun berubah.
+  // Balik ke halaman 1 tiap kali tab status atau filter cari/bulan/tahun berubah.
   useEffect(() => {
     setHalaman(1);
-  }, [tab, filterBulan, filterTahun]);
+  }, [tab, cari, filterBulan, filterTahun]);
 
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
@@ -245,6 +247,14 @@ export default function HelpdeskPage() {
         judul={`Daftar Laporan - ${TAB_STATUS.find((item) => item.key === tab)?.label} (${totalTiket} tiket)`}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 240 }}
+            placeholder="Cari nomor tiket, masalah, atau nama..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 160 }}

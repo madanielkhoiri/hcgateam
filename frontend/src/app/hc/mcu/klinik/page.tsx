@@ -54,6 +54,7 @@ export default function KlinikMcuPage() {
   const [idDiedit, setIdDiedit] = useState<number | null>(null);
   const [form, setForm] = useState<FormKlinik>(formKosong);
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterTipe, setFilterTipe] = useState('');
 
@@ -75,6 +76,8 @@ export default function KlinikMcuPage() {
   }, [muat]);
 
   const klinikTampil = useMemo(() => {
+    const kataKunci = cari.trim().toLowerCase();
+
     return klinik.filter((item) => {
       if (filterStatus === 'AKTIF' && !item.statusAktif) {
         return false;
@@ -92,9 +95,17 @@ export default function KlinikMcuPage() {
         return false;
       }
 
+      if (
+        kataKunci &&
+        !item.namaKlinik.toLowerCase().includes(kataKunci) &&
+        !(item.picKlinik ?? '').toLowerCase().includes(kataKunci)
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [klinik, filterStatus, filterTipe]);
+  }, [klinik, filterStatus, filterTipe, cari]);
 
   function bukaTambah() {
     setIdDiedit(null);
@@ -200,6 +211,14 @@ export default function KlinikMcuPage() {
         keterangan={`${klinikTampil.length} dari ${klinik.length} klinik terdaftar.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama klinik atau PIC..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 170 }}

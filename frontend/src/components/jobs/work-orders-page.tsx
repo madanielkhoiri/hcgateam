@@ -134,6 +134,7 @@ function approvalLabel(status: StatusApprovalWorkOrder): string {
 
 function bisaMenyetujuiTahap(row: WorkOrder, user: LoginUser | null): boolean {
   if (!user) return false;
+  if (row.statusApproval === "DISETUJUI" || row.statusApproval === "DITOLAK") return false;
   if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") return true;
   if (row.statusApproval === "MENUNGGU_GL") return user.role === "GRUP_LEADER";
   if (row.statusApproval === "MENUNGGU_SH") return user.role === "SECTION_HEAD";

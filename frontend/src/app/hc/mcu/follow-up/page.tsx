@@ -56,6 +56,7 @@ export default function FollowUpPage() {
   const [proses, setProses] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
@@ -86,6 +87,7 @@ export default function FollowUpPage() {
       if (filterStatus) parameter.set('status', filterStatus);
       if (filterBulan) parameter.set('bulan', filterBulan);
       if (filterTahun) parameter.set('tahun', filterTahun);
+      if (cari.trim()) parameter.set('cari', cari.trim());
 
       // "Jumlah terlambat" dihitung terpisah (tanpa halaman) supaya tetap
       // benar untuk SELURUH data, bukan cuma yang sedang ditampilkan.
@@ -104,7 +106,7 @@ export default function FollowUpPage() {
     } finally {
       setMemuat(false);
     }
-  }, [filterStatus, filterBulan, filterTahun, halaman]);
+  }, [cari, filterStatus, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
@@ -113,7 +115,7 @@ export default function FollowUpPage() {
   // Balik ke halaman 1 tiap kali filter berubah.
   useEffect(() => {
     setHalaman(1);
-  }, [filterStatus, filterBulan, filterTahun]);
+  }, [cari, filterStatus, filterBulan, filterTahun]);
 
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
@@ -309,6 +311,14 @@ export default function FollowUpPage() {
         keterangan={`${totalDaftar} kasus, ditampilkan ${daftar.length} per halaman, ${jumlahTerlambat} melewati batas waktu.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 230 }}

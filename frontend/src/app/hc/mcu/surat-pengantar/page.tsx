@@ -65,6 +65,7 @@ export default function SuratPengantarPage() {
   const [dipilih, setDipilih] = useState<Record<number, BarisPilihan>>({});
   const [catatan, setCatatan] = useState('');
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
@@ -100,6 +101,8 @@ export default function SuratPengantarPage() {
   }, []);
 
   const suratTampil = useMemo(() => {
+    const kataKunci = cari.trim().toLowerCase();
+
     return surat.filter((item) => {
       if (filterStatus && item.status !== filterStatus) {
         return false;
@@ -115,9 +118,19 @@ export default function SuratPengantarPage() {
         return false;
       }
 
+      if (
+        kataKunci &&
+        !item.nomorSurat.toLowerCase().includes(kataKunci) &&
+        !item.jadwalMcu.some((jadwal) =>
+          jadwal.karyawan.nama.toLowerCase().includes(kataKunci),
+        )
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [surat, filterStatus, filterBulan, filterTahun]);
+  }, [surat, filterStatus, filterBulan, filterTahun, cari]);
 
   function bukaDialog() {
     setKlinikId('');
@@ -348,6 +361,14 @@ export default function SuratPengantarPage() {
         keterangan={`${suratTampil.length} dari ${surat.length} surat tercatat.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nomor surat atau nama karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 170 }}

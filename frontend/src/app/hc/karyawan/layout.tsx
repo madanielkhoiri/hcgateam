@@ -30,6 +30,7 @@ import styles from './karyawan.module.css';
 
 const MENU_KARYAWAN: ModuleShellMenuItem[] = [
   { label: 'Dashboard', href: '/hc/karyawan/dashboard', initial: 'DB' },
+  { label: 'Database Karyawan', href: '/hc/karyawan/daftar', initial: 'DK' },
 ];
 
 const API_URL =
