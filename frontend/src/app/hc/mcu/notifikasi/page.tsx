@@ -47,6 +47,7 @@ export default function NotifikasiMcuPage() {
   const [namaDept, setNamaDept] = useState('');
   const [adminDeptId, setAdminDeptId] = useState('');
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
@@ -80,6 +81,8 @@ export default function NotifikasiMcuPage() {
   }, []);
 
   const notifikasiTampil = useMemo(() => {
+    const kataKunci = cari.trim().toLowerCase();
+
     return notifikasi.filter((item) => {
       if (filterStatus && item.statusKirim !== filterStatus) {
         return false;
@@ -95,9 +98,17 @@ export default function NotifikasiMcuPage() {
         return false;
       }
 
+      if (
+        kataKunci &&
+        !item.judul.toLowerCase().includes(kataKunci) &&
+        !(item.penerima?.name ?? '').toLowerCase().includes(kataKunci)
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [notifikasi, filterStatus, filterBulan, filterTahun]);
+  }, [notifikasi, filterStatus, filterBulan, filterTahun, cari]);
 
   async function tambahDepartemen() {
     setProses(true);
@@ -260,6 +271,14 @@ export default function NotifikasiMcuPage() {
         keterangan={`${notifikasiTampil.length} dari ${notifikasi.length} notifikasi tercatat (100 terbaru).`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari judul atau penerima..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 170 }}

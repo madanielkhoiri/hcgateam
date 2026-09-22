@@ -14,6 +14,7 @@ import { CreateStockOutBatchDto } from './dto/stock-out-batch.dto';
 import { UpdateStockDto } from './dto/stock.dto';
 import { DeviasiStokService } from './deviasi-stok.service';
 import { InventoryAksesService } from './inventory-akses.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 
 @Injectable()
 export class InventoryAreaService {
@@ -308,27 +309,85 @@ export class InventoryAreaService {
     });
   }
 
-  async getStockIns(scopeValue: string) {
+  async getStockIns(
+    scopeValue: string,
+    filter: {
+      cari?: string;
+      bulan?: number;
+      tahun?: number;
+      halaman?: string;
+      ukuranHalaman?: string;
+    } = {},
+  ) {
     const scope = this.parseScope(scopeValue);
 
-    return this.prisma.stockIn.findMany({
-      where: {
-        item: {
-          inventoryScope: scope,
-        },
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const kata = filter.cari?.trim();
+
+    const where: Prisma.StockInWhereInput = {
+      item: {
+        inventoryScope: scope,
       },
-      include: {
-        item: true,
-      },
-      orderBy: [
-        {
-          date: 'desc',
+      ...(rentangTanggal ? { date: rentangTanggal } : {}),
+      ...(kata
+        ? {
+            OR: [
+              { item: { code: { contains: kata, mode: 'insensitive' } } },
+              { item: { name: { contains: kata, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+
+    if (!filter.halaman && !filter.ukuranHalaman) {
+      return this.prisma.stockIn.findMany({
+        where,
+        include: {
+          item: true,
         },
-        {
-          id: 'desc',
+        orderBy: [
+          {
+            date: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+      });
+    }
+
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.stockIn.findMany({
+        where,
+        include: {
+          item: true,
         },
-      ],
-    });
+        orderBy: [
+          {
+            date: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.stockIn.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async createStockInBatch(scopeValue: string, dto: CreateStockInBatchDto) {
@@ -398,27 +457,88 @@ export class InventoryAreaService {
     });
   }
 
-  async getStockOuts(scopeValue: string) {
+  async getStockOuts(
+    scopeValue: string,
+    filter: {
+      cari?: string;
+      bulan?: number;
+      tahun?: number;
+      halaman?: string;
+      ukuranHalaman?: string;
+    } = {},
+  ) {
     const scope = this.parseScope(scopeValue);
 
-    return this.prisma.stockOut.findMany({
-      where: {
-        item: {
-          inventoryScope: scope,
-        },
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const kata = filter.cari?.trim();
+
+    const where: Prisma.StockOutWhereInput = {
+      item: {
+        inventoryScope: scope,
       },
-      include: {
-        item: true,
-      },
-      orderBy: [
-        {
-          date: 'desc',
+      ...(rentangTanggal ? { date: rentangTanggal } : {}),
+      ...(kata
+        ? {
+            OR: [
+              { item: { code: { contains: kata, mode: 'insensitive' } } },
+              { item: { name: { contains: kata, mode: 'insensitive' } } },
+              { taker: { contains: kata, mode: 'insensitive' } },
+              { department: { contains: kata, mode: 'insensitive' } },
+              { description: { contains: kata, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    if (!filter.halaman && !filter.ukuranHalaman) {
+      return this.prisma.stockOut.findMany({
+        where,
+        include: {
+          item: true,
         },
-        {
-          id: 'desc',
+        orderBy: [
+          {
+            date: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+      });
+    }
+
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.stockOut.findMany({
+        where,
+        include: {
+          item: true,
         },
-      ],
-    });
+        orderBy: [
+          {
+            date: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.stockOut.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async createStockOutBatch(

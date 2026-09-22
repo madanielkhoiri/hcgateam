@@ -68,6 +68,7 @@ export default function InduksiUlangPage() {
   const [inputTanggal, setInputTanggal] = useState('');
   const [inputCatatan, setInputCatatan] = useState('');
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
@@ -103,6 +104,8 @@ export default function InduksiUlangPage() {
   }, []);
 
   const induksiTampil = useMemo(() => {
+    const kataKunci = cari.trim().toLowerCase();
+
     return induksi.filter((item) => {
       if (filterStatus && item.status !== filterStatus) {
         return false;
@@ -118,9 +121,17 @@ export default function InduksiUlangPage() {
         return false;
       }
 
+      if (
+        kataKunci &&
+        !item.karyawan.nama.toLowerCase().includes(kataKunci) &&
+        !item.karyawan.nik.toLowerCase().includes(kataKunci)
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [induksi, filterStatus, filterBulan, filterTahun]);
+  }, [induksi, filterStatus, filterBulan, filterTahun, cari]);
 
   async function daftarkan() {
     if (!dialogDaftar) {
@@ -309,6 +320,14 @@ export default function InduksiUlangPage() {
         keterangan={`${induksiTampil.length} dari ${induksi.length} pendaftaran tercatat.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 170 }}

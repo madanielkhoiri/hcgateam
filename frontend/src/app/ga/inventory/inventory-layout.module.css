@@ -775,3 +775,11 @@
     padding: 12px !important;
   }
 }
+
+/* Ruang buat bottom nav mobile (lihat MobileBottomNav) supaya konten
+   paling bawah tidak ketutupan. */
+@media (max-width: 900px) {
+  .pageContent {
+    padding-bottom: 84px !important;
+  }
+}

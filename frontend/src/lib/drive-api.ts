@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -25,6 +26,19 @@ export type DriveFile = {
   urlFile: string;
   uploadedAt: string;
   uploadedBy: { id: number; name: string; nrp: string | null };
+};
+
+export type RingkasanDrive = {
+  totalFolder: number;
+  totalFile: number;
+  fileBulanIni: number;
+  totalKontributor: number;
+};
+
+export type TrenDrive = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  jenisFile: { dokumen: number; spreadsheet: number; gambar: number; lainnya: number };
 };
 
 export class DriveApiError extends Error {
@@ -80,6 +94,10 @@ export const driveApi = {
     request<{ folders: DriveFolder[]; files: DriveFile[] }>(
       `?scope=${scope}${parentFolderId ? `&parentFolderId=${parentFolderId}` : ''}`,
     ),
+  ringkasan: (scope: ScopeDrive) =>
+    request<RingkasanDrive>(`/dashboard/ringkasan?scope=${scope}`),
+  tren: (scope: ScopeDrive) =>
+    request<TrenDrive>(`/dashboard/tren?scope=${scope}`),
   buatFolder: (scope: ScopeDrive, namaFolder: string, parentFolderId?: number) =>
     request<DriveFolder>('/folder', {
       method: 'POST',
@@ -105,5 +123,5 @@ export const driveApi = {
 };
 
 export function urlFileDrive(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }

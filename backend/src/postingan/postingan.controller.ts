@@ -19,6 +19,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { Aktor } from './postingan-aktor';
 import type { AktorPostingan } from './postingan-aktor';
 import { PostinganService } from './postingan.service';
@@ -28,7 +29,10 @@ import { PostinganService } from './postingan.service';
 export class PostinganController {
   constructor(private readonly service: PostinganService) {}
 
+  // Daftar & dashboard kelola postingan — hanya untuk pemegang akses kelola,
+  // BUKAN carousel beranda (itu terbuka untuk semua akun login, lihat untukBeranda()).
   @Get()
+  @RequireAccessKey('ADMINISTRASI_POSTINGAN')
   daftar() {
     return this.service.daftar();
   }
@@ -36,6 +40,18 @@ export class PostinganController {
   @Get('beranda')
   untukBeranda() {
     return this.service.untukBeranda();
+  }
+
+  @Get('dashboard/ringkasan')
+  @RequireAccessKey('ADMINISTRASI_POSTINGAN')
+  ringkasan() {
+    return this.service.ringkasan();
+  }
+
+  @Get('dashboard/tren')
+  @RequireAccessKey('ADMINISTRASI_POSTINGAN')
+  trenDanTipe() {
+    return this.service.trenDanTipe();
   }
 
   @Post()

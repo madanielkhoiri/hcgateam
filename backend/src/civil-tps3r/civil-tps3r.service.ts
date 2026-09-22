@@ -9,19 +9,29 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BuatLaporanTps3rDto, UbahLaporanTps3rDto } from './dto/tps3r.dto';
 import type { AktorPostingan } from '../postingan/postingan-aktor';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 
 @Injectable()
 export class CivilTps3rService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async daftar(bulan?: number, tahun?: number) {
+  async daftar(bulan?: number, tahun?: number, halaman?: string, ukuranHalaman?: string) {
     const rentang = rentangTanggal(bulan, tahun);
+    const where = rentang ? { tanggal: rentang } : undefined;
+    const param = paramHalaman(halaman, ukuranHalaman);
 
-    return this.prisma.laporanTps3r.findMany({
-      where: rentang ? { tanggal: rentang } : undefined,
-      include: { createdBy: { select: { id: true, name: true, nrp: true } } },
-      orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.laporanTps3r.findMany({
+        where,
+        include: { createdBy: { select: { id: true, name: true, nrp: true } } },
+        orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.laporanTps3r.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async ringkasan(bulan?: number, tahun?: number) {

@@ -84,13 +84,39 @@ function createLinePath(
   points: Point[],
   field: "openY" | "progressY" | "closeY",
 ) {
-  return points
-    .map((point, index) => {
-      const command = index === 0 ? "M" : "L";
+  if (points.length === 0) {
+    return "";
+  }
 
-      return `${command} ${point.x.toFixed(2)} ${point[field].toFixed(2)}`;
-    })
-    .join(" ");
+  if (points.length < 3) {
+    return points
+      .map((point, index) => {
+        const command = index === 0 ? "M" : "L";
+
+        return `${command} ${point.x.toFixed(2)} ${point[field].toFixed(2)}`;
+      })
+      .join(" ");
+  }
+
+  // Catmull-Rom -> Bezier: kurva halus antar titik bulanan supaya grafik
+  // tidak zig-zag tajam saat nilainya kecil (0-4), lebih enak dibaca saat presentasi.
+  let path = `M ${points[0].x.toFixed(2)} ${points[0][field].toFixed(2)}`;
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[i === 0 ? i : i - 1];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1[field] + (p2[field] - p0[field]) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2[field] - (p3[field] - p1[field]) / 6;
+
+    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2[field].toFixed(2)}`;
+  }
+
+  return path;
 }
 
 function closingRateColor(value: number) {

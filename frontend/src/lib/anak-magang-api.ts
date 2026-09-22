@@ -8,6 +8,8 @@ import { getAccessToken } from './access-control';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
+export type { HasilHalaman } from './pagination';
+
 export type StatusAnakMagang = 'AKTIF' | 'NONAKTIF';
 export type GenderAnakMagang = 'MALE' | 'FEMALE';
 
@@ -52,6 +54,21 @@ export type AnakMagang = {
   status: StatusAnakMagang;
   createdAt: string;
   updatedAt: string;
+};
+
+/** Ringkasan angka kartu dashboard Database Anak Magang - lihat anak-magang-dashboard.service.ts. */
+export type RingkasanAnakMagang = {
+  totalAnakMagang: number;
+  aktif: number;
+  nonAktif: number;
+  berakhirBulanIni: number;
+};
+
+/** Tren dashboard Database Anak Magang: mulai magang per bulan (tahun berjalan) + breakdown status. */
+export type TrenDashboardAnakMagang = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusAnakMagang; total: number }[];
 };
 
 export class AnakMagangApiError extends Error {

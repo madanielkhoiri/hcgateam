@@ -30,13 +30,32 @@ import {
   mcuApi,
   nilaiInputTanggal,
   type Departemen,
+  type HasilHalaman,
   type JadwalMcu,
   type JenisMcu,
   type Karyawan,
   type Klinik,
 } from '@/lib/mcu-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useMcu } from '../layout';
 import styles from '../mcu.module.css';
+
+const UKURAN_HALAMAN = 20;
+
+/** Rentang tanggal (YYYY-MM-DD) dari filter bulan/tahun terpisah, dikirim ke backend. */
+function rentangDariBulanTahun(bulan: string, tahun: string): { dari?: string; sampai?: string } {
+  if (!bulan && !tahun) return {};
+
+  const tahunAngka = tahun ? Number(tahun) : new Date().getFullYear();
+  const bulanAngka = bulan ? Number(bulan) : 1;
+  const bulanAkhir = bulan ? Number(bulan) : 12;
+
+  const dari = `${tahunAngka}-${String(bulanAngka).padStart(2, '0')}-01`;
+  const akhirBulanDate = new Date(Date.UTC(tahunAngka, bulanAkhir, 0));
+  const sampai = `${tahunAngka}-${String(bulanAkhir).padStart(2, '0')}-${String(akhirBulanDate.getUTCDate()).padStart(2, '0')}`;
+
+  return { dari, sampai };
+}
 
 export default function JadwalMcuPage() {
   const { punyaPeran } = useMcu();
@@ -53,8 +72,11 @@ export default function JadwalMcuPage() {
   const [galat, setGalat] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
 
+  const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDept, setFilterDept] = useState('');
+  const [halaman, setHalaman] = useState(1);
+  const [totalJadwal, setTotalJadwal] = useState(0);
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
 
@@ -86,17 +108,24 @@ export default function JadwalMcuPage() {
         parameter.set('departemenId', filterDept);
       }
 
-      const kueri = parameter.toString();
+      const { dari, sampai } = rentangDariBulanTahun(filterBulan, filterTahun);
+      if (dari) parameter.set('dariTanggal', dari);
+      if (sampai) parameter.set('sampaiTanggal', sampai);
+      if (cari.trim()) parameter.set('cari', cari.trim());
 
-      const [daftarJadwal, daftarKaryawan, daftarKlinik, daftarDept] =
+      parameter.set('halaman', String(halaman));
+      parameter.set('ukuranHalaman', String(UKURAN_HALAMAN));
+
+      const [hasilJadwal, daftarKaryawan, daftarKlinik, daftarDept] =
         await Promise.all([
-          mcuApi.ambil<JadwalMcu[]>(`/jadwal${kueri ? `?${kueri}` : ''}`),
+          mcuApi.ambil<HasilHalaman<JadwalMcu>>(`/jadwal?${parameter.toString()}`),
           mcuApi.ambil<Karyawan[]>('/karyawan?statusKerja=AKTIF'),
           mcuApi.ambil<Klinik[]>('/klinik?hanyaAktif=true'),
           mcuApi.ambil<Departemen[]>('/departemen'),
         ]);
 
-      setJadwal(daftarJadwal);
+      setJadwal(hasilJadwal.data);
+      setTotalJadwal(hasilJadwal.total);
       setKaryawan(daftarKaryawan);
       setKlinik(daftarKlinik);
       setDepartemen(daftarDept);
@@ -105,32 +134,21 @@ export default function JadwalMcuPage() {
     } finally {
       setMemuat(false);
     }
-  }, [filterStatus, filterDept]);
+  }, [cari, filterStatus, filterDept, filterBulan, filterTahun, halaman]);
 
   useEffect(() => {
     void muat();
   }, [muat]);
 
+  // Balik ke halaman 1 tiap kali filter berubah.
+  useEffect(() => {
+    setHalaman(1);
+  }, [cari, filterStatus, filterDept, filterBulan, filterTahun]);
+
   const tahunTersedia = useMemo(() => {
     const tahunSekarang = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
-
-  const jadwalTampil = useMemo(() => {
-    return jadwal.filter((item) => {
-      const tanggal = new Date(item.tanggalMcu);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [jadwal, filterBulan, filterTahun]);
 
   function resetForm() {
     setFormKaryawanId('');
@@ -314,9 +332,17 @@ export default function JadwalMcuPage() {
 
       <Panel
         judul="Daftar Jadwal MCU"
-        keterangan={`${jadwalTampil.length} dari ${jadwal.length} jadwal ditampilkan.`}
+        keterangan={`${totalJadwal} jadwal, ditampilkan ${jadwal.length} per halaman.`}
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 180 }}
@@ -377,7 +403,7 @@ export default function JadwalMcuPage() {
 
         {memuat ? (
           <Memuat />
-        ) : jadwalTampil.length === 0 ? (
+        ) : jadwal.length === 0 ? (
           <Kosong
             judul="Belum ada jadwal MCU"
             keterangan="Buat jadwal untuk karyawan yang sudah masuk masa reminder H-3 bulan."
@@ -400,7 +426,7 @@ export default function JadwalMcuPage() {
               </thead>
 
               <tbody>
-                {jadwalTampil.map((item) => {
+                {jadwal.map((item) => {
                   const bolehUbah =
                     item.statusPendaftaran !== 'SELESAI' &&
                     item.statusPendaftaran !== 'DIBATALKAN' &&
@@ -488,6 +514,12 @@ export default function JadwalMcuPage() {
             </table>
           </div>
         )}
+
+        <PaginationBar
+          halaman={halaman}
+          totalHalaman={hitungTotalHalaman(totalJadwal, UKURAN_HALAMAN)}
+          onGanti={setHalaman}
+        />
       </Panel>
 
       {dialogBuat ? (

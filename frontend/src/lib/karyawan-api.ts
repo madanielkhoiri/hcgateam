@@ -7,9 +7,12 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import type { StatusKerja } from './mcu-api';
 
 export type {
   Departemen,
+  GenderKaryawan,
+  HasilHalaman,
   Karyawan,
   StatusKerja,
   StatusKesehatanDirumahkan,
@@ -17,6 +20,21 @@ export type {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+/** Ringkasan angka kartu dashboard Database Karyawan - lihat database-karyawan-dashboard.service.ts. */
+export type RingkasanDatabaseKaryawan = {
+  totalKaryawan: number;
+  karyawanAktif: number;
+  jumlahDepartemen: number;
+  waTerdaftar: number;
+};
+
+/** Tren dashboard Database Karyawan: karyawan baru per bulan (tahun berjalan) + breakdown status kerja. */
+export type TrenDashboardKaryawan = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusKerja; total: number }[];
+};
 
 export class KaryawanApiError extends Error {
   constructor(

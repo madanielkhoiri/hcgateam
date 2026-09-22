@@ -4,89 +4,40 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Reflector } from '@nestjs/core';
 import { UserRole } from '@prisma/client';
 import { firstValueFrom, isObservable } from 'rxjs';
+import { REQUIRE_ACCESS_KEY } from './require-access-key.decorator';
 
-const routeAccessMap: Array<{ pattern: RegExp; accessKey: string | string[] }> = [
+// ==================================================
+// InventoryDashboardController & InventoryAreaController SENGAJA TIDAK
+// pakai @RequireAccessKey() di controllernya — accessKey yang dibutuhkan
+// tergantung nilai param `:scope` di URL saat request (scope ELECTRIC
+// butuh accessKey tambahan CIVIL_INVENTORY_ELECTRIC), jadi tidak bisa
+// dinyatakan lewat decorator statis. Ini SATU-SATUNYA pengecualian —
+// selain dua controller ini, SEMUA proteksi accessKey dinyatakan lewat
+// @RequireAccessKey() persis di controller/route-nya masing-masing
+// (lihat require-access-key.decorator.ts). Urutan array penting: pola
+// scope ELECTRIC harus dicek SEBELUM pola umumnya supaya tidak ketiban
+// aturan yang lebih longgar.
+// ==================================================
+const DYNAMIC_SCOPE_ROUTES: Array<{ pattern: RegExp; accessKey: string[] }> = [
   {
-    pattern: /\/api\/inventory-dashboard\/electric(?:\/|\?|$)/i,
+    pattern: /^\/api\/inventory-dashboard\/electric(?:\/|\?|$)/i,
     accessKey: ['GA_INVENTORY', 'CIVIL_INVENTORY_ELECTRIC'],
   },
   {
-    pattern: /\/api\/inventory-dashboard(?:\/|\?|$)/,
-    accessKey: 'GA_INVENTORY',
+    pattern: /^\/api\/inventory-dashboard(?:\/|\?|$)/,
+    accessKey: ['GA_INVENTORY'],
   },
   {
-    pattern: /\/api\/inventory-area\/ELECTRIC(?:\/|\?|$)/i,
+    pattern: /^\/api\/inventory-area\/electric(?:\/|\?|$)/i,
     accessKey: ['GA_INVENTORY', 'CIVIL_INVENTORY_ELECTRIC'],
   },
-  { pattern: /\/api\/inventory-area(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
-  { pattern: /\/api\/inventory(?:\/|\?|$)/, accessKey: 'GA_INVENTORY' },
-  { pattern: /\/api\/work-orders(?:\/|\?|$)/, accessKey: 'GA_PEKERJAAN' },
   {
-    pattern: /\/api\/work-order-images(?:\/|\?|$)/,
-    accessKey: 'GA_PEKERJAAN',
+    pattern: /^\/api\/inventory-area(?:\/|\?|$)/,
+    accessKey: ['GA_INVENTORY'],
   },
-  { pattern: /\/api\/handovers(?:\/|\?|$)/, accessKey: 'GA_PEKERJAAN' },
-  {
-    pattern: /\/api\/daily-activities(?:\/|\?|$)/,
-    accessKey: 'GA_AKTIVITAS_HARIAN',
-  },
-  {
-    pattern: /\/api\/daily-activity-images(?:\/|\?|$)/,
-    accessKey: 'GA_AKTIVITAS_HARIAN',
-  },
-  { pattern: /\/api\/pre-activity-checks(?:\/|\?|$)/, accessKey: 'GA_PROJECT' },
-  { pattern: /\/api\/post-activities(?:\/|\?|$)/, accessKey: 'GA_PROJECT' },
-  { pattern: /\/api\/p5m(?:\/|\?|$)/, accessKey: 'GA_SAFETY_MEETING' },
-  { pattern: /\/api\/transport(?:\/|\?|$)/, accessKey: 'GA_TRANSPORT' },
-  {
-    pattern: /\/api\/order-pack-meal(?:\/|\?|$)/,
-    accessKey: 'GA_ORDER_PACK_MEAL',
-  },
-  { pattern: /\/api\/signature-library(?:\/|\?|$)/, accessKey: 'GA' },
-  { pattern: /\/api\/mcu(?:\/|\?|$)/, accessKey: 'HC_MCU' },
-  { pattern: /\/api\/helpdesk(?:\/|\?|$)/, accessKey: 'HC_HELPDESK' },
-  {
-    pattern: /\/api\/database-karyawan(?:\/|\?|$)/,
-    accessKey: 'HC_KARYAWAN',
-  },
-  {
-    pattern: /\/api\/surat-tugas-dinas(?:\/|\?|$)/,
-    accessKey: 'HC_TUGAS_DINAS',
-  },
-  { pattern: /\/api\/anak-magang(?:\/|\?|$)/, accessKey: 'HC_ANAK_MAGANG' },
-  {
-    pattern: /\/api\/surat-balasan-magang(?:\/|\?|$)/,
-    accessKey: 'HC_SURAT_BALASAN_MAGANG',
-  },
-  {
-    pattern: /\/api\/surat-penolakan-magang(?:\/|\?|$)/,
-    accessKey: 'HC_SURAT_PENOLAKAN_MAGANG',
-  },
-  {
-    pattern: /\/api\/(database-settlement|saldo|nota|pengajuan|deklarasi|karyawan|pengguna)(?:\/|\?|$)/,
-    accessKey: 'HC_DEKLARASI',
-  },
-  { pattern: /\/api\/eprom(?:\/|\?|$)/, accessKey: 'CIVIL_PROJECT' },
-  { pattern: /\/api\/civil-tps3r(?:\/|\?|$)/, accessKey: 'CIVIL_TPS3R' },
-  {
-    pattern: /\/api\/tiket\/admin(?:\/|\?|$)/,
-    accessKey: 'GA_TRANSPORT_TIKET',
-  },
-  {
-    pattern: /\/api\/travel\/admin(?:\/|\?|$)/,
-    accessKey: 'GA_TRANSPORT_TRAVEL',
-  },
-  {
-    pattern: /\/api\/housekeeping-indoor(?:\/|\?|$)/,
-    accessKey: 'GA_GS_HOUSEKEEPING_INDOOR',
-  },
-  {
-    pattern: /\/api\/kip\/admin(?:\/|\?|$)/,
-    accessKey: 'CIVIL_ELECTRIC_KIP',
-  },
-  { pattern: /\/api\/ir(?:\/|\?|$)/, accessKey: 'HC_IR' },
 ];
 
 type GuardRequest = {
@@ -101,6 +52,10 @@ type GuardRequest = {
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private readonly reflector: Reflector) {
+    super();
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const result = super.canActivate(context);
     const authenticated = isObservable(result)
@@ -123,18 +78,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
+    const requiredFromDecorator = this.reflector.getAllAndOverride<
+      string[] | undefined
+    >(REQUIRE_ACCESS_KEY, [context.getHandler(), context.getClass()]);
+
     const requestUrl = request.originalUrl ?? request.url ?? '';
-    const requiredAccess = routeAccessMap.find(({ pattern }) =>
+    const requiredFromScope = DYNAMIC_SCOPE_ROUTES.find(({ pattern }) =>
       pattern.test(requestUrl),
     )?.accessKey;
 
-    if (!requiredAccess) {
+    const requiredAccessKeys = requiredFromDecorator ?? requiredFromScope;
+
+    if (!requiredAccessKeys || requiredAccessKeys.length === 0) {
       return true;
     }
 
-    const requiredAccessKeys = Array.isArray(requiredAccess)
-      ? requiredAccess
-      : [requiredAccess];
     const ownedAccessKeys = user.accessKeys ?? [];
 
     if (!requiredAccessKeys.some((key) => ownedAccessKeys.includes(key))) {

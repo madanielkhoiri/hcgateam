@@ -231,8 +231,8 @@ describe('TiketService.kirim', () => {
 
     expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Budi'));
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WITA/);
-    expect(pesan).toMatch(/Pulang .* pukul 17:00 WITA/);
+    expect(pesan).toMatch(/Keberangkatan : .* pukul 08:00 WITA/);
+    expect(pesan).toMatch(/Kepulangan\s*: .* pukul 17:00 WITA/);
   });
 
   it('notifikasi WA menyebut jadwal satu arah lagi menyusul kalau BERANGKAT_SAJA', async () => {
@@ -248,7 +248,7 @@ describe('TiketService.kirim', () => {
     );
 
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/Berangkat .* pukul 08:00 WITA/);
+    expect(pesan).toMatch(/Keberangkatan : .* pukul 08:00 WITA/);
     expect(pesan).toContain('menyusul dikonfirmasi kemudian');
   });
 
@@ -438,8 +438,8 @@ describe('TiketService.reschedule', () => {
 
     expect(whatsapp.kirim).toHaveBeenCalledWith('0812', expect.stringContaining('Cuaca buruk'), undefined);
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/KEBERANGKATAN berubah: dari 05 Januari 2026 pukul 08:00 WITA menjadi 01 Februari 2026 pukul 09:00 WITA/);
-    expect(pesan).toMatch(/KEPULANGAN berubah: dari 10 Januari 2026 pukul 17:00 WITA menjadi 03 Februari 2026 pukul 18:00 WITA/);
+    expect(pesan).toMatch(/Keberangkatan : 05 Januari 2026 pukul 08:00 WITA → 01 Februari 2026 pukul 09:00 WITA/);
+    expect(pesan).toMatch(/Kepulangan : 10 Januari 2026 pukul 17:00 WITA → 03 Februari 2026 pukul 18:00 WITA/);
   });
 
   it('notifikasi WA bilang "sudah dikonfirmasi" untuk leg yang tadinya belum ada jadwalnya', async () => {
@@ -456,8 +456,8 @@ describe('TiketService.reschedule', () => {
     await service.reschedule(1, { tanggalSelesai: '2026-02-03', jamSelesai: '18:00' } as any, undefined);
 
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/KEPULANGAN sudah dikonfirmasi: 03 Februari 2026 pukul 18:00 WITA/);
-    expect(pesan).not.toContain('KEBERANGKATAN');
+    expect(pesan).toMatch(/Kepulangan : 03 Februari 2026 pukul 18:00 WITA \(baru dikonfirmasi\)/);
+    expect(pesan).not.toContain('Keberangkatan');
   });
 
   it('menyertakan lampiran WA kalau BACKEND_PUBLIC_URL tersedia (pakai file baru)', async () => {
@@ -578,7 +578,13 @@ describe('TiketService.tautkanNik', () => {
   it('melempar NotFoundException kalau NIK tidak ditemukan', async () => {
     const { service } = buatService({ karyawanByAkunId: null, karyawanByNik: null });
 
-    await expect(service.tautkanNik(9, '99999')).rejects.toThrow(NotFoundException);
+    await expect(service.tautkanNik(9, '12345')).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak kalau NIK yang diketik tidak cocok dengan NRP/username akun sendiri', async () => {
+    const { service } = buatService({ karyawanByAkunId: null, karyawanByNik: null });
+
+    await expect(service.tautkanNik(9, '99999')).rejects.toThrow('tidak cocok dengan akun Anda');
   });
 
   it('menolak kalau NIK sudah ditautkan ke akun lain', async () => {

@@ -22,6 +22,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { TiketService } from './tiket.service';
 import { BuatTiketDto, RescheduleTiketDto, TautkanNikDto } from './dto/tiket.dto';
 
@@ -32,17 +33,38 @@ export class TiketController {
 
   // ---------- Admin (digerbang accessKey GA_TRANSPORT_TIKET) ----------
 
+  @Get('admin/dashboard')
+  @RequireAccessKey('GA_TRANSPORT_TIKET')
+  dashboard() {
+    return this.service.dashboard();
+  }
+
   @Get('admin')
-  daftarAdmin() {
-    return this.service.daftarAdmin();
+  @RequireAccessKey('GA_TRANSPORT_TIKET')
+  daftarAdmin(
+    @Query('cari') cari?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+  ) {
+    return this.service.daftarAdmin({
+      cari,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
+    });
   }
 
   @Get('admin/karyawan')
+  @RequireAccessKey('GA_TRANSPORT_TIKET')
   karyawanRingkas(@Query('search') search?: string) {
     return this.service.karyawanRingkas(search);
   }
 
   @Post('admin')
+  @RequireAccessKey('GA_TRANSPORT_TIKET')
   @UseInterceptors(FilesInterceptor('file', 5, { storage: memoryStorage() }))
   kirim(
     @Body() dto: BuatTiketDto,
@@ -53,12 +75,14 @@ export class TiketController {
   }
 
   @Delete('admin/:id')
+  @RequireAccessKey('GA_TRANSPORT_TIKET')
   hapus(@Param('id', ParseIntPipe) id: number) {
     return this.service.hapus(id);
   }
 
   /** Perubahan jadwal dadakan dari penerbangan (delay/cuaca buruk/dsb) — kirim notifikasi WA khusus, bukan hapus-buat-ulang. */
   @Patch('admin/:id/reschedule')
+  @RequireAccessKey('GA_TRANSPORT_TIKET')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   reschedule(
     @Param('id', ParseIntPipe) id: number,

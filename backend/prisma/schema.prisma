@@ -40,6 +40,9 @@ enum UserRole {
   // keranjang), bukan form input biasa. Section Head/Admin boleh pakai
   // alur yang sama sebagai cara cepat, lihat GudangAksesService.
   GUDANG
+  // Koordinator Lapangan — ikut boleh kelola (approve/hold/reject) Aduan
+  // Layanan bersama Admin/Section Head/Elektrik.
+  KORLAP
 }
 
 model User {
@@ -73,7 +76,8 @@ model User {
   workOrders WorkOrder[]
   handovers  Handover[]
 
-  pengaduanLayanan PengaduanLayanan[]
+  pengaduanLayanan         PengaduanLayanan[] @relation("PengaduanPengirim")
+  pengaduanLayananDiproses PengaduanLayanan[] @relation("PengaduanDiproses")
 
   dailyActivities   DailyActivity[]         @relation("DailyActivityCreator")
   dailyProgresses   DailyActivityProgress[] @relation("DailyProgressCreator")
@@ -959,6 +963,12 @@ enum StatusKesehatanDirumahkan {
   FIT_SAKIT
 }
 
+/** Dipakai untuk otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA (tiket & travel). */
+enum GenderKaryawan {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
 enum JenisMcu {
   AWAL
   BERKALA
@@ -1065,6 +1075,7 @@ model Karyawan {
   id                        Int                        @id @default(autoincrement())
   nik                       String                     @unique
   nama                      String
+  gender                    GenderKaryawan?
   departemenId              Int                        @map("departemen_id")
   jabatan                   String?
   email                     String?
@@ -2964,18 +2975,57 @@ enum DivisiPengaduan {
   CIVIL
 }
 
+/** Lokasi kerja terkait pengaduan — dipilih pengirim saat submit, wajib untuk GA/CIVIL, tidak berlaku untuk HC. */
+enum LokasiPengaduan {
+  TAMBANG
+  MESS
+}
+
+/** Alur tindak lanjut admin: MENUNGGU (default) -> DISETUJUI/DITAHAN/DITOLAK. */
+enum StatusPengaduan {
+  MENUNGGU
+  DISETUJUI
+  DITAHAN
+  DITOLAK
+}
+
 model PengaduanLayanan {
-  id         Int             @id @default(autoincrement())
-  divisi     DivisiPengaduan
-  rating     Int
-  komentar   String?
-  pengirimId Int             @map("pengirim_id")
-  pengirim   User            @relation(fields: [pengirimId], references: [id])
-  createdAt  DateTime        @default(now()) @map("created_at")
+  id             Int             @id @default(autoincrement())
+  divisi         DivisiPengaduan
+  rating         Int
+  /** Catatan pengalaman saat kasih rating (step 1). */
+  komentar       String?
+  /** Deskripsi masalah/permintaan pada Aduan Layanan (step 2) — terpisah dari catatan rating. */
+  deskripsiAduan String?          @map("deskripsi_aduan") @db.Text
+  lokasi         LokasiPengaduan?
+  status         StatusPengaduan @default(MENUNGGU)
+  catatanAdmin   String?         @map("catatan_admin") @db.Text
+  pengirimId     Int             @map("pengirim_id")
+  pengirim       User            @relation("PengaduanPengirim", fields: [pengirimId], references: [id])
+  diprosesOlehId Int?            @map("diproses_oleh_id")
+  diprosesOleh   User?           @relation("PengaduanDiproses", fields: [diprosesOlehId], references: [id], onDelete: SetNull)
+  diprosesPada   DateTime?       @map("diproses_pada")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  foto PengaduanLayananFoto[]
 
   @@index([divisi, createdAt])
   @@index([pengirimId])
+  @@index([status])
   @@map("pengaduan_layanan")
+}
+
+/** Foto wajib (minimal 1) yang dilampirkan saat mengisi Aduan Layanan. */
+model PengaduanLayananFoto {
+  id          Int              @id @default(autoincrement())
+  pengaduanId Int              @map("pengaduan_id")
+  pengaduan   PengaduanLayanan @relation(fields: [pengaduanId], references: [id], onDelete: Cascade)
+  urlFoto     String           @map("url_foto")
+  namaFile    String           @map("nama_file")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([pengaduanId])
+  @@map("pengaduan_layanan_foto")
 }
 
 // ==================================================

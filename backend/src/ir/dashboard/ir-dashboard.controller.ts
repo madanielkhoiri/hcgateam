@@ -1,0 +1,26 @@
+// ==================================================
+// FILE: backend/src/ir/dashboard/ir-dashboard.controller.ts
+// FUNGSI: Endpoint ringkasan & tren dashboard PORTAL IR
+// ==================================================
+
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
+import { IrDashboardService } from './ir-dashboard.service';
+
+@Controller('ir/dashboard')
+@UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_IR')
+export class IrDashboardController {
+  constructor(private readonly service: IrDashboardService) {}
+
+  @Get('ringkasan')
+  ringkasan() {
+    return this.service.ringkasan();
+  }
+
+  @Get('tren')
+  tren() {
+    return this.service.tren();
+  }
+}

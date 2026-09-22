@@ -35,6 +35,8 @@ function buatService(overrides: {
   departemenFindMany?: jest.Mock;
   rekomendasiDetail?: unknown;
   rekomendasiUpdate?: jest.Mock;
+  rekomendasiFindMany?: jest.Mock;
+  rekomendasiCount?: jest.Mock;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 200, ...data }));
   const hasilMcuUpdate = overrides.hasilMcuUpdate ?? jest.fn().mockResolvedValue({});
@@ -42,6 +44,8 @@ function buatService(overrides: {
   const followUpUpdate = overrides.followUpUpdate ?? jest.fn().mockResolvedValue({});
   const followUpCreate = overrides.followUpCreate ?? jest.fn().mockResolvedValue({});
   const rekomendasiUpdate = overrides.rekomendasiUpdate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+  const rekomendasiFindMany = overrides.rekomendasiFindMany ?? jest.fn().mockResolvedValue([]);
+  const rekomendasiCount = overrides.rekomendasiCount ?? jest.fn().mockResolvedValue(0);
 
   const prisma = {
     hasilMcu: {
@@ -52,6 +56,8 @@ function buatService(overrides: {
     rekomendasiMcu: {
       findUnique: jest.fn().mockResolvedValue(overrides.rekomendasiDetail ?? null),
       update: rekomendasiUpdate,
+      findMany: rekomendasiFindMany,
+      count: rekomendasiCount,
     },
     departemen: { findMany: overrides.departemenFindMany ?? jest.fn().mockResolvedValue([]) },
     $transaction: jest.fn((callback: (tx: unknown) => unknown) =>
@@ -74,7 +80,18 @@ function buatService(overrides: {
 
   const service = new McuRekomendasiService(prisma, akses, berkas, notifikasi);
 
-  return { service, prisma, create, hasilMcuUpdate, hasilFollowUpUpdate, followUpUpdate, followUpCreate, rekomendasiUpdate };
+  return {
+    service,
+    prisma,
+    create,
+    hasilMcuUpdate,
+    hasilFollowUpUpdate,
+    followUpUpdate,
+    followUpCreate,
+    rekomendasiUpdate,
+    rekomendasiFindMany,
+    rekomendasiCount,
+  };
 }
 
 describe('McuRekomendasiService.submit', () => {
@@ -214,6 +231,87 @@ describe('McuRekomendasiService.teruskanKeKaryawan', () => {
     expect(rekomendasiUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ diteruskanOlehId: 5, diteruskanKeKaryawanAt: expect.any(Date) }),
+      }),
+    );
+  });
+});
+
+describe('McuRekomendasiService — Karyawan tidak boleh lihat daftar/antrean/detail administratif', () => {
+  it('daftar() menolak Karyawan', async () => {
+    const { service } = buatService();
+
+    await expect(service.daftar({}, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('antreanReview() menolak Karyawan', async () => {
+    const { service } = buatService();
+
+    await expect(service.antreanReview(aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('detailAdmin() menolak Karyawan', async () => {
+    const { service } = buatService();
+
+    await expect(service.detailAdmin(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('detailAdmin() tetap boleh diakses HC', async () => {
+    const { service } = buatService({
+      rekomendasiDetail: {
+        id: 1,
+        status: StatusRekomendasi.FIT,
+        hasilMcu: { jadwalMcu: { karyawanId: 7 } },
+      },
+    });
+
+    await expect(service.detailAdmin(1, aktor(UserRole.HC))).resolves.toBeDefined();
+  });
+});
+
+describe('McuRekomendasiService.daftar — pencarian nama/NIK karyawan', () => {
+  it('tanpa filter cari, where tidak menyertakan hasilMcu', async () => {
+    const { service, rekomendasiFindMany } = buatService();
+
+    await service.daftar({}, aktor(UserRole.HC));
+
+    const panggilan = rekomendasiFindMany.mock.calls[0][0];
+    expect(panggilan.where.hasilMcu).toBeUndefined();
+  });
+
+  it('menerapkan pencarian nama/NIK karyawan (case-insensitive)', async () => {
+    const { service, rekomendasiFindMany } = buatService();
+
+    await service.daftar({ cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(rekomendasiFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          hasilMcu: {
+            jadwalMcu: {
+              karyawan: {
+                OR: [
+                  { nama: { contains: 'budi', mode: 'insensitive' } },
+                  { nik: { contains: 'budi', mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('menggabungkan filter status dan cari sekaligus', async () => {
+    const { service, rekomendasiFindMany } = buatService();
+
+    await service.daftar({ status: StatusRekomendasi.FIT, cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(rekomendasiFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: StatusRekomendasi.FIT,
+          hasilMcu: expect.any(Object),
+        }),
       }),
     );
   });

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAnimatedVisibility } from '@/components/animated-modal/use-animated-visibility';
 import { ACCESS_KEYS, hasAccess, saveStoredUser } from '@/lib/access-control';
 import {
   postinganApi,
@@ -95,6 +96,7 @@ function formatTanggalPendek(iso: string) {
 const departmentCards: Array<{
   key: string;
   title: string;
+  description: string;
   href: string;
   icon: React.ElementType;
   cardClass: 'hcCard' | 'gaCard' | 'sipilCard' | 'administrasiCard';
@@ -103,6 +105,7 @@ const departmentCards: Array<{
   {
     key: 'HC',
     title: 'HC',
+    description: 'Human Capital · kepegawaian & SDM',
     href: '/hc',
     icon: UsersRound,
     cardClass: 'hcCard',
@@ -111,6 +114,7 @@ const departmentCards: Array<{
   {
     key: 'GA',
     title: 'GA',
+    description: 'General Affair · umum & fasilitas',
     href: '/ga',
     icon: Building2,
     cardClass: 'gaCard',
@@ -119,6 +123,7 @@ const departmentCards: Array<{
   {
     key: 'CIVIL',
     title: 'CIVIL',
+    description: 'Konstruksi & rekayasa lapangan',
     href: '/civil',
     icon: HardHat,
     cardClass: 'sipilCard',
@@ -127,6 +132,7 @@ const departmentCards: Array<{
   {
     key: 'ADMINISTRASI',
     title: 'ADMIN',
+    description: 'Dokumentasi, form & CSR',
     href: '/administrasi',
     icon: BookOpen,
     cardClass: 'administrasiCard',
@@ -166,6 +172,17 @@ export default function DashboardPage() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+
+  const profileModalAnim = useAnimatedVisibility(profileModalOpen);
+  const passwordModalAnim = useAnimatedVisibility(passwordModalOpen);
+  const mediaPreviewAnim = useAnimatedVisibility(mediaPreview !== null);
+  const [lastMediaPreview, setLastMediaPreview] = useState<Postingan | null>(null);
+
+  useEffect(() => {
+    if (mediaPreview) setLastMediaPreview(mediaPreview);
+  }, [mediaPreview]);
+
+  const mediaPreviewToShow = mediaPreview ?? lastMediaPreview;
 
   const [profileName, setProfileName] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
@@ -531,6 +548,7 @@ export default function DashboardPage() {
       ================================================== */}
 
       <header className={styles.header}>
+       <div className={styles.headerInner}>
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
             <UsersRound size={24} />
@@ -680,6 +698,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+       </div>
       </header>
 
       <div className={styles.container}>
@@ -769,6 +788,11 @@ export default function DashboardPage() {
             DEPARTEMEN UTAMA
         ================================================== */}
 
+        <div className={styles.eyebrow} style={{ marginTop: 26 }}>
+          <span>Akses Departemen</span>
+          <span className={styles.eyebrowLine} />
+        </div>
+
         <section className={styles.departmentGrid}>
           {departmentCards
             .filter((department) => hasAccess(user, department.accessKey))
@@ -782,12 +806,17 @@ export default function DashboardPage() {
                   className={`${styles.departmentCard} ${styles[department.cardClass]}`}
                   onClick={() => router.push(department.href)}
                 >
-                  <div className={styles.departmentIcon}>
-                    <Icon size={34} />
+                  <div className={styles.departmentTop}>
+                    <div className={styles.departmentIcon}>
+                      <Icon size={27} />
+                    </div>
+                    <ChevronRight size={18} />
                   </div>
 
-                  <strong>{department.title}</strong>
-                  <ChevronRight />
+                  <div className={styles.departmentText}>
+                    <strong>{department.title}</strong>
+                    <span>{department.description}</span>
+                  </div>
                 </button>
               );
             })}
@@ -797,7 +826,12 @@ export default function DashboardPage() {
             PAPAN POSTER & VIDEO INFORMASI
         ================================================== */}
 
-        <section className={styles.dashboardContent} style={{ marginTop: 18 }}>
+        <div className={styles.eyebrow} style={{ marginTop: 30 }}>
+          <span>Informasi &amp; Media</span>
+          <span className={styles.eyebrowLine} />
+        </div>
+
+        <section className={styles.dashboardContent}>
           <article className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
@@ -963,12 +997,18 @@ export default function DashboardPage() {
         ================================================== */}
 
         {bisaLihatPanelAdmin && (
+        <>
+        <div className={styles.eyebrow} style={{ marginTop: 30 }}>
+          <span>Ringkasan Admin</span>
+          <span className={styles.eyebrowLine} />
+        </div>
+
         <section className={styles.dashboardContent}>
           {/* ==================================================
               AKSES CEPAT
           ================================================== */}
 
-          <article className={styles.panel}>
+          <article className={`${styles.panel} ${styles.panelTinted}`}>
             <div className={styles.panelHeader}>
               <div>
                 <Link2 size={23} />
@@ -1082,7 +1122,7 @@ export default function DashboardPage() {
               AKTIVITAS TERBARU
           ================================================== */}
 
-          <article className={styles.panel}>
+          <article className={`${styles.panel} ${styles.panelTinted}`}>
             <div className={styles.panelHeader}>
               <div>
                 <HeartPulse size={23} />
@@ -1141,13 +1181,14 @@ export default function DashboardPage() {
             </div>
           </article>
         </section>
+        </>
         )}
       </div>
 
-      {profileModalOpen && (
-        <div className={styles.modalOverlay}>
+      {profileModalAnim.mounted && (
+        <div className={`${styles.modalOverlay} ${profileModalAnim.closing ? 'overlayExit' : 'overlayEnter'}`}>
           <section
-            className={styles.accountModal}
+            className={`${styles.accountModal} ${profileModalAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="profile-modal-title"
@@ -1250,10 +1291,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {passwordModalOpen && (
-        <div className={styles.modalOverlay}>
+      {passwordModalAnim.mounted && (
+        <div className={`${styles.modalOverlay} ${passwordModalAnim.closing ? 'overlayExit' : 'overlayEnter'}`}>
           <section
-            className={styles.accountModal}
+            className={`${styles.accountModal} ${passwordModalAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="password-modal-title"
@@ -1367,16 +1408,16 @@ export default function DashboardPage() {
           </section>
         </div>
       )}
-      {mediaPreview && (
+      {mediaPreviewAnim.mounted && mediaPreviewToShow && (
         <div
-          className={styles.mediaOverlay}
+          className={`${styles.mediaOverlay} ${mediaPreviewAnim.closing ? 'overlayExit' : 'overlayEnter'}`}
           onClick={(event) => {
             if (event.target === event.currentTarget) setMediaPreview(null);
           }}
         >
-          <div className={styles.mediaBox}>
+          <div className={`${styles.mediaBox} ${mediaPreviewAnim.closing ? 'modalPanelExit' : 'modalPanelEnter'}`}>
             <div className={styles.mediaBoxHead}>
-              <strong>{mediaPreview.judul}</strong>
+              <strong>{mediaPreviewToShow.judul}</strong>
               <button
                 type="button"
                 className={styles.mediaBoxClose}
@@ -1388,16 +1429,16 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.mediaBoxBody}>
-              {mediaPreview.tipe === 'VIDEO' ? (
+              {mediaPreviewToShow.tipe === 'VIDEO' ? (
                 <video
-                  src={urlMediaPostingan(mediaPreview.urlMedia)}
+                  src={urlMediaPostingan(mediaPreviewToShow.urlMedia)}
                   controls
                   autoPlay
                 />
               ) : (
                 <img
-                  src={urlMediaPostingan(mediaPreview.urlMedia)}
-                  alt={mediaPreview.judul}
+                  src={urlMediaPostingan(mediaPreviewToShow.urlMedia)}
+                  alt={mediaPreviewToShow.judul}
                 />
               )}
             </div>

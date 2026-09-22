@@ -4,10 +4,11 @@ import { KipController } from './kip.controller';
 import { KipService } from './kip.service';
 import { KipAksesService } from './kip-akses.service';
 import { KipFileService } from './kip-file.service';
+import { KipDashboardService } from './kip-dashboard.service';
 
 @Module({
   imports: [AuditModule],
   controllers: [KipController],
-  providers: [KipService, KipAksesService, KipFileService],
+  providers: [KipService, KipAksesService, KipFileService, KipDashboardService],
 })
 export class KipModule {}

@@ -48,6 +48,7 @@ export default function RetensiMcuPage() {
   const [galat, setGalat] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
+  const [cari, setCari] = useState('');
 
   const muat = useCallback(async () => {
     setMemuat(true);
@@ -103,6 +104,20 @@ export default function RetensiMcuPage() {
         (a, b) => a.sisaHari - b.sisaHari,
       )
     : [];
+
+  const dokumenTampil = (() => {
+    const kataKunci = cari.trim().toLowerCase();
+
+    if (!kataKunci) {
+      return semuaDokumen;
+    }
+
+    return semuaDokumen.filter(
+      (item) =>
+        item.karyawan.nama.toLowerCase().includes(kataKunci) ||
+        item.karyawan.nik.toLowerCase().includes(kataKunci),
+    );
+  })();
 
   return (
     <>
@@ -193,9 +208,19 @@ export default function RetensiMcuPage() {
         judul="Dokumen Mendekati/Sudah Jatuh Tempo"
         keterangan="Menampilkan dokumen dalam 30 hari ke depan, diurutkan dari yang paling mendesak."
       >
+        <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cari}
+            onChange={(event) => setCari(event.target.value)}
+          />
+        </div>
+
         {memuat ? (
           <Memuat />
-        ) : semuaDokumen.length === 0 ? (
+        ) : dokumenTampil.length === 0 ? (
           <Kosong
             judul="Tidak ada dokumen jatuh tempo"
             keterangan="Seluruh dokumen medis masih dalam masa retensi aman."
@@ -215,7 +240,7 @@ export default function RetensiMcuPage() {
               </thead>
 
               <tbody>
-                {semuaDokumen.map((item) => (
+                {dokumenTampil.map((item) => (
                   <tr key={`${item.jenis}-${item.id}`}>
                     <td>{item.jenis}</td>
 

@@ -21,6 +21,7 @@ import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { StatusFollowUp } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
 import {
@@ -32,20 +33,35 @@ import {
 
 @Controller('mcu/follow-up')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuFollowUpController {
   constructor(private readonly service: McuFollowUpService) {}
 
   @Get()
   daftar(
+    @Aktor() aktor: AktorMcu,
     @Query('status') status?: StatusFollowUp,
     @Query('karyawanId') karyawanId?: string,
     @Query('terlambat') terlambat?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('cari') cari?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
-    return this.service.daftar({
-      status,
-      karyawanId: karyawanId ? Number(karyawanId) : undefined,
-      terlambat: terlambat === 'true',
-    });
+    return this.service.daftar(
+      {
+        status,
+        karyawanId: karyawanId ? Number(karyawanId) : undefined,
+        terlambat: terlambat === 'true',
+        bulan: bulan ? Number(bulan) : undefined,
+        tahun: tahun ? Number(tahun) : undefined,
+        cari: cari?.trim() || undefined,
+        halaman,
+        ukuranHalaman,
+      },
+      aktor,
+    );
   }
 
   @Get('saya')
@@ -54,8 +70,8 @@ export class McuFollowUpController {
   }
 
   @Get('antrean-review-ulang')
-  antreanReviewUlang() {
-    return this.service.antreanReviewUlang();
+  antreanReviewUlang(@Aktor() aktor: AktorMcu) {
+    return this.service.antreanReviewUlang(aktor);
   }
 
   @Post('tandai-terlambat')
@@ -64,8 +80,8 @@ export class McuFollowUpController {
   }
 
   @Get(':id')
-  detail(@Param('id', ParseIntPipe) id: number) {
-    return this.service.detail(id);
+  detail(@Aktor() aktor: AktorMcu, @Param('id', ParseIntPipe) id: number) {
+    return this.service.detail(id, aktor);
   }
 
   @Post(':id/batas-waktu')

@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -32,6 +33,20 @@ export type AlbumDetail = {
   uploadedBy: { id: number; name: string; nrp: string | null };
   createdAt: string;
   foto: AlbumFoto[];
+};
+
+export type RingkasanAlbum = {
+  totalAlbum: number;
+  totalFoto: number;
+  albumBulanIni: number;
+  albumBerisiFoto: number;
+  albumKosong: number;
+  totalKontributor: number;
+};
+
+export type TrenAlbum = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
 };
 
 export class AlbumApiError extends Error {
@@ -84,6 +99,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const albumApi = {
   daftar: () => request<AlbumRingkas[]>(''),
+  ringkasan: () => request<RingkasanAlbum>('/dashboard/ringkasan'),
+  tren: () => request<TrenAlbum>('/dashboard/tren'),
   detail: (id: number) => request<AlbumDetail>(`/${id}`),
   buat: (judul: string, deskripsi?: string) =>
     request<{ id: number }>('', {
@@ -105,5 +122,5 @@ export const albumApi = {
 };
 
 export function urlFotoAlbum(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }

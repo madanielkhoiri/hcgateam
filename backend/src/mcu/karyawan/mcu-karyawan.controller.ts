@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { StatusKerja, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
@@ -31,6 +32,7 @@ import { McuKaryawanService } from './mcu-karyawan.service';
 
 @Controller('mcu')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuKaryawanController {
   constructor(
     private readonly service: McuKaryawanService,

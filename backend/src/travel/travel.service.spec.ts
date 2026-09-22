@@ -371,8 +371,9 @@ describe('TravelService.rescheduleJadwal', () => {
     expect(whatsapp.kirim).toHaveBeenCalledWith('0813', expect.stringContaining('Delay pesawat'));
 
     const pesan = (whatsapp.kirim as jest.Mock).mock.calls[0][1] as string;
-    expect(pesan).toMatch(/PERUBAHAN \(Delay pesawat\)/);
-    expect(pesan).toContain('menjadi');
+    expect(pesan).toMatch(/Perubahan Jadwal Travel\* Anda \(Delay pesawat\)/);
+    expect(pesan).toContain('Jadwal Lama');
+    expect(pesan).toContain('Jadwal Baru');
   });
 
   it('tidak mengirim WA ke penumpang tanpa nomor telepon', async () => {

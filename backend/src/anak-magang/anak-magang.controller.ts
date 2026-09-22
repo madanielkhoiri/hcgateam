@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { StatusAnakMagang, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { McuAksesService } from '../mcu/common/mcu-akses.service';
 import { Aktor } from '../mcu/common/mcu-aktor';
 import type { AktorMcu } from '../mcu/common/mcu-aktor';
@@ -25,6 +26,7 @@ import { BuatAnakMagangDto, UbahAnakMagangDto } from './dto/anak-magang.dto';
 
 @Controller('anak-magang')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_ANAK_MAGANG')
 export class AnakMagangController {
   constructor(
     private readonly service: AnakMagangService,
@@ -35,8 +37,19 @@ export class AnakMagangController {
   daftar(
     @Query('status') status?: StatusAnakMagang,
     @Query('cari') cari?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
   ) {
-    return this.service.daftar({ status, cari: cari?.trim() || undefined });
+    return this.service.daftar({
+      status,
+      cari: cari?.trim() || undefined,
+      halaman,
+      ukuranHalaman,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+    });
   }
 
   @Get(':id')

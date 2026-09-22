@@ -59,6 +59,49 @@ function buatService(overrides: {
   return { service, prisma, create, update, deleteFn, workOrderUpdate, documentNumber };
 }
 
+describe('HandoversService.findAll', () => {
+  it('tanpa filter kalau cari kosong', async () => {
+    const { service, prisma } = buatService();
+
+    await service.findAll();
+
+    expect(prisma.handover.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {} }),
+    );
+  });
+
+  it('menerapkan pencarian nomor STP/penerima/departemen/lokasi/nama & nomor WO (case-insensitive)', async () => {
+    const { service, prisma } = buatService();
+
+    await service.findAll('budi');
+
+    expect(prisma.handover.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { stpNumber: { contains: 'budi', mode: 'insensitive' } },
+            { receiverName: { contains: 'budi', mode: 'insensitive' } },
+            { receiverDepartment: { contains: 'budi', mode: 'insensitive' } },
+            { location: { contains: 'budi', mode: 'insensitive' } },
+            { workOrder: { workOrderName: { contains: 'budi', mode: 'insensitive' } } },
+            { workOrder: { workOrderNumber: { contains: 'budi', mode: 'insensitive' } } },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('cari kosong (setelah trim) diabaikan seperti tidak ada filter', async () => {
+    const { service, prisma } = buatService();
+
+    await service.findAll(undefined);
+
+    expect(prisma.handover.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {} }),
+    );
+  });
+});
+
 describe('HandoversService.findOne', () => {
   it('melempar NotFoundException kalau data tidak ada', async () => {
     const { service } = buatService({ handover: null });

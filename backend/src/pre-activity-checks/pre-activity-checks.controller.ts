@@ -20,6 +20,7 @@ import type { Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreatePreActivityCheckDto } from './dto/create-pre-activity-check.dto';
 import { UpdatePreActivityCheckDto } from './dto/update-pre-activity-check.dto';
 import { PreActivityCheckPdfService } from './pre-activity-check-pdf.service';
@@ -48,6 +49,7 @@ const uploadStorage = diskStorage({
 
 @Controller('pre-activity-checks')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_PROJECT')
 export class PreActivityChecksController {
   constructor(
     private readonly service: PreActivityChecksService,

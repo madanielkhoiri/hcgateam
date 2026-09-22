@@ -139,4 +139,60 @@ export class PostinganService {
 
     return { message: 'Postingan berhasil dihapus' };
   }
+
+  /** Angka ringkas untuk kartu dashboard modul Postingan. */
+  async ringkasan() {
+    const sekarang = new Date();
+    const awalBulanIni = new Date(
+      Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
+    );
+
+    const [total, tampilBeranda, tersembunyi, postinganBulanIni] =
+      await Promise.all([
+        this.prisma.postingan.count(),
+        this.prisma.postingan.count({ where: { tampilBeranda: true } }),
+        this.prisma.postingan.count({ where: { tampilBeranda: false } }),
+        this.prisma.postingan.count({
+          where: { createdAt: { gte: awalBulanIni } },
+        }),
+      ]);
+
+    return {
+      total,
+      tampilBeranda,
+      tersembunyi,
+      postinganBulanIni,
+    };
+  }
+
+  /** Tren jumlah postingan dibuat per bulan (tahun berjalan) + breakdown tipe media, untuk grafik dashboard. */
+  async trenDanTipe() {
+    const tahun = new Date().getUTCFullYear();
+    const awal = new Date(Date.UTC(tahun, 0, 1));
+    const akhir = new Date(Date.UTC(tahun + 1, 0, 1));
+
+    const [postingan, poster, video] = await Promise.all([
+      this.prisma.postingan.findMany({
+        where: { createdAt: { gte: awal, lt: akhir } },
+        select: { createdAt: true },
+      }),
+      this.prisma.postingan.count({ where: { tipe: TipePostingan.POSTER } }),
+      this.prisma.postingan.count({ where: { tipe: TipePostingan.VIDEO } }),
+    ]);
+
+    const totalPerBulan = Array.from({ length: 12 }, () => 0);
+
+    for (const row of postingan) {
+      totalPerBulan[row.createdAt.getUTCMonth()] += 1;
+    }
+
+    return {
+      tahun,
+      trenBulanan: totalPerBulan.map((total, index) => ({
+        bulan: index + 1,
+        total,
+      })),
+      tipeMedia: { poster, video },
+    };
+  }
 }

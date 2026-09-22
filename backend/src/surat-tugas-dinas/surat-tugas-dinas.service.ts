@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import {
   BuatSuratTugasDinasDto,
   TolakSuratTugasDinasDto,
@@ -72,21 +73,71 @@ export class SuratTugasDinasService {
     return false;
   }
 
-  async daftar(aktor: AktorSurat, status?: string) {
+  async daftar(
+    aktor: AktorSurat,
+    status?: string,
+    halamanRaw?: string,
+    ukuranHalamanRaw?: string,
+    bulan?: number,
+    tahun?: number,
+    cari?: string,
+  ) {
     const statusValid = (
       Object.values(StatusSuratTugas) as string[]
     ).includes(status ?? '')
       ? (status as StatusSuratTugas)
       : undefined;
 
-    return this.prisma.suratTugasDinas.findMany({
-      where: {
-        ...(statusValid ? { status: statusValid } : {}),
-        ...(this.bolehLihatSemua(aktor) ? {} : { dibuatOlehId: aktor.id }),
-      },
-      include: SURAT_INCLUDE,
-      orderBy: { createdAt: 'desc' },
-    });
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
+    // Pilih bulan tanpa tahun dianggap tahun berjalan (default paling wajar).
+    const tahunEfektif = tahun ?? (bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggalMulai = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, bulan ? bulan - 1 : 0, 1)),
+          lt: bulan
+            ? new Date(Date.UTC(tahunEfektif, bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where: Prisma.SuratTugasDinasWhereInput = {
+      ...(statusValid ? { status: statusValid } : {}),
+      ...(this.bolehLihatSemua(aktor) ? {} : { dibuatOlehId: aktor.id }),
+      ...(rentangTanggalMulai ? { tanggalMulai: rentangTanggalMulai } : {}),
+      ...(cari
+        ? {
+            OR: [
+              { nomor: { contains: cari, mode: 'insensitive' } },
+              { tujuanLokasi: { contains: cari, mode: 'insensitive' } },
+              {
+                karyawan: {
+                  some: {
+                    OR: [
+                      { nama: { contains: cari, mode: 'insensitive' } },
+                      { nrp: { contains: cari, mode: 'insensitive' } },
+                    ],
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+    const param = paramHalaman(halamanRaw, ukuranHalamanRaw);
+
+    const [data, total] = await Promise.all([
+      this.prisma.suratTugasDinas.findMany({
+        where,
+        include: SURAT_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.suratTugasDinas.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async detail(id: number, aktor: AktorSurat) {

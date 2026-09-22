@@ -225,6 +225,10 @@ export function formatRole(role?: string): string {
     return 'Staff Gudang';
   }
 
+  if (role === 'KORLAP') {
+    return 'Koordinator Lapangan';
+  }
+
   return role
     .toLowerCase()
     .split('_')

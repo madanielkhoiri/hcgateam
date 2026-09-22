@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken, type PortalUser } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -84,6 +85,21 @@ export type IrCoursePenonton = {
     ditontonPada: string;
     user: { id: number; name: string; nrp: string | null };
   }[];
+};
+
+/** Ringkasan angka kartu dashboard PORTAL IR - lihat ir-dashboard.service.ts. */
+export type RingkasanIr = {
+  totalDokumen: number;
+  pertanyaanAktif: number;
+  totalVideo: number;
+  totalJawaban: number;
+};
+
+/** Tren dashboard PORTAL IR: dokumen per bulan (tahun berjalan) + breakdown kategori. */
+export type TrenDashboardIr = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownKategori: { kategori: KategoriDokumenIr; total: number }[];
 };
 
 // ==================================================
@@ -209,11 +225,16 @@ export const irApi = {
     penonton: (id: number) =>
       request<IrCoursePenonton>(`/course/video/${id}/penonton`),
   },
+
+  dashboard: {
+    ringkasan: () => request<RingkasanIr>('/dashboard/ringkasan'),
+    tren: () => request<TrenDashboardIr>('/dashboard/tren'),
+  },
 };
 
-/** URL publik file yang disimpan lewat IrFileService, disajikan statis lewat /api/uploads/. */
+/** URL file yang disimpan lewat IrFileService — wajib login, lihat uploads-url.ts. */
 export function urlFileIr(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export function isIrPengelola(user: PortalUser | null): boolean {

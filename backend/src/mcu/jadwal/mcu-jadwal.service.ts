@@ -32,6 +32,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
 import { HARI_LOCK_PENDAFTARAN } from '../mcu.constants';
@@ -140,41 +141,78 @@ export class McuJadwalService {
   // BACA
   // ==================================================
 
-  async daftar(filter: {
-    status?: StatusPendaftaran;
-    jenisMcu?: JenisMcu;
-    departemenId?: number;
-    karyawanId?: number;
-    dariTanggal?: string;
-    sampaiTanggal?: string;
-  }) {
-    const daftar = await this.prisma.jadwalMcu.findMany({
-      where: {
-        ...(filter.status ? { statusPendaftaran: filter.status } : {}),
-        ...(filter.jenisMcu ? { jenisMcu: filter.jenisMcu } : {}),
-        ...(filter.departemenId ? { departemenId: filter.departemenId } : {}),
-        ...(filter.karyawanId ? { karyawanId: filter.karyawanId } : {}),
-        ...(filter.dariTanggal || filter.sampaiTanggal
-          ? {
-              tanggalMcu: {
-                ...(filter.dariTanggal
-                  ? { gte: tanggalSaja(filter.dariTanggal) }
-                  : {}),
-                ...(filter.sampaiTanggal
-                  ? { lte: tanggalSaja(filter.sampaiTanggal) }
-                  : {}),
-              },
-            }
-          : {}),
-      },
-      include: JADWAL_INCLUDE,
-      orderBy: [{ tanggalMcu: 'desc' }, { id: 'desc' }],
-    });
+  async daftar(
+    filter: {
+      status?: StatusPendaftaran;
+      jenisMcu?: JenisMcu;
+      departemenId?: number;
+      karyawanId?: number;
+      dariTanggal?: string;
+      sampaiTanggal?: string;
+      cari?: string;
+      halaman?: string;
+      ukuranHalaman?: string;
+    },
+    aktor: AktorMcu,
+  ) {
+    // Karyawan biasa cuma boleh lihat jadwal miliknya sendiri — scoping ini
+    // WAJIB dari sisi server (bukan percaya query param karyawanId dari
+    // client) supaya tidak bisa lihat jadwal karyawan lain dengan cara
+    // mengganti parameter di URL.
+    const karyawanIdEfektif =
+      aktor.role === UserRole.KARYAWAN
+        ? (await this.akses.karyawanDariAkun(aktor))?.id ?? -1
+        : filter.karyawanId;
 
-    return daftar.map((jadwal) => this.lengkapiStatusLock(jadwal));
+    const where = {
+      ...(filter.status ? { statusPendaftaran: filter.status } : {}),
+      ...(filter.jenisMcu ? { jenisMcu: filter.jenisMcu } : {}),
+      ...(filter.departemenId ? { departemenId: filter.departemenId } : {}),
+      ...(karyawanIdEfektif ? { karyawanId: karyawanIdEfektif } : {}),
+      ...(filter.dariTanggal || filter.sampaiTanggal
+        ? {
+            tanggalMcu: {
+              ...(filter.dariTanggal
+                ? { gte: tanggalSaja(filter.dariTanggal) }
+                : {}),
+              ...(filter.sampaiTanggal
+                ? { lte: tanggalSaja(filter.sampaiTanggal) }
+                : {}),
+            },
+          }
+        : {}),
+      ...(filter.cari
+        ? {
+            karyawan: {
+              OR: [
+                { nama: { contains: filter.cari, mode: 'insensitive' as const } },
+                { nik: { contains: filter.cari, mode: 'insensitive' as const } },
+              ],
+            },
+          }
+        : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [daftar, total] = await Promise.all([
+      this.prisma.jadwalMcu.findMany({
+        where,
+        include: JADWAL_INCLUDE,
+        orderBy: [{ tanggalMcu: 'desc' }, { id: 'desc' }],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.jadwalMcu.count({ where }),
+    ]);
+
+    return hasilHalaman(
+      daftar.map((jadwal) => this.lengkapiStatusLock(jadwal)),
+      total,
+      param,
+    );
   }
 
-  async detail(id: number) {
+  async detail(id: number, aktor: AktorMcu) {
     const jadwal = await this.prisma.jadwalMcu.findUnique({
       where: { id },
       include: JADWAL_INCLUDE,
@@ -182,6 +220,14 @@ export class McuJadwalService {
 
     if (!jadwal) {
       throw new NotFoundException('Jadwal MCU tidak ditemukan');
+    }
+
+    if (aktor.role === UserRole.KARYAWAN) {
+      const karyawan = await this.akses.karyawanDariAkun(aktor);
+
+      if (!karyawan || jadwal.karyawanId !== karyawan.id) {
+        throw new NotFoundException('Jadwal MCU tidak ditemukan');
+      }
     }
 
     return this.lengkapiStatusLock(jadwal);

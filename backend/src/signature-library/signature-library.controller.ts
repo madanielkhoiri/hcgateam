@@ -12,6 +12,7 @@ import { diskStorage } from 'multer';
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 
 const signatureRoot = join(process.cwd(), 'uploads', 'signatures');
 
@@ -32,6 +33,7 @@ function normalizeName(value: string) {
 
 @Controller('signature-library')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA')
 export class SignatureLibraryController {
   @Get('supervisors')
   getSupervisors() {

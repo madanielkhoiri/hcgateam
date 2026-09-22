@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { McuAksesService } from '../mcu/common/mcu-akses.service';
 import { AktorMcu } from '../mcu/common/mcu-aktor';
 import { BuatSuratBalasanMagangDto } from './dto/surat-balasan-magang.dto';
@@ -30,11 +31,39 @@ export class SuratBalasanMagangService {
     private readonly pdf: SuratBalasanMagangPdfService,
   ) {}
 
-  async daftar() {
-    return this.prisma.suratBalasanMagang.findMany({
-      include: SURAT_INCLUDE,
-      orderBy: { id: 'desc' },
-    });
+  async daftar(filter: {
+    halaman?: string;
+    ukuranHalaman?: string;
+    bulan?: number;
+    tahun?: number;
+  } = {}) {
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where = rentangTanggal ? { createdAt: rentangTanggal } : {};
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.suratBalasanMagang.findMany({
+        where,
+        include: SURAT_INCLUDE,
+        orderBy: { id: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.suratBalasanMagang.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async detail(id: number) {
@@ -152,6 +181,58 @@ export class SuratBalasanMagangService {
       data: { filePdf },
       include: SURAT_INCLUDE,
     });
+  }
+
+  /** Ringkasan angka + tren untuk dashboard modul Surat Balasan Magang. */
+  async ringkasanDashboard() {
+    const sekarang = new Date();
+    const tahun = sekarang.getUTCFullYear();
+    const bulan = sekarang.getUTCMonth();
+
+    const awalTahun = new Date(Date.UTC(tahun, 0, 1));
+    const akhirTahun = new Date(Date.UTC(tahun + 1, 0, 1));
+    const awalBulan = new Date(Date.UTC(tahun, bulan, 1));
+    const akhirBulan = new Date(Date.UTC(tahun, bulan + 1, 1));
+
+    const [totalSurat, suratBulanIni, totalMahasiswa, suratTahunIni] =
+      await Promise.all([
+        this.prisma.suratBalasanMagang.count(),
+        this.prisma.suratBalasanMagang.count({
+          where: { createdAt: { gte: awalBulan, lt: akhirBulan } },
+        }),
+        this.prisma.suratBalasanMagangBaris.count(),
+        this.prisma.suratBalasanMagang.findMany({
+          where: { createdAt: { gte: awalTahun, lt: akhirTahun } },
+          select: { createdAt: true, filePdf: true },
+        }),
+      ]);
+
+    const trenBulanan = Array.from({ length: 12 }, () => 0);
+    let sudahTerbit = 0;
+    let belumTerbit = 0;
+
+    for (const surat of suratTahunIni) {
+      trenBulanan[surat.createdAt.getUTCMonth()] += 1;
+
+      if (surat.filePdf) {
+        sudahTerbit += 1;
+      } else {
+        belumTerbit += 1;
+      }
+    }
+
+    return {
+      tahun,
+      totalSurat,
+      totalMahasiswa,
+      suratBulanIni,
+      suratTahunIni: suratTahunIni.length,
+      trenBulanan: trenBulanan.map((total, index) => ({
+        bulan: index + 1,
+        total,
+      })),
+      statusPdf: { sudahTerbit, belumTerbit },
+    };
   }
 
   private formatNomorSurat(nomorUrut: number, tahun: number): string {

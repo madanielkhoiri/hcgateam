@@ -4,9 +4,12 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+export type { HasilHalaman } from './pagination';
 
 export type BarisSuratBalasan = {
   id: number;
@@ -37,6 +40,16 @@ export type SuratBalasanMagang = {
   createdAt: string;
   baris: BarisSuratBalasan[];
   dibuatOleh: AkunRingkas;
+};
+
+export type RingkasanDashboardSuratBalasan = {
+  tahun: number;
+  totalSurat: number;
+  totalMahasiswa: number;
+  suratBulanIni: number;
+  suratTahunIni: number;
+  trenBulanan: Array<{ bulan: number; total: number }>;
+  statusPdf: { sudahTerbit: number; belumTerbit: number };
 };
 
 export class SuratBalasanMagangApiError extends Error {
@@ -102,7 +115,7 @@ export const suratBalasanMagangApi = {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }),
 
-  urlPdf: (filePdf: string) => `${API_URL}/uploads/${filePdf}`,
+  urlPdf: (filePdf: string) => urlUploads(filePdf),
 };
 
 export function formatTanggal(nilai: string | null | undefined): string {

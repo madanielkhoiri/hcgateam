@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { WorkOrderStatus } from '@prisma/client';
+import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DocumentNumberService } from '../work-orders/document-number.service';
 import { CreateHandoverDto } from './dto/create-handover.dto';
@@ -20,8 +20,32 @@ export class HandoversService {
     return new Date(`${value}T00:00:00.000Z`);
   }
 
-  async findAll() {
+  async findAll(cari?: string) {
+    const where: Prisma.HandoverWhereInput = {
+      ...(cari
+        ? {
+            OR: [
+              { stpNumber: { contains: cari, mode: 'insensitive' } },
+              { receiverName: { contains: cari, mode: 'insensitive' } },
+              { receiverDepartment: { contains: cari, mode: 'insensitive' } },
+              { location: { contains: cari, mode: 'insensitive' } },
+              {
+                workOrder: {
+                  workOrderName: { contains: cari, mode: 'insensitive' },
+                },
+              },
+              {
+                workOrder: {
+                  workOrderNumber: { contains: cari, mode: 'insensitive' },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
     return this.prisma.handover.findMany({
+      where,
       include: {
         workOrder: true,
         creator: {

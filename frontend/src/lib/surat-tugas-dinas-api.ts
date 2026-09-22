@@ -4,9 +4,12 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
+export type { HasilHalaman } from './pagination';
 
 export type StatusSuratTugas =
   | 'MENUNGGU_SH'
@@ -46,6 +49,21 @@ export type SuratTugasDinas = {
   dibuatOleh: AkunRingkas;
   disetujuiShOleh: AkunRingkas | null;
   disetujuiPjoOleh: AkunRingkas | null;
+};
+
+/** Ringkasan angka kartu dashboard Form Tugas Dinas - lihat surat-tugas-dinas-dashboard.service.ts. */
+export type RingkasanSuratTugas = {
+  totalSurat: number;
+  menungguSh: number;
+  menungguPjo: number;
+  disetujui: number;
+};
+
+/** Tren dashboard Form Tugas Dinas: surat per bulan (tahun berjalan) + breakdown status. */
+export type TrenDashboardSuratTugas = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusSuratTugas; total: number }[];
 };
 
 export class SuratTugasApiError extends Error {
@@ -117,7 +135,7 @@ export const suratTugasApi = {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }),
 
-  urlPdf: (filePdf: string) => `${API_URL}/uploads/${filePdf}`,
+  urlPdf: (filePdf: string) => urlUploads(filePdf),
 };
 
 export function formatTanggal(nilai: string | null | undefined): string {

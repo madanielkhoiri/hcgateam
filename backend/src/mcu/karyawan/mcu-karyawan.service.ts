@@ -18,6 +18,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
+import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import {
   BULAN_MASA_BERLAKU_MCU,
   BULAN_REMINDER_SEBELUM_EXPIRED,
@@ -147,26 +148,58 @@ export class McuKaryawanService {
   // KARYAWAN
   // ==================================================
 
+  /**
+   * `halaman` opsional: kalau tidak dikirim, kembalikan array biasa (dipakai
+   * halaman Data Karyawan & Reminder MCU yang butuh SELURUH baris untuk
+   * menghitung jumlah jatuh tempo & filter di sisi client). Kalau `halaman`
+   * dikirim, kembalikan bentuk { data, total, halaman, ukuranHalaman }
+   * (dipakai halaman Database Karyawan yang murni menampilkan daftar).
+   */
   async daftarKaryawan(filter: {
     departemenId?: number;
     statusKerja?: StatusKerja;
     cari?: string;
+    halaman?: number;
+    ukuranHalaman?: number;
   }) {
+    const where = {
+      ...(filter.departemenId ? { departemenId: filter.departemenId } : {}),
+      ...(filter.statusKerja ? { statusKerja: filter.statusKerja } : {}),
+      ...(filter.cari
+        ? {
+            OR: [
+              { nama: { contains: filter.cari, mode: 'insensitive' as const } },
+              { nik: { contains: filter.cari, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+    const orderBy = [{ departemenId: 'asc' as const }, { nama: 'asc' as const }];
+
+    if (filter.halaman) {
+      const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+      const [daftar, total] = await Promise.all([
+        this.prisma.karyawan.findMany({
+          where,
+          include: KARYAWAN_INCLUDE,
+          orderBy,
+          skip: param.skip,
+          take: param.take,
+        }),
+        this.prisma.karyawan.count({ where }),
+      ]);
+
+      return hasilHalaman(
+        daftar.map((karyawan) => this.lengkapiStatusMcu(karyawan)),
+        total,
+        param,
+      );
+    }
+
     const daftar = await this.prisma.karyawan.findMany({
-      where: {
-        ...(filter.departemenId ? { departemenId: filter.departemenId } : {}),
-        ...(filter.statusKerja ? { statusKerja: filter.statusKerja } : {}),
-        ...(filter.cari
-          ? {
-              OR: [
-                { nama: { contains: filter.cari, mode: 'insensitive' } },
-                { nik: { contains: filter.cari, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
+      where,
       include: KARYAWAN_INCLUDE,
-      orderBy: [{ departemenId: 'asc' }, { nama: 'asc' }],
+      orderBy,
     });
 
     return daftar.map((karyawan) => this.lengkapiStatusMcu(karyawan));
@@ -227,6 +260,7 @@ export class McuKaryawanService {
       data: {
         nik,
         nama: dto.nama.trim(),
+        gender: dto.gender ?? null,
         departemenId: dto.departemenId,
         jabatan: dto.jabatan?.trim() || null,
         email: dto.email?.trim() || null,
@@ -280,6 +314,7 @@ export class McuKaryawanService {
       data: {
         ...(dto.nik !== undefined ? { nik: dto.nik.trim() } : {}),
         ...(dto.nama !== undefined ? { nama: dto.nama.trim() } : {}),
+        ...(dto.gender !== undefined ? { gender: dto.gender } : {}),
         ...(dto.departemenId !== undefined
           ? { departemenId: dto.departemenId }
           : {}),

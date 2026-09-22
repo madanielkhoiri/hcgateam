@@ -8,6 +8,18 @@
   overflow: hidden;
   color: var(--text-main);
   background: var(--page-bg);
+  animation: pageFadeIn 0.5s ease both;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.pageLeaving {
+  opacity: 0;
+  transform: scale(0.985);
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ==================================================
@@ -32,6 +44,12 @@
   font-size: 23px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  animation: brandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes brandIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .brandLogo {
@@ -109,6 +127,12 @@
   border: 1.5px solid var(--card-border);
   border-radius: 20px;
   box-shadow: var(--shadow-card);
+  animation: loginCardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+@keyframes loginCardIn {
+  from { opacity: 0; transform: translateY(26px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .loginIcon {
@@ -252,6 +276,22 @@
   cursor: wait;
 }
 
+.loginButtonSuccess {
+  opacity: 1 !important;
+  cursor: default !important;
+  background: linear-gradient(135deg, #10a968, #0a8a54) !important;
+  box-shadow: 0 10px 22px rgba(15, 169, 104, 0.3) !important;
+}
+
+.loginButtonSuccess svg {
+  animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes checkPop {
+  from { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
 .restricted {
   display: flex;
   align-items: center;
@@ -295,6 +335,12 @@
   border-radius: 18px;
   box-shadow: var(--shadow-small);
   transform: translateX(-50%);
+  animation: browserWindowIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+@keyframes browserWindowIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 .browserHeader {
@@ -361,6 +407,22 @@
   border: 1.5px solid var(--card-border);
   border-radius: 16px;
   box-shadow: var(--shadow-small);
+  animation: deptCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.departmentCards article:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card);
+}
+
+.departmentCards article:nth-child(1) { animation-delay: 0.25s; }
+.departmentCards article:nth-child(2) { animation-delay: 0.35s; }
+.departmentCards article:nth-child(3) { animation-delay: 0.45s; }
+
+@keyframes deptCardIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .departmentIcon {
@@ -451,21 +513,30 @@
   height: 8px;
   background: var(--orbit-dot);
   border-radius: 50%;
+  animation: orbitDotPulse 2.6s ease-in-out infinite;
 }
 
 .orbitDotOne {
   left: 43px;
   bottom: 30px;
+  animation-delay: 0s;
 }
 
 .orbitDotTwo {
   left: 341px;
   bottom: -5px;
+  animation-delay: 0.5s;
 }
 
 .orbitDotThree {
   right: 43px;
   bottom: 30px;
+  animation-delay: 1s;
+}
+
+@keyframes orbitDotPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.35); }
 }
 
 .securityBadge {
@@ -482,6 +553,24 @@
   border: 5px solid var(--surface);
   border-radius: 19px 19px 31px 31px;
   box-shadow: 0 14px 28px rgba(0, 104, 232, 0.28);
+  animation: badgePop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s both;
+}
+
+@keyframes badgePop {
+  0% { opacity: 0; transform: scale(0.4) rotate(-10deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .brand,
+  .loginCard,
+  .browserWindow,
+  .departmentCards article,
+  .orbit span,
+  .securityBadge {
+    animation: none;
+  }
 }
 
 /* ==================================================

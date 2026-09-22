@@ -12,6 +12,8 @@ const API_URL =
 // TIPE DATA
 // ==================================================
 
+export type { HasilHalaman } from './pagination';
+
 export type StatusTiketHelpdesk = 'TERBUKA' | 'DIPROSES' | 'SELESAI';
 export type LevelTiketHelpdesk = 'RENDAH' | 'SEDANG' | 'TINGGI';
 
@@ -48,6 +50,21 @@ export type TiketHelpdesk = {
 
 export type RingkasanHelpdesk = {
   antrian: number;
+};
+
+/** Ringkasan angka kartu dashboard Helpdesk Center - lihat helpdesk-dashboard.service.ts. */
+export type RingkasanDashboardHelpdesk = {
+  totalTiket: number;
+  terbuka: number;
+  diproses: number;
+  selesai: number;
+};
+
+/** Tren dashboard Helpdesk Center: tiket per bulan (tahun berjalan) + breakdown status. */
+export type TrenDashboardHelpdesk = {
+  tahun: number;
+  trenBulanan: { bulan: number; total: number }[];
+  breakdownStatus: { status: StatusTiketHelpdesk; total: number }[];
 };
 
 // ==================================================

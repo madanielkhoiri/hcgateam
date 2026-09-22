@@ -6,6 +6,8 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+export type { HasilHalaman } from './pagination';
+import type { HasilHalaman } from './pagination';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -92,12 +94,14 @@ export type LaporanTps3rInput = {
 };
 
 export const tps3rApi = {
-  daftar: (bulan?: number, tahun?: number) => {
+  daftar: (bulan?: number, tahun?: number, halaman?: number, ukuranHalaman?: number) => {
     const params = new URLSearchParams();
     if (bulan) params.set('bulan', String(bulan));
     if (tahun) params.set('tahun', String(tahun));
+    if (halaman) params.set('halaman', String(halaman));
+    if (ukuranHalaman) params.set('ukuranHalaman', String(ukuranHalaman));
     const query = params.toString();
-    return request<LaporanTps3r[]>(query ? `?${query}` : '');
+    return request<HasilHalaman<LaporanTps3r>>(query ? `?${query}` : '');
   },
   ringkasan: (bulan?: number, tahun?: number) => {
     const params = new URLSearchParams();

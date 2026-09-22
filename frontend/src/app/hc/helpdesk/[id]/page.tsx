@@ -150,7 +150,7 @@ export default function DetailTiketPage() {
           <button
             type="button"
             className={`${styles.tombol} ${styles.tombolNetral}`}
-            onClick={() => router.push('/hc/helpdesk')}
+            onClick={() => router.push('/hc/helpdesk/daftar')}
           >
             <ArrowLeft size={15} />
             Kembali

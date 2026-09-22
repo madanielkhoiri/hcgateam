@@ -463,3 +463,10 @@
     font-size: 15px;
   }
 }
+
+/* Ruang buat bottom nav mobile (lihat MobileBottomNav) */
+@media (max-width: 900px) {
+  .pageContent {
+    padding-bottom: 84px;
+  }
+}

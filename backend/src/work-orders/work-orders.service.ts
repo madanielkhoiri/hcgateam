@@ -8,9 +8,11 @@ import {
   Prisma,
   StatusApprovalWorkOrder,
   UserRole,
+  WorkOrderPriority,
   WorkOrderStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { TolakWorkOrderDto } from './dto/tolak-work-order.dto';
@@ -368,21 +370,74 @@ export class WorkOrdersService {
       chart,
     };
   }
-  async findAll() {
-    return this.prisma.workOrder.findMany({
-      include: PENYETUJU_INCLUDE,
-      orderBy: [
-        {
-          priority: 'asc',
-        },
-        {
-          requestedAt: 'desc',
-        },
-        {
-          id: 'desc',
-        },
-      ],
-    });
+  async findAll(filter: {
+    cari?: string;
+    status?: WorkOrderStatus;
+    priority?: WorkOrderPriority;
+    bulan?: number;
+    tahun?: number;
+    halaman?: string;
+    ukuranHalaman?: string;
+  } = {}) {
+    // Pencarian & filter bulan/tahun dipindah ke sini (dulu di frontend,
+    // cuma memfilter baris yang sudah termuat) supaya tetap benar walau
+    // daftarnya dipaginate.
+    const tahunEfektif = filter.tahun ?? (filter.bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, filter.bulan ? filter.bulan - 1 : 0, 1)),
+          lt: filter.bulan
+            ? new Date(Date.UTC(tahunEfektif, filter.bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const kata = filter.cari?.trim();
+    const kolomCari = [
+      'workOrderNumber',
+      'workOrderName',
+      'department',
+      'description',
+      'userDepartmentName',
+      'pic',
+    ] as const;
+
+    const where = {
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.priority ? { priority: filter.priority } : {}),
+      ...(rentangTanggal ? { requestedAt: rentangTanggal } : {}),
+      ...(kata
+        ? {
+            OR: kolomCari.map((kolom) => ({
+              [kolom]: { contains: kata, mode: 'insensitive' as const },
+            })),
+          }
+        : {}),
+    };
+    const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
+
+    const [data, total] = await Promise.all([
+      this.prisma.workOrder.findMany({
+        where,
+        include: PENYETUJU_INCLUDE,
+        orderBy: [
+          {
+            priority: 'asc',
+          },
+          {
+            requestedAt: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.workOrder.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async findAvailableForHandover() {

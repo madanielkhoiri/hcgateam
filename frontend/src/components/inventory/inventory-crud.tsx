@@ -16,7 +16,11 @@ import {
 } from "react";
 import { compressImage } from "@/lib/compress-image";
 import { useStoredUser } from "@/lib/use-stored-user";
+import { urlUploads } from "@/lib/uploads-url";
+import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 import styles from "./inventory-crud.module.css";
+
+const UKURAN_HALAMAN_TRANSAKSI = 20;
 
 const ROLE_BOLEH_EDIT_STOK = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
 
@@ -272,10 +276,13 @@ export default function InventoryCrud({
   >([]);
 
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [halamanTransaksi, setHalamanTransaksi] = useState(1);
+  const [totalTransaksi, setTotalTransaksi] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -424,8 +431,30 @@ export default function InventoryCrud({
         mode === "stock-ins" ||
         mode === "stock-outs"
       ) {
-        setTransactions(
-          await request(config.endpoint),
+        const params = new URLSearchParams();
+
+        params.set("halaman", String(halamanTransaksi));
+        params.set("ukuranHalaman", String(UKURAN_HALAMAN_TRANSAKSI));
+
+        if (searchDebounced.trim()) {
+          params.set("cari", searchDebounced.trim());
+        }
+
+        if (month) {
+          params.set("bulan", month);
+        }
+
+        if (year) {
+          params.set("tahun", year);
+        }
+
+        const result = await request(
+          `${config.endpoint}?${params.toString()}`,
+        );
+
+        setTransactions(Array.isArray(result?.data) ? result.data : []);
+        setTotalTransaksi(
+          typeof result?.total === "number" ? result.total : 0,
         );
       }
     } catch (loadError) {
@@ -437,7 +466,25 @@ export default function InventoryCrud({
     } finally {
       setLoading(false);
     }
-  }, [config.endpoint, mode, request]);
+  }, [
+    config.endpoint,
+    mode,
+    request,
+    halamanTransaksi,
+    searchDebounced,
+    month,
+    year,
+  ]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchDebounced(search), 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setHalamanTransaksi(1);
+  }, [searchDebounced, month, year]);
 
   useEffect(() => {
     void loadData();
@@ -1008,30 +1055,7 @@ export default function InventoryCrud({
         !categoryFilter || stock.item.category === categoryFilter,
     );
 
-  const filteredTransactions = transactions
-    .filter(
-      (row) =>
-        `${row.item.code} ${row.item.name} ${row.category} ${row.unit} ${row.taker ?? ""} ${row.department ?? ""} ${row.description ?? ""}`
-          .toLowerCase()
-          .includes(keyword),
-    )
-    .filter((row) => {
-      if (!month && !year) {
-        return true;
-      }
-
-      const rowDate = new Date(row.date);
-
-      if (year && rowDate.getUTCFullYear() !== Number(year)) {
-        return false;
-      }
-
-      if (month && rowDate.getUTCMonth() + 1 !== Number(month)) {
-        return false;
-      }
-
-      return true;
-    });
+  const filteredTransactions = transactions;
 
   function resetFilters() {
     setSearch("");
@@ -1172,7 +1196,7 @@ export default function InventoryCrud({
               `${filteredStocks.length} data`}
             {(mode === "stock-ins" ||
               mode === "stock-outs") &&
-              `${filteredTransactions.length} data`}
+              `${totalTransaksi} data, ditampilkan ${filteredTransactions.length} per halaman`}
           </span>
         </div>
 
@@ -1449,6 +1473,17 @@ export default function InventoryCrud({
             </table>
           )}
         </div>
+
+        {(mode === "stock-ins" || mode === "stock-outs") && (
+          <PaginationBar
+            halaman={halamanTransaksi}
+            totalHalaman={hitungTotalHalaman(
+              totalTransaksi,
+              UKURAN_HALAMAN_TRANSAKSI,
+            )}
+            onGanti={setHalamanTransaksi}
+          />
+        )}
       </section>
 
       {modalOpen && (
@@ -1583,7 +1618,7 @@ export default function InventoryCrud({
                           Foto saat ini
                         </span>
                         <img
-                          src={`${API_URL}/uploads/items/${existingPhotoPath}`}
+                          src={urlUploads(`items/${existingPhotoPath}`)}
                           alt="Foto barang"
                           style={{
                             width: 72,

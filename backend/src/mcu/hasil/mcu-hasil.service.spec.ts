@@ -26,11 +26,12 @@ function jadwalFixture(overrides: Partial<{
   };
 }
 
-function hasilFixture(overrides: Partial<{ fileDihapusAt: Date | null }> = {}) {
+function hasilFixture(overrides: Partial<{ fileDihapusAt: Date | null; karyawanId: number }> = {}) {
   return {
     id: 1,
     fileHasilMcu: 'mcu/hasil-mcu/x.pdf',
     fileDihapusAt: overrides.fileDihapusAt ?? null,
+    jadwalMcu: { karyawanId: overrides.karyawanId ?? 7 },
   };
 }
 
@@ -38,13 +39,18 @@ function buatService(overrides: {
   jadwal?: unknown;
   hasil?: unknown;
   klinikDariAkun?: unknown;
+  karyawanDariAkun?: unknown;
   create?: jest.Mock;
   jadwalUpdate?: jest.Mock;
   hasilUpdate?: jest.Mock;
+  hasilFindMany?: jest.Mock;
+  hasilCount?: jest.Mock;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 10, ...data }));
   const jadwalUpdateDalamTx = jest.fn().mockResolvedValue({});
   const hasilUpdate = overrides.hasilUpdate ?? jest.fn(({ data }) => Promise.resolve({ ...(hasilFixture() as object), ...data }));
+  const hasilFindMany = overrides.hasilFindMany ?? jest.fn().mockResolvedValue([]);
+  const hasilCount = overrides.hasilCount ?? jest.fn().mockResolvedValue(0);
 
   const prisma = {
     jadwalMcu: {
@@ -54,9 +60,14 @@ function buatService(overrides: {
     hasilMcu: {
       findUnique: jest.fn().mockResolvedValue('hasil' in overrides ? overrides.hasil : hasilFixture()),
       update: hasilUpdate,
+      findMany: hasilFindMany,
+      count: hasilCount,
     },
     klinik: {
       findFirst: jest.fn().mockResolvedValue('klinikDariAkun' in overrides ? overrides.klinikDariAkun : { id: 5 }),
+    },
+    karyawan: {
+      findUnique: jest.fn().mockResolvedValue('karyawanDariAkun' in overrides ? overrides.karyawanDariAkun : null),
     },
     $transaction: jest.fn((callback: (tx: unknown) => unknown) =>
       callback({
@@ -78,7 +89,7 @@ function buatService(overrides: {
 
   const service = new McuHasilService(prisma, akses, berkas, notifikasi);
 
-  return { service, create, jadwalUpdateDalamTx, hasilUpdate };
+  return { service, create, jadwalUpdateDalamTx, hasilUpdate, hasilFindMany, hasilCount };
 }
 
 const FILE = { originalname: 'hasil.pdf' } as Express.Multer.File;
@@ -154,7 +165,7 @@ describe('McuHasilService.pathFile', () => {
     await expect(service.pathFile(1, aktor(role))).resolves.toBe('/abs/mcu/hasil-mcu/x.pdf');
   });
 
-  it.each([UserRole.KARYAWAN, UserRole.ADMIN_DEPT, UserRole.KLINIK])(
+  it.each([UserRole.ADMIN_DEPT, UserRole.KLINIK])(
     'menolak role %s membuka file medis mentah',
     async (role) => {
       const { service } = buatService();
@@ -162,6 +173,30 @@ describe('McuHasilService.pathFile', () => {
       await expect(service.pathFile(1, aktor(role))).rejects.toThrow(ForbiddenException);
     },
   );
+
+  it('Karyawan yang belum tertaut ke data karyawan ditolak', async () => {
+    const { service } = buatService({ karyawanDariAkun: null });
+
+    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(NotFoundException);
+  });
+
+  it('Karyawan yang bukan pemilik hasil MCU ini ditolak', async () => {
+    const { service } = buatService({
+      hasil: hasilFixture({ karyawanId: 7 }),
+      karyawanDariAkun: { id: 999 },
+    });
+
+    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(NotFoundException);
+  });
+
+  it('Karyawan pemilik hasil MCU ini boleh unduh file miliknya sendiri', async () => {
+    const { service } = buatService({
+      hasil: hasilFixture({ karyawanId: 7 }),
+      karyawanDariAkun: { id: 7 },
+    });
+
+    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).resolves.toBe('/abs/mcu/hasil-mcu/x.pdf');
+  });
 
   it('menolak kalau file sudah dihapus sesuai kebijakan retensi', async () => {
     const { service } = buatService({ hasil: hasilFixture({ fileDihapusAt: new Date() }) });
@@ -184,6 +219,110 @@ describe('McuHasilService.tandaiDireview', () => {
 
     expect(hasilUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { statusReview: StatusReview.DIREVIEW } }),
+    );
+  });
+});
+
+describe('McuHasilService — Karyawan tidak boleh lihat daftar/antrean/detail administratif', () => {
+  it('daftar() menolak Karyawan', async () => {
+    const { service } = buatService();
+
+    await expect(service.daftar({}, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('jadwalMenungguHasil() menolak Karyawan', async () => {
+    const { service } = buatService();
+
+    await expect(service.jadwalMenungguHasil(aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('detailAdmin() menolak Karyawan', async () => {
+    const { service } = buatService();
+
+    await expect(service.detailAdmin(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('daftar() tetap boleh diakses HC', async () => {
+    const { service, hasilFindMany } = buatService();
+
+    await service.daftar({}, aktor(UserRole.HC));
+
+    expect(hasilFindMany).toHaveBeenCalled();
+  });
+});
+
+describe('McuHasilService.hasilSaya', () => {
+  it('melempar NotFoundException kalau akun belum tertaut ke data karyawan', async () => {
+    const { service } = buatService({ karyawanDariAkun: null });
+
+    await expect(service.hasilSaya(aktor(UserRole.KARYAWAN))).rejects.toThrow(NotFoundException);
+  });
+
+  it('scoping ke karyawanId milik akun sendiri, mengabaikan input lain', async () => {
+    const { service, hasilFindMany } = buatService({ karyawanDariAkun: { id: 7 } });
+
+    await service.hasilSaya(aktor(UserRole.KARYAWAN, 70));
+
+    expect(hasilFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ jadwalMcu: { karyawanId: 7 } }),
+      }),
+    );
+  });
+
+  it('select tidak menyertakan path file mentah (fileHasilMcu)', async () => {
+    const { service, hasilFindMany } = buatService({ karyawanDariAkun: { id: 7 } });
+
+    await service.hasilSaya(aktor(UserRole.KARYAWAN, 70));
+
+    const panggilan = hasilFindMany.mock.calls[0][0];
+    expect(panggilan.select.fileHasilMcu).toBeUndefined();
+  });
+});
+
+describe('McuHasilService.daftar — pencarian nama/NIK karyawan', () => {
+  it('tanpa filter cari, where tidak menyertakan jadwalMcu', async () => {
+    const { service, hasilFindMany } = buatService();
+
+    await service.daftar({}, aktor(UserRole.HC));
+
+    const panggilan = hasilFindMany.mock.calls[0][0];
+    expect(panggilan.where.jadwalMcu).toBeUndefined();
+  });
+
+  it('menerapkan pencarian nama/NIK karyawan (case-insensitive)', async () => {
+    const { service, hasilFindMany } = buatService();
+
+    await service.daftar({ cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(hasilFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          jadwalMcu: {
+            karyawan: {
+              OR: [
+                { nama: { contains: 'budi', mode: 'insensitive' } },
+                { nik: { contains: 'budi', mode: 'insensitive' } },
+              ],
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('menggabungkan filter statusReview dan cari sekaligus', async () => {
+    const { service, hasilFindMany } = buatService();
+
+    await service.daftar({ statusReview: StatusReview.MENUNGGU, cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(hasilFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          statusReview: StatusReview.MENUNGGU,
+          jadwalMcu: expect.any(Object),
+        }),
+      }),
     );
   });
 });

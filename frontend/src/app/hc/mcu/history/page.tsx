@@ -112,6 +112,7 @@ function HistoryMcuContent() {
   const [memuatHistory, setMemuatHistory] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
 
+  const [cariDurasi, setCariDurasi] = useState('');
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
 
@@ -157,6 +158,8 @@ function HistoryMcuContent() {
   }, []);
 
   const durasiTampil = useMemo(() => {
+    const kataKunci = cariDurasi.trim().toLowerCase();
+
     return durasi.filter((item) => {
       const tanggal = new Date(item.tanggalMcu);
 
@@ -168,9 +171,17 @@ function HistoryMcuContent() {
         return false;
       }
 
+      if (
+        kataKunci &&
+        !item.karyawan.nama.toLowerCase().includes(kataKunci) &&
+        !item.karyawan.nik.toLowerCase().includes(kataKunci)
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [durasi, filterBulan, filterTahun]);
+  }, [durasi, filterBulan, filterTahun, cariDurasi]);
 
   return (
     <>
@@ -378,6 +389,14 @@ function HistoryMcuContent() {
         keterangan="50 kasus terakhir - satuan hari, dihitung antar tanggal tiap tahapan."
       >
         <div className={styles.filterBar}>
+          <input
+            className={styles.input}
+            style={{ maxWidth: 220 }}
+            placeholder="Cari nama atau NIK karyawan..."
+            value={cariDurasi}
+            onChange={(event) => setCariDurasi(event.target.value)}
+          />
+
           <select
             className={styles.select}
             style={{ maxWidth: 160 }}
