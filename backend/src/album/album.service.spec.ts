@@ -157,6 +157,59 @@ describe('AlbumService.hapusAlbum', () => {
   });
 });
 
+describe('AlbumService.ringkasan', () => {
+  it('menghitung seluruh angka kartu dashboard sesuai urutan query', async () => {
+    const count = jest.fn()
+      .mockResolvedValueOnce(10) // totalAlbum
+      .mockResolvedValueOnce(42) // totalFoto
+      .mockResolvedValueOnce(3) // albumBulanIni
+      .mockResolvedValueOnce(2); // albumKosong
+    const groupBy = jest.fn().mockResolvedValue([{ uploadedById: 1 }, { uploadedById: 2 }]);
+
+    const prisma = {
+      albumDokumentasi: { count, groupBy },
+      albumFoto: { count },
+    } as unknown as PrismaService;
+    const service = new AlbumService(prisma, {} as AlbumFileService);
+
+    const hasil = await service.ringkasan();
+
+    expect(hasil).toEqual({
+      totalAlbum: 10,
+      totalFoto: 42,
+      albumBulanIni: 3,
+      albumBerisiFoto: 8,
+      albumKosong: 2,
+      totalKontributor: 2,
+    });
+  });
+});
+
+describe('AlbumService.trenBulanan', () => {
+  it('menjumlahkan album dibuat per bulan pada tahun berjalan', async () => {
+    const tahunIni = new Date().getUTCFullYear();
+
+    const findMany = jest.fn().mockResolvedValue([
+      { createdAt: new Date(Date.UTC(tahunIni, 0, 5)) },
+      { createdAt: new Date(Date.UTC(tahunIni, 0, 20)) },
+      { createdAt: new Date(Date.UTC(tahunIni, 3, 1)) },
+    ]);
+
+    const prisma = {
+      albumDokumentasi: { findMany },
+    } as unknown as PrismaService;
+    const service = new AlbumService(prisma, {} as AlbumFileService);
+
+    const hasil = await service.trenBulanan();
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.trenBulanan).toHaveLength(12);
+    expect(hasil.trenBulanan[0]).toEqual({ bulan: 1, total: 2 });
+    expect(hasil.trenBulanan[3]).toEqual({ bulan: 4, total: 1 });
+    expect(hasil.trenBulanan[1]).toEqual({ bulan: 2, total: 0 });
+  });
+});
+
 describe('AlbumService.hapusFoto', () => {
   it('menolak role selain kelola', async () => {
     const { service } = buatService();

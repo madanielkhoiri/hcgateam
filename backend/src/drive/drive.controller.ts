@@ -31,13 +31,25 @@ export class DriveController {
 
   @Get()
   isiFolder(
+    @Aktor() aktor: AktorPostingan,
     @Query('scope') scope: string,
     @Query('parentFolderId') parentFolderId?: string,
   ) {
     return this.service.isiFolder(
+      aktor,
       scope,
       parentFolderId ? Number(parentFolderId) : undefined,
     );
+  }
+
+  @Get('dashboard/ringkasan')
+  ringkasan(@Aktor() aktor: AktorPostingan, @Query('scope') scope: string) {
+    return this.service.ringkasan(aktor, scope);
+  }
+
+  @Get('dashboard/tren')
+  trenDanJenis(@Aktor() aktor: AktorPostingan, @Query('scope') scope: string) {
+    return this.service.trenDanJenis(aktor, scope);
   }
 
   @Post('folder')

@@ -4,6 +4,7 @@
 // ==================================================
 
 import { getAccessToken, type PortalUser } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -656,9 +657,9 @@ export function picuUnduhan(blob: Blob, namaFile: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** URL publik file yang disimpan lewat EpromFileService (mis. fileKontrak), disajikan statis lewat /api/uploads/. */
+/** URL file yang disimpan lewat EpromFileService (mis. fileKontrak) — wajib login, lihat uploads-url.ts. */
 export function urlFileEprom(pathRelatif: string): string {
-  return `${API_URL}/uploads/${pathRelatif}`;
+  return urlUploads(pathRelatif);
 }
 
 export const epromApi = {

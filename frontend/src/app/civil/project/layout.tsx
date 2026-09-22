@@ -71,6 +71,9 @@ import {
   type TipeEngineer,
   type TipeSafetyMeeting,
 } from "@/lib/eprom-api";
+import { MobileBottomNav } from "@/components/module-shell/mobile-bottom-nav";
+import { PageTransition } from "@/components/page-transition/page-transition";
+import { buatInisial } from "@/lib/buat-inisial";
 import styles from "./project-layout.module.css";
 
 const API_URL =
@@ -396,6 +399,16 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       ],
     },
   ];
+
+  const bottomNavItems = [
+    ...(boleh ? [{ label: dashboardItem.label, href: dashboardItem.href }] : []),
+    ...(boleh ? navGroups.map((g) => ({ label: g.label, href: g.items[0]?.href })) : []),
+    ...(boleh || vendorSaya ? [{ label: kontrakGroup.label, href: kontrakGroup.items[0]?.href }] : []),
+    ...projectAreaGroups.map((g) => ({ label: g.label, href: g.items[0]?.href })),
+  ]
+    .filter((item): item is { label: string; href: string } => Boolean(item.href))
+    .slice(0, 5)
+    .map((item) => ({ ...item, initial: buatInisial(item.label) }));
 
   useEffect(() => {
     let active = true;
@@ -796,8 +809,12 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
           </div>
         </header>
 
-        <div className={styles.pageContent}>{children}</div>
+        <div className={styles.pageContent}>
+          <PageTransition>{children}</PageTransition>
+        </div>
       </section>
+
+      <MobileBottomNav items={bottomNavItems} deptColor="#e0752a" deptSoft="#fff0e4" />
     </div>
   );
 }

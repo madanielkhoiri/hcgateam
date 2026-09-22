@@ -5,10 +5,12 @@
 
 import { Body, Controller, Get, Param, Patch, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { EpromEvaluasiVendorService, UbahEvaluasiVendorDto } from './eprom-evaluasi-vendor.service';
 
 @Controller('eprom/tender/:tenderId/evaluasi-vendor')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_PROJECT')
 export class EpromEvaluasiVendorController {
   constructor(private readonly service: EpromEvaluasiVendorService) {}
 

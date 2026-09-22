@@ -21,8 +21,9 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { diskStorage } from 'multer';
-import { UserRole } from '@prisma/client';
+import { UserRole, WorkOrderPriority, WorkOrderStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { TolakWorkOrderDto } from './dto/tolak-work-order.dto';
@@ -71,6 +72,7 @@ const workOrderImagesInterceptor = FilesInterceptor('images', 50, {
 
 @Controller('work-orders')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_PEKERJAAN')
 export class WorkOrdersController {
   constructor(
     private readonly service: WorkOrdersService,
@@ -98,8 +100,24 @@ export class WorkOrdersController {
     return this.service.getDashboard(month, year);
   }
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(
+    @Query('cari') cari?: string,
+    @Query('status') status?: WorkOrderStatus,
+    @Query('priority') priority?: WorkOrderPriority,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+  ) {
+    return this.service.findAll({
+      cari,
+      status,
+      priority,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
+    });
   }
 
   @Get('available-for-handover')

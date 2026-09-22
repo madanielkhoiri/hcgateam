@@ -193,7 +193,8 @@ describe('SuratTugasDinasService.tolak', () => {
 describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
   it('karyawan biasa cuma melihat surat buatannya sendiri', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
-    const prisma = { suratTugasDinas: { findMany } } as unknown as PrismaService;
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
     const service = new SuratTugasDinasService(prisma, pdf);
 
@@ -206,7 +207,8 @@ describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
 
   it('Section Head/PJO/Admin melihat SEMUA surat, bukan cuma buatan sendiri', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
-    const prisma = { suratTugasDinas: { findMany } } as unknown as PrismaService;
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
     const service = new SuratTugasDinasService(prisma, pdf);
 
@@ -228,5 +230,69 @@ describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
     const { service } = buatService({ findUnique });
 
     await expect(service.detail(1, KARYAWAN)).resolves.toMatchObject({ dibuatOlehId: 20 });
+  });
+});
+
+describe('SuratTugasDinasService.daftar — pencarian (cari)', () => {
+  it('tanpa filter cari kalau tidak diberikan', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
+    const pdf = {} as unknown as SuratTugasDinasPdfService;
+    const service = new SuratTugasDinasService(prisma, pdf);
+
+    await service.daftar(SH);
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+  });
+
+  it('menerapkan pencarian nomor/tujuan lokasi/nama & nrp karyawan (case-insensitive)', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
+    const pdf = {} as unknown as SuratTugasDinasPdfService;
+    const service = new SuratTugasDinasService(prisma, pdf);
+
+    await service.daftar(SH, undefined, undefined, undefined, undefined, undefined, 'budi');
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { nomor: { contains: 'budi', mode: 'insensitive' } },
+            { tujuanLokasi: { contains: 'budi', mode: 'insensitive' } },
+            {
+              karyawan: {
+                some: {
+                  OR: [
+                    { nama: { contains: 'budi', mode: 'insensitive' } },
+                    { nrp: { contains: 'budi', mode: 'insensitive' } },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('menggabungkan filter status dan cari sekaligus', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { suratTugasDinas: { findMany, count } } as unknown as PrismaService;
+    const pdf = {} as unknown as SuratTugasDinasPdfService;
+    const service = new SuratTugasDinasService(prisma, pdf);
+
+    await service.daftar(SH, StatusSuratTugas.MENUNGGU_SH, undefined, undefined, undefined, undefined, 'budi');
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: StatusSuratTugas.MENUNGGU_SH,
+          OR: expect.any(Array),
+        }),
+      }),
+    );
   });
 });

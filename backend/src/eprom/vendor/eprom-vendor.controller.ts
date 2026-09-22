@@ -16,6 +16,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { EpromAksesService } from '../common/eprom-akses.service';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
@@ -28,6 +29,7 @@ import {
 
 @Controller('eprom/vendors')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_PROJECT')
 export class EpromVendorController {
   constructor(
     private readonly service: EpromVendorService,

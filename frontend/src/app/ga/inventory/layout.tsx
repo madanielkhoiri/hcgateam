@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { ACCESS_KEYS, clearSession, formatRole, getAccessToken, getStoredUser, hasAccess, type PortalUser } from "@/lib/access-control";
+import { MobileBottomNav } from "@/components/module-shell/mobile-bottom-nav";
+import { PageTransition } from "@/components/page-transition/page-transition";
+import { buatInisial } from "@/lib/buat-inisial";
 import styles from "./inventory-layout.module.css";
 
 type MenuItem = {
@@ -349,6 +352,10 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
       return group;
     });
 
+  const bottomNavItems = visibleMenuGroups
+    .flatMap((group) => group.items)
+    .map((item) => ({ label: item.label, href: item.href, initial: buatInisial(item.label) }));
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -597,8 +604,12 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
           </div>
         </header>
 
-        <div className={styles.pageContent}>{children}</div>
+        <div className={styles.pageContent}>
+          <PageTransition>{children}</PageTransition>
+        </div>
       </section>
+
+      <MobileBottomNav items={bottomNavItems} deptColor="#0a9f59" deptSoft="#e8f8ef" />
     </div>
   );
 }

@@ -1,17 +1,17 @@
-import { DivisiPengaduan } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { DivisiPengaduan, LokasiPengaduan } from '@prisma/client';
 
+/**
+ * Endpoint create sekarang menerima multipart/form-data (karena wajib
+ * lampiran foto), jadi field-field ini diekstrak & divalidasi manual di
+ * controller/service (bukan lewat ValidationPipe seperti DTO JSON biasa —
+ * multer mengirim semua field non-file sebagai string). Tipe ini cuma
+ * dipakai sebagai bentuk data yang sudah tervalidasi saat sampai ke service.
+ */
 export class CreatePengaduanLayananDto {
-  @IsEnum(DivisiPengaduan)
   divisi: DivisiPengaduan;
-
-  @IsInt()
-  @Min(1)
-  @Max(5)
+  /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC — divalidasi di service. */
+  lokasi?: LokasiPengaduan;
   rating: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
   komentar?: string;
+  deskripsiAduan?: string;
 }

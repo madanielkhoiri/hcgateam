@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { DivisiPengaduan } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DivisiPengaduan, StatusPengaduan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengaduanLayananDto } from './dto/create-pengaduan-layanan.dto';
+import { UbahStatusPengaduanLayananDto } from './dto/ubah-status-pengaduan-layanan.dto';
 
 const JUMLAH_BULAN_TREN = 6;
 
@@ -9,14 +10,56 @@ const JUMLAH_BULAN_TREN = 6;
 export class PengaduanLayananService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreatePengaduanLayananDto, pengirimId: number) {
+  async create(
+    dto: CreatePengaduanLayananDto,
+    pengirimId: number,
+    foto: { urlFoto: string; namaFile: string }[],
+  ) {
+    const butuhLokasi = dto.divisi !== DivisiPengaduan.HC;
+
+    if (butuhLokasi && !dto.lokasi) {
+      throw new BadRequestException('Lokasi (Tambang/Mess) wajib dipilih untuk divisi GA/Civil');
+    }
+
+    if (foto.length === 0) {
+      throw new BadRequestException('Minimal 1 foto wajib dilampirkan pada Aduan Layanan');
+    }
+
     return this.prisma.pengaduanLayanan.create({
       data: {
         divisi: dto.divisi,
         rating: dto.rating,
         komentar: dto.komentar?.trim() || null,
+        deskripsiAduan: dto.deskripsiAduan?.trim() || null,
+        lokasi: butuhLokasi ? dto.lokasi : null,
         pengirimId,
+        foto: { create: foto },
       },
+      include: { foto: true },
+    });
+  }
+
+  /** Approve/Hold/Reject oleh admin — catatan wajib untuk Hold & Reject, opsional untuk Approve. */
+  async ubahStatus(id: number, dto: UbahStatusPengaduanLayananDto, aktorId: number) {
+    const pengaduan = await this.prisma.pengaduanLayanan.findUnique({ where: { id } });
+
+    if (!pengaduan) {
+      throw new NotFoundException('Pengaduan tidak ditemukan');
+    }
+
+    if (dto.status !== StatusPengaduan.DISETUJUI && !dto.catatanAdmin?.trim()) {
+      throw new BadRequestException('Catatan wajib diisi untuk Hold/Reject');
+    }
+
+    return this.prisma.pengaduanLayanan.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        catatanAdmin: dto.catatanAdmin?.trim() || null,
+        diprosesOlehId: aktorId,
+        diprosesPada: new Date(),
+      },
+      include: { diprosesOleh: { select: { id: true, name: true } } },
     });
   }
 
@@ -30,7 +73,10 @@ export class PengaduanLayananService {
 
     const daftarBulanIni = await this.prisma.pengaduanLayanan.findMany({
       where: { divisi, createdAt: { gte: awalBulan, lt: akhirBulan } },
-      include: { pengirim: { select: { id: true, name: true } } },
+      include: {
+        pengirim: { select: { id: true, name: true } },
+        foto: { select: { id: true, urlFoto: true, namaFile: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -68,6 +114,11 @@ export class PengaduanLayananService {
         id: item.id,
         rating: item.rating,
         komentar: item.komentar,
+        deskripsiAduan: item.deskripsiAduan,
+        foto: item.foto,
+        lokasi: item.lokasi,
+        status: item.status,
+        catatanAdmin: item.catatanAdmin,
         pengirim: item.pengirim.name,
         createdAt: item.createdAt,
       })),

@@ -112,19 +112,19 @@ export default function HalamanAkunKaryawan() {
  <button
  type="button"
  onClick={() => router.push("/hc/deklarasi-dinas")}
- className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50"
+ className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-[#d8e4f2] bg-white px-4 py-2 text-sm font-semibold text-[#0868f6] shadow-sm transition hover:bg-[#eaf2ff]"
  >
  <ArrowLeft className="h-4 w-4" />
  Kembali ke Dashboard
  </button>
 
- <div className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-red-700 via-red-600 to-rose-500 px-5 py-7 text-white shadow-[0_18px_60px_rgba(220,38,38,0.22)] md:px-8 md:py-8">
+ <div className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-[#0d315c] via-[#0868f6] to-[#3b82f6] px-5 py-7 text-white shadow-[0_18px_60px_rgba(8,104,246,0.22)] md:px-8 md:py-8">
  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10" />
  <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-white/10" />
 
  <div className="relative flex items-center justify-between gap-4">
  <div className="flex min-w-0 items-center gap-4">
- <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/30 bg-white text-xl font-black text-red-600 shadow-xl">
+ <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/30 bg-white text-xl font-black text-[#0868f6] shadow-xl">
  {inisialNama}
  </div>
 
@@ -149,9 +149,9 @@ export default function HalamanAkunKaryawan() {
  </div>
  </div>
 
- <div className="mt-5 rounded-[32px] border border-red-100 bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6">
+ <div className="mt-5 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6">
  <div className="mb-5 flex items-center gap-3">
- <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <BadgeCheck className="h-6 w-6" />
  </div>
 
@@ -171,7 +171,7 @@ export default function HalamanAkunKaryawan() {
  key={item.label}
  className="flex min-w-0 items-start gap-4 rounded-3xl bg-slate-50 p-5"
  >
- <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+ <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  {item.icon}
  </div>
 
@@ -190,7 +190,7 @@ export default function HalamanAkunKaryawan() {
  <button
  type="button"
  onClick={handleKeluar}
- className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-red-200 transition hover:bg-red-700"
+ className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0d315c] px-5 py-4 text-sm font-bold text-white shadow-lg shadow-[#0d315c]/20 transition hover:bg-[#0a2445]"
  >
  <LogOut className="h-4 w-4" />
  Keluar

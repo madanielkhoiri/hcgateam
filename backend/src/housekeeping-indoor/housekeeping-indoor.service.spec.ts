@@ -23,6 +23,7 @@ function buatService(overrides: {
   const prisma = {
     housekeepingIndoor: {
       findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
       findUnique: jest.fn().mockResolvedValue('laporan' in overrides ? overrides.laporan : laporanFixture()),
       create,
       delete: deleteFn,
@@ -46,7 +47,7 @@ describe('HousekeepingIndoorService.daftar', () => {
   it('menerapkan filter lokasi kalau diberikan', async () => {
     const { service, prisma } = buatService();
 
-    await service.daftar(LokasiHousekeepingIndoor.OFFICE);
+    await service.daftar({ lokasi: LokasiHousekeepingIndoor.OFFICE });
 
     expect(prisma.housekeepingIndoor.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { lokasi: LokasiHousekeepingIndoor.OFFICE } }),
@@ -59,7 +60,7 @@ describe('HousekeepingIndoorService.daftar', () => {
     await service.daftar();
 
     expect(prisma.housekeepingIndoor.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: undefined }),
+      expect.objectContaining({ where: {} }),
     );
   });
 });

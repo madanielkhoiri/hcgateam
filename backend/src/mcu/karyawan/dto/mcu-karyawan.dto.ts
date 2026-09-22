@@ -4,7 +4,7 @@
 // ==================================================
 
 import { PartialType } from '@nestjs/mapped-types';
-import { StatusKerja, StatusKesehatanDirumahkan } from '@prisma/client';
+import { GenderKaryawan, StatusKerja, StatusKesehatanDirumahkan } from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,
@@ -40,6 +40,11 @@ export class BuatKaryawanDto {
   @IsString()
   @IsNotEmpty()
   nama: string;
+
+  /** Dipakai otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA tiket & travel. */
+  @IsOptional()
+  @IsEnum(GenderKaryawan)
+  gender?: GenderKaryawan;
 
   @IsInt()
   departemenId: number;

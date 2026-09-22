@@ -15,12 +15,14 @@ import {
 } from '@nestjs/common';
 import { StatusSuratPengantar } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/mcu-aktor';
 import type { AktorMcu } from '../common/mcu-aktor';
 import { McuSuratService, TerbitkanSuratBatchDto } from './mcu-surat.service';
 
 @Controller('mcu/surat-pengantar')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_MCU')
 export class McuSuratController {
   constructor(private readonly service: McuSuratService) {}
 

@@ -5,9 +5,7 @@
 // FUNGSI: Shell modul MCU Periodik (guard akses + peran)
 // ==================================================
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { HeartPulse } from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -18,7 +16,6 @@ import {
 import {
   ACCESS_KEYS,
   clearSession,
-  formatRole,
   getAccessToken,
   getStoredUser,
   hasAccess,
@@ -26,7 +23,36 @@ import {
   type PortalUser,
 } from '@/lib/access-control';
 import { mcuApi, type PeranMcu, type PeranSaya } from '@/lib/mcu-api';
+import { ModuleShell, type ModuleShellMenuItem } from '@/components/module-shell/module-shell';
 import styles from './mcu.module.css';
+
+type ItemMenuMcu = ModuleShellMenuItem & { peran: PeranMcu[] };
+
+// Peran yang boleh lihat tiap menu — dicocokkan ke pengecekan role sungguhan
+// di backend (McuAksesService.wajibPeran per endpoint), BUKAN sekadar
+// dugaan UI. Karyawan cuma dapat menu yang datanya sudah di-scope ke
+// miliknya sendiri sisi server (Jadwal, Follow Up, Notifikasi) atau punya
+// tampilan ringkas khusus (Rekomendasi -> /rekomendasi/saya, Hasil MCU ->
+// /hasil/saya). Menu murni administratif (Surat Pengantar, Klinik, dst)
+// tetap disembunyikan karena endpoint-nya memang menolak role Karyawan.
+const MENU_MCU: ItemMenuMcu[] = [
+  { label: 'Dashboard', href: '/hc/mcu/dashboard', initial: 'DB', peran: ['HC', 'ADMIN_DEPT', 'DOKTER'] },
+  { label: 'Jadwal', href: '/hc/mcu/jadwal', initial: 'JD', peran: ['HC', 'ADMIN_DEPT', 'KARYAWAN'] },
+  { label: 'Hasil MCU', href: '/hc/mcu/hasil', initial: 'HM', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'KLINIK', 'KARYAWAN'] },
+  { label: 'Follow Up', href: '/hc/mcu/follow-up', initial: 'FU', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'KARYAWAN', 'KLINIK'] },
+  { label: 'Rekomendasi', href: '/hc/mcu/rekomendasi', initial: 'RK', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'KARYAWAN'] },
+  { label: 'Induksi Ulang', href: '/hc/mcu/induksi-ulang', initial: 'IU', peran: ['HC', 'ADMIN_DEPT', 'SHE'] },
+  { label: 'Surat Pengantar', href: '/hc/mcu/surat-pengantar', initial: 'SP', peran: ['HC'] },
+  { label: 'Klinik', href: '/hc/mcu/klinik', initial: 'KL', peran: ['HC'] },
+  { label: 'History', href: '/hc/mcu/history', initial: 'HS', peran: ['HC'] },
+  { label: 'Notifikasi', href: '/hc/mcu/notifikasi', initial: 'NT', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'SHE', 'KLINIK', 'KARYAWAN'] },
+  { label: 'Retensi', href: '/hc/mcu/retensi', initial: 'RT', peran: ['HC'] },
+  { label: 'Karyawan', href: '/hc/mcu/karyawan', initial: 'KR', peran: ['HC'] },
+];
+
+function menuUntukPeran(peran: PeranMcu[]): ModuleShellMenuItem[] {
+  return MENU_MCU.filter((item) => item.peran.some((p) => peran.includes(p)));
+}
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -127,6 +153,7 @@ export default function LayoutMcu({ children }: { children: ReactNode }) {
   }
 
   const peran = profil?.peran ?? [];
+  const menuMcu = menuUntukPeran(peran);
 
   const konteks: KonteksMcu = {
     user,
@@ -138,37 +165,30 @@ export default function LayoutMcu({ children }: { children: ReactNode }) {
 
   return (
     <McuContext.Provider value={konteks}>
-      <div className={styles.shell}>
-        <header className={styles.topbar}>
-          <Link href="/hc/mcu" className={styles.brand}>
-            <span className={styles.brandLogo}>
-              <HeartPulse size={20} />
-            </span>
-            MCU Periodik
-          </Link>
-
-          <div className={styles.topbarMeta}>
-            <div className={styles.peranList}>
-              {profil?.labelPeran.length ? (
-                profil.labelPeran.map((label) => (
-                  <span key={label} className={styles.peranChip}>
-                    {label}
-                  </span>
-                ))
-              ) : (
-                <span className={styles.peranChip}>Peran MCU belum diset</span>
-              )}
-            </div>
-
-            <div className={styles.akun}>
-              <strong>{user.name}</strong>
-              <span>{formatRole(user.role)}</span>
-            </div>
+      <ModuleShell
+        title="Modul MCU"
+        subtitle="Human Capital"
+        deptBadge={{ text: 'HC', color: '#0868f6', soft: '#eaf2ff' }}
+        menuItems={menuMcu}
+        backHref="/hc"
+        backLabel="Kembali ke HC"
+      >
+        <main className={styles.body}>
+          <div className={styles.peranList}>
+            {profil?.labelPeran.length ? (
+              profil.labelPeran.map((label) => (
+                <span key={label} className={styles.peranChip}>
+                  {label}
+                </span>
+              ))
+            ) : (
+              <span className={styles.peranChip}>Peran MCU belum diset</span>
+            )}
           </div>
-        </header>
 
-        <main className={styles.body}>{children}</main>
-      </div>
+          {children}
+        </main>
+      </ModuleShell>
     </McuContext.Provider>
   );
 }

@@ -12,6 +12,7 @@ import {
 import { Prisma, StatusTiketHelpdesk, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { SelesaikanTiketDto } from './dto/selesaikan-tiket.dto';
 import {
   KATEGORI_TIKET_HELPDESK,
@@ -185,21 +186,64 @@ export class HelpdeskService {
     await this.whatsapp.kirim(nomorComben, pesan, undefined, 'HC');
   }
 
-  async daftar(aktor: AktorHelpdesk, status?: string) {
+  async daftar(
+    aktor: AktorHelpdesk,
+    status?: string,
+    halamanRaw?: string,
+    ukuranHalamanRaw?: string,
+    bulan?: number,
+    tahun?: number,
+    cari?: string,
+  ) {
     const statusValid =
       status &&
       (Object.values(StatusTiketHelpdesk) as string[]).includes(status)
         ? (status as StatusTiketHelpdesk)
         : undefined;
 
-    return this.prisma.tiketHelpdesk.findMany({
-      where: {
-        ...(statusValid ? { status: statusValid } : {}),
-        ...(this.isPic(aktor) ? {} : { pembuatId: aktor.id }),
-      },
-      select: tiketSelect,
-      orderBy: { dibuatPada: 'desc' },
-    });
+    // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
+    // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate
+    // — kalau tidak, filter cuma berlaku untuk 1 halaman yang sedang tampil.
+    // Pilih bulan tanpa tahun dianggap tahun berjalan (default paling wajar).
+    const tahunEfektif = tahun ?? (bulan ? new Date().getUTCFullYear() : undefined);
+    const rentangTanggal = tahunEfektif
+      ? {
+          gte: new Date(Date.UTC(tahunEfektif, bulan ? bulan - 1 : 0, 1)),
+          lt: bulan
+            ? new Date(Date.UTC(tahunEfektif, bulan, 1))
+            : new Date(Date.UTC(tahunEfektif + 1, 0, 1)),
+        }
+      : undefined;
+
+    const where: Prisma.TiketHelpdeskWhereInput = {
+      ...(statusValid ? { status: statusValid } : {}),
+      ...(this.isPic(aktor) ? {} : { pembuatId: aktor.id }),
+      ...(rentangTanggal ? { dibuatPada: rentangTanggal } : {}),
+      ...(cari
+        ? {
+            OR: [
+              { nomorTiket: { contains: cari, mode: 'insensitive' } },
+              { masalah: { contains: cari, mode: 'insensitive' } },
+              { deskripsi: { contains: cari, mode: 'insensitive' } },
+              { pembuat: { name: { contains: cari, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+    const param = paramHalaman(halamanRaw, ukuranHalamanRaw);
+
+    const [data, total] = await Promise.all([
+      this.prisma.tiketHelpdesk.findMany({
+        where,
+        select: tiketSelect,
+        orderBy: { dibuatPada: 'desc' },
+        skip: param.skip,
+        take: param.take,
+      }),
+      this.prisma.tiketHelpdesk.count({ where }),
+    ]);
+
+    return hasilHalaman(data, total, param);
   }
 
   async ringkasan(aktor: AktorHelpdesk) {

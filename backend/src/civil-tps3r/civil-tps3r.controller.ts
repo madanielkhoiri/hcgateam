@@ -16,18 +16,30 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { Aktor, type AktorPostingan } from '../postingan/postingan-aktor';
 import { CivilTps3rService } from './civil-tps3r.service';
 import { BuatLaporanTps3rDto, UbahLaporanTps3rDto } from './dto/tps3r.dto';
 
 @Controller('civil-tps3r')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('CIVIL_TPS3R')
 export class CivilTps3rController {
   constructor(private readonly service: CivilTps3rService) {}
 
   @Get()
-  daftar(@Query('bulan') bulan?: string, @Query('tahun') tahun?: string) {
-    return this.service.daftar(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined);
+  daftar(
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
+  ) {
+    return this.service.daftar(
+      bulan ? Number(bulan) : undefined,
+      tahun ? Number(tahun) : undefined,
+      halaman,
+      ukuranHalaman,
+    );
   }
 
   @Get('ringkasan')

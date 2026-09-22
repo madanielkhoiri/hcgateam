@@ -66,6 +66,36 @@ describe('McuDashboardService.ringkasan', () => {
   });
 });
 
+describe('McuDashboardService.trenDanStatus', () => {
+  it('menjumlahkan jadwal MCU per bulan (tahun berjalan) dan breakdown status rekomendasi', async () => {
+    const tahunIni = hariIni().getUTCFullYear();
+
+    const findMany = jest.fn().mockResolvedValue([
+      { tanggalMcu: new Date(Date.UTC(tahunIni, 0, 10)) },
+      { tanggalMcu: new Date(Date.UTC(tahunIni, 0, 20)) },
+      { tanggalMcu: new Date(Date.UTC(tahunIni, 5, 5)) },
+    ]);
+    const count = jest.fn()
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(9);
+
+    const prisma = {
+      jadwalMcu: { findMany },
+      rekomendasiMcu: { count },
+    } as unknown as PrismaService;
+    const service = new McuDashboardService(prisma);
+
+    const hasil = await service.trenDanStatus();
+
+    expect(hasil.tahun).toBe(tahunIni);
+    expect(hasil.trenBulanan).toHaveLength(12);
+    expect(hasil.trenBulanan[0]).toEqual({ bulan: 1, total: 2 });
+    expect(hasil.trenBulanan[5]).toEqual({ bulan: 6, total: 1 });
+    expect(hasil.trenBulanan[1]).toEqual({ bulan: 2, total: 0 });
+    expect(hasil.statusRekomendasi).toEqual({ fit: 4, followUp: 9 });
+  });
+});
+
 describe('McuDashboardService.durasiProses', () => {
   function jadwalFixture(overrides: {
     createdAt?: Date;

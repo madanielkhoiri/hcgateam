@@ -43,16 +43,21 @@ function buatService(overrides: {
   update?: jest.Mock;
   karyawanDariAkun?: unknown;
   hasilFollowUpCreate?: jest.Mock;
+  findMany?: jest.Mock;
+  count?: jest.Mock;
 } = {}) {
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ ...(followUpFixture() as object), ...data }));
   const hasilFollowUpCreate = overrides.hasilFollowUpCreate ?? jest.fn(({ data }) => Promise.resolve({ id: 500, ...data }));
   const followUpUpdateDalamTx = jest.fn().mockResolvedValue({});
+  const findMany = overrides.findMany ?? jest.fn().mockResolvedValue([]);
+  const count = overrides.count ?? jest.fn().mockResolvedValue(0);
 
   const prisma = {
     followUp: {
       findUnique: jest.fn().mockResolvedValue('followUp' in overrides ? overrides.followUp : followUpFixture()),
       update,
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany,
+      count,
     },
     karyawan: {
       findUnique: jest.fn().mockResolvedValue(overrides.karyawanDariAkun ?? null),
@@ -75,7 +80,7 @@ function buatService(overrides: {
 
   const service = new McuFollowUpService(prisma, akses, berkas, notifikasi);
 
-  return { service, prisma, update, hasilFollowUpCreate, followUpUpdateDalamTx };
+  return { service, prisma, update, hasilFollowUpCreate, followUpUpdateDalamTx, findMany, count };
 }
 
 function isoTanggal(date: Date): string {
@@ -138,7 +143,7 @@ describe('McuFollowUpService.pilihTanggal', () => {
 
     await expect(
       service.pilihTanggal(1, { tanggalPilihanKaryawan: isoTanggal(hariIni()) } as any, aktor(UserRole.KARYAWAN)),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('menolak kalau HC belum menetapkan batas waktu', async () => {
@@ -194,7 +199,7 @@ describe('McuFollowUpService.unggahHasil', () => {
       karyawanDariAkun: { id: 99 },
     });
 
-    await expect(service.unggahHasil(1, FILE, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
+    await expect(service.unggahHasil(1, FILE, aktor(UserRole.KARYAWAN))).rejects.toThrow(NotFoundException);
   });
 
   it('menolak upload kalau Follow Up sudah SELESAI', async () => {
@@ -258,7 +263,7 @@ describe('McuFollowUpService.detail — melewatiBatas', () => {
       followUp: followUpFixture({ batasWaktuFu: tambahHari(hariIni(), -3), status: StatusFollowUp.MENUNGGU_TANGGAL }),
     });
 
-    const hasil = await service.detail(1);
+    const hasil = await service.detail(1, aktor(UserRole.HC));
 
     expect(hasil.melewatiBatas).toBe(true);
   });
@@ -268,7 +273,7 @@ describe('McuFollowUpService.detail — melewatiBatas', () => {
       followUp: followUpFixture({ batasWaktuFu: tambahHari(hariIni(), -3), status: StatusFollowUp.SELESAI }),
     });
 
-    const hasil = await service.detail(1);
+    const hasil = await service.detail(1, aktor(UserRole.HC));
 
     expect(hasil.melewatiBatas).toBe(false);
   });
@@ -276,6 +281,81 @@ describe('McuFollowUpService.detail — melewatiBatas', () => {
   it('melempar NotFoundException kalau Follow Up tidak ada', async () => {
     const { service } = buatService({ followUp: null });
 
-    await expect(service.detail(1)).rejects.toThrow(NotFoundException);
+    await expect(service.detail(1, aktor(UserRole.HC))).rejects.toThrow(NotFoundException);
+  });
+});
+
+describe('McuFollowUpService.daftar — scoping Karyawan wajib sisi server', () => {
+  it('Karyawan dipaksa lihat FU miliknya sendiri, mengabaikan karyawanId dari client', async () => {
+    const { service, findMany } = buatService({ karyawanDariAkun: { id: 7 } });
+
+    await service.daftar({ karyawanId: 999 }, aktor(UserRole.KARYAWAN, 70));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ karyawanId: 7 }) }),
+    );
+  });
+
+  it('HC tetap bebas filter karyawanId manapun (tidak dipaksa scoping)', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({ karyawanId: 42 }, aktor(UserRole.HC));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ karyawanId: 42 }) }),
+    );
+  });
+});
+
+describe('McuFollowUpService.daftar — pencarian nama/NIK karyawan', () => {
+  it('tanpa filter cari, where tidak menyertakan kunci karyawan', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({}, aktor(UserRole.HC));
+
+    const panggilan = findMany.mock.calls[0][0];
+    expect(panggilan.where.karyawan).toBeUndefined();
+  });
+
+  it('menerapkan pencarian nama/NIK karyawan (case-insensitive)', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({ cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          karyawan: {
+            OR: [
+              { nama: { contains: 'budi', mode: 'insensitive' } },
+              { nik: { contains: 'budi', mode: 'insensitive' } },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('menggabungkan filter status dan cari sekaligus', async () => {
+    const { service, findMany } = buatService();
+
+    await service.daftar({ status: StatusFollowUp.MENUNGGU_TANGGAL, cari: 'budi' }, aktor(UserRole.HC));
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: StatusFollowUp.MENUNGGU_TANGGAL,
+          karyawan: expect.any(Object),
+        }),
+      }),
+    );
+  });
+});
+
+describe('McuFollowUpService.antreanReviewUlang', () => {
+  it('menolak role selain HC/Dokter', async () => {
+    const { service } = buatService();
+
+    await expect(service.antreanReviewUlang(aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
   });
 });

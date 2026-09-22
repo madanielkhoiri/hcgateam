@@ -141,8 +141,16 @@ export default function HandoversPage() {
     setError("");
 
     try {
+      const parameter = new URLSearchParams();
+
+      if (search.trim()) {
+        parameter.set("cari", search.trim());
+      }
+
+      const query = parameter.toString();
+
       const [handoverResult, availableResult] = await Promise.all([
-        request("handovers"),
+        request(`handovers${query ? `?${query}` : ""}`),
         request("work-orders/available-for-handover"),
       ]);
 
@@ -158,7 +166,7 @@ export default function HandoversPage() {
     } finally {
       setLoading(false);
     }
-  }, [request]);
+  }, [request, search]);
 
   useEffect(() => {
     void loadData();
@@ -170,42 +178,29 @@ export default function HandoversPage() {
     return Array.from({ length: 7 }, (_, index) => current - 5 + index);
   }, []);
 
+  // Pencarian teks (nomor STP/WO, nama pekerjaan, penerima, departemen,
+  // lokasi) sudah dilakukan di backend lewat parameter `cari` (lihat
+  // loadData). Di sini cuma menyaring bulan/tahun dari data yang sudah
+  // termuat, karena backend belum ada filter bulan/tahun untuk handover.
   const filteredRows = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    return rows
-      .filter((row) => {
-        if (!keyword) {
-          return true;
-        }
-
-        return [
-          row.stpNumber,
-          row.workOrder.workOrderNumber,
-          row.workOrder.workOrderName,
-          row.receiverName ?? "",
-          row.receiverDepartment ?? "",
-          row.location ?? "",
-        ].some((value) => String(value).toLowerCase().includes(keyword));
-      })
-      .filter((row) => {
-        if (!month && !year) {
-          return true;
-        }
-
-        const rowDate = new Date(row.handoverDate);
-
-        if (year && rowDate.getFullYear() !== Number(year)) {
-          return false;
-        }
-
-        if (month && rowDate.getMonth() + 1 !== Number(month)) {
-          return false;
-        }
-
+    return rows.filter((row) => {
+      if (!month && !year) {
         return true;
-      });
-  }, [rows, search, month, year]);
+      }
+
+      const rowDate = new Date(row.handoverDate);
+
+      if (year && rowDate.getFullYear() !== Number(year)) {
+        return false;
+      }
+
+      if (month && rowDate.getMonth() + 1 !== Number(month)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [rows, month, year]);
 
   function resetFilters() {
     setSearch("");

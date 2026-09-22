@@ -5,22 +5,46 @@
 // ==================================================
 
 import { getAccessToken } from './access-control';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
+/** Role yang boleh lihat rekap performa & kelola (approve/hold/reject) Aduan Layanan — samakan dengan backend PengaduanLayananAksesService. */
+export const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD', 'ELEKTRIK', 'KORLAP'];
+
 export type DivisiPengaduan = 'HC' | 'GA' | 'CIVIL';
+export type LokasiPengaduan = 'TAMBANG' | 'MESS';
+export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK';
 
 export type BuatPengaduanInput = {
   divisi: DivisiPengaduan;
   rating: number;
+  /** Catatan pengalaman saat kasih rating (step 1). */
   komentar?: string;
+  /** Deskripsi masalah/permintaan Aduan Layanan (step 2). */
+  deskripsiAduan?: string;
+  /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC. */
+  lokasi?: LokasiPengaduan;
+  /** Wajib minimal 1 foto — bukti/ilustrasi Aduan Layanan. */
+  foto: File[];
+};
+
+export type FotoPengaduan = {
+  id: number;
+  urlFoto: string;
+  namaFile: string;
 };
 
 export type DetailPengaduan = {
   id: number;
   rating: number;
   komentar: string | null;
+  deskripsiAduan: string | null;
+  foto: FotoPengaduan[];
+  lokasi: LokasiPengaduan | null;
+  status: StatusPengaduan;
+  catatanAdmin: string | null;
   pengirim: string;
   createdAt: string;
 };
@@ -54,11 +78,14 @@ export class PengaduanLayananApiError extends Error {
   }
 }
 
-function headerAuth(): HeadersInit {
+function headerAuth(json = true): HeadersInit {
   const token = getAccessToken();
-  return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {};
+
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (json) headers['Content-Type'] = 'application/json';
+
+  return headers;
 }
 
 async function bacaError(response: Response): Promise<string> {
@@ -77,10 +104,18 @@ async function bacaError(response: Response): Promise<string> {
 
 export const pengaduanLayananApi = {
   kirim: async (input: BuatPengaduanInput): Promise<void> => {
+    const form = new FormData();
+    form.append('divisi', input.divisi);
+    form.append('rating', String(input.rating));
+    if (input.komentar) form.append('komentar', input.komentar);
+    if (input.deskripsiAduan) form.append('deskripsiAduan', input.deskripsiAduan);
+    if (input.lokasi) form.append('lokasi', input.lokasi);
+    input.foto.forEach((file) => form.append('foto', file));
+
     const response = await fetch(`${API_URL}/pengaduan-layanan`, {
       method: 'POST',
-      headers: headerAuth(),
-      body: JSON.stringify(input),
+      headers: headerAuth(false),
+      body: form,
       cache: 'no-store',
     });
 
@@ -109,12 +144,42 @@ export const pengaduanLayananApi = {
 
     return (await response.json()) as RekapPengaduan;
   },
+
+  /** Approve/Hold/Reject oleh admin — catatan wajib untuk Hold & Reject, opsional untuk Approve. */
+  ubahStatus: async (
+    id: number,
+    status: Exclude<StatusPengaduan, 'MENUNGGU'>,
+    catatanAdmin?: string,
+  ): Promise<void> => {
+    const response = await fetch(`${API_URL}/pengaduan-layanan/${id}/status`, {
+      method: 'PATCH',
+      headers: headerAuth(),
+      body: JSON.stringify({ status, catatanAdmin }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new PengaduanLayananApiError(await bacaError(response), response.status);
+    }
+  },
 };
 
 export const LABEL_DIVISI_PENGADUAN: Record<DivisiPengaduan, string> = {
   HC: 'HC',
   GA: 'GA',
   CIVIL: 'Civil',
+};
+
+export const LABEL_LOKASI_PENGADUAN: Record<LokasiPengaduan, string> = {
+  TAMBANG: 'Tambang',
+  MESS: 'Mess',
+};
+
+export const LABEL_STATUS_PENGADUAN: Record<StatusPengaduan, string> = {
+  MENUNGGU: 'Menunggu',
+  DISETUJUI: 'Disetujui',
+  DITAHAN: 'Ditahan',
+  DITOLAK: 'Ditolak',
 };
 
 const NAMA_BULAN = [
@@ -124,4 +189,9 @@ const NAMA_BULAN = [
 
 export function namaBulan(bulan: number): string {
   return NAMA_BULAN[bulan - 1] ?? String(bulan);
+}
+
+/** URL foto Aduan Layanan (disimpan di uploads/pengaduan-layanan/...) — wajib login, lihat uploads-url.ts. */
+export function urlFotoPengaduan(pathRelatif: string): string {
+  return urlUploads(pathRelatif);
 }

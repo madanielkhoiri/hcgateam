@@ -20,6 +20,7 @@ import {
 } from '@nestjs/common';
 import { StatusKerja, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { McuAksesService } from '../mcu/common/mcu-akses.service';
 import { Aktor } from '../mcu/common/mcu-aktor';
 import type { AktorMcu } from '../mcu/common/mcu-aktor';
@@ -32,6 +33,7 @@ import { McuKaryawanService } from '../mcu/karyawan/mcu-karyawan.service';
 
 @Controller('database-karyawan')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('HC_KARYAWAN')
 export class DatabaseKaryawanController {
   constructor(
     private readonly service: McuKaryawanService,
@@ -48,11 +50,15 @@ export class DatabaseKaryawanController {
     @Query('departemenId') departemenId?: string,
     @Query('statusKerja') statusKerja?: StatusKerja,
     @Query('cari') cari?: string,
+    @Query('halaman') halaman?: string,
+    @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
     return this.service.daftarKaryawan({
       departemenId: departemenId ? Number(departemenId) : undefined,
       statusKerja,
       cari: cari?.trim() || undefined,
+      halaman: halaman ? Number(halaman) : undefined,
+      ukuranHalaman: ukuranHalaman ? Number(ukuranHalaman) : undefined,
     });
   }
 

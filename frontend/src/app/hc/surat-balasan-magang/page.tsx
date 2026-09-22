@@ -2,198 +2,20 @@
 
 // ==================================================
 // FILE: frontend/src/app/hc/surat-balasan-magang/page.tsx
-// FUNGSI: Daftar Surat Balasan Magang
+// FUNGSI: Root modul Surat Balasan Magang - redirect ke dashboard
+// (halaman pertama begitu masuk sidebar, lihat dashboard/page.tsx).
+// Daftar surat yang sebelumnya di sini sudah dipindah ke daftar/page.tsx.
 // ==================================================
 
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowLeft, Download, Mail, Plus } from 'lucide-react';
-import {
-  formatTanggal,
-  suratBalasanMagangApi,
-  type SuratBalasanMagang,
-} from '@/lib/surat-balasan-magang-api';
-import styles from '../anak-magang/anak-magang.module.css';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function SuratBalasanMagangPage() {
-  const [daftar, setDaftar] = useState<SuratBalasanMagang[]>([]);
-  const [memuat, setMemuat] = useState(true);
-  const [galat, setGalat] = useState<string | null>(null);
-
-  const [filterBulan, setFilterBulan] = useState('');
-  const [filterTahun, setFilterTahun] = useState('');
-
-  const muat = useCallback(async () => {
-    setMemuat(true);
-    setGalat(null);
-
-    try {
-      const hasil = await suratBalasanMagangApi.ambil<SuratBalasanMagang[]>('');
-      setDaftar(hasil);
-    } catch (error) {
-      setGalat((error as Error).message);
-    } finally {
-      setMemuat(false);
-    }
-  }, []);
+export default function SuratBalasanMagangRootPage() {
+  const router = useRouter();
 
   useEffect(() => {
-    void muat();
-  }, [muat]);
+    router.replace('/hc/surat-balasan-magang/dashboard');
+  }, [router]);
 
-  const tahunTersedia = useMemo(() => {
-    const tahunSekarang = new Date().getFullYear();
-    return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
-  }, []);
-
-  const daftarTampil = useMemo(() => {
-    return daftar.filter((item) => {
-      const tanggal = new Date(item.createdAt);
-
-      if (filterBulan && tanggal.getMonth() + 1 !== Number(filterBulan)) {
-        return false;
-      }
-
-      if (filterTahun && tanggal.getFullYear() !== Number(filterTahun)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [daftar, filterBulan, filterTahun]);
-
-  return (
-    <>
-      <Link href="/hc/anak-magang" className={styles.backButton}>
-        <ArrowLeft size={16} />
-        Kembali ke Database Anak Magang
-      </Link>
-
-      <div className={styles.pageHead}>
-        <div className={styles.pageTitle}>
-          <span className={styles.pageIcon}>
-            <Mail size={26} />
-          </span>
-
-          <div>
-            <h1>Surat Balasan Magang</h1>
-            <p>
-              Surat persetujuan permohonan magang industri, data mahasiswa
-              diambil dari Database Anak Magang, otomatis jadi PDF.
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.headActions}>
-          <Link href="/hc/surat-balasan-magang/buat" className={styles.tombol}>
-            <Plus size={15} />
-            Buat Surat Balasan
-          </Link>
-        </div>
-      </div>
-
-      {galat ? (
-        <div className={`${styles.notice} ${styles.noticeError}`}>
-          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
-          <span>{galat}</span>
-        </div>
-      ) : null}
-
-      <section className={styles.panel}>
-        <div className={styles.panelHead}>
-          <div>
-            <h2>Daftar Surat Balasan</h2>
-            <p>{daftarTampil.length} dari {daftar.length} surat ditampilkan.</p>
-          </div>
-        </div>
-
-        <div className={styles.filterBar}>
-          <select
-            className={styles.select}
-            style={{ maxWidth: 160 }}
-            value={filterBulan}
-            onChange={(event) => setFilterBulan(event.target.value)}
-          >
-            <option value="">Semua Bulan</option>
-            {Array.from({ length: 12 }, (_, index) => (
-              <option key={index + 1} value={index + 1}>
-                {new Intl.DateTimeFormat('id-ID', {
-                  month: 'long',
-                }).format(new Date(2026, index, 1))}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className={styles.select}
-            style={{ maxWidth: 130 }}
-            value={filterTahun}
-            onChange={(event) => setFilterTahun(event.target.value)}
-          >
-            <option value="">Semua Tahun</option>
-            {tahunTersedia.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {memuat ? (
-          <div className={styles.memuat}>Memuat data...</div>
-        ) : daftarTampil.length === 0 ? (
-          <div className={styles.kosong}>
-            <Mail size={30} />
-            <strong>Belum ada surat balasan</strong>
-            <p>Buat surat balasan baru untuk mulai.</p>
-          </div>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Nomor</th>
-                  <th>Tujuan</th>
-                  <th>Mahasiswa</th>
-                  <th>Dibuat Oleh</th>
-                  <th>Tanggal</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {daftarTampil.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.nomor}</td>
-                    <td>{item.tujuanJurusan}</td>
-                    <td>
-                      {item.baris.length} orang (
-                      {item.baris.map((baris) => baris.nama).join(', ')})
-                    </td>
-                    <td>{item.dibuatOleh.name}</td>
-                    <td>{formatTanggal(item.createdAt)}</td>
-                    <td>
-                      {item.filePdf ? (
-                        <a
-                          href={suratBalasanMagangApi.urlPdf(item.filePdf)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`${styles.tombol} ${styles.tombolLembut} ${styles.tombolKecil}`}
-                        >
-                          <Download size={12} />
-                          PDF
-                        </a>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </>
-  );
+  return null;
 }
