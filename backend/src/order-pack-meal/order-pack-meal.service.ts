@@ -47,7 +47,9 @@ export class OrderPackMealService {
     }
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      throw new BadRequestException('Minimal satu baris jenis order wajib diisi');
+      throw new BadRequestException(
+        'Minimal satu baris jenis order wajib diisi',
+      );
     }
 
     if (parsed.length > 50) {
@@ -253,7 +255,7 @@ export class OrderPackMealService {
                 neededDate: new Date(dto.neededDate),
                 deliveryLocation: dto.deliveryLocation.trim(),
                 department: dto.department?.trim() || null,
-                contactNumber: dto.contactNumber?.trim() || null,
+                kegiatan: dto.kegiatan?.trim() || null,
                 deliveryTime: dto.deliveryTime?.trim() || null,
                 notes: dto.notes?.trim() || null,
                 approvedFormPath,
@@ -322,14 +324,23 @@ export class OrderPackMealService {
             ...(dto.department !== undefined
               ? { department: dto.department.trim() || null }
               : {}),
-            ...(dto.contactNumber !== undefined
-              ? { contactNumber: dto.contactNumber.trim() || null }
+            ...(dto.kegiatan !== undefined
+              ? { kegiatan: dto.kegiatan.trim() || null }
               : {}),
             ...(dto.deliveryTime !== undefined
               ? { deliveryTime: dto.deliveryTime.trim() || null }
               : {}),
             ...(dto.notes !== undefined
               ? { notes: dto.notes.trim() || null }
+              : {}),
+            ...(dto.vendor !== undefined
+              ? { vendor: dto.vendor.trim() || null }
+              : {}),
+            ...(dto.statusApproval !== undefined
+              ? { statusApproval: dto.statusApproval }
+              : {}),
+            ...(dto.statusDelivery !== undefined
+              ? { statusDelivery: dto.statusDelivery }
               : {}),
             ...(newApprovedFormPath
               ? { approvedFormPath: newApprovedFormPath }

@@ -23,9 +23,8 @@ export class CreatePackMealOrderDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(40)
-  contactNumber?: string;
-
+  @MaxLength(200)
+  kegiatan?: string;
 
   @IsOptional()
   @IsString()
