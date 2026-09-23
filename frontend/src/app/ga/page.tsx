@@ -53,8 +53,8 @@ const gaTree: MenuTreeNode[] = [
   {
     key: 'GA_AKTIVITAS_HARIAN',
     title: 'Aktivitas Harian',
-    description: 'Pencatatan Daily Activity serta kegiatan pemotongan rumput.',
-    status: '2 menu tersedia',
+    description: 'Pencatatan Daily Activity karyawan.',
+    status: 'Tersedia',
     href: '/ga/inventory/daily-report',
     icon: FileText,
     accessKey: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
