@@ -424,6 +424,59 @@
   background: #e2efff;
 }
 
+.fileButton:where(button) {
+  border: 1px solid #cfe0f7;
+  cursor: pointer;
+  font: inherit;
+}
+
+.statusStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.approvalMENUNGGU {
+  color: #8a6d00;
+  background: #fff3cd;
+}
+
+.approvalDISETUJUI {
+  color: #087b44;
+  background: #e5f7ed;
+}
+
+.approvalDITOLAK {
+  color: #b42318;
+  background: #fee4e2;
+}
+
+.deliveryDIPROSES {
+  color: #0868f6;
+  background: #eaf2ff;
+}
+
+.deliverySELESAI {
+  color: #087b44;
+  background: #e5f7ed;
+}
+
+.deliveryDIBATALKAN {
+  color: #6d7f99;
+  background: #eef2f7;
+}
+
 .actions {
   display: flex;
   align-items: center;
@@ -895,6 +948,12 @@
 
 .detailFooter > span strong {
   color: #087b44;
+}
+
+.detailFooterActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .footer {

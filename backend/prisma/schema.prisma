@@ -713,6 +713,22 @@ model TransportRecord {
 // ORDER PACK MEAL
 // ==================================================
 
+// Resi order tidak melalui alur approval berjenjang - status ini cuma label
+// bebas yang diubah manual oleh Admin/HCGA, bukan workflow persetujuan.
+enum StatusApprovalPackMeal {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+}
+
+// Vendor tidak punya akun sendiri di sistem - status pengiriman diperbarui
+// manual oleh Admin/HCGA.
+enum StatusDeliveryPackMeal {
+  DIPROSES
+  SELESAI
+  DIBATALKAN
+}
+
 model PackMealOrder {
   id               Int      @id @default(autoincrement())
   orderNumber      String   @unique @map("order_number")
@@ -721,11 +737,16 @@ model PackMealOrder {
   neededDate       DateTime @map("needed_date") @db.Date
   deliveryLocation String   @map("delivery_location")
   department       String?
-  contactNumber    String?  @map("contact_number")
+  /** Nama kegiatan/acara - dulu kolom nomor kontak, diganti sesuai kebutuhan resi. */
+  kegiatan         String?
   deliveryTime     String?  @map("delivery_time")
   notes            String?  @db.Text
   approvedFormPath String   @map("approved_form_path")
   totalPacks       Int      @default(0) @map("total_packs")
+  /** Vendor pelaksana - ditentukan Admin/HCGA, bukan diisi saat order dibuat. */
+  vendor           String?
+  statusApproval   StatusApprovalPackMeal @default(MENUNGGU) @map("status_approval")
+  statusDelivery   StatusDeliveryPackMeal @default(DIPROSES) @map("status_delivery")
   createdBy        Int      @map("created_by")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
