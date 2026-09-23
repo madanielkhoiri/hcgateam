@@ -130,7 +130,7 @@ describe('KipService.ceklis', () => {
     ).rejects.toThrow('Lokasi GPS Anda tidak terdeteksi');
   });
 
-  it('menolak kalau jarak dari titik GPS acuan lebih dari 10 meter', async () => {
+  it('menolak kalau jarak dari titik GPS acuan lebih dari 1 meter', async () => {
     const { service } = buatService({
       findUniqueBaris: baris(),
       findUniqueGps: { lokasi: 'Office', latitude: -6.2, longitude: 106.8 },
@@ -138,7 +138,7 @@ describe('KipService.ceklis', () => {
 
     await expect(
       service.ceklis(UserRole.ELEKTRIK, AKTOR, 1, 3, FOTO, [true, true], {
-        latitude: -6.201, // ~111 m dari titik acuan, jauh di atas radius 10 m
+        latitude: -6.201, // ~111 m dari titik acuan, jauh di atas radius 1 m
         longitude: 106.8,
       }),
     ).rejects.toThrow('Ceklis hanya bisa dilakukan di lokasi peralatan');
