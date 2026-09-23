@@ -237,7 +237,7 @@ export default function DetailTugasDinasPage() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <a
                 className={styles.pdfTombol}
-                href={`${suratTugasApi.urlPdf(surat.filePdf)}?v=${pdfVersi}`}
+                href={`${suratTugasApi.urlPdf(surat.filePdf)}&v=${pdfVersi}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
