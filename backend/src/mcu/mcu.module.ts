@@ -30,6 +30,7 @@ import { McuRetensiController } from './retensi/mcu-retensi.controller';
 import { McuRetensiService } from './retensi/mcu-retensi.service';
 import { McuSuratController } from './surat/mcu-surat.controller';
 import { McuSuratService } from './surat/mcu-surat.service';
+import { McuSchedulerService } from './scheduler/mcu-scheduler.service';
 
 @Module({
   controllers: [
@@ -60,6 +61,7 @@ import { McuSuratService } from './surat/mcu-surat.service';
     McuFollowUpService,
     McuInduksiService,
     McuRetensiService,
+    McuSchedulerService,
   ],
   exports: [McuAksesService, McuNotifikasiService, McuKaryawanService],
 })
