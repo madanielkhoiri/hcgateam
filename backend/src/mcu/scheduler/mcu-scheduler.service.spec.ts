@@ -6,6 +6,7 @@ import { McuSchedulerService } from './mcu-scheduler.service';
 function buatScheduler(overrides: {
   kunciJadwalJatuhTempo?: jest.Mock;
   jalankanReminderJatuhTempo?: jest.Mock;
+  jalankanReminderSisaSatuBulan?: jest.Mock;
   tandaiSeluruhFuTerlambat?: jest.Mock;
 } = {}) {
   const jadwal = {
@@ -16,6 +17,8 @@ function buatScheduler(overrides: {
   const karyawan = {
     jalankanReminderJatuhTempo:
       overrides.jalankanReminderJatuhTempo ?? jest.fn().mockResolvedValue({ dikirim: 4, karyawan: 2 }),
+    jalankanReminderSisaSatuBulan:
+      overrides.jalankanReminderSisaSatuBulan ?? jest.fn().mockResolvedValue({ dikirim: 1, karyawan: 1 }),
   } as unknown as McuKaryawanService;
 
   const followUp = {
@@ -41,6 +44,14 @@ describe('McuSchedulerService', () => {
     await scheduler.reminderH3Bulan();
 
     expect(karyawan.jalankanReminderJatuhTempo).toHaveBeenCalledWith();
+  });
+
+  it('reminderSisaSatuBulan memanggil McuKaryawanService tanpa perlu aktor', async () => {
+    const { scheduler, karyawan } = buatScheduler();
+
+    await scheduler.reminderSisaSatuBulan();
+
+    expect(karyawan.jalankanReminderSisaSatuBulan).toHaveBeenCalledWith();
   });
 
   it('reminderFuTerlambat memanggil McuFollowUpService dengan aktor sistem ber-role HC', async () => {
