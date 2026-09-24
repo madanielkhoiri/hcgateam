@@ -37,6 +37,8 @@ function buatService(overrides: {
   deleteKaryawan?: jest.Mock;
   whatsappAktif?: boolean;
   validasiTerdaftar?: jest.Mock;
+  whatsappKirim?: jest.Mock;
+  karyawanFindMany?: jest.Mock;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ ...(karyawanFixture() as object), ...data }));
@@ -54,6 +56,7 @@ function buatService(overrides: {
         }
         return Promise.resolve('karyawan' in overrides ? overrides.karyawan : karyawanFixture());
       }),
+      findMany: overrides.karyawanFindMany ?? jest.fn().mockResolvedValue([]),
       create,
       update,
       delete: overrides.deleteKaryawan ?? jest.fn().mockResolvedValue({}),
@@ -69,6 +72,7 @@ function buatService(overrides: {
   const whatsapp = {
     aktif: overrides.whatsappAktif ?? true,
     validasiTerdaftar: overrides.validasiTerdaftar ?? jest.fn().mockResolvedValue(true),
+    kirim: overrides.whatsappKirim ?? jest.fn().mockResolvedValue(true),
   } as unknown as WhatsappService;
 
   const service = new McuKaryawanService(prisma, notifikasi, whatsapp);
@@ -344,5 +348,108 @@ describe('McuKaryawanService.cekStatusWa', () => {
     const hasil = await service.cekStatusWa(7);
 
     expect(hasil.waTerdaftar).toBe(false);
+  });
+});
+
+describe('McuKaryawanService.jalankanReminderJatuhTempo', () => {
+  const karyawanJatuhTempo = {
+    ...karyawanFixture({ tanggalMcuExpired: tambahBulan(hariIni(), 3) as any }),
+    tanggalMcuExpired: tambahBulan(hariIni(), 3),
+    noTelepon: '0812',
+    gender: null,
+  };
+
+  it('tidak kirim WA ataupun notifikasi kalau tidak ada karyawan jatuh tempo', async () => {
+    const { service, whatsapp } = buatService({ karyawanFindMany: jest.fn().mockResolvedValue([]) });
+
+    const hasil = await service.jalankanReminderJatuhTempo();
+
+    expect(hasil).toEqual({ dikirim: 0, karyawan: 0 });
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('kirim WA reminder H-3 bulan langsung ke karyawan yang punya nomor telepon', async () => {
+    const { service, whatsapp } = buatService({
+      karyawanFindMany: jest.fn().mockResolvedValue([karyawanJatuhTempo]),
+    });
+
+    const hasil = await service.jalankanReminderJatuhTempo();
+
+    expect(hasil.karyawan).toBe(1);
+    expect(whatsapp.kirim).toHaveBeenCalledWith(
+      '0812',
+      expect.stringContaining('Reminder MCU Periodik'),
+      undefined,
+      'HC',
+    );
+  });
+
+  it('tidak kirim WA kalau karyawan tidak punya nomor telepon', async () => {
+    const { service, whatsapp } = buatService({
+      karyawanFindMany: jest.fn().mockResolvedValue([{ ...karyawanJatuhTempo, noTelepon: null }]),
+    });
+
+    await service.jalankanReminderJatuhTempo();
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+  });
+
+  it('tidak kirim WA kalau whatsapp tidak aktif', async () => {
+    const { service, whatsapp } = buatService({
+      karyawanFindMany: jest.fn().mockResolvedValue([karyawanJatuhTempo]),
+      whatsappAktif: false,
+    });
+
+    await service.jalankanReminderJatuhTempo();
+
+    expect(whatsapp.kirim).not.toHaveBeenCalled();
+  });
+});
+
+describe('McuKaryawanService.karyawanSisaSatuBulan / jalankanReminderSisaSatuBulan', () => {
+  it('karyawanSisaSatuBulan meneruskan hasil query dengan status MCU terlengkapi', async () => {
+    const karyawanFindMany = jest.fn().mockResolvedValue([
+      { ...karyawanFixture(), tanggalMcuExpired: tambahBulan(hariIni(), 1), noTelepon: '0812', gender: null },
+    ]);
+    const { service } = buatService({ karyawanFindMany });
+
+    const hasil = await service.karyawanSisaSatuBulan();
+
+    expect(karyawanFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tanggalMcuExpired: expect.objectContaining({ not: null }),
+        }),
+      }),
+    );
+    expect(hasil).toHaveLength(1);
+  });
+
+  it('jalankanReminderSisaSatuBulan kirim WA nada mendesak ke tiap karyawan yang belum terjadwal', async () => {
+    const karyawanFindMany = jest.fn().mockResolvedValue([
+      { ...karyawanFixture(), tanggalMcuExpired: tambahBulan(hariIni(), 1), noTelepon: '0812', gender: null },
+    ]);
+    const { service, whatsapp } = buatService({ karyawanFindMany });
+
+    const hasil = await service.jalankanReminderSisaSatuBulan();
+
+    expect(hasil).toEqual({ dikirim: 1, karyawan: 1 });
+    expect(whatsapp.kirim).toHaveBeenCalledWith(
+      '0812',
+      expect.stringContaining('belum ada jadwal'),
+      undefined,
+      'HC',
+    );
+  });
+
+  it('tidak menghitung dikirim kalau karyawan tidak punya nomor telepon', async () => {
+    const karyawanFindMany = jest.fn().mockResolvedValue([
+      { ...karyawanFixture(), tanggalMcuExpired: tambahBulan(hariIni(), 1), noTelepon: null, gender: null },
+    ]);
+    const { service } = buatService({ karyawanFindMany });
+
+    const hasil = await service.jalankanReminderSisaSatuBulan();
+
+    expect(hasil).toEqual({ dikirim: 0, karyawan: 1 });
   });
 });

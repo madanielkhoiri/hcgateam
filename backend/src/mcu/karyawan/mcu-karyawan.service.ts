@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  GenderKaryawan,
   Prisma,
   StatusKerja,
   StatusKesehatanDirumahkan,
@@ -18,9 +19,11 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
+import { sapaanKaryawan } from '../../common/sapaan.util';
 import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import {
   BULAN_MASA_BERLAKU_MCU,
+  BULAN_REMINDER_KEDUA_SEBELUM_EXPIRED,
   BULAN_REMINDER_SEBELUM_EXPIRED,
 } from '../mcu.constants';
 import {
@@ -497,9 +500,84 @@ export class McuKaryawanService {
 
       await this.notifikasi.kirimBanyak(payload);
       dikirim += payload.length;
+
+      await this.kirimWaReminderKaryawan(
+        karyawan,
+        `🩺 MCU Anda akan *expired* pada ${formatTanggalIndonesia(karyawan.tanggalMcuExpired)} (± ${BULAN_REMINDER_SEBELUM_EXPIRED} bulan lagi).\n\n` +
+          'Mohon segera koordinasikan dengan Admin Departemen Anda untuk penjadwalan MCU berikutnya.',
+      );
     }
 
     return { dikirim, karyawan: daftar.length };
+  }
+
+  // ==================================================
+  // REMINDER SUSULAN SISA 1 BULAN (lebih mendesak, WA ke karyawan)
+  // ==================================================
+
+  /**
+   * Karyawan yang MCU-nya tinggal <= 1 bulan lagi expired dan masih
+   * belum juga terjadwal (H-3 bulan sudah lewat tanpa tindak lanjut).
+   */
+  async karyawanSisaSatuBulan() {
+    const batas = tambahBulan(hariIni(), BULAN_REMINDER_KEDUA_SEBELUM_EXPIRED);
+
+    const daftar = await this.prisma.karyawan.findMany({
+      where: {
+        statusKerja: StatusKerja.AKTIF,
+        tanggalMcuExpired: { not: null, lte: batas },
+        jadwalMcu: {
+          none: {
+            statusPendaftaran: { in: ['DRAFT', 'TERKUNCI'] },
+          },
+        },
+      },
+      include: KARYAWAN_INCLUDE,
+      orderBy: { tanggalMcuExpired: 'asc' },
+    });
+
+    return daftar.map((karyawan) => this.lengkapiStatusMcu(karyawan));
+  }
+
+  /**
+   * Reminder WA susulan langsung ke karyawan (bukan Admin Dept) — nadanya
+   * lebih mendesak karena H-3 bulan sudah lewat tapi belum ada jadwal.
+   * Dijalankan oleh penjadwal harian.
+   */
+  async jalankanReminderSisaSatuBulan() {
+    const daftar = await this.karyawanSisaSatuBulan();
+    let dikirim = 0;
+
+    for (const karyawan of daftar) {
+      const terkirim = await this.kirimWaReminderKaryawan(
+        karyawan,
+        `⚠️ MCU Anda akan *expired* pada ${formatTanggalIndonesia(karyawan.tanggalMcuExpired)} (tinggal ± ${BULAN_REMINDER_KEDUA_SEBELUM_EXPIRED} bulan lagi) dan *belum ada jadwal* yang terdaftar.\n\n` +
+          'Mohon segera hubungi Admin Departemen Anda agar MCU segera dijadwalkan.',
+      );
+
+      if (terkirim) {
+        dikirim += 1;
+      }
+    }
+
+    return { dikirim, karyawan: daftar.length };
+  }
+
+  /** Kirim satu pesan WA reminder MCU ke karyawan yang bersangkutan (bukan Admin Dept). */
+  private async kirimWaReminderKaryawan(
+    karyawan: { nama: string; gender: GenderKaryawan | null; noTelepon: string | null },
+    isiUtama: string,
+  ): Promise<boolean> {
+    if (!this.whatsapp.aktif || !karyawan.noTelepon) {
+      return false;
+    }
+
+    const pesan =
+      `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
+      `*Reminder MCU Periodik* Anda\n\n${isiUtama}\n\n` +
+      'Terima kasih 🙏';
+
+    return this.whatsapp.kirim(karyawan.noTelepon, pesan, undefined, 'HC');
   }
 
   /**
