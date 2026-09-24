@@ -176,6 +176,11 @@ export class SuratTugasDinasService {
       );
     }
 
+    const jumlahAkomodasi =
+      (dto.uangPerjalananNominal ?? 0) +
+      (dto.akomodasiNominal ?? 0) +
+      (dto.laundryNominal ?? 0);
+
     const dibuat = await this.prisma.suratTugasDinas.create({
       data: {
         nomor,
@@ -183,6 +188,15 @@ export class SuratTugasDinasService {
         tanggalMulai,
         tanggalSelesai,
         keteranganTugas: dto.keteranganTugas.trim(),
+        penginapanHotel: dto.penginapanHotel?.trim() || null,
+        bantuanTransportasi: dto.bantuanTransportasi?.trim() || null,
+        uangPerjalananNominal: dto.uangPerjalananNominal ?? null,
+        uangPerjalananKeterangan: dto.uangPerjalananKeterangan?.trim() || null,
+        akomodasiNominal: dto.akomodasiNominal ?? null,
+        akomodasiKeterangan: dto.akomodasiKeterangan?.trim() || null,
+        laundryNominal: dto.laundryNominal ?? null,
+        laundryKeterangan: dto.laundryKeterangan?.trim() || null,
+        jumlahAkomodasi,
         dibuatOlehId: aktor.id,
         status: StatusSuratTugas.MENUNGGU_SH,
         karyawan: {

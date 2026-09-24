@@ -95,7 +95,10 @@ export class SuratTugasDinasPdfService {
     y += 18;
 
     y = this.gambarInfoTugas(document, y, left, width, surat);
-    y += 32;
+    y += 14;
+
+    y = this.gambarAkomodasi(document, y, left, width, surat);
+    y += 24;
 
     this.gambarTandaTangan(document, y, left, width, surat);
   }
@@ -345,6 +348,71 @@ export class SuratTugasDinasPdfService {
       `${this.formatTanggalPendek(surat.tanggalMulai)} - ${this.formatTanggalPendek(surat.tanggalSelesai)}`,
     );
     baris('Keterangan Tugas', surat.keteranganTugas);
+
+    return y;
+  }
+
+  private formatRupiah(nilai: number): string {
+    return new Intl.NumberFormat('id-ID').format(nilai);
+  }
+
+  private gambarAkomodasi(
+    document: PDFKit.PDFDocument,
+    top: number,
+    left: number,
+    width: number,
+    surat: SuratLengkap,
+  ): number {
+    const labelWidth = 130;
+    let y = top;
+
+    document
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor('#000000')
+      .text('Akomodasi', left, y);
+
+    y += 17;
+
+    const baris = (label: string, nilai: string, tebal = false) => {
+      document
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor('#000000')
+        .text(label, left, y, { width: labelWidth });
+
+      document
+        .font(tebal ? 'Helvetica-Bold' : 'Helvetica')
+        .fontSize(9)
+        .text(nilai, left + labelWidth, y, { width: width - labelWidth });
+
+      y += 17;
+    };
+
+    const nilaiUang = (
+      nominal: number | null,
+      keterangan: string | null,
+    ): string => {
+      if (nominal == null) {
+        return '-';
+      }
+
+      const rupiah = `Rp ${this.formatRupiah(nominal)}`;
+      return keterangan ? `${rupiah} / ${keterangan}` : rupiah;
+    };
+
+    baris('Penginapan / Hotel', surat.penginapanHotel || '-');
+    baris('Bantuan Transportasi', surat.bantuanTransportasi || '-');
+    baris(
+      'Uang Perjalanan',
+      nilaiUang(surat.uangPerjalananNominal, surat.uangPerjalananKeterangan),
+    );
+    baris(
+      'Akomodasi',
+      nilaiUang(surat.akomodasiNominal, surat.akomodasiKeterangan),
+    );
+    baris('Laundry', nilaiUang(surat.laundryNominal, surat.laundryKeterangan));
+    baris('Jumlah', `Rp ${this.formatRupiah(surat.jumlahAkomodasi)}`, true);
 
     return y;
   }

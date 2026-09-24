@@ -129,7 +129,7 @@ model User {
   kipDibuat    Kip[]
   kipDiperiksa KipChecklistBulan[]
 
-  deviasiStokDiubah DeviasiStok[]
+  deviasiStokDiubah  DeviasiStok[]
   tenderPesanDikirim TenderPesan[]
 
   dokumenIrDiupload        DokumenIr[]          @relation("DokumenIrUploader")
@@ -730,26 +730,30 @@ enum StatusDeliveryPackMeal {
 }
 
 model PackMealOrder {
-  id               Int      @id @default(autoincrement())
-  orderNumber      String   @unique @map("order_number")
-  orderDate        DateTime @map("order_date") @db.Date
-  sequenceNumber   Int      @map("sequence_number")
-  neededDate       DateTime @map("needed_date") @db.Date
-  deliveryLocation String   @map("delivery_location")
+  id               Int                    @id @default(autoincrement())
+  orderNumber      String                 @unique @map("order_number")
+  orderDate        DateTime               @map("order_date") @db.Date
+  sequenceNumber   Int                    @map("sequence_number")
+  neededDate       DateTime               @map("needed_date") @db.Date
+  deliveryLocation String                 @map("delivery_location")
   department       String?
-  /** Nama kegiatan/acara - dulu kolom nomor kontak, diganti sesuai kebutuhan resi. */
+  /**
+   * Nama kegiatan/acara - dulu kolom nomor kontak, diganti sesuai kebutuhan resi.
+   */
   kegiatan         String?
-  deliveryTime     String?  @map("delivery_time")
-  notes            String?  @db.Text
-  approvedFormPath String   @map("approved_form_path")
-  totalPacks       Int      @default(0) @map("total_packs")
-  /** Vendor pelaksana - ditentukan Admin/HCGA, bukan diisi saat order dibuat. */
+  deliveryTime     String?                @map("delivery_time")
+  notes            String?                @db.Text
+  approvedFormPath String                 @map("approved_form_path")
+  totalPacks       Int                    @default(0) @map("total_packs")
+  /**
+   * Vendor pelaksana - ditentukan Admin/HCGA, bukan diisi saat order dibuat.
+   */
   vendor           String?
   statusApproval   StatusApprovalPackMeal @default(MENUNGGU) @map("status_approval")
   statusDelivery   StatusDeliveryPackMeal @default(DIPROSES) @map("status_delivery")
-  createdBy        Int      @map("created_by")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdBy        Int                    @map("created_by")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
 
   creator User                @relation("PackMealOrderCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   items   PackMealOrderItem[]
@@ -984,7 +988,9 @@ enum StatusKesehatanDirumahkan {
   FIT_SAKIT
 }
 
-/** Dipakai untuk otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA (tiket & travel). */
+/**
+ * Dipakai untuk otomatis memilih sapaan "Bapak"/"Ibu" di notifikasi WA (tiket & travel).
+ */
 enum GenderKaryawan {
   LAKI_LAKI
   PEREMPUAN
@@ -1108,7 +1114,9 @@ model Karyawan {
   statusKerja               StatusKerja                @default(AKTIF) @map("status_kerja")
   statusKesehatanDirumahkan StatusKesehatanDirumahkan? @map("status_kesehatan_dirumahkan")
   akunId                    Int?                       @unique @map("akun_id")
-  /** Hasil cek terakhir apakah noTelepon terdaftar WhatsApp — null = belum pernah dicek. */
+  /**
+   * Hasil cek terakhir apakah noTelepon terdaftar WhatsApp — null = belum pernah dicek.
+   */
   waTerdaftar               Boolean?                   @map("wa_terdaftar")
   waDicekPada               DateTime?                  @map("wa_dicek_pada")
   createdAt                 DateTime                   @default(now()) @map("created_at")
@@ -1470,22 +1478,31 @@ enum StatusSuratTugas {
 }
 
 model SuratTugasDinas {
-  id                 Int              @id @default(autoincrement())
-  nomor              String           @unique
-  tujuanLokasi       String           @map("tujuan_lokasi")
-  tanggalMulai       DateTime         @map("tanggal_mulai") @db.Date
-  tanggalSelesai     DateTime         @map("tanggal_selesai") @db.Date
-  keteranganTugas    String           @map("keterangan_tugas") @db.Text
-  status             StatusSuratTugas @default(MENUNGGU_SH)
-  filePdf            String?          @map("file_pdf")
-  dibuatOlehId       Int              @map("dibuat_oleh_id")
-  disetujuiShOlehId  Int?             @map("disetujui_sh_oleh_id")
-  disetujuiShPada    DateTime?        @map("disetujui_sh_pada")
-  disetujuiPjoOlehId Int?             @map("disetujui_pjo_oleh_id")
-  disetujuiPjoPada   DateTime?        @map("disetujui_pjo_pada")
-  alasanTolak        String?          @map("alasan_tolak") @db.Text
-  createdAt          DateTime         @default(now()) @map("created_at")
-  updatedAt          DateTime         @updatedAt @map("updated_at")
+  id                       Int              @id @default(autoincrement())
+  nomor                    String           @unique
+  tujuanLokasi             String           @map("tujuan_lokasi")
+  tanggalMulai             DateTime         @map("tanggal_mulai") @db.Date
+  tanggalSelesai           DateTime         @map("tanggal_selesai") @db.Date
+  keteranganTugas          String           @map("keterangan_tugas") @db.Text
+  penginapanHotel          String?          @map("penginapan_hotel")
+  bantuanTransportasi      String?          @map("bantuan_transportasi") @db.Text
+  uangPerjalananNominal    Int?             @map("uang_perjalanan_nominal")
+  uangPerjalananKeterangan String?          @map("uang_perjalanan_keterangan") @db.Text
+  akomodasiNominal         Int?             @map("akomodasi_nominal")
+  akomodasiKeterangan      String?          @map("akomodasi_keterangan") @db.Text
+  laundryNominal           Int?             @map("laundry_nominal")
+  laundryKeterangan        String?          @map("laundry_keterangan") @db.Text
+  jumlahAkomodasi          Int              @default(0) @map("jumlah_akomodasi")
+  status                   StatusSuratTugas @default(MENUNGGU_SH)
+  filePdf                  String?          @map("file_pdf")
+  dibuatOlehId             Int              @map("dibuat_oleh_id")
+  disetujuiShOlehId        Int?             @map("disetujui_sh_oleh_id")
+  disetujuiShPada          DateTime?        @map("disetujui_sh_pada")
+  disetujuiPjoOlehId       Int?             @map("disetujui_pjo_oleh_id")
+  disetujuiPjoPada         DateTime?        @map("disetujui_pjo_pada")
+  alasanTolak              String?          @map("alasan_tolak") @db.Text
+  createdAt                DateTime         @default(now()) @map("created_at")
+  updatedAt                DateTime         @updatedAt @map("updated_at")
 
   dibuatOleh       User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
   disetujuiShOleh  User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
@@ -1820,14 +1837,14 @@ enum ArahPesanTenderChat {
 }
 
 model TenderPesan {
-  id          Int                 @id @default(autoincrement())
-  undanganId  Int                 @map("undangan_id")
-  arah        ArahPesanTenderChat
-  isiPesan    String              @map("isi_pesan") @db.Text
-  pengirimId  Int?                @map("pengirim_id")
-  messageId   String?             @map("message_id")
-  inReplyTo   String?             @map("in_reply_to")
-  createdAt   DateTime            @default(now()) @map("created_at")
+  id         Int                 @id @default(autoincrement())
+  undanganId Int                 @map("undangan_id")
+  arah       ArahPesanTenderChat
+  isiPesan   String              @map("isi_pesan") @db.Text
+  pengirimId Int?                @map("pengirim_id")
+  messageId  String?             @map("message_id")
+  inReplyTo  String?             @map("in_reply_to")
+  createdAt  DateTime            @default(now()) @map("created_at")
 
   undangan TenderUndangan    @relation(fields: [undanganId], references: [id], onDelete: Cascade)
   pengirim User?             @relation(fields: [pengirimId], references: [id], onDelete: SetNull)
@@ -2491,16 +2508,16 @@ enum JenisTiket {
 }
 
 model TransportTiket {
-  id             Int         @id @default(autoincrement())
-  karyawanId     Int         @map("karyawan_id")
-  jenisTiket     JenisTiket  @default(PULANG_PERGI) @map("jenis_tiket")
-  tanggalMulai   DateTime?   @map("tanggal_mulai") @db.Date
-  jamMulai       String?     @map("jam_mulai")
-  tanggalSelesai DateTime?   @map("tanggal_selesai") @db.Date
-  jamSelesai     String?     @map("jam_selesai")
-  keterangan     String?     @db.Text
-  createdBy      Int         @map("created_by")
-  createdAt      DateTime    @default(now()) @map("created_at")
+  id             Int        @id @default(autoincrement())
+  karyawanId     Int        @map("karyawan_id")
+  jenisTiket     JenisTiket @default(PULANG_PERGI) @map("jenis_tiket")
+  tanggalMulai   DateTime?  @map("tanggal_mulai") @db.Date
+  jamMulai       String?    @map("jam_mulai")
+  tanggalSelesai DateTime?  @map("tanggal_selesai") @db.Date
+  jamSelesai     String?    @map("jam_selesai")
+  keterangan     String?    @db.Text
+  createdBy      Int        @map("created_by")
+  createdAt      DateTime   @default(now()) @map("created_at")
 
   karyawan Karyawan             @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
   pengirim User                 @relation(fields: [createdBy], references: [id], onDelete: Restrict)
@@ -2996,13 +3013,17 @@ enum DivisiPengaduan {
   CIVIL
 }
 
-/** Lokasi kerja terkait pengaduan — dipilih pengirim saat submit, wajib untuk GA/CIVIL, tidak berlaku untuk HC. */
+/**
+ * Lokasi kerja terkait pengaduan — dipilih pengirim saat submit, wajib untuk GA/CIVIL, tidak berlaku untuk HC.
+ */
 enum LokasiPengaduan {
   TAMBANG
   MESS
 }
 
-/** Alur tindak lanjut admin: MENUNGGU (default) -> DISETUJUI/DITAHAN/DITOLAK. */
+/**
+ * Alur tindak lanjut admin: MENUNGGU (default) -> DISETUJUI/DITAHAN/DITOLAK.
+ */
 enum StatusPengaduan {
   MENUNGGU
   DISETUJUI
@@ -3011,22 +3032,26 @@ enum StatusPengaduan {
 }
 
 model PengaduanLayanan {
-  id             Int             @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   divisi         DivisiPengaduan
   rating         Int
-  /** Catatan pengalaman saat kasih rating (step 1). */
+  /**
+   * Catatan pengalaman saat kasih rating (step 1).
+   */
   komentar       String?
-  /** Deskripsi masalah/permintaan pada Aduan Layanan (step 2) — terpisah dari catatan rating. */
+  /**
+   * Deskripsi masalah/permintaan pada Aduan Layanan (step 2) — terpisah dari catatan rating.
+   */
   deskripsiAduan String?          @map("deskripsi_aduan") @db.Text
   lokasi         LokasiPengaduan?
-  status         StatusPengaduan @default(MENUNGGU)
-  catatanAdmin   String?         @map("catatan_admin") @db.Text
-  pengirimId     Int             @map("pengirim_id")
-  pengirim       User            @relation("PengaduanPengirim", fields: [pengirimId], references: [id])
-  diprosesOlehId Int?            @map("diproses_oleh_id")
-  diprosesOleh   User?           @relation("PengaduanDiproses", fields: [diprosesOlehId], references: [id], onDelete: SetNull)
-  diprosesPada   DateTime?       @map("diproses_pada")
-  createdAt      DateTime        @default(now()) @map("created_at")
+  status         StatusPengaduan  @default(MENUNGGU)
+  catatanAdmin   String?          @map("catatan_admin") @db.Text
+  pengirimId     Int              @map("pengirim_id")
+  pengirim       User             @relation("PengaduanPengirim", fields: [pengirimId], references: [id])
+  diprosesOlehId Int?             @map("diproses_oleh_id")
+  diprosesOleh   User?            @relation("PengaduanDiproses", fields: [diprosesOlehId], references: [id], onDelete: SetNull)
+  diprosesPada   DateTime?        @map("diproses_pada")
+  createdAt      DateTime         @default(now()) @map("created_at")
 
   foto PengaduanLayananFoto[]
 
@@ -3036,7 +3061,9 @@ model PengaduanLayanan {
   @@map("pengaduan_layanan")
 }
 
-/** Foto wajib (minimal 1) yang dilampirkan saat mengisi Aduan Layanan. */
+/**
+ * Foto wajib (minimal 1) yang dilampirkan saat mengisi Aduan Layanan.
+ */
 model PengaduanLayananFoto {
   id          Int              @id @default(autoincrement())
   pengaduanId Int              @map("pengaduan_id")

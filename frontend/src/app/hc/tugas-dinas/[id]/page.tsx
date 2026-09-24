@@ -29,6 +29,7 @@ import {
 } from '@/components/tugas-dinas/tugas-dinas-ui';
 import { getStoredUser } from '@/lib/access-control';
 import {
+  formatRupiah,
   formatTanggal,
   formatTanggalWaktu,
   suratTugasApi,
@@ -333,6 +334,51 @@ export default function DetailTugasDinasPage() {
           </table>
         </div>
       </Panel>
+
+      {surat.penginapanHotel ||
+      surat.bantuanTransportasi ||
+      surat.uangPerjalananNominal != null ||
+      surat.akomodasiNominal != null ||
+      surat.laundryNominal != null ? (
+        <Panel judul="Akomodasi">
+          <div className={styles.detailRow}>
+            <span>Penginapan / Hotel</span>
+            <strong>{surat.penginapanHotel || '-'}</strong>
+          </div>
+          <div className={styles.detailRow}>
+            <span>Bantuan Transportasi</span>
+            <strong>{surat.bantuanTransportasi || '-'}</strong>
+          </div>
+          <div className={styles.detailRow}>
+            <span>Uang Perjalanan</span>
+            <strong>
+              {surat.uangPerjalananNominal != null
+                ? `${formatRupiah(surat.uangPerjalananNominal)}${surat.uangPerjalananKeterangan ? ` / ${surat.uangPerjalananKeterangan}` : ''}`
+                : '-'}
+            </strong>
+          </div>
+          <div className={styles.detailRow}>
+            <span>Akomodasi</span>
+            <strong>
+              {surat.akomodasiNominal != null
+                ? `${formatRupiah(surat.akomodasiNominal)}${surat.akomodasiKeterangan ? ` / ${surat.akomodasiKeterangan}` : ''}`
+                : '-'}
+            </strong>
+          </div>
+          <div className={styles.detailRow}>
+            <span>Laundry</span>
+            <strong>
+              {surat.laundryNominal != null
+                ? `${formatRupiah(surat.laundryNominal)}${surat.laundryKeterangan ? ` / ${surat.laundryKeterangan}` : ''}`
+                : '-'}
+            </strong>
+          </div>
+          <div className={styles.detailRow}>
+            <span>Jumlah</span>
+            <strong>{formatRupiah(surat.jumlahAkomodasi)}</strong>
+          </div>
+        </Panel>
+      ) : null}
 
       {dialogTolak ? (
         <Dialog
