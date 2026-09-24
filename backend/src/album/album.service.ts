@@ -82,6 +82,36 @@ export class AlbumService {
     });
   }
 
+  async ubahAlbum(
+    aktor: AktorPostingan,
+    id: number,
+    data: { judul?: string; deskripsi?: string },
+  ) {
+    this.wajibKelola(aktor);
+
+    const album = await this.prisma.albumDokumentasi.findUnique({
+      where: { id },
+    });
+
+    if (!album) {
+      throw new NotFoundException('Album tidak ditemukan');
+    }
+
+    if (data.judul !== undefined && !data.judul.trim()) {
+      throw new BadRequestException('Judul album wajib diisi');
+    }
+
+    return this.prisma.albumDokumentasi.update({
+      where: { id },
+      data: {
+        ...(data.judul !== undefined ? { judul: data.judul.trim() } : {}),
+        ...(data.deskripsi !== undefined
+          ? { deskripsi: data.deskripsi.trim() || null }
+          : {}),
+      },
+    });
+  }
+
   async tambahFoto(
     aktor: AktorPostingan,
     albumId: number,

@@ -144,3 +144,35 @@ describe('EpromFinancialService.ringkasanPending', () => {
     expect(hasil).toEqual({ 'opname-pekerjaan': 3 });
   });
 });
+
+describe('EpromFinancialService.ubah', () => {
+  it('melempar NotFoundException kalau item tidak ada', async () => {
+    const { service } = buatService({ item: null });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 1, { progressPersen: 60 })).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak Vendor bukan pemilik project', async () => {
+    const { service } = buatService({ projectAkses: { kontrak: { vendorId: 999 } } });
+
+    await expect(service.ubah(aktor(UserRole.VENDOR, { vendorId: 1 }), 1, { progressPersen: 60 })).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('menolak ubah opname yang sudah direview', async () => {
+    const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 1, { progressPersen: 60 })).rejects.toThrow(
+      'sudah direview tidak dapat diubah',
+    );
+  });
+
+  it('berhasil mengubah progressPersen opname PENDING', async () => {
+    const { service, update } = buatService();
+
+    await service.ubah(aktor(UserRole.OWNER), 1, { progressPersen: 60 });
+
+    expect(update).toHaveBeenCalledWith({ where: { id: 1 }, data: { progressPersen: 60 } });
+  });
+});

@@ -29,6 +29,37 @@ export class BuatMeetingDto {
   tanggalMeeting: string;
 }
 
+export class UbahMeetingDto {
+  @IsOptional()
+  @IsDateString()
+  tanggalMeeting?: string;
+
+  @IsOptional()
+  @IsIn(['MINGGUAN', 'BULANAN'])
+  tipeLink?: TipeLinkMeeting;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  refProgressId?: number;
+}
+
+export class UbahMomDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  pica?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  pic?: string;
+}
+
 export class BuatMomDto {
   @IsString()
   @IsNotEmpty()
@@ -140,6 +171,41 @@ export class EpromMeetingService {
         tanggalMeeting: new Date(dto.tanggalMeeting),
       },
     });
+  }
+
+  async ubahMeeting(aktor: AktorEprom, id: number, dto: UbahMeetingDto) {
+    const meeting = await this.meetingAtauThrow(id);
+    await this.akses.wajibAksesProject(aktor, meeting.projectId);
+
+    const data: { tanggalMeeting?: Date; tipeLink?: TipeLinkMeeting; refProgressId?: number } = {};
+
+    if (dto.tanggalMeeting !== undefined) {
+      data.tanggalMeeting = new Date(dto.tanggalMeeting);
+    }
+
+    if (dto.tipeLink !== undefined || dto.refProgressId !== undefined) {
+      if (dto.tipeLink === undefined || dto.refProgressId === undefined) {
+        throw new BadRequestException('Sumber data dan file Progress harus diubah bersamaan');
+      }
+
+      const progress =
+        dto.tipeLink === 'MINGGUAN'
+          ? await this.prisma.progressMingguan.findUnique({ where: { id: dto.refProgressId } })
+          : await this.prisma.progressBulanan.findUnique({ where: { id: dto.refProgressId } });
+
+      if (!progress || progress.projectId !== meeting.projectId) {
+        throw new BadRequestException('Data Progress yang dipilih tidak ditemukan pada project ini');
+      }
+
+      data.tipeLink = dto.tipeLink;
+      data.refProgressId = dto.refProgressId;
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Tidak ada data yang diubah');
+    }
+
+    return this.prisma.meeting.update({ where: { id }, data });
   }
 
   async hapusMeeting(aktor: AktorEprom, id: number) {
@@ -268,6 +334,32 @@ export class EpromMeetingService {
         hariTerlambat: selisihHari(sekarang, mom.dueDate),
       },
     });
+  }
+
+  /** Mengubah isi MOM (PICA, due date, PIC) selama belum ditutup. */
+  async ubahMom(aktor: AktorEprom, id: number, dto: UbahMomDto) {
+    const mom = await this.prisma.mOM.findUnique({ where: { id }, include: { meeting: true } });
+
+    if (!mom) {
+      throw new NotFoundException('MOM tidak ditemukan');
+    }
+
+    await this.akses.wajibAksesProject(aktor, mom.meeting.projectId);
+
+    if (mom.statusClose) {
+      throw new BadRequestException('MOM yang sudah ditutup tidak dapat diubah');
+    }
+
+    const data: { pica?: string; dueDate?: Date; pic?: string } = {};
+    if (dto.pica !== undefined) data.pica = dto.pica.trim();
+    if (dto.dueDate !== undefined) data.dueDate = new Date(dto.dueDate);
+    if (dto.pic !== undefined) data.pic = dto.pic.trim();
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Tidak ada data yang diubah');
+    }
+
+    return this.prisma.mOM.update({ where: { id }, data });
   }
 
   async hapusMom(aktor: AktorEprom, id: number) {

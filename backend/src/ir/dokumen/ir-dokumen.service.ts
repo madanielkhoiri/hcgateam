@@ -60,6 +60,37 @@ export class IrDokumenService {
     });
   }
 
+  /** Ubah metadata dokumen (judul/kategori); file tidak diganti. */
+  async ubah(id: number, data: { judul?: string; kategori?: string }) {
+    const dokumen = await this.prisma.dokumenIr.findUnique({ where: { id } });
+
+    if (!dokumen) {
+      throw new NotFoundException('Dokumen tidak ditemukan');
+    }
+
+    const perubahan: { judul?: string; kategori?: KategoriDokumenIr } = {};
+
+    if (data.judul !== undefined) {
+      if (!data.judul?.trim()) {
+        throw new BadRequestException('Judul dokumen wajib diisi');
+      }
+      perubahan.judul = data.judul.trim();
+    }
+
+    if (data.kategori !== undefined) {
+      if (!KATEGORI_VALID.includes(data.kategori as KategoriDokumenIr)) {
+        throw new BadRequestException('Kategori dokumen tidak valid');
+      }
+      perubahan.kategori = data.kategori as KategoriDokumenIr;
+    }
+
+    return this.prisma.dokumenIr.update({
+      where: { id },
+      data: perubahan,
+      include: { uploadedBy: { select: { id: true, name: true, nrp: true } } },
+    });
+  }
+
   async hapus(id: number) {
     const dokumen = await this.prisma.dokumenIr.findUnique({ where: { id } });
 

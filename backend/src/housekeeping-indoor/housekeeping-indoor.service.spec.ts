@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { LokasiHousekeepingIndoor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { HousekeepingIndoorFileService } from './housekeeping-indoor-file.service';
@@ -26,6 +26,7 @@ function buatService(overrides: {
       count: jest.fn().mockResolvedValue(0),
       findUnique: jest.fn().mockResolvedValue('laporan' in overrides ? overrides.laporan : laporanFixture()),
       create,
+      update: jest.fn(({ data }) => Promise.resolve({ id: 1, ...data })),
       delete: deleteFn,
     },
     housekeepingIndoorFoto: {
@@ -126,5 +127,44 @@ describe('HousekeepingIndoorService.hapus', () => {
     expect(deleteFn).toHaveBeenCalledWith({ where: { id: 1 } });
     expect(file.hapus).toHaveBeenCalledTimes(2);
     expect(hasil.message).toMatch(/berhasil dihapus/);
+  });
+});
+
+describe('HousekeepingIndoorService.ubah', () => {
+  it('mengubah lokasi dan nama petugas (dengan trim) tanpa menyentuh foto', async () => {
+    const { service, prisma, file } = buatService();
+
+    await service.ubah(1, { lokasi: LokasiHousekeepingIndoor.PLANT, namaPetugas: '  Budi  ' });
+
+    expect(prisma.housekeepingIndoor.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: { lokasi: LokasiHousekeepingIndoor.PLANT, namaPetugas: 'Budi' },
+      }),
+    );
+    expect(file.hapus).not.toHaveBeenCalled();
+  });
+
+  it('hanya mengubah field yang dikirim', async () => {
+    const { service, prisma } = buatService();
+
+    await service.ubah(1, { namaPetugas: 'Sari' });
+
+    expect(prisma.housekeepingIndoor.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { namaPetugas: 'Sari' } }),
+    );
+  });
+
+  it('menolak nama petugas kosong', async () => {
+    const { service, prisma } = buatService();
+
+    await expect(service.ubah(1, { namaPetugas: '   ' })).rejects.toThrow(BadRequestException);
+    expect(prisma.housekeepingIndoor.update).not.toHaveBeenCalled();
+  });
+
+  it('melempar NotFound kalau laporan tidak ada', async () => {
+    const { service } = buatService({ laporan: null });
+
+    await expect(service.ubah(99, { namaPetugas: 'X' })).rejects.toThrow(NotFoundException);
   });
 });

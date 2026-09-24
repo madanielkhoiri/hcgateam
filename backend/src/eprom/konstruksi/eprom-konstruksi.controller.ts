@@ -23,7 +23,12 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
-import { BuatKonstruksiDto, EpromKonstruksiService, ReviewKonstruksiDto } from './eprom-konstruksi.service';
+import {
+  BuatKonstruksiDto,
+  EpromKonstruksiService,
+  ReviewKonstruksiDto,
+  UbahKonstruksiDto,
+} from './eprom-konstruksi.service';
 
 @Controller('eprom/konstruksi')
 @UseGuards(JwtAuthGuard)
@@ -64,6 +69,16 @@ export class EpromKonstruksiController {
     @Body() dto: ReviewKonstruksiDto,
   ) {
     return this.service.review(aktor, this.service.validasiTipe(tipeRaw), id, dto);
+  }
+
+  @Patch(':tipe/:id')
+  ubah(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahKonstruksiDto,
+  ) {
+    return this.service.ubah(aktor, this.service.validasiTipe(tipeRaw), id, dto);
   }
 
   @Delete(':tipe/:id')
