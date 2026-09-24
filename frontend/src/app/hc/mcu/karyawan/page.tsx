@@ -10,7 +10,7 @@
 // ==================================================
 
 import Link from 'next/link';
-import { ArrowLeft, BellRing, Database, Pencil, Plus, Users } from 'lucide-react';
+import { ArrowLeft, BellRing, Database, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
@@ -225,6 +225,30 @@ export default function KaryawanMcuPage() {
 
       setSukses('Data MCU karyawan berhasil diperbarui');
       setKaryawanDiedit(null);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
+  async function hapus(item: Karyawan) {
+    if (
+      !confirm(
+        `Yakin ingin menghapus karyawan "${item.nama}"? Data juga terhapus dari Database Karyawan dan tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+    setSukses(null);
+
+    try {
+      await mcuApi.hapus(`/karyawan/${item.id}`);
+      setSukses(`Karyawan "${item.nama}" berhasil dihapus`);
       await muat();
     } catch (error) {
       setGalat((error as Error).message);
@@ -471,6 +495,18 @@ export default function KaryawanMcuPage() {
                           >
                             <Pencil size={12} />
                             Data MCU
+                          </button>
+                        ) : null}
+
+                        {bolehKelola ? (
+                          <button
+                            type="button"
+                            className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`}
+                            onClick={() => void hapus(item)}
+                            disabled={proses}
+                          >
+                            <Trash2 size={12} />
+                            Hapus
                           </button>
                         ) : null}
                       </div>

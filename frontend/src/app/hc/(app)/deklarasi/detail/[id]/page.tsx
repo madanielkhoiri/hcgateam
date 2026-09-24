@@ -7,10 +7,12 @@ import {
  CheckCircle2,
  FileText,
  MapPin,
+ Pencil,
  Printer,
  ReceiptText,
  RefreshCw,
  ShieldCheck,
+ Trash2,
  Wallet,
  XCircle,
 } from "lucide-react";
@@ -140,6 +142,14 @@ export default function HalamanDetailDeklarasi() {
  "FORM_SETTLEMENT" | "DATABASE_SETTLEMENT"
  >("FORM_SETTLEMENT");
 
+ const [modalEditTerbuka, setModalEditTerbuka] = useState(false);
+ const [editTanggal, setEditTanggal] = useState("");
+ const [editLokasi, setEditLokasi] = useState("");
+ const [editKeterangan, setEditKeterangan] = useState("");
+ const [sedangSimpanEdit, setSedangSimpanEdit] = useState(false);
+ const [pesanErrorEdit, setPesanErrorEdit] = useState("");
+ const [sedangHapusNota, setSedangHapusNota] = useState<number | null>(null);
+
  const [nominalOcrManual, setNominalOcrManual] = useState<
  Record<number, string>
  >({});
@@ -149,6 +159,10 @@ export default function HalamanDetailDeklarasi() {
  penggunaLogin?.role === "ADMIN" ||
  penggunaLogin?.role === "SECTION_HEAD" ||
  penggunaLogin?.role === "FA";
+
+ // Backend hanya mengizinkan edit deklarasi / hapus nota saat DRAFT atau DITOLAK.
+ const bolehEditDeklarasi =
+ !!deklarasi && ["DRAFT", "DITOLAK"].includes(deklarasi.status);
 
  const halamanKembali = apakahAdminFa ? "/hc/admin" : "/hc";
  const teksKembali = apakahAdminFa
@@ -1071,6 +1085,119 @@ export default function HalamanDetailDeklarasi() {
  }
  };
 
+ const handleBukaEditDeklarasi = () => {
+ if (!deklarasi) return;
+
+ setEditTanggal(String(deklarasi.tanggal_kegiatan || "").slice(0, 10));
+ setEditLokasi(deklarasi.lokasi || "");
+ setEditKeterangan(deklarasi.keterangan || "");
+ setPesanErrorEdit("");
+ setModalEditTerbuka(true);
+ };
+
+ const handleSimpanEditDeklarasi = async () => {
+ if (!deklarasi) return;
+
+ if (!editTanggal) {
+ setPesanErrorEdit("Tanggal kegiatan wajib diisi.");
+ return;
+ }
+
+ if (!editLokasi.trim()) {
+ setPesanErrorEdit("Lokasi wajib diisi.");
+ return;
+ }
+
+ if (!editKeterangan.trim()) {
+ setPesanErrorEdit("Keterangan wajib diisi.");
+ return;
+ }
+
+ try {
+ setPesanErrorEdit("");
+ setPesanError("");
+ setPesanSukses("");
+ setSedangSimpanEdit(true);
+
+ const response = await fetch(`${apiUrl}/deklarasi/${deklarasi.id}/edit`, {
+ method: "PATCH",
+ headers: {
+ "Content-Type": "application/json",
+ ...headerAuth(),
+ },
+ body: JSON.stringify({
+ tanggal_kegiatan: editTanggal,
+ lokasi: editLokasi.trim(),
+ keterangan: editKeterangan.trim(),
+ }),
+ });
+
+ const hasil = await response.json().catch(() => null);
+
+ if (!response.ok) {
+ const pesan = Array.isArray(hasil?.message)
+ ? hasil.message.join(", ")
+ : hasil?.message;
+
+ throw new Error(pesan || "Gagal menyimpan perubahan deklarasi.");
+ }
+
+ setModalEditTerbuka(false);
+ await ambilUlangDataDetail();
+ setPesanSukses("Deklarasi berhasil diperbarui.");
+ } catch (error) {
+ setPesanErrorEdit(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat menyimpan perubahan deklarasi."
+ );
+ } finally {
+ setSedangSimpanEdit(false);
+ }
+ };
+
+ const handleHapusNota = async (nota: DataNota, nomorNota: number) => {
+ const yakin = window.confirm(
+ `Yakin ingin menghapus Nota ${nomorNota} (${ambilNamaFile(
+ nota.path_file
+ )})? Data yang dihapus tidak bisa dikembalikan.`
+ );
+
+ if (!yakin) return;
+
+ try {
+ setPesanError("");
+ setPesanSukses("");
+ setSedangHapusNota(nota.id);
+
+ const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
+ method: "DELETE",
+ headers: headerAuth(),
+ });
+
+ const hasil = await response.json().catch(() => null);
+
+ if (!response.ok) {
+ const pesan = Array.isArray(hasil?.message)
+ ? hasil.message.join(", ")
+ : hasil?.message;
+
+ throw new Error(pesan || "Gagal menghapus nota.");
+ }
+
+ await ambilUlangDataDetail();
+ setPesanSukses(`Nota ${nomorNota} berhasil dihapus.`);
+ } catch (error) {
+ setPesanError(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat menghapus nota."
+ );
+ } finally {
+ setSedangHapusNota(null);
+ }
+ };
+
  const cetakPdfFinal = (
  modeSettlement: "FORM_SETTLEMENT" | "DATABASE_SETTLEMENT" = "FORM_SETTLEMENT"
  ) => {
@@ -1919,6 +2046,17 @@ export default function HalamanDetailDeklarasi() {
  Refresh
  </button>
 
+ {bolehEditDeklarasi && (
+ <button
+ type="button"
+ onClick={handleBukaEditDeklarasi}
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-[#0868f6] transition hover:bg-[#eaf2ff]"
+ >
+ <Pencil className="h-4 w-4" />
+ Edit Deklarasi
+ </button>
+ )}
+
  {deklarasi?.status === "DISETUJUI" && (
  <>
  {deklarasi?.jenis_deklarasi === "UANG_OPERASIONAL" ? (
@@ -2424,6 +2562,25 @@ export default function HalamanDetailDeklarasi() {
  <XCircle className="h-4 w-4" />
  )}
  Tolak Nota
+ </button>
+ </div>
+ )}
+
+ {bolehEditDeklarasi &&
+ nota.status_verifikasi !== "DIVERIFIKASI" && (
+ <div className="mt-4">
+ <button
+ type="button"
+ disabled={sedangHapusNota === nota.id}
+ onClick={() => handleHapusNota(nota, nomorNota)}
+ className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+ >
+ {sedangHapusNota === nota.id ? (
+ <RefreshCw className="h-4 w-4 animate-spin" />
+ ) : (
+ <Trash2 className="h-4 w-4" />
+ )}
+ Hapus Nota
  </button>
  </div>
  )}
@@ -3161,6 +3318,90 @@ export default function HalamanDetailDeklarasi() {
 
  </div>
  </section>
+ {modalEditTerbuka && (
+ <div
+ className="no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+ onClick={(event) => {
+ if (event.target === event.currentTarget && !sedangSimpanEdit) {
+ setModalEditTerbuka(false);
+ }
+ }}
+ >
+ <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
+ <h2 className="text-xl font-black text-slate-900">Edit Deklarasi</h2>
+ <p className="mt-1 text-sm text-slate-500">
+ Ubah tanggal kegiatan, lokasi, dan keterangan.
+ {deklarasi?.status === "DITOLAK"
+ ? " Setelah disimpan, status deklarasi kembali menjadi DRAFT."
+ : ""}
+ </p>
+
+ {pesanErrorEdit && (
+ <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+ {pesanErrorEdit}
+ </div>
+ )}
+
+ <div className="mt-4 grid gap-4">
+ <div>
+ <label className="mb-1 block text-sm font-bold text-slate-700">
+ Tanggal Kegiatan
+ </label>
+ <input
+ type="date"
+ value={editTanggal}
+ onChange={(event) => setEditTanggal(event.target.value)}
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
+ />
+ </div>
+
+ <div>
+ <label className="mb-1 block text-sm font-bold text-slate-700">
+ Lokasi
+ </label>
+ <input
+ type="text"
+ value={editLokasi}
+ onChange={(event) => setEditLokasi(event.target.value)}
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
+ />
+ </div>
+
+ <div>
+ <label className="mb-1 block text-sm font-bold text-slate-700">
+ Keterangan
+ </label>
+ <textarea
+ rows={3}
+ value={editKeterangan}
+ onChange={(event) => setEditKeterangan(event.target.value)}
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
+ />
+ </div>
+ </div>
+
+ <div className="mt-6 flex justify-end gap-3">
+ <button
+ type="button"
+ disabled={sedangSimpanEdit}
+ onClick={() => setModalEditTerbuka(false)}
+ className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+ >
+ Batal
+ </button>
+ <button
+ type="button"
+ disabled={sedangSimpanEdit}
+ onClick={handleSimpanEditDeklarasi}
+ className="rounded-2xl bg-[#0868f6] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0757d0] disabled:opacity-60"
+ >
+ {sedangSimpanEdit ? "Menyimpan..." : "Simpan"}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+
  <style jsx global>{`
  @media print {
 

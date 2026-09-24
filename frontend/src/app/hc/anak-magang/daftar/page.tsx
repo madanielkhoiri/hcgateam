@@ -17,6 +17,7 @@ import {
   Mail,
   Pencil,
   Plus,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -369,6 +370,30 @@ export default function DaftarAnakMagangPage() {
     }
   }
 
+  async function hapus(item: AnakMagang) {
+    if (
+      !confirm(
+        `Yakin ingin menghapus anak magang "${item.nama}"? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+    setSukses(null);
+
+    try {
+      await anakMagangApi.hapus(`/${item.id}`);
+      setSukses(`Anak magang "${item.nama}" berhasil dihapus`);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
   return (
     <>
       <div className={styles.pageHead}>
@@ -540,6 +565,18 @@ export default function DaftarAnakMagangPage() {
                           >
                             <Pencil size={12} />
                             Edit
+                          </button>
+                        ) : null}
+
+                        {bolehKelola ? (
+                          <button
+                            type="button"
+                            className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`}
+                            onClick={() => void hapus(item)}
+                            disabled={proses}
+                          >
+                            <Trash2 size={12} />
+                            Hapus
                           </button>
                         ) : null}
                       </div>

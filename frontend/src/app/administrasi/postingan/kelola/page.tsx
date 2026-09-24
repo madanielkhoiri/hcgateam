@@ -17,6 +17,7 @@ import {
   EyeOff,
   Inbox,
   Megaphone,
+  Pencil,
   Plus,
   Trash2,
   UploadCloud,
@@ -60,6 +61,11 @@ export default function KelolaPostinganPage() {
   const [tampilBerandaBaru, setTampilBerandaBaru] = useState(true);
   const [urutanBaru, setUrutanBaru] = useState('0');
   const [fileBaru, setFileBaru] = useState<File | null>(null);
+
+  const [diedit, setDiedit] = useState<Postingan | null>(null);
+  const [judulEdit, setJudulEdit] = useState('');
+  const [deskripsiEdit, setDeskripsiEdit] = useState('');
+  const [urutanEdit, setUrutanEdit] = useState('0');
 
   const muat = useCallback(async () => {
     setMemuat(true);
@@ -109,6 +115,41 @@ export default function KelolaPostinganPage() {
       });
       setSukses('Postingan berhasil diunggah');
       setFormTerbuka(false);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
+  function bukaEdit(item: Postingan) {
+    setDiedit(item);
+    setJudulEdit(item.judul);
+    setDeskripsiEdit(item.deskripsi ?? '');
+    setUrutanEdit(String(item.urutan));
+    setGalat(null);
+  }
+
+  async function simpanEdit() {
+    if (!diedit) return;
+
+    if (!judulEdit.trim()) {
+      setGalat('Judul wajib diisi');
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+
+    try {
+      await postinganApi.ubah(diedit.id, {
+        judul: judulEdit.trim(),
+        deskripsi: deskripsiEdit.trim(),
+        urutan: Number(urutanEdit) || 0,
+      });
+      setSukses('Postingan berhasil diperbarui');
+      setDiedit(null);
       await muat();
     } catch (error) {
       setGalat((error as Error).message);
@@ -262,6 +303,15 @@ export default function KelolaPostinganPage() {
                     <button
                       type="button"
                       className={styles.iconBtn}
+                      onClick={() => bukaEdit(item)}
+                      aria-label="Edit postingan"
+                    >
+                      <Pencil size={14} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
                       onClick={() => hapus(item)}
                       aria-label="Hapus postingan"
                     >
@@ -273,6 +323,72 @@ export default function KelolaPostinganPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {diedit && (
+        <Dialog
+          judul="Edit Postingan"
+          keterangan="Ubah judul, deskripsi, dan urutan tampil. Untuk mengganti file, hapus lalu unggah ulang."
+          onTutup={() => setDiedit(null)}
+          aksi={
+            <>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGhost}`}
+                onClick={() => setDiedit(null)}
+                disabled={proses}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                onClick={simpanEdit}
+                disabled={proses}
+              >
+                {proses ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </>
+          }
+        >
+          <div className={styles.formStack}>
+            {galat && (
+              <div className={`${styles.alert} ${styles.alertError}`}>
+                <AlertCircle size={16} />
+                <span>{galat}</span>
+              </div>
+            )}
+
+            <div className={styles.formField}>
+              <label>Judul</label>
+              <input
+                className={styles.formInput}
+                value={judulEdit}
+                onChange={(event) => setJudulEdit(event.target.value)}
+              />
+            </div>
+
+            <div className={styles.formField}>
+              <label>Deskripsi (opsional)</label>
+              <textarea
+                className={styles.formTextarea}
+                value={deskripsiEdit}
+                onChange={(event) => setDeskripsiEdit(event.target.value)}
+                rows={2}
+              />
+            </div>
+
+            <div className={styles.formField}>
+              <label>Urutan Tampil (angka kecil tampil lebih dulu)</label>
+              <input
+                type="number"
+                className={styles.formInput}
+                value={urutanEdit}
+                onChange={(event) => setUrutanEdit(event.target.value)}
+              />
+            </div>
+          </div>
+        </Dialog>
       )}
 
       {formTerbuka && (

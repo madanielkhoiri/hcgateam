@@ -141,6 +141,19 @@ export function DriveExplorer({ scope }: { scope: ScopeDrive }) {
     }
   }
 
+  async function ubahNamaFile(file: DriveFile) {
+    const namaBaru = prompt('Nama file baru', file.namaFile);
+    if (!namaBaru || !namaBaru.trim() || namaBaru.trim() === file.namaFile) return;
+
+    try {
+      await driveApi.ubahFile(file.id, namaBaru.trim());
+      setSukses('Nama file berhasil diperbarui');
+      muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    }
+  }
+
   async function hapusFile(file: DriveFile) {
     if (!confirm(`Hapus file "${file.namaFile}"?`)) return;
 
@@ -319,6 +332,17 @@ export function DriveExplorer({ scope }: { scope: ScopeDrive }) {
                   >
                     <Download size={14} />
                   </a>
+
+                  {boleh && (
+                    <button
+                      type="button"
+                      className={styles.iconBtnNetral}
+                      onClick={() => ubahNamaFile(file)}
+                      aria-label="Ganti nama file"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
 
                   {boleh && (
                     <button
