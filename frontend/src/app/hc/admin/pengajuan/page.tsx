@@ -21,7 +21,32 @@ import { compressImage } from "@/lib/compress-image";
 
 /* <--- halaman admin pengajuan STD/RAB dan approval FA ---> */
 
-type RolePengguna = "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
+type RolePengguna =
+ | "SUPER_ADMIN"
+ | "ADMIN"
+ | "SECTION_HEAD"
+ | "GRUP_LEADER"
+ | "KARYAWAN"
+ | "VENDOR"
+ | "TAMU"
+ | "ADMIN_DEPT"
+ | "HC"
+ | "DOKTER"
+ | "SHE"
+ | "KLINIK"
+ | "ADMIN_COMBEN"
+ | "PJO"
+ | "OWNER"
+ | "DRIVER"
+ | "ELEKTRIK"
+ | "GUDANG"
+ | "KORLAP"
+ | "FA";
+
+/* Semua role boleh diajukan STD/RAB di form ini, kecuali VENDOR (akun
+ eksternal, bukan pegawai). Selama akunnya ada & aktif, otomatis muncul
+ di dropdown ini. */
+const ROLE_TIDAK_BOLEH_DIAJUKAN: RolePengguna[] = ["VENDOR"];
 
 type DataPengguna = {
  id: number;
@@ -392,7 +417,10 @@ export default function HalamanPengajuanAdmin() {
 
  const daftarKaryawanAktif = useMemo(() => {
  return daftarPengguna
- .filter((pengguna) => pengguna.aktif && pengguna.role === "KARYAWAN")
+ .filter(
+ (pengguna) =>
+ pengguna.aktif && !ROLE_TIDAK_BOLEH_DIAJUKAN.includes(pengguna.role),
+ )
  .sort((a, b) => a.nama.localeCompare(b.nama));
  }, [daftarPengguna]);
 
