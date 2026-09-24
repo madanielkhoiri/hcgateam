@@ -39,6 +39,15 @@ export type SuratTugasDinas = {
   tanggalMulai: string;
   tanggalSelesai: string;
   keteranganTugas: string;
+  penginapanHotel: string | null;
+  bantuanTransportasi: string | null;
+  uangPerjalananNominal: number | null;
+  uangPerjalananKeterangan: string | null;
+  akomodasiNominal: number | null;
+  akomodasiKeterangan: string | null;
+  laundryNominal: number | null;
+  laundryKeterangan: string | null;
+  jumlahAkomodasi: number;
   status: StatusSuratTugas;
   filePdf: string | null;
   disetujuiShPada: string | null;
@@ -137,6 +146,10 @@ export const suratTugasApi = {
 
   urlPdf: (filePdf: string) => urlUploads(filePdf),
 };
+
+export function formatRupiah(nilai: number | null | undefined): string {
+  return `Rp ${new Intl.NumberFormat('id-ID').format(nilai ?? 0)}`;
+}
 
 export function formatTanggal(nilai: string | null | undefined): string {
   if (!nilai) {

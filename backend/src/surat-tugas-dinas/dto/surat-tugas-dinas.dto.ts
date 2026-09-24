@@ -7,8 +7,11 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsDateString,
+  IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
+  Min,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -55,6 +58,46 @@ export class BuatSuratTugasDinasDto {
   @IsString()
   @IsNotEmpty({ message: 'Keterangan tugas wajib diisi' })
   keteranganTugas: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  penginapanHotel?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  bantuanTransportasi?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  uangPerjalananNominal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  uangPerjalananKeterangan?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  akomodasiNominal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  akomodasiKeterangan?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  laundryNominal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  laundryKeterangan?: string;
 
   @ValidateNested({ each: true })
   @Type(() => KaryawanTugasDto)
