@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
+  formatTanggal,
   isEpromOwner,
   isEpromVendor,
   LABEL_STATUS_APPROVAL,
@@ -159,7 +160,12 @@ function ClosingTab({
   }
 
   async function hapus(item: ClosingItem) {
-    if (!confirm(`Hapus ${LABEL_TIPE_CLOSING[tipe]} ini?`)) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus ${LABEL_TIPE_CLOSING[tipe]} (diunggah ${formatTanggal(item.createdAt)})? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await epromApi.closing.hapus(tipe, item.id);
       muatItems();

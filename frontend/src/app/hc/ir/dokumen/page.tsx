@@ -16,6 +16,7 @@ import {
   Eye,
   FileText,
   Inbox,
+  Pencil,
   Plus,
   Trash2,
   UploadCloud,
@@ -73,6 +74,10 @@ export default function DokumenIrPage() {
   const [fileBaru, setFileBaru] = useState<File | null>(null);
 
   const [preview, setPreview] = useState<DokumenIr | null>(null);
+
+  const [editItem, setEditItem] = useState<DokumenIr | null>(null);
+  const [editJudul, setEditJudul] = useState('');
+  const [editKategori, setEditKategori] = useState<KategoriDokumenIr>('SK');
 
   const [filterBulan, setFilterBulan] = useState('');
   const [filterTahun, setFilterTahun] = useState('');
@@ -144,8 +149,47 @@ export default function DokumenIrPage() {
     }
   }
 
+  function bukaEdit(item: DokumenIr) {
+    setEditItem(item);
+    setEditJudul(item.judul);
+    setEditKategori(item.kategori);
+    setGalat(null);
+  }
+
+  async function simpanEdit() {
+    if (!editItem) return;
+
+    if (!editJudul.trim()) {
+      setGalat('Judul dokumen wajib diisi');
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+
+    try {
+      await irApi.dokumen.ubah(editItem.id, {
+        judul: editJudul.trim(),
+        kategori: editKategori,
+      });
+      setSukses('Dokumen berhasil diperbarui');
+      setEditItem(null);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
   async function hapus(item: DokumenIr) {
-    if (!confirm(`Hapus dokumen "${item.judul}"?`)) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus dokumen "${item.judul}"? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
 
     try {
       await irApi.dokumen.hapus(item.id);
@@ -299,14 +343,24 @@ export default function DokumenIrPage() {
                   </a>
 
                   {boleh && (
-                    <button
-                      type="button"
-                      className={styles.iconBtn}
-                      onClick={() => hapus(item)}
-                      aria-label="Hapus dokumen"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className={styles.iconBtnNetral}
+                        onClick={() => bukaEdit(item)}
+                        aria-label="Edit dokumen"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => hapus(item)}
+                        aria-label="Hapus dokumen"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -398,6 +452,67 @@ export default function DokumenIrPage() {
                   <span className={styles.dropzoneFile}>{fileBaru.name}</span>
                 ) : null}
               </label>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {editItem && (
+        <Dialog
+          judul="Edit Dokumen"
+          keterangan="Ubah judul atau kategori. File dokumen tidak berubah."
+          onTutup={() => setEditItem(null)}
+          aksi={
+            <>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGhost}`}
+                onClick={() => setEditItem(null)}
+                disabled={proses}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                onClick={simpanEdit}
+                disabled={proses}
+              >
+                {proses ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </>
+          }
+        >
+          <div className={styles.formStack}>
+            {galat && (
+              <div className={`${styles.alert} ${styles.alertError}`}>
+                <AlertCircle size={16} />
+                <span>{galat}</span>
+              </div>
+            )}
+
+            <div className={styles.formField}>
+              <label>Kategori</label>
+              <select
+                className={styles.formSelect}
+                value={editKategori}
+                onChange={(event) =>
+                  setEditKategori(event.target.value as KategoriDokumenIr)
+                }
+              >
+                <option value="SK">SK</option>
+                <option value="IM">IM</option>
+                <option value="FORM">FORM</option>
+              </select>
+            </div>
+
+            <div className={styles.formField}>
+              <label>Judul Dokumen</label>
+              <input
+                className={styles.formInput}
+                value={editJudul}
+                onChange={(event) => setEditJudul(event.target.value)}
+              />
             </div>
           </div>
         </Dialog>

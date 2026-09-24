@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Images,
+  Pencil,
   Plus,
   Printer,
   Sparkles,
@@ -72,6 +73,11 @@ export default function LaporanHousekeepingIndoorPage() {
   const [dragActive, setDragActive] = useState(false);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const [editTarget, setEditTarget] = useState<HousekeepingIndoorLaporan | null>(null);
+  const [editForm, setEditForm] = useState(blankForm);
+  const [editError, setEditError] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const [galeri, setGaleri] = useState<HousekeepingIndoorLaporan | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -172,8 +178,52 @@ export default function LaporanHousekeepingIndoorPage() {
     }
   }
 
-  async function hapus(id: number) {
-    if (!confirm('Hapus laporan ini beserta seluruh fotonya?')) return;
+  function bukaEdit(item: HousekeepingIndoorLaporan) {
+    setEditTarget(item);
+    setEditForm({ lokasi: item.lokasi, namaPetugas: item.namaPetugas });
+    setEditError('');
+  }
+
+  async function submitEdit(event: FormEvent) {
+    event.preventDefault();
+    if (!editTarget) return;
+    setEditError('');
+
+    if (!editForm.lokasi) {
+      setEditError('Pilih lokasi terlebih dahulu');
+      return;
+    }
+
+    if (!editForm.namaPetugas.trim()) {
+      setEditError('Nama petugas wajib diisi');
+      return;
+    }
+
+    setEditSubmitting(true);
+    try {
+      const diperbarui = await housekeepingIndoorApi.ubah(editTarget.id, {
+        lokasi: editForm.lokasi,
+        namaPetugas: editForm.namaPetugas.trim(),
+      });
+      setGaleri((cur) => (cur?.id === editTarget.id ? diperbarui : cur));
+      setEditTarget(null);
+      await muat();
+    } catch (err) {
+      setEditError(err instanceof HousekeepingIndoorApiError ? err.message : 'Laporan gagal diubah');
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
+  async function hapus(item: HousekeepingIndoorLaporan) {
+    const id = item.id;
+    const label = `${LABEL_LOKASI_HOUSEKEEPING_INDOOR[item.lokasi]} oleh ${item.namaPetugas} (${formatTanggal(item.createdAt)})`;
+    if (
+      !confirm(
+        `Yakin ingin menghapus laporan ${label} beserta seluruh fotonya? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await housekeepingIndoorApi.hapus(id);
       setGaleri((cur) => (cur?.id === id ? null : cur));
@@ -311,9 +361,14 @@ export default function LaporanHousekeepingIndoorPage() {
               <time>{formatWaktu(item.createdAt)}</time>
               <div className={styles.cardFooter}>
                 <span>Oleh {item.pengirim?.name ?? '-'}</span>
-                <button className={styles.iconButton} onClick={() => hapus(item.id)} title="Hapus">
-                  <Trash2 />
-                </button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className={styles.iconButton} onClick={() => bukaEdit(item)} title="Edit">
+                    <Pencil />
+                  </button>
+                  <button className={styles.iconButton} onClick={() => hapus(item)} title="Hapus">
+                    <Trash2 />
+                  </button>
+                </div>
               </div>
             </div>
           </article>
@@ -434,7 +489,10 @@ export default function LaporanHousekeepingIndoorPage() {
                 <button type="button" className={styles.btnCetak} onClick={cetakPdf}>
                   <Printer size={14} /> Cetak PDF
                 </button>
-                <button type="button" className={styles.btnHapus} onClick={() => hapus(galeri.id)}>
+                <button type="button" className={styles.btnCetak} onClick={() => bukaEdit(galeri)}>
+                  <Pencil size={14} /> Edit
+                </button>
+                <button type="button" className={styles.btnHapus} onClick={() => hapus(galeri)}>
                   <Trash2 size={14} /> Hapus
                 </button>
                 <button type="button" onClick={() => setGaleri(null)} style={{ background: '#f1f5f9', border: 0, borderRadius: 9, width: 34, cursor: 'pointer' }}>
@@ -489,6 +547,62 @@ export default function LaporanHousekeepingIndoorPage() {
           <span className={styles.lightboxCount}>
             {lightboxIndex + 1} / {galeri.foto.length}
           </span>
+        </div>
+      )}
+
+      {editTarget && (
+        <div className={styles.modalBack} onClick={() => setEditTarget(null)}>
+          <form className={styles.modal} onSubmit={submitEdit} onClick={(e) => e.stopPropagation()}>
+            <header>
+              <div>
+                <h2>Edit Laporan Kebersihan</h2>
+                <p>Ubah lokasi atau nama petugas. Foto laporan tidak berubah.</p>
+              </div>
+              <button type="button" onClick={() => setEditTarget(null)}>
+                <X />
+              </button>
+            </header>
+
+            <div className={styles.formBody}>
+              <div className={styles.formRow}>
+                <label>
+                  Lokasi
+                  <select
+                    required
+                    value={editForm.lokasi}
+                    onChange={(e) => setEditForm((cur) => ({ ...cur, lokasi: e.target.value as LokasiHousekeepingIndoor }))}
+                  >
+                    <option value="">Pilih lokasi...</option>
+                    {LOKASI_HOUSEKEEPING_INDOOR.map((l) => (
+                      <option key={l} value={l}>
+                        {LABEL_LOKASI_HOUSEKEEPING_INDOOR[l]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Nama Petugas
+                  <input
+                    required
+                    value={editForm.namaPetugas}
+                    onChange={(e) => setEditForm((cur) => ({ ...cur, namaPetugas: e.target.value }))}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {editError && <p className={styles.errorText}>{editError}</p>}
+
+            <footer>
+              <button type="button" className={styles.ghostButton} onClick={() => setEditTarget(null)}>
+                Batal
+              </button>
+              <button className={styles.primaryButton} style={{ color: '#fff', background: 'linear-gradient(135deg,#0d9488,#0891b2)' }} disabled={editSubmitting}>
+                {editSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </footer>
+          </form>
         </div>
       )}
 

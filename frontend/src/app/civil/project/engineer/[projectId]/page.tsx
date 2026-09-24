@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Modal } from "@/components/civil-project/modal";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -74,6 +75,10 @@ export default function EngineerDetailPage() {
   const [rejectItem, setRejectItem] = useState<EngineerItem | null>(null);
   const [alasanReject, setAlasanReject] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  const [editItem, setEditItem] = useState<EngineerItem | null>(null);
+  const [editNama, setEditNama] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   function muatProject() {
     epromApi.project
@@ -150,8 +155,34 @@ export default function EngineerDetailPage() {
     }
   }
 
+  function bukaEdit(item: EngineerItem) {
+    setEditItem(item);
+    setEditNama(namaItem(item) ?? "");
+    setEditError(null);
+  }
+
+  async function simpanEdit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editItem) return;
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      await epromApi.engineer.ubah(tab, editItem.id, editNama.trim());
+      setEditItem(null);
+      muatItems();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Gagal menyimpan perubahan");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   async function hapus(item: EngineerItem) {
-    if (!confirm(`Hapus ${LABEL_TIPE_ENGINEER[tab]} ini?`)) return;
+    const nama = namaItem(item);
+    const label = nama
+      ? `${LABEL_TIPE_ENGINEER[tab]} "${nama}"`
+      : `${LABEL_TIPE_ENGINEER[tab]}${item.originalFileName ? ` "${item.originalFileName}"` : ""}`;
+    if (!confirm(`Yakin ingin menghapus ${label}? Data yang dihapus tidak bisa dikembalikan.`)) return;
     try {
       await epromApi.engineer.hapus(tab, item.id);
       muatItems();
@@ -328,15 +359,26 @@ export default function EngineerDetailPage() {
                 )}
 
               {item.status === "PENDING" && (boleh || vendorSaya) && (
-                <button
-                  type="button"
-                  className={styles.iconButtonDanger}
-                  onClick={() => hapus(item)}
-                  title="Hapus"
-                  style={{ marginTop: 10 }}
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  {namaField && (
+                    <button
+                      type="button"
+                      className={styles.iconButton}
+                      onClick={() => bukaEdit(item)}
+                      title="Edit"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.iconButtonDanger}
+                    onClick={() => hapus(item)}
+                    title="Hapus"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -380,6 +422,31 @@ export default function EngineerDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {editItem && namaField && (
+        <Modal title={`Edit ${LABEL_TIPE_ENGINEER[tab]}`} onClose={() => setEditItem(null)}>
+          <form
+            className={styles.formCard}
+            onSubmit={simpanEdit}
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+          >
+            <label>
+              {namaField}
+              <input value={editNama} onChange={(e) => setEditNama(e.target.value)} required />
+            </label>
+            <small style={{ color: "#5b7391" }}>File dokumen tidak dapat diganti lewat Edit.</small>
+            {editError && <p className={styles.errorText}>{editError}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="submit" className={styles.primaryButton} disabled={editSubmitting}>
+                {editSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
+              <button type="button" className={styles.secondaryButton} onClick={() => setEditItem(null)}>
+                Batal
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

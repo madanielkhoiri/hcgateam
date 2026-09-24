@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Modal } from "@/components/civil-project/modal";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -145,6 +146,26 @@ function MeetingTab({
   const [tanggalMeeting, setTanggalMeeting] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editMeeting, setEditMeeting] = useState<MeetingItem | null>(null);
+  const [editTipeLink, setEditTipeLink] = useState<TipeLinkMeeting>("MINGGUAN");
+  const [editSumber, setEditSumber] = useState<ProgressItem[]>([]);
+  const [editRefProgressId, setEditRefProgressId] = useState("");
+  const [editTanggal, setEditTanggal] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editMeeting) return;
+    epromApi.meeting
+      .sumberProgress(projectId, editTipeLink)
+      .then((data) => {
+        setEditSumber(data);
+        setEditRefProgressId((cur) =>
+          data.some((d) => String(d.id) === cur) ? cur : "",
+        );
+      })
+      .catch(() => setEditSumber([]));
+  }, [projectId, editMeeting, editTipeLink]);
 
   useEffect(() => {
     epromApi.meeting
@@ -182,8 +203,46 @@ function MeetingTab({
     }
   }
 
+  function bukaEdit(meeting: MeetingItem) {
+    setEditMeeting(meeting);
+    setEditTipeLink(meeting.tipeLink);
+    setEditRefProgressId(meeting.refProgressId ? String(meeting.refProgressId) : "");
+    setEditTanggal(meeting.tanggalMeeting ? meeting.tanggalMeeting.slice(0, 10) : "");
+    setEditError(null);
+  }
+
+  async function simpanEdit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editMeeting) return;
+    if (!editRefProgressId) {
+      setEditError("Pilih data Progress terlebih dahulu");
+      return;
+    }
+
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      await epromApi.meeting.ubah(editMeeting.id, {
+        tanggalMeeting: editTanggal,
+        tipeLink: editTipeLink,
+        refProgressId: Number(editRefProgressId),
+      });
+      setEditMeeting(null);
+      onChanged();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Gagal menyimpan perubahan");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   async function hapus(meeting: MeetingItem) {
-    if (!confirm("Hapus meeting ini beserta Dokumentasi dan MOM di dalamnya?")) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus meeting "${labelMeeting(meeting)}" beserta seluruh Dokumentasi dan MOM di dalamnya? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await epromApi.meeting.hapus(meeting.id);
       onChanged();
@@ -252,19 +311,86 @@ function MeetingTab({
               </span>
             </div>
             {(boleh || vendorSaya) && (
-              <button
-                type="button"
-                className={engineerStyles.iconButtonDanger}
-                onClick={() => hapus(m)}
-                title="Hapus"
-                style={{ marginTop: 10 }}
-              >
-                <Trash2 size={13} />
-              </button>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  className={engineerStyles.iconButton}
+                  onClick={() => bukaEdit(m)}
+                  title="Edit"
+                >
+                  <Pencil size={13} />
+                </button>
+                <button
+                  type="button"
+                  className={engineerStyles.iconButtonDanger}
+                  onClick={() => hapus(m)}
+                  title="Hapus"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
             )}
           </div>
         ))}
       </div>
+
+      {editMeeting && (
+        <Modal title="Edit Meeting" onClose={() => setEditMeeting(null)}>
+          <form
+            className={engineerStyles.formCard}
+            onSubmit={simpanEdit}
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+          >
+            <label>
+              Sumber Data
+              <select
+                value={editTipeLink}
+                onChange={(e) => setEditTipeLink(e.target.value as TipeLinkMeeting)}
+              >
+                <option value="MINGGUAN">Progress Mingguan</option>
+                <option value="BULANAN">Progress Bulanan</option>
+              </select>
+            </label>
+            <label>
+              Pilih File
+              <select
+                value={editRefProgressId}
+                onChange={(e) => setEditRefProgressId(e.target.value)}
+                required
+              >
+                <option value="">Pilih...</option>
+                {editSumber.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {labelProgress(item, editTipeLink)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Tanggal Meeting
+              <input
+                type="date"
+                value={editTanggal}
+                onChange={(e) => setEditTanggal(e.target.value)}
+                required
+              />
+            </label>
+            {editError && <p className={engineerStyles.errorText}>{editError}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="submit" className={engineerStyles.primaryButton} disabled={editSubmitting}>
+                {editSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
+              <button
+                type="button"
+                className={engineerStyles.secondaryButton}
+                onClick={() => setEditMeeting(null)}
+              >
+                Batal
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -368,7 +494,12 @@ function DokumentasiTab({
   }
 
   async function hapus(item: DokumentasiMeetingItem) {
-    if (!confirm("Hapus foto ini?")) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus foto dokumentasi meeting (diunggah ${formatTanggal(item.createdAt)})? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await epromApi.meeting.hapusDokumentasi(item.id);
       muat();
@@ -473,6 +604,12 @@ function MomTab({
   const [pica, setPica] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [pic, setPic] = useState("");
+  const [editMom, setEditMom] = useState<MomItem | null>(null);
+  const [editPica, setEditPica] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editPic, setEditPic] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const muat = useCallback(() => {
     if (!selectedMeetingId) {
@@ -518,8 +655,41 @@ function MomTab({
     }
   }
 
+  function bukaEdit(item: MomItem) {
+    setEditMom(item);
+    setEditPica(item.pica);
+    setEditDueDate(item.dueDate ? item.dueDate.slice(0, 10) : "");
+    setEditPic(item.pic);
+    setEditError(null);
+  }
+
+  async function simpanEdit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editMom) return;
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      await epromApi.meeting.ubahMom(editMom.id, {
+        pica: editPica,
+        dueDate: editDueDate,
+        pic: editPic,
+      });
+      setEditMom(null);
+      muat();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Gagal menyimpan perubahan");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   async function hapus(item: MomItem) {
-    if (!confirm("Hapus MOM ini?")) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus MOM "${item.pica}" (PIC ${item.pic})? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await epromApi.meeting.hapusMom(item.id);
       muat();
@@ -617,6 +787,14 @@ function MomTab({
                         />
                         <button
                           type="button"
+                          className={engineerStyles.iconButton}
+                          onClick={() => bukaEdit(item)}
+                          title="Edit"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
                           className={engineerStyles.iconButtonDanger}
                           onClick={() => hapus(item)}
                           title="Hapus"
@@ -636,6 +814,47 @@ function MomTab({
             </tbody>
           </table>
         </div>
+      )}
+
+      {editMom && (
+        <Modal title="Edit MOM" onClose={() => setEditMom(null)}>
+          <form
+            className={engineerStyles.formCard}
+            onSubmit={simpanEdit}
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+          >
+            <label>
+              PICA (Tindak Lanjut)
+              <input value={editPica} onChange={(e) => setEditPica(e.target.value)} required />
+            </label>
+            <label>
+              Due Date
+              <input
+                type="date"
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              PIC
+              <input value={editPic} onChange={(e) => setEditPic(e.target.value)} required />
+            </label>
+            {editError && <p className={engineerStyles.errorText}>{editError}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="submit" className={engineerStyles.primaryButton} disabled={editSubmitting}>
+                {editSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
+              <button
+                type="button"
+                className={engineerStyles.secondaryButton}
+                onClick={() => setEditMom(null)}
+              >
+                Batal
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
