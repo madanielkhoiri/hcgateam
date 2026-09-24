@@ -9,12 +9,19 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AktorEprom } from './eprom-aktor';
 
-/** Admin portal & Section Head diperlakukan setara Owner di dalam modul e-ProM. */
+/**
+ * Admin portal, Section Head, & Group Leader diperlakukan setara Owner di
+ * dalam modul e-ProM. Aman untuk Group Leader lain yang bukan Owner karena
+ * modul ini tetap dikunci di belakang akses CIVIL_PROJECT (lihat
+ * @RequireAccessKey pada controller e-ProM) - cuma akun yang memang
+ * diberi akses itu dari Manajemen Akun yang bisa sampai ke sini.
+ */
 const ROLE_SETARA_OWNER: UserRole[] = [
   UserRole.OWNER,
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
+  UserRole.GRUP_LEADER,
 ];
 
 @Injectable()
