@@ -577,7 +577,8 @@ export class McuKaryawanService {
       `*Reminder MCU Periodik* Anda\n\n${isiUtama}\n\n` +
       'Terima kasih 🙏';
 
-    return this.whatsapp.kirim(karyawan.noTelepon, pesan, undefined, 'HC');
+    // Pakai device WA GA (default) dulu - device HC masih paket terbatas.
+    return this.whatsapp.kirim(karyawan.noTelepon, pesan);
   }
 
   /**
