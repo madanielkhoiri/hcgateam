@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusAnakMagang } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnakMagangService } from './anak-magang.service';
@@ -15,14 +15,30 @@ function buatService(overrides: { item?: unknown } = {}) {
     .mockResolvedValue('item' in overrides ? overrides.item : anakMagangFixture());
   const create = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const update = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+  const hapusAnak = jest.fn().mockResolvedValue({ id: 1 });
+  const jumlahBalasan = jest.fn().mockResolvedValue(0);
+  const jumlahPenolakan = jest.fn().mockResolvedValue(0);
 
   const prisma = {
-    anakMagang: { findMany, count, findUnique, create, update },
+    anakMagang: { findMany, count, findUnique, create, update, delete: hapusAnak },
+    suratBalasanMagangBaris: { count: jumlahBalasan },
+    suratPenolakanMagang: { count: jumlahPenolakan },
   } as unknown as PrismaService;
 
   const service = new AnakMagangService(prisma);
 
-  return { service, prisma, findMany, count, findUnique, create, update };
+  return {
+    service,
+    prisma,
+    findMany,
+    count,
+    findUnique,
+    create,
+    update,
+    hapusAnak,
+    jumlahBalasan,
+    jumlahPenolakan,
+  };
 }
 
 describe('AnakMagangService.daftar', () => {
@@ -181,5 +197,40 @@ describe('AnakMagangService.ubah', () => {
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ nama: 'Budi Baru' }) }),
     );
+  });
+});
+
+describe('AnakMagangService.hapus', () => {
+  it('melempar NotFoundException kalau data tidak ada', async () => {
+    const { service, hapusAnak } = buatService({ item: null });
+
+    await expect(service.hapus(1)).rejects.toThrow(NotFoundException);
+    expect(hapusAnak).not.toHaveBeenCalled();
+  });
+
+  it('ditolak kalau sudah dipakai Surat Balasan', async () => {
+    const { service, jumlahBalasan, hapusAnak } = buatService();
+    jumlahBalasan.mockResolvedValue(2);
+
+    await expect(service.hapus(1)).rejects.toThrow(BadRequestException);
+    await expect(service.hapus(1)).rejects.toThrow(/Non Aktif/);
+    expect(hapusAnak).not.toHaveBeenCalled();
+  });
+
+  it('ditolak kalau sudah dipakai Surat Penolakan', async () => {
+    const { service, jumlahPenolakan, hapusAnak } = buatService();
+    jumlahPenolakan.mockResolvedValue(1);
+
+    await expect(service.hapus(1)).rejects.toThrow(BadRequestException);
+    expect(hapusAnak).not.toHaveBeenCalled();
+  });
+
+  it('menghapus kalau belum dipakai surat apa pun', async () => {
+    const { service, hapusAnak } = buatService();
+
+    const hasil = await service.hapus(1);
+
+    expect(hapusAnak).toHaveBeenCalledWith({ where: { id: 1 } });
+    expect(hasil).toEqual({ message: 'Data anak magang berhasil dihapus' });
   });
 });

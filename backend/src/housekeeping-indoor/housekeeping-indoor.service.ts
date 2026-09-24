@@ -3,12 +3,12 @@
 // FUNGSI: Laporan kebersihan Housekeeping Indoor (log biasa, tanpa approval)
 // ==================================================
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { LokasiHousekeepingIndoor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { HousekeepingIndoorFileService } from './housekeeping-indoor-file.service';
-import { BuatHousekeepingIndoorDto } from './dto/housekeeping-indoor.dto';
+import { BuatHousekeepingIndoorDto, UbahHousekeepingIndoorDto } from './dto/housekeeping-indoor.dto';
 
 @Injectable()
 export class HousekeepingIndoorService {
@@ -93,6 +93,30 @@ export class HousekeepingIndoorService {
 
     return this.prisma.housekeepingIndoor.findUnique({
       where: { id: laporan.id },
+      include: { foto: true, pengirim: { select: { id: true, name: true } } },
+    });
+  }
+
+  /** Ubah metadata laporan (lokasi & nama petugas). Foto tidak diubah. */
+  async ubah(id: number, dto: UbahHousekeepingIndoorDto) {
+    const laporan = await this.prisma.housekeepingIndoor.findUnique({ where: { id } });
+
+    if (!laporan) {
+      throw new NotFoundException('Laporan tidak ditemukan');
+    }
+
+    const namaPetugas = dto.namaPetugas?.trim();
+
+    if (dto.namaPetugas !== undefined && !namaPetugas) {
+      throw new BadRequestException('Nama petugas tidak boleh kosong');
+    }
+
+    return this.prisma.housekeepingIndoor.update({
+      where: { id },
+      data: {
+        ...(dto.lokasi !== undefined ? { lokasi: dto.lokasi } : {}),
+        ...(namaPetugas !== undefined ? { namaPetugas } : {}),
+      },
       include: { foto: true, pengirim: { select: { id: true, name: true } } },
     });
   }

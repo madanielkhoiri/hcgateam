@@ -17,6 +17,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -79,6 +80,12 @@ export class BuatEngineerDto {
   @IsOptional()
   @IsString()
   nama?: string;
+}
+
+export class UbahEngineerDto {
+  @IsString()
+  @IsNotEmpty()
+  nama: string;
 }
 
 export class ReviewEngineerDto {
@@ -452,6 +459,31 @@ export class EpromEngineerService {
       effectiveFileUrl: hasil.approval.signedFilePath,
       latestApproval: hasil.approval,
     };
+  }
+
+  /** Ubah nama item yang masih PENDING (salah ketik) — Owner atau Vendor pemilik project. File tidak diganti. */
+  async ubah(aktor: AktorEprom, tipe: TipeEngineer, id: number, dto: UbahEngineerDto) {
+    const item = await this.itemAtauThrow(tipe, id);
+
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+
+    const namaField = FIELD_NAMA[tipe];
+
+    if (!namaField) {
+      throw new BadRequestException(`${LABEL_TIPE[tipe]} tidak memiliki data yang dapat diubah`);
+    }
+
+    if (item.status !== StatusApprovalEprom.PENDING) {
+      throw new BadRequestException('Item yang sudah direview tidak dapat diubah');
+    }
+
+    const nama = dto.nama?.trim();
+
+    if (!nama) {
+      throw new BadRequestException(`Nama wajib diisi untuk ${LABEL_TIPE[tipe]}`);
+    }
+
+    return this.delegate(tipe).update({ where: { id }, data: { [namaField]: nama } });
   }
 
   /** Hapus item yang masih PENDING (salah unggah) — Owner atau Vendor pemilik project. */

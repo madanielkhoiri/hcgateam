@@ -3,7 +3,7 @@
 // FUNGSI: DTO modul Housekeeping Indoor
 // ==================================================
 
-import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { LokasiHousekeepingIndoor } from '@prisma/client';
 
 export const LOKASI_HOUSEKEEPING_INDOOR: LokasiHousekeepingIndoor[] = [
@@ -31,4 +31,15 @@ export class BuatHousekeepingIndoorDto {
   @IsString()
   @IsNotEmpty()
   namaPetugas: string;
+}
+
+export class UbahHousekeepingIndoorDto {
+  @IsOptional()
+  @IsIn(LOKASI_HOUSEKEEPING_INDOOR)
+  lokasi?: LokasiHousekeepingIndoor;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  namaPetugas?: string;
 }
