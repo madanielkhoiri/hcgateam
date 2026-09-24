@@ -16,6 +16,7 @@ import {
   ImagePlus,
   Images,
   Inbox,
+  Pencil,
   Plus,
   Trash2,
   UploadCloud,
@@ -56,6 +57,14 @@ export default function AlbumDokumentasiPage() {
   const [formAlbumTerbuka, setFormAlbumTerbuka] = useState(false);
   const [judulBaru, setJudulBaru] = useState('');
   const [deskripsiBaru, setDeskripsiBaru] = useState('');
+
+  const [albumDiedit, setAlbumDiedit] = useState<{
+    id: number;
+    judul: string;
+    deskripsi: string | null;
+  } | null>(null);
+  const [judulEdit, setJudulEdit] = useState('');
+  const [deskripsiEdit, setDeskripsiEdit] = useState('');
 
   const [fotoDipilih, setFotoDipilih] = useState<File[]>([]);
   const [previewFoto, setPreviewFoto] = useState<string | null>(null);
@@ -102,6 +111,44 @@ export default function AlbumDokumentasiPage() {
       setFormAlbumTerbuka(false);
       setJudulBaru('');
       setDeskripsiBaru('');
+      muatDaftar();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
+  function bukaEditAlbum(album: { id: number; judul: string; deskripsi: string | null }) {
+    setAlbumDiedit(album);
+    setJudulEdit(album.judul);
+    setDeskripsiEdit(album.deskripsi ?? '');
+    setGalat(null);
+  }
+
+  async function simpanEditAlbum() {
+    if (!albumDiedit) return;
+
+    if (!judulEdit.trim()) {
+      setGalat('Judul album wajib diisi');
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+
+    try {
+      const hasil = await albumApi.ubah(albumDiedit.id, {
+        judul: judulEdit.trim(),
+        deskripsi: deskripsiEdit.trim(),
+      });
+      setSukses('Album berhasil diperbarui');
+      setAlbumDiedit(null);
+      setAlbumAktif((cur) =>
+        cur && cur.id === hasil.id
+          ? { ...cur, judul: hasil.judul, deskripsi: hasil.deskripsi }
+          : cur,
+      );
       muatDaftar();
     } catch (error) {
       setGalat((error as Error).message);
@@ -274,6 +321,17 @@ export default function AlbumDokumentasiPage() {
                         <button
                           type="button"
                           className={styles.iconBtn}
+                          onClick={() => bukaEditAlbum(album)}
+                          aria-label="Edit album"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+
+                      {boleh && (
+                        <button
+                          type="button"
+                          className={styles.iconBtn}
                           onClick={() => hapusAlbum(album)}
                           aria-label="Hapus album"
                         >
@@ -306,6 +364,16 @@ export default function AlbumDokumentasiPage() {
             </div>
 
             <div className={styles.headActions}>
+              {boleh && (
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnGhost}`}
+                  onClick={() => bukaEditAlbum(albumAktif)}
+                >
+                  <Pencil size={15} />
+                  Edit Album
+                </button>
+              )}
               {boleh && (
                 <label className={styles.btn} style={{ cursor: 'pointer' }}>
                   <ImagePlus size={15} />
@@ -437,6 +505,59 @@ export default function AlbumDokumentasiPage() {
                 className={styles.formTextarea}
                 value={deskripsiBaru}
                 onChange={(event) => setDeskripsiBaru(event.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {albumDiedit && (
+        <Dialog
+          judul="Edit Album"
+          onTutup={() => setAlbumDiedit(null)}
+          aksi={
+            <>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGhost}`}
+                onClick={() => setAlbumDiedit(null)}
+                disabled={proses}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                onClick={simpanEditAlbum}
+                disabled={proses}
+              >
+                {proses ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </>
+          }
+        >
+          <div className={styles.formStack}>
+            {galat && (
+              <div className={`${styles.alert} ${styles.alertError}`}>
+                <AlertCircle size={16} />
+                <span>{galat}</span>
+              </div>
+            )}
+            <div className={styles.formField}>
+              <label>Judul Album</label>
+              <input
+                className={styles.formInput}
+                value={judulEdit}
+                onChange={(event) => setJudulEdit(event.target.value)}
+              />
+            </div>
+            <div className={styles.formField}>
+              <label>Deskripsi (opsional)</label>
+              <textarea
+                className={styles.formTextarea}
+                value={deskripsiEdit}
+                onChange={(event) => setDeskripsiEdit(event.target.value)}
                 rows={2}
               />
             </div>

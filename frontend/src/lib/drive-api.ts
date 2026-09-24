@@ -118,6 +118,11 @@ export const driveApi = {
       body: form,
     });
   },
+  ubahFile: (id: number, namaFile: string) =>
+    request<DriveFile>(`/file/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ namaFile }),
+    }),
   hapusFile: (id: number) =>
     request<{ message: string }>(`/file/${id}`, { method: 'DELETE' }),
 };

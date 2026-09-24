@@ -466,6 +466,11 @@
   border-color: #dbe4f0;
 }
 
+.tombolBahaya {
+  color: #ffffff;
+  background: #d53535;
+}
+
 .tombolKecil {
   padding: 6px 11px;
   font-size: 11px;

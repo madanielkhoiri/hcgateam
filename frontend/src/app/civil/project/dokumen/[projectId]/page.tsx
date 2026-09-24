@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Modal } from "@/components/civil-project/modal";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -47,6 +48,10 @@ export default function DokumenDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [tanggal, setTanggal] = useState("");
   const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [editItem, setEditItem] = useState<DokumenSuratItem | null>(null);
+  const [editTanggal, setEditTanggal] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     epromApi.project
@@ -86,8 +91,31 @@ export default function DokumenDetailPage() {
     }
   }
 
+  function bukaEdit(item: DokumenSuratItem) {
+    setEditItem(item);
+    setEditTanggal(item.tanggal ? item.tanggal.slice(0, 10) : "");
+    setEditError(null);
+  }
+
+  async function simpanEdit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editItem) return;
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      await epromApi.dokumen.ubah(editItem.id, { tanggal: editTanggal });
+      setEditItem(null);
+      muatItems();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Gagal menyimpan perubahan");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   async function hapus(item: DokumenSuratItem) {
-    if (!confirm(`Hapus ${LABEL_TIPE_DOKUMEN_SURAT[tipe]} ini?`)) return;
+    const nama = `${LABEL_TIPE_DOKUMEN_SURAT[tipe]} tanggal ${formatTanggal(item.tanggal)}`;
+    if (!confirm(`Yakin ingin menghapus ${nama}? Data yang dihapus tidak bisa dikembalikan.`)) return;
     try {
       await epromApi.dokumen.hapus(item.id);
       muatItems();
@@ -166,20 +194,54 @@ export default function DokumenDetailPage() {
               </div>
 
               {(boleh || vendorSaya) && (
-                <button
-                  type="button"
-                  className={engineerStyles.iconButtonDanger}
-                  onClick={() => hapus(item)}
-                  title="Hapus"
-                  style={{ marginTop: 10 }}
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button
+                    type="button"
+                    className={engineerStyles.iconButton}
+                    onClick={() => bukaEdit(item)}
+                    title="Edit"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className={engineerStyles.iconButtonDanger}
+                    onClick={() => hapus(item)}
+                    title="Hapus"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
         </div>
       </div>
+
+      {editItem && (
+        <Modal title={`Edit ${LABEL_TIPE_DOKUMEN_SURAT[tipe]}`} onClose={() => setEditItem(null)}>
+          <form
+            className={engineerStyles.formCard}
+            onSubmit={simpanEdit}
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+          >
+            <label>
+              Tanggal
+              <input type="date" value={editTanggal} onChange={(e) => setEditTanggal(e.target.value)} required />
+            </label>
+            <small style={{ color: "#5b7391" }}>File dokumen tidak dapat diganti lewat Edit.</small>
+            {editError && <p className={engineerStyles.errorText}>{editError}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="submit" className={engineerStyles.primaryButton} disabled={editSubmitting}>
+                {editSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
+              <button type="button" className={engineerStyles.secondaryButton} onClick={() => setEditItem(null)}>
+                Batal
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

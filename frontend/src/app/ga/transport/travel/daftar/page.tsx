@@ -64,6 +64,8 @@ export default function TravelPage() {
   const [savingDriver, setSavingDriver] = useState(false);
 
   const [modalJadwal, setModalJadwal] = useState(false);
+  const [editJadwal, setEditJadwal] = useState<TravelJadwal | null>(null);
+  const [penumpangAwalIds, setPenumpangAwalIds] = useState<number[]>([]);
   const [formJadwal, setFormJadwal] = useState(blankJadwalForm);
   const [cariKaryawan, setCariKaryawan] = useState('');
   const [hasilKaryawan, setHasilKaryawan] = useState<KaryawanRingkas[]>([]);
@@ -187,12 +189,46 @@ export default function TravelPage() {
   }
 
   function bukaModalJadwal() {
+    setEditJadwal(null);
+    setPenumpangAwalIds([]);
     setFormJadwal(blankJadwalForm);
     setPenumpangDipilih([]);
     setCariKaryawan('');
     setHasilKaryawan([]);
     setJadwalError('');
     setModalJadwal(true);
+  }
+
+  async function bukaEditJadwal(jadwal: TravelJadwal) {
+    setError('');
+    try {
+      // Daftar jadwal hanya membawa jumlah penumpang — ambil detail untuk prefill penumpang.
+      const detail = await transportApi.travel.detailJadwalAdmin(jadwal.id);
+      const waktu = new Date(detail.waktuBerangkatRencana);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const penumpang = (detail.penumpang ?? [])
+        .map((p) => p.karyawan)
+        .filter((k): k is KaryawanRingkas => Boolean(k));
+
+      setEditJadwal(detail);
+      setPenumpangAwalIds((detail.penumpang ?? []).map((p) => p.karyawanId));
+      setFormJadwal({
+        armada: detail.armada,
+        driverId: detail.driverId,
+        asal: detail.asal ?? '',
+        tujuan: detail.tujuan,
+        tanggalBerangkat: `${waktu.getFullYear()}-${pad(waktu.getMonth() + 1)}-${pad(waktu.getDate())}`,
+        jamBerangkat: `${pad(waktu.getHours())}:${OPSI_MENIT.includes(pad(waktu.getMinutes())) ? pad(waktu.getMinutes()) : '00'}`,
+        catatan: detail.catatan ?? '',
+      });
+      setPenumpangDipilih(penumpang);
+      setCariKaryawan('');
+      setHasilKaryawan([]);
+      setJadwalError('');
+      setModalJadwal(true);
+    } catch (err) {
+      setError(err instanceof TransportApiError ? err.message : 'Data jadwal gagal dimuat');
+    }
   }
 
   function tambahPenumpang(k: KaryawanRingkas) {
@@ -227,15 +263,37 @@ export default function TravelPage() {
 
     setSavingJadwal(true);
     try {
-      await transportApi.travel.buatJadwal({
-        armada: formJadwal.armada,
-        driverId: formJadwal.driverId,
-        asal: formJadwal.asal || undefined,
-        tujuan: formJadwal.tujuan,
-        waktuBerangkatRencana: new Date(`${formJadwal.tanggalBerangkat}T${formJadwal.jamBerangkat}:00`).toISOString(),
-        catatan: formJadwal.catatan || undefined,
-        karyawanIds: penumpangDipilih.map((p) => p.id),
-      });
+      const waktuBerangkatRencana = new Date(
+        `${formJadwal.tanggalBerangkat}T${formJadwal.jamBerangkat}:00`,
+      ).toISOString();
+      const karyawanIds = penumpangDipilih.map((p) => p.id);
+
+      if (editJadwal) {
+        const penumpangBerubah =
+          karyawanIds.length !== penumpangAwalIds.length ||
+          karyawanIds.some((id) => !penumpangAwalIds.includes(id));
+
+        await transportApi.travel.ubahJadwal(editJadwal.id, {
+          armada: formJadwal.armada,
+          ...(formJadwal.driverId !== editJadwal.driverId ? { driverId: formJadwal.driverId } : {}),
+          asal: formJadwal.asal,
+          tujuan: formJadwal.tujuan,
+          waktuBerangkatRencana,
+          catatan: formJadwal.catatan,
+          // Kirim penumpang hanya bila berubah (backend mengganti seluruh daftar).
+          ...(penumpangBerubah ? { karyawanIds } : {}),
+        });
+      } else {
+        await transportApi.travel.buatJadwal({
+          armada: formJadwal.armada,
+          driverId: formJadwal.driverId,
+          asal: formJadwal.asal || undefined,
+          tujuan: formJadwal.tujuan,
+          waktuBerangkatRencana,
+          catatan: formJadwal.catatan || undefined,
+          karyawanIds,
+        });
+      }
       setModalJadwal(false);
       await muat();
     } catch (err) {
@@ -245,10 +303,11 @@ export default function TravelPage() {
     }
   }
 
-  async function hapusJadwal(id: number) {
-    if (!confirm('Hapus jadwal Travel ini?')) return;
+  async function hapusJadwal(jadwal: TravelJadwal) {
+    const label = `${jadwal.armada} tujuan ${jadwal.tujuan} (${formatWaktu(jadwal.waktuBerangkatRencana)})`;
+    if (!confirm(`Yakin ingin menghapus jadwal Travel ${label}? Data yang dihapus tidak bisa dikembalikan.`)) return;
     try {
-      await transportApi.travel.hapusJadwal(id);
+      await transportApi.travel.hapusJadwal(jadwal.id);
       await muat();
     } catch (err) {
       setError(err instanceof TransportApiError ? err.message : 'Jadwal gagal dihapus');
@@ -494,7 +553,12 @@ export default function TravelPage() {
                         </button>
                       )}
                       {j.status === 'DIJADWALKAN' && (
-                        <button onClick={() => hapusJadwal(j.id)} title="Hapus">
+                        <button onClick={() => void bukaEditJadwal(j)} title="Edit">
+                          <Pencil />
+                        </button>
+                      )}
+                      {j.status === 'DIJADWALKAN' && (
+                        <button onClick={() => hapusJadwal(j)} title="Hapus">
                           <Trash2 />
                         </button>
                       )}
@@ -586,8 +650,12 @@ export default function TravelPage() {
           <form className={styles.modal} onSubmit={submitJadwal}>
             <header>
               <div>
-                <h2>Buat Jadwal Travel</h2>
-                <p>Tentukan armada, driver, waktu berangkat, dan daftar penumpang.</p>
+                <h2>{editJadwal ? 'Edit Jadwal Travel' : 'Buat Jadwal Travel'}</h2>
+                <p>
+                  {editJadwal
+                    ? 'Ubah armada, driver, waktu berangkat, atau daftar penumpang. Untuk keterlambatan dadakan gunakan Reschedule agar penumpang mendapat notifikasi WA.'
+                    : 'Tentukan armada, driver, waktu berangkat, dan daftar penumpang.'}
+                </p>
               </div>
               <button type="button" onClick={() => setModalJadwal(false)}>
                 <X />
@@ -612,7 +680,7 @@ export default function TravelPage() {
                 >
                   <option value="">Pilih driver...</option>
                   {driverList
-                    .filter((d) => d.statusAktif)
+                    .filter((d) => d.statusAktif || d.id === formJadwal.driverId)
                     .map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.nama}
@@ -749,7 +817,7 @@ export default function TravelPage() {
                 Batal
               </button>
               <button className={styles.primary} disabled={savingJadwal}>
-                {savingJadwal ? 'Menyimpan...' : 'Simpan Jadwal'}
+                {savingJadwal ? 'Menyimpan...' : editJadwal ? 'Simpan Perubahan' : 'Simpan Jadwal'}
               </button>
             </footer>
           </form>
