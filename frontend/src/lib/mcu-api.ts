@@ -428,27 +428,39 @@ export const mcuApi = {
   urlBerkas: (path: string) => `${API_URL}/mcu${path}`,
 };
 
-/** Unduh file terproteksi (hasil MCU/FU, surat rujukan) lalu buka di tab baru. */
-export async function unduhBerkas(path: string, namaFile: string) {
-  const response = await fetch(mcuApi.urlBerkas(path), {
-    headers: headerAuth(),
-    cache: 'no-store',
-  });
+/**
+ * Buka file terproteksi (hasil MCU/FU, surat rujukan) di tab baru untuk
+ * PREVIEW dulu lewat PDF viewer bawaan browser (seperti Chrome) - bukan
+ * langsung memaksa save-as. Popup dibuka SEBELUM fetch supaya tidak
+ * diblokir popup blocker (fetch-nya asinkron).
+ */
+export async function unduhBerkas(path: string) {
+  const popup = window.open('', '_blank');
 
-  if (!response.ok) {
-    throw new McuApiError(await bacaError(response), response.status);
+  try {
+    const response = await fetch(mcuApi.urlBerkas(path), {
+      headers: headerAuth(),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new McuApiError(await bacaError(response), response.status);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    if (popup) {
+      popup.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) {
+    popup?.close();
+    throw error;
   }
-
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const tautan = document.createElement('a');
-
-  tautan.href = url;
-  tautan.download = namaFile;
-  document.body.appendChild(tautan);
-  tautan.click();
-  document.body.removeChild(tautan);
-  URL.revokeObjectURL(url);
 }
 
 // ==================================================

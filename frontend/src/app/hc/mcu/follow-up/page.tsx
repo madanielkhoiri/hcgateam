@@ -242,14 +242,11 @@ export default function FollowUpPage() {
     }
   }
 
-  async function unduhHasilFu(idHasil: number, nama: string | null) {
+  async function unduhHasilFu(idHasil: number) {
     setGalat(null);
 
     try {
-      await unduhBerkas(
-        `/follow-up/hasil/${idHasil}/file`,
-        nama ?? `hasil-fu-${idHasil}.pdf`,
-      );
+      await unduhBerkas(`/follow-up/hasil/${idHasil}/file`);
     } catch (error) {
       setGalat((error as Error).message);
     }
@@ -536,10 +533,7 @@ export default function FollowUpPage() {
                               type="button"
                               className={`${styles.tombol} ${styles.tombolNetral} ${styles.tombolKecil}`}
                               onClick={() =>
-                                unduhHasilFu(
-                                  hasilTerakhir.id,
-                                  hasilTerakhir.namaFileAsli,
-                                )
+                                unduhHasilFu(hasilTerakhir.id)
                               }
                             >
                               <Download size={12} />
