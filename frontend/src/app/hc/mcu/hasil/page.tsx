@@ -111,10 +111,7 @@ function HasilSayaPage() {
     setGalat(null);
 
     try {
-      await unduhBerkas(
-        `/hasil/${item.id}/file`,
-        item.namaFileAsli ?? `hasil-mcu-${item.id}.pdf`,
-      );
+      await unduhBerkas(`/hasil/${item.id}/file`);
     } catch (error) {
       setGalat((error as Error).message);
     }
@@ -325,10 +322,7 @@ function HasilAdminPage() {
     setGalat(null);
 
     try {
-      await unduhBerkas(
-        `/hasil/${item.id}/file`,
-        item.namaFileAsli ?? `hasil-mcu-${item.id}.pdf`,
-      );
+      await unduhBerkas(`/hasil/${item.id}/file`);
     } catch (error) {
       setGalat((error as Error).message);
     }
