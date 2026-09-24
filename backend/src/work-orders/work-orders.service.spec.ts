@@ -4,9 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DocumentNumberService } from './document-number.service';
 import { WorkOrdersService } from './work-orders.service';
 
-function buatWorkOrder(overrides: Partial<{ statusApproval: StatusApprovalWorkOrder; status: WorkOrderStatus }> = {}) {
+function buatWorkOrder(
+  overrides: Partial<{ statusApproval: StatusApprovalWorkOrder; status: WorkOrderStatus; handover: unknown }> = {},
+) {
   return {
     id: 1,
+    handover: overrides.handover ?? null,
     status: overrides.status ?? WorkOrderStatus.OPEN,
     statusApproval: overrides.statusApproval ?? StatusApprovalWorkOrder.MENUNGGU_GL,
   };
@@ -15,10 +18,11 @@ function buatWorkOrder(overrides: Partial<{ statusApproval: StatusApprovalWorkOr
 function buatService(workOrderTerkini: unknown) {
   const findUnique = jest.fn().mockResolvedValue(workOrderTerkini);
   const update = jest.fn(({ data }) => Promise.resolve({ ...(workOrderTerkini as object), ...data }));
+  const hapus = jest.fn().mockResolvedValue({});
   const handoverDeleteMany = jest.fn().mockResolvedValue({ count: 0 });
   const handoverFindUnique = jest.fn().mockResolvedValue(null);
   const prisma = {
-    workOrder: { findUnique, update },
+    workOrder: { findUnique, update, delete: hapus },
     handover: { deleteMany: handoverDeleteMany, findUnique: handoverFindUnique },
     // update() membungkus perubahannya dalam $transaction — jalankan callback-nya
     // langsung dengan tx yang memakai mock yang sama, supaya assertion tetap
@@ -33,7 +37,7 @@ function buatService(workOrderTerkini: unknown) {
   const documentNumber = {} as unknown as DocumentNumberService;
   const service = new WorkOrdersService(prisma, documentNumber);
 
-  return { service, findUnique, update };
+  return { service, findUnique, update, hapus };
 }
 
 const GL = { id: 10, role: UserRole.GRUP_LEADER };
@@ -240,4 +244,36 @@ describe('WorkOrdersService.update — ON_PROGRESS/CLOSE butuh statusApproval DI
       expect.objectContaining({ data: expect.objectContaining({ status: WorkOrderStatus.ON_PROGRESS }) }),
     );
   });
+});
+
+describe('WorkOrdersService.remove — pembatasan hapus', () => {
+  it('menolak hapus WO yang sudah DISETUJUI', async () => {
+    const { service, hapus } = buatService(
+      buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.DISETUJUI }),
+    );
+
+    await expect(service.remove(1)).rejects.toThrow(BadRequestException);
+    await expect(service.remove(1)).rejects.toThrow('sudah disetujui');
+    expect(hapus).not.toHaveBeenCalled();
+  });
+
+  it('menolak hapus WO yang sudah punya Serah Terima', async () => {
+    const { service, hapus } = buatService(
+      buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.MENUNGGU_GL, handover: { id: 5 } }),
+    );
+
+    await expect(service.remove(1)).rejects.toThrow(BadRequestException);
+    await expect(service.remove(1)).rejects.toThrow('Serah Terima');
+    expect(hapus).not.toHaveBeenCalled();
+  });
+
+  it.each([StatusApprovalWorkOrder.MENUNGGU_GL, StatusApprovalWorkOrder.DITOLAK])(
+    'mengizinkan hapus WO berstatus %s tanpa Serah Terima',
+    async (statusApproval) => {
+      const { service, hapus } = buatService(buatWorkOrder({ statusApproval }));
+
+      await expect(service.remove(1)).resolves.toEqual({ message: 'Work Order berhasil dihapus' });
+      expect(hapus).toHaveBeenCalledWith({ where: { id: 1 } });
+    },
+  );
 });

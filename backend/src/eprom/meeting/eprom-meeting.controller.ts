@@ -24,7 +24,13 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
-import { BuatMeetingDto, BuatMomDto, EpromMeetingService } from './eprom-meeting.service';
+import {
+  BuatMeetingDto,
+  BuatMomDto,
+  EpromMeetingService,
+  UbahMeetingDto,
+  UbahMomDto,
+} from './eprom-meeting.service';
 
 @Controller('eprom/meeting')
 @UseGuards(JwtAuthGuard)
@@ -49,6 +55,15 @@ export class EpromMeetingController {
   @Post()
   buatMeeting(@Aktor() aktor: AktorEprom, @Body() dto: BuatMeetingDto) {
     return this.service.buatMeeting(aktor, dto);
+  }
+
+  @Patch(':id')
+  ubahMeeting(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahMeetingDto,
+  ) {
+    return this.service.ubahMeeting(aktor, id, dto);
   }
 
   @Delete(':id')
@@ -98,6 +113,15 @@ export class EpromMeetingController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.service.closeMom(aktor, id, file);
+  }
+
+  @Patch('mom/:id')
+  ubahMom(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahMomDto,
+  ) {
+    return this.service.ubahMom(aktor, id, dto);
   }
 
   @Delete('mom/:id')

@@ -7,7 +7,7 @@
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { StatusApprovalEprom } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromAksesService } from '../common/eprom-akses.service';
@@ -39,6 +39,12 @@ export class BuatKonstruksiDto {
   @IsOptional()
   @IsString()
   nama?: string;
+}
+
+export class UbahKonstruksiDto {
+  @IsString()
+  @IsNotEmpty()
+  nama: string;
 }
 
 export class ReviewKonstruksiDto {
@@ -140,6 +146,31 @@ export class EpromKonstruksiService {
   }
 
   /** Hapus item yang masih PENDING (salah unggah) — Owner atau Vendor pemilik project. */
+  /** Ubah nama item yang masih PENDING (salah ketik). File tidak diganti. */
+  async ubah(aktor: AktorEprom, tipe: TipeKonstruksi, id: number, dto: UbahKonstruksiDto) {
+    const item = await this.itemAtauThrow(tipe, id);
+
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+
+    const namaField = FIELD_NAMA[tipe];
+
+    if (!namaField) {
+      throw new BadRequestException(`${LABEL_TIPE[tipe]} tidak memiliki data yang dapat diubah`);
+    }
+
+    if (item.status !== StatusApprovalEprom.PENDING) {
+      throw new BadRequestException('Item yang sudah direview tidak dapat diubah');
+    }
+
+    const nama = dto.nama?.trim();
+
+    if (!nama) {
+      throw new BadRequestException(`Nama wajib diisi untuk ${LABEL_TIPE[tipe]}`);
+    }
+
+    return this.delegate(tipe).update({ where: { id }, data: { [namaField]: nama } });
+  }
+
   async hapus(aktor: AktorEprom, tipe: TipeKonstruksi, id: number) {
     const item = await this.itemAtauThrow(tipe, id);
 

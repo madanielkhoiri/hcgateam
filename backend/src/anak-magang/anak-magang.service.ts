@@ -6,7 +6,11 @@
 // input ulang data.
 // ==================================================
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, StatusAnakMagang } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { hasilHalaman, paramHalaman } from '../common/pagination.util';
@@ -140,6 +144,29 @@ export class AnakMagangService {
         ...this.dataTanggal(dto),
       },
     });
+  }
+
+  /**
+   * Hapus permanen. Ditolak bila sudah dipakai Surat Balasan / Surat Penolakan
+   * Magang (FK Restrict) - sarankan Non Aktif supaya riwayat surat tetap utuh.
+   */
+  async hapus(id: number) {
+    await this.detail(id);
+
+    const [jumlahBalasan, jumlahPenolakan] = await Promise.all([
+      this.prisma.suratBalasanMagangBaris.count({ where: { anakMagangId: id } }),
+      this.prisma.suratPenolakanMagang.count({ where: { anakMagangId: id } }),
+    ]);
+
+    if (jumlahBalasan + jumlahPenolakan > 0) {
+      throw new BadRequestException(
+        'Anak magang tidak dapat dihapus karena sudah dipakai pada Surat Balasan atau Surat Penolakan Magang. Ubah statusnya menjadi Non Aktif sebagai gantinya.',
+      );
+    }
+
+    await this.prisma.anakMagang.delete({ where: { id } });
+
+    return { message: 'Data anak magang berhasil dihapus' };
   }
 
   /** Field teks: string kosong dianggap null, undefined berarti tidak diubah. */

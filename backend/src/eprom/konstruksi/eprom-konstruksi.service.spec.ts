@@ -166,3 +166,43 @@ describe('EpromKonstruksiService.ringkasanPending', () => {
     expect(hasil.jsa).toBe(1);
   });
 });
+
+describe('EpromKonstruksiService.ubah', () => {
+  it('melempar NotFoundException kalau item tidak ada', async () => {
+    const { service } = buatService({ item: null });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'jsa', 1, { nama: 'Baru' })).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak Vendor bukan pemilik project', async () => {
+    const { service } = buatService({ projectAkses: { kontrak: { vendorId: 999 } } });
+
+    await expect(service.ubah(aktor(UserRole.VENDOR, { vendorId: 1 }), 'jsa', 1, { nama: 'Baru' })).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('menolak tipe tanpa field nama (ibpr)', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'ibpr', 1, { nama: 'Baru' })).rejects.toThrow(
+      'tidak memiliki data yang dapat diubah',
+    );
+  });
+
+  it('menolak ubah item yang sudah direview', async () => {
+    const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.REJECTED }) });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'jsa', 1, { nama: 'Baru' })).rejects.toThrow(
+      'sudah direview tidak dapat diubah',
+    );
+  });
+
+  it('berhasil mengubah nama checklist-tahapan PENDING', async () => {
+    const { service, sharedModel } = buatService();
+
+    await service.ubah(aktor(UserRole.OWNER), 'checklist-tahapan', 1, { nama: ' Tahap 2 ' });
+
+    expect(sharedModel.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { namaTahap: 'Tahap 2' } });
+  });
+});

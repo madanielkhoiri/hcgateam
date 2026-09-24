@@ -13,12 +13,14 @@ function aktor(role: UserRole, overrides: Partial<AktorEprom> = {}): AktorEprom 
 function buatService(overrides: { item?: unknown; projectAkses?: unknown } = {}) {
   const create = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const deleteFn = jest.fn().mockResolvedValue({});
+  const update = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
 
   const prisma = {
     dokumenSurat: {
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn().mockResolvedValue('item' in overrides ? overrides.item : { id: 1, projectId: 1, fileUrl: 'eprom/a.pdf' }),
       create,
+      update,
       delete: deleteFn,
     },
     project: { findUnique: jest.fn().mockResolvedValue('projectAkses' in overrides ? overrides.projectAkses : { kontrak: { vendorId: 1 } }) },
@@ -32,7 +34,7 @@ function buatService(overrides: { item?: unknown; projectAkses?: unknown } = {})
 
   const service = new EpromDokumenService(prisma, akses, file);
 
-  return { service, create, deleteFn, file };
+  return { service, create, update, deleteFn, file };
 }
 
 describe('EpromDokumenService.validasiTipe', () => {
@@ -98,5 +100,31 @@ describe('EpromDokumenService.hapus', () => {
     expect(deleteFn).toHaveBeenCalledWith({ where: { id: 1 } });
     expect(file.hapus).toHaveBeenCalledWith('eprom/a.pdf');
     expect(hasil.message).toMatch(/berhasil dihapus/);
+  });
+});
+
+describe('EpromDokumenService.ubah', () => {
+  it('melempar NotFoundException kalau dokumen tidak ada', async () => {
+    const { service } = buatService({ item: null });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 1, { tanggal: '2026-02-01' })).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak Vendor bukan pemilik project', async () => {
+    const { service } = buatService({ projectAkses: { kontrak: { vendorId: 999 } } });
+
+    await expect(
+      service.ubah(aktor(UserRole.VENDOR, { vendorId: 1 }), 1, { tanggal: '2026-02-01' }),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('berhasil mengubah tanggal tanpa menyentuh file', async () => {
+    const { service, update, file } = buatService();
+
+    await service.ubah(aktor(UserRole.OWNER), 1, { tanggal: '2026-02-01' });
+
+    expect(update).toHaveBeenCalledWith({ where: { id: 1 }, data: { tanggal: new Date('2026-02-01') } });
+    expect(file.hapus).not.toHaveBeenCalled();
+    expect(file.simpanDokumen).not.toHaveBeenCalled();
   });
 });
