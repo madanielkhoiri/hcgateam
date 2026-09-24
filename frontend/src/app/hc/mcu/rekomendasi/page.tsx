@@ -96,10 +96,7 @@ function RekomendasiSayaPage() {
     setGalat(null);
 
     try {
-      await unduhBerkas(
-        `/rekomendasi/${item.id}/surat-rujukan`,
-        `surat-rujukan-${item.nomorSuratRujukan ?? item.id}.pdf`,
-      );
+      await unduhBerkas(`/rekomendasi/${item.id}/surat-rujukan`);
     } catch (error) {
       setGalat((error as Error).message);
     }
@@ -424,10 +421,7 @@ function RekomendasiAdminPage() {
     setGalat(null);
 
     try {
-      await unduhBerkas(
-        `/rekomendasi/${item.id}/surat-rujukan`,
-        `surat-rujukan-${item.nomorSuratRujukan ?? item.id}.pdf`,
-      );
+      await unduhBerkas(`/rekomendasi/${item.id}/surat-rujukan`);
     } catch (error) {
       setGalat((error as Error).message);
     }
