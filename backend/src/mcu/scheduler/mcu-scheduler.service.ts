@@ -32,7 +32,11 @@ export class McuSchedulerService {
     private readonly followUp: McuFollowUpService,
   ) {}
 
-  /** Kunci jadwal yang sudah menyentuh H-3 hari — tiap hari jam 06:00. */
+  /**
+   * Kunci jadwal yang sudah menyentuh H-3 hari, sekaligus kirim WA
+   * reminder terakhir ke karyawan bahwa jadwalnya sudah final —
+   * tiap hari jam 06:00.
+   */
   @Cron('0 6 * * *')
   async kunciJadwalJatuhTempo() {
     try {
@@ -43,7 +47,10 @@ export class McuSchedulerService {
     }
   }
 
-  /** Reminder H-3 bulan ke Admin Dept (tembusan HC) — tiap hari jam 06:05. */
+  /**
+   * Reminder H-3 bulan ke Admin Dept (tembusan HC) + WA langsung ke
+   * karyawan yang bersangkutan — tiap hari jam 06:05.
+   */
   @Cron('5 6 * * *')
   async reminderH3Bulan() {
     try {
@@ -53,6 +60,23 @@ export class McuSchedulerService {
       );
     } catch (error) {
       this.logger.error('Gagal menjalankan reminder H-3 bulan', error as Error);
+    }
+  }
+
+  /**
+   * Reminder WA susulan yang lebih mendesak untuk karyawan yang MCU-nya
+   * tinggal ± 1 bulan lagi expired dan masih belum terjadwal —
+   * tiap hari jam 06:15.
+   */
+  @Cron('15 6 * * *')
+  async reminderSisaSatuBulan() {
+    try {
+      const hasil = await this.karyawan.jalankanReminderSisaSatuBulan();
+      this.logger.log(
+        `Reminder sisa 1 bulan: ${hasil.karyawan} karyawan, ${hasil.dikirim} WA terkirim`,
+      );
+    } catch (error) {
+      this.logger.error('Gagal menjalankan reminder sisa 1 bulan', error as Error);
     }
   }
 

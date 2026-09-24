@@ -7,6 +7,12 @@
 /** Reminder MCU periodik dipicu H-3 bulan sebelum MCU terakhir expired. */
 export const BULAN_REMINDER_SEBELUM_EXPIRED = 3;
 
+/**
+ * Reminder WA susulan (lebih mendesak) kalau karyawan masih belum
+ * terjadwal padahal MCU-nya tinggal 1 bulan lagi expired.
+ */
+export const BULAN_REMINDER_KEDUA_SEBELUM_EXPIRED = 1;
+
 /** Pendaftaran final terkunci 3 hari sebelum pelaksanaan MCU. */
 export const HARI_LOCK_PENDAFTARAN = 3;
 
