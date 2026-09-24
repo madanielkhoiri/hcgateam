@@ -487,7 +487,8 @@ export class McuJadwalService {
         `🔒 Tinggal H-${HARI_LOCK_PENDAFTARAN} hari — jadwal ini sekarang *terkunci* dan tidak bisa diubah lagi kecuali oleh HC.\n\n` +
         'Mohon pastikan hadir sesuai jadwal, terima kasih 🙏';
 
-      await this.whatsapp.kirim(nomor, pesan, undefined, 'HC');
+      // Pakai device WA GA (default) dulu - device HC masih paket terbatas.
+      await this.whatsapp.kirim(nomor, pesan);
     }
   }
 
