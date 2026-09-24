@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  CheckCircle2,
   ClipboardCheck,
   Eye,
   FileCheck2,
@@ -27,13 +28,16 @@ import {
   useState,
 } from "react";
 import { compressImage } from "@/lib/compress-image";
+import { urlUploads } from "@/lib/uploads-url";
 import styles from "./order-pack-meal.module.css";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:3001/api";
 
-const BACKEND_URL = API_URL;
+function fileUrl(pathRelatif: string) {
+  return urlUploads(pathRelatif.replace(/^\/?uploads\//, ""));
+}
 
 const STAFF_ROLES = new Set([
   "ADMIN",
@@ -197,6 +201,11 @@ export default function OrderPackMealPage() {
   const [existingApprovedFormPath, setExistingApprovedFormPath] =
     useState("");
   const [fileInputKey, setFileInputKey] = useState(0);
+
+  const [successPopup, setSuccessPopup] = useState<{
+    orderNumber: string;
+    isNew: boolean;
+  } | null>(null);
 
   const [statusOrder, setStatusOrder] = useState<PackMealOrder | null>(null);
   const [statusVendor, setStatusVendor] = useState("");
@@ -539,13 +548,10 @@ export default function OrderPackMealPage() {
         body: formData,
       });
 
-      const successMessage =
-        editingId === null
-          ? `Order berhasil disimpan dengan nomor ${result.orderNumber}`
-          : `Order ${result.orderNumber} berhasil diperbarui`;
+      const isNew = editingId === null;
 
       resetForm();
-      setMessage(successMessage);
+      setSuccessPopup({ orderNumber: result.orderNumber, isNew });
 
       if (isStaff) {
         setModalOpen(false);
@@ -775,7 +781,7 @@ export default function OrderPackMealPage() {
           {existingApprovedFormPath && (
             <a
               className={styles.currentFile}
-              href={`${BACKEND_URL}${existingApprovedFormPath}`}
+              href={fileUrl(existingApprovedFormPath)}
               target="_blank"
               rel="noreferrer"
             >
@@ -787,10 +793,6 @@ export default function OrderPackMealPage() {
 
         {error && (
           <div className={styles.errorMessage}>{error}</div>
-        )}
-
-        {!inModal && message && (
-          <div className={styles.successMessage}>{message}</div>
         )}
 
         <div className={styles.formActions}>
@@ -865,10 +867,6 @@ export default function OrderPackMealPage() {
             </div>
           </div>
 
-          {message && (
-            <div className={styles.successMessage}>{message}</div>
-          )}
-
           <section className={styles.guestFormCard}>
             {orderForm(false)}
           </section>
@@ -877,6 +875,32 @@ export default function OrderPackMealPage() {
         <footer className={styles.footer}>
           © 2026 ONE FOR ALL · Portal Internal
         </footer>
+
+        {successPopup && (
+          <div className={styles.modalOverlay}>
+            <section className={`${styles.modal} ${styles.successModal}`}>
+              <div className={styles.successIcon}>
+                <CheckCircle2 size={34} />
+              </div>
+              <h2>
+                {successPopup.isNew
+                  ? "Order Berhasil Disimpan"
+                  : "Order Berhasil Diperbarui"}
+              </h2>
+              <p>Nomor Order</p>
+              <strong className={styles.successOrderNumber}>
+                {successPopup.orderNumber}
+              </strong>
+              <button
+                type="button"
+                className={styles.saveButton}
+                onClick={() => setSuccessPopup(null)}
+              >
+                Tutup
+              </button>
+            </section>
+          </div>
+        )}
       </main>
     );
   }
@@ -1073,7 +1097,7 @@ export default function OrderPackMealPage() {
                       <td>
                         <a
                           className={styles.fileButton}
-                          href={`${BACKEND_URL}${order.approvedFormPath}`}
+                          href={fileUrl(order.approvedFormPath)}
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -1272,7 +1296,7 @@ export default function OrderPackMealPage() {
                     Unduh Resi
                   </button>
                   <a
-                    href={`${BACKEND_URL}${detailOrder.approvedFormPath}`}
+                    href={fileUrl(detailOrder.approvedFormPath)}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.fileButton}
@@ -1371,6 +1395,32 @@ export default function OrderPackMealPage() {
                 </button>
               </div>
             </form>
+          </section>
+        </div>
+      )}
+
+      {successPopup && (
+        <div className={styles.modalOverlay}>
+          <section className={`${styles.modal} ${styles.successModal}`}>
+            <div className={styles.successIcon}>
+              <CheckCircle2 size={34} />
+            </div>
+            <h2>
+              {successPopup.isNew
+                ? "Order Berhasil Disimpan"
+                : "Order Berhasil Diperbarui"}
+            </h2>
+            <p>Nomor Order</p>
+            <strong className={styles.successOrderNumber}>
+              {successPopup.orderNumber}
+            </strong>
+            <button
+              type="button"
+              className={styles.saveButton}
+              onClick={() => setSuccessPopup(null)}
+            >
+              Tutup
+            </button>
           </section>
         </div>
       )}
