@@ -9,9 +9,13 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { mkdirSync, unlinkSync, writeFileSync, existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
+import { join, normalize } from 'node:path';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BuatTiketBillingDto, HitungRekapDto } from './dto/tiket-billing.dto';
+import {
+  BuatTiketBillingDto,
+  HitungRekapDto,
+  UbahTiketBillingDto,
+} from './dto/tiket-billing.dto';
 import { TiketBillingRekapService } from './tiket-billing-rekap.service';
 
 const TIKET_BILLING_INCLUDE = {
@@ -28,7 +32,10 @@ export class TiketBillingService {
     private readonly rekap: TiketBillingRekapService,
   ) {}
 
-  private parseBulanTahun(dto: BuatTiketBillingDto): { bulan: number; tahun: number } {
+  private parseBulanTahun(dto: {
+    bulan: string;
+    tahun: string;
+  }): { bulan: number; tahun: number } {
     const bulan = Number(dto.bulan);
     const tahun = Number(dto.tahun);
 
@@ -131,5 +138,64 @@ export class TiketBillingService {
       },
       include: TIKET_BILLING_INCLUDE,
     });
+  }
+
+  /** Edit metadata (nama/bulan/tahun) - tidak mengulang proses ZIP/PDF/Sub Total. */
+  async ubah(id: number, dto: UbahTiketBillingDto) {
+    await this.detail(id);
+
+    let bulan: number | undefined;
+    let tahun: number | undefined;
+
+    if (dto.bulan !== undefined || dto.tahun !== undefined) {
+      const existing = await this.detail(id);
+      const parsed = this.parseBulanTahun({
+        bulan: dto.bulan ?? String(existing.bulan),
+        tahun: dto.tahun ?? String(existing.tahun),
+      });
+
+      bulan = dto.bulan !== undefined ? parsed.bulan : undefined;
+      tahun = dto.tahun !== undefined ? parsed.tahun : undefined;
+    }
+
+    return this.prisma.tiketBilling.update({
+      where: { id },
+      data: {
+        ...(dto.namaRekapan !== undefined
+          ? { namaRekapan: dto.namaRekapan.trim() }
+          : {}),
+        ...(bulan !== undefined ? { bulan } : {}),
+        ...(tahun !== undefined ? { tahun } : {}),
+      },
+      include: TIKET_BILLING_INCLUDE,
+    });
+  }
+
+  async hapus(id: number) {
+    const billing = await this.detail(id);
+
+    await this.prisma.tiketBilling.delete({ where: { id } });
+    this.hapusFilePdf(billing.filePdf);
+
+    return { message: `Rekap "${billing.namaRekapan}" berhasil dihapus` };
+  }
+
+  /** Hapus file PDF fisik, dibatasi ke folder uploads/tiket-billing saja. */
+  private hapusFilePdf(filePdf: string): void {
+    const relatif = filePdf.replace(/^\/+/, '');
+
+    if (!relatif.startsWith('uploads/tiket-billing/')) {
+      return;
+    }
+
+    const absolut = normalize(join(process.cwd(), relatif));
+
+    if (!absolut.startsWith(normalize(DIR_UPLOAD))) {
+      return;
+    }
+
+    if (existsSync(absolut)) {
+      unlinkSync(absolut);
+    }
   }
 }

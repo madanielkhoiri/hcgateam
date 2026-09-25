@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { existsSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TiketBillingRekapService } from './tiket-billing-rekap.service';
@@ -26,6 +26,7 @@ function buatService(overrides: {
   findMany?: jest.Mock;
   findUnique?: jest.Mock;
   update?: jest.Mock;
+  deleteFn?: jest.Mock;
 } = {}) {
   const create =
     overrides.create ??
@@ -47,8 +48,10 @@ function buatService(overrides: {
           bulan: 9,
           tahun: 2026,
           subTotal: 1_000_000,
+          filePdf: '/uploads/tiket-billing/contoh.pdf',
         }),
       update: overrides.update ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data })),
+      delete: overrides.deleteFn ?? jest.fn().mockResolvedValue({}),
     },
   } as unknown as PrismaService;
 
@@ -207,5 +210,106 @@ describe('TiketBillingService.hitungRekap', () => {
         data: expect.objectContaining({ grandTotalHitung: 243_496_427 }),
       }),
     );
+  });
+});
+
+describe('TiketBillingService.ubah', () => {
+  it('melempar NotFoundException kalau billing tidak ada', async () => {
+    const { service } = buatService({ findUnique: jest.fn().mockResolvedValue(null) });
+
+    await expect(service.ubah(99, { namaRekapan: 'Baru' })).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('mengubah namaRekapan saja tanpa menyentuh bulan/tahun', async () => {
+    const update = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+    const { service } = buatService({ update });
+
+    await service.ubah(1, { namaRekapan: 'Nama Baru' });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { namaRekapan: 'Nama Baru' },
+      }),
+    );
+  });
+
+  it('menolak bulan tidak valid saat edit', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubah(1, { bulan: '13' })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('mengubah bulan & tahun bersamaan', async () => {
+    const update = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+    const { service } = buatService({ update });
+
+    await service.ubah(1, { bulan: '10', tahun: '2027' });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { bulan: 10, tahun: 2027 },
+      }),
+    );
+  });
+});
+
+describe('TiketBillingService.hapus', () => {
+  it('melempar NotFoundException kalau billing tidak ada', async () => {
+    const { service } = buatService({ findUnique: jest.fn().mockResolvedValue(null) });
+
+    await expect(service.hapus(99)).rejects.toThrow(NotFoundException);
+  });
+
+  it('menghapus record di database', async () => {
+    const deleteFn = jest.fn().mockResolvedValue({});
+    const { service } = buatService({ deleteFn });
+
+    await service.hapus(1);
+
+    expect(deleteFn).toHaveBeenCalledWith({ where: { id: 1 } });
+  });
+
+  it('menghapus file PDF fisik yang path-nya di dalam folder uploads/tiket-billing', async () => {
+    const dir = join(process.cwd(), 'uploads', 'tiket-billing');
+    mkdirSync(dir, { recursive: true });
+    const pathFile = join(dir, 'test-hapus-sungguhan.pdf');
+    writeFileSync(pathFile, 'isi palsu');
+
+    const { service } = buatService({
+      findUnique: jest.fn().mockResolvedValue({
+        id: 5,
+        namaRekapan: 'Akan Dihapus',
+        filePdf: '/uploads/tiket-billing/test-hapus-sungguhan.pdf',
+      }),
+    });
+
+    await service.hapus(5);
+
+    expect(existsSync(pathFile)).toBe(false);
+  });
+
+  it('tidak menghapus file di luar folder uploads/tiket-billing (path-traversal aman)', async () => {
+    const pathLuar = join(process.cwd(), 'uploads', 'jangan-hapus-ini.txt');
+    mkdirSync(join(process.cwd(), 'uploads'), { recursive: true });
+    writeFileSync(pathLuar, 'jangan dihapus');
+
+    const { service } = buatService({
+      findUnique: jest.fn().mockResolvedValue({
+        id: 6,
+        namaRekapan: 'Aneh',
+        filePdf: '/uploads/../jangan-hapus-ini.txt',
+      }),
+    });
+
+    try {
+      await service.hapus(6);
+      expect(existsSync(pathLuar)).toBe(true);
+    } finally {
+      unlinkSync(pathLuar);
+    }
   });
 });

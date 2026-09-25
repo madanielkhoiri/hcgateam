@@ -4,7 +4,15 @@
 // ==================================================
 
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, Max, Min, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * bulan & tahun sengaja string (dikonversi manual di service) - DTO ini
@@ -25,6 +33,25 @@ export class BuatTiketBillingDto {
   @IsString()
   @IsNotEmpty({ message: 'Tahun wajib diisi' })
   tahun: string;
+}
+
+/** Edit metadata Billing (nama/bulan/tahun) - tidak mengulang proses ZIP/PDF. */
+export class UbahTiketBillingDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty({ message: 'Nama rekapan wajib diisi' })
+  @MaxLength(150)
+  namaRekapan?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty({ message: 'Bulan wajib diisi' })
+  bulan?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty({ message: 'Tahun wajib diisi' })
+  tahun?: string;
 }
 
 export class HitungRekapDto {

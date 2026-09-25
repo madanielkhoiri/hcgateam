@@ -112,6 +112,17 @@ export const tiketBillingApi = {
       body: JSON.stringify(dto),
     }),
 
+  ubah: (
+    id: number,
+    dto: { namaRekapan?: string; bulan?: string; tahun?: string },
+  ) =>
+    request<TiketBilling>(`/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    }),
+
+  hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
+
   urlPdf: (filePdf: string) => urlUploads(filePdf.replace(/^\/?uploads\//, '')),
 };
 
