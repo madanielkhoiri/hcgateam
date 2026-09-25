@@ -106,13 +106,18 @@ export class TiketBillingService {
   }
 
   /**
-   * Hitung rekonsiliasi: Sub Total (otomatis, sudah ada dari saat upload)
-   * dikurangi PPN & PPH23 yang diinput admin, lalu dibandingkan dengan
-   * Grand Total dari tagihan resmi vendor (diinput manual juga).
+   * Hitung rekonsiliasi: Sub Total (otomatis, dijumlah dari Grand Total
+   * tiap invoice - JADI SUDAH TERMASUK PPN masing-masing tiket) dikurangi
+   * PPH23 yang diinput admin, lalu dibandingkan dengan Grand Total dari
+   * tagihan resmi vendor. PPN TIDAK dikurangi lagi di sini - sudah
+   * "nempel" di Sub Total, dikurangi lagi = dobel hitung. PPN tetap
+   * disimpan buat referensi/cocokkan dengan breakdown internal saja.
+   * Divalidasi dengan data asli: Sub Total 243.545.987 - PPH23 49.560 =
+   * 243.496.427, persis sama dengan SUBTOTAL final di rekap Excel.
    */
   async hitungRekap(id: number, dto: HitungRekapDto, aktorId: number) {
     const billing = await this.detail(id);
-    const grandTotalHitung = billing.subTotal - dto.ppn - dto.pph23;
+    const grandTotalHitung = billing.subTotal - dto.pph23;
 
     return this.prisma.tiketBilling.update({
       where: { id },
