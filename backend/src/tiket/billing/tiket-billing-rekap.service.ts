@@ -1,16 +1,19 @@
 // ==================================================
 // FILE: backend/src/tiket/billing/tiket-billing-rekap.service.ts
 // FUNGSI: Gabungkan banyak PDF invoice (dari 1 file ZIP) jadi satu PDF
-// rekap dalam grid 8 kotak (2 kolom x 4 baris) per halaman. Urutan
-// pengisian: kiri-kanan per baris, baru turun ke baris berikutnya.
+// rekap, 2 kolom per baris, urutan kiri-kanan baru turun ke baris
+// berikutnya, maksimal 8 invoice per halaman.
 //
 // Tiap invoice dipotong dulu dari atas halaman sampai baris "Grand
 // Total" (bagian "Note" syarat & ketentuan di bawahnya dibuang) —
 // posisi Grand Total dicari otomatis lewat ekstraksi teks PDF (posisi
 // baris ini beda-beda tiap invoice tergantung jumlah penumpangnya).
-// Kalau ada invoice yang setelah dipotong masih tidak muat proporsional
-// di slot 8-grid, halaman itu otomatis turun jadi 6 kotak (2 kolom x 3
-// baris) supaya tetap terbaca, sisanya lanjut ke halaman berikutnya.
+//
+// Tinggi tiap baris MENGIKUTI tinggi konten invoice yang sebenarnya
+// (bukan sel tetap 1/4 atau 1/6 halaman) supaya tidak ada jarak kosong
+// besar di antara baris. Kalau invoice-nya panjang, baris berikutnya
+// otomatis tidak muat lagi di halaman yang sama -> halaman itu berhenti
+// di bawah 8 (mis. 6 atau 4), sisanya lanjut ke halaman berikutnya.
 // ==================================================
 
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -25,19 +28,9 @@ const PAGE_HEIGHT = 841.89;
 const MARGIN = 24;
 const GUTTER = 10;
 const KOLOM = 2;
-const TOLERANSI_TINGGI = 0.5; // pt, jaga-jaga pembulatan
+const MAKS_PER_HALAMAN = 8;
 
-type UkuranSel = { width: number; height: number };
-
-function ukuranSel(baris: number): UkuranSel {
-  return {
-    width: (PAGE_WIDTH - MARGIN * 2 - GUTTER * (KOLOM - 1)) / KOLOM,
-    height: (PAGE_HEIGHT - MARGIN * 2 - GUTTER * (baris - 1)) / baris,
-  };
-}
-
-const SEL_8 = ukuranSel(4);
-const SEL_6 = ukuranSel(3);
+const LEBAR_SEL = (PAGE_WIDTH - MARGIN * 2 - GUTTER * (KOLOM - 1)) / KOLOM;
 
 type InvoiceSumber = {
   nama: string;
@@ -47,6 +40,8 @@ type InvoiceSumber = {
   height: number;
   /** Batas bawah potongan, satuan Y PDF (dari dasar halaman) - untuk boundingBox saat embed. */
   batasBawah: number;
+  /** Tinggi invoice setelah diskalakan mengikuti lebar 1 kolom (dipakai untuk susun baris rapat). */
+  tinggiTerskala: number;
 };
 
 @Injectable()
@@ -79,12 +74,6 @@ export class TiketBillingRekapService {
       nama: entry.entryName,
       data: entry.getData(),
     }));
-  }
-
-  /** Cek apakah invoice muat proporsional (tanpa terpotong) di ukuran sel tertentu saat diskalakan mengikuti lebar sel. */
-  private muatDiSel(item: { width: number; height: number }, sel: UkuranSel): boolean {
-    const skalaMengikutiLebar = sel.width / item.width;
-    return item.height * skalaMengikutiLebar <= sel.height + TOLERANSI_TINGGI;
   }
 
   /**
@@ -166,12 +155,15 @@ export class TiketBillingRekapService {
           ? Math.max(0, yGrandTotal - PADDING_BAWAH_GRAND_TOTAL)
           : 0;
 
+      const tinggiEfektif = height - batasBawah;
+
       sumber.push({
         nama: berkas.nama,
         halaman: halamanPertama,
         width,
-        height: height - batasBawah,
+        height: tinggiEfektif,
         batasBawah,
+        tinggiTerskala: tinggiEfektif * (LEBAR_SEL / width),
       });
     }
 
@@ -180,58 +172,78 @@ export class TiketBillingRekapService {
     }
 
     const dokumenHasil = await PDFDocument.create();
+    const batasBawahHalaman = MARGIN;
 
     let index = 0;
 
     while (index < sumber.length) {
-      const kandidat8 = sumber.slice(index, index + 8);
-      const genap8 = kandidat8.length === 8;
-      const semuaMuat8 = kandidat8.every((item) => this.muatDiSel(item, SEL_8));
-      const pakai8Grid = genap8 && semuaMuat8;
-
-      const sel = pakai8Grid ? SEL_8 : SEL_6;
-      const jumlahDipakai = pakai8Grid ? 8 : Math.min(6, sumber.length - index);
-      const kelompok = sumber.slice(index, index + jumlahDipakai);
-
       const halamanBaru = dokumenHasil.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      let yAtasBaris = PAGE_HEIGHT - MARGIN;
+      let jumlahDiHalamanIni = 0;
 
-      for (let i = 0; i < kelompok.length; i += 1) {
-        const item = kelompok[i];
-        const embedded = await dokumenHasil.embedPage(item.halaman, {
-          left: 0,
-          right: item.width,
-          bottom: item.batasBawah,
-          top: item.batasBawah + item.height,
-        });
+      while (index < sumber.length && jumlahDiHalamanIni < MAKS_PER_HALAMAN) {
+        const kiri = sumber[index];
+        const kanan = sumber[index + 1];
+        const tinggiBaris = Math.max(
+          kiri.tinggiTerskala,
+          kanan?.tinggiTerskala ?? 0,
+        );
 
-        const barisKe = Math.floor(i / KOLOM);
-        const kolomKe = i % KOLOM;
+        // Kalau baris ini bikin melewati batas bawah halaman, berhenti di
+        // sini (kecuali halaman masih kosong sama sekali - tetap ditaruh
+        // supaya invoice yang sangat panjang tidak hilang/infinite loop).
+        if (
+          jumlahDiHalamanIni > 0 &&
+          yAtasBaris - tinggiBaris < batasBawahHalaman
+        ) {
+          break;
+        }
 
-        const skala = Math.min(sel.width / item.width, sel.height / item.height);
-        const gambarWidth = item.width * skala;
-        const gambarHeight = item.height * skala;
+        await this.gambarInvoice(dokumenHasil, halamanBaru, kiri, MARGIN, yAtasBaris);
+        index += 1;
+        jumlahDiHalamanIni += 1;
 
-        const selX = MARGIN + kolomKe * (sel.width + GUTTER);
-        const selYAtas =
-          PAGE_HEIGHT - MARGIN - (barisKe + 1) * sel.height - barisKe * GUTTER;
+        if (kanan) {
+          await this.gambarInvoice(
+            dokumenHasil,
+            halamanBaru,
+            kanan,
+            MARGIN + LEBAR_SEL + GUTTER,
+            yAtasBaris,
+          );
+          index += 1;
+          jumlahDiHalamanIni += 1;
+        }
 
-        // Tengahkan invoice di dalam selnya (biar rapi walau proporsi beda-beda).
-        const x = selX + (sel.width - gambarWidth) / 2;
-        const y = selYAtas + (sel.height - gambarHeight) / 2;
-
-        halamanBaru.drawPage(embedded, {
-          x,
-          y,
-          width: gambarWidth,
-          height: gambarHeight,
-        });
+        yAtasBaris -= tinggiBaris + GUTTER;
       }
-
-      index += jumlahDipakai;
     }
 
     const bytes = await dokumenHasil.save();
     return Buffer.from(bytes);
+  }
+
+  /** Gambar 1 invoice (rata kolom kiri-atas selnya) di posisi (x, yAtas ke bawah). */
+  private async gambarInvoice(
+    dokumenHasil: PDFDocument,
+    halaman: PDFPage,
+    item: InvoiceSumber,
+    x: number,
+    yAtas: number,
+  ): Promise<void> {
+    const embedded = await dokumenHasil.embedPage(item.halaman, {
+      left: 0,
+      right: item.width,
+      bottom: item.batasBawah,
+      top: item.batasBawah + item.height,
+    });
+
+    halaman.drawPage(embedded, {
+      x,
+      y: yAtas - item.tinggiTerskala,
+      width: LEBAR_SEL,
+      height: item.tinggiTerskala,
+    });
   }
 }
 
