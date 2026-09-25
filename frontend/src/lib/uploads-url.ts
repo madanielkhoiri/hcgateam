@@ -20,6 +20,28 @@ export function urlUploads(pathRelatif: string): string {
   return `${API_URL}/uploads/${pathRelatif}${query}`;
 }
 
+/**
+ * Untuk URL file yang dirangkai dari basis API + path di database (mis.
+ * "/uploads/nota/abc.jpg"). Token HANYA ditempel ke URL milik API sendiri;
+ * URL eksternal (http...) dikembalikan apa adanya supaya token tidak bocor.
+ */
+export function urlFileApi(baseApi: string, pathDb: string | null | undefined): string {
+  if (!pathDb) return '';
+
+  if (pathDb.startsWith('http')) {
+    return pathDb;
+  }
+
+  const url = `${baseApi}${pathDb}`;
+  const token = getAccessToken();
+
+  if (!token) {
+    return url;
+  }
+
+  return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+}
+
 // ==================================================
 // SELESAI: frontend/src/lib/uploads-url.ts
 // ==================================================

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { urlFileApi } from "@/lib/uploads-url";
 
 /* <--- halaman detail deklarasi + koreksi OCR manual per baris nota ---> */
 
@@ -651,15 +652,8 @@ export default function HalamanDetailDeklarasi() {
  return pecah[pecah.length - 1] || pathFile;
  };
 
- const urlFile = (pathFile: string | null | undefined) => {
- if (!pathFile) return "";
-
- if (pathFile.startsWith("http")) {
- return pathFile;
- }
-
- return `${apiUrl}${pathFile}`;
- };
+ const urlFile = (pathFile: string | null | undefined) =>
+ urlFileApi(apiUrl, pathFile);
 
  const warnaStatus = (status: string) => {
  if (status === "DRAFT") return "bg-slate-100 text-slate-700";
@@ -2654,13 +2648,14 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => {
- const pathFile =
- saldoDeklarasi.path_file_bukti_pengembalian || "";
- const urlFile = pathFile.startsWith("http")
- ? pathFile
- : apiUrl + pathFile;
-
- window.open(urlFile, "_blank", "noopener,noreferrer");
+ window.open(
+ urlFileApi(
+ apiUrl,
+ saldoDeklarasi.path_file_bukti_pengembalian,
+ ),
+ "_blank",
+ "noopener,noreferrer",
+ );
  }}
  className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-purple-600 px-4 py-3 text-sm font-black text-white transition hover:bg-purple-700"
  >

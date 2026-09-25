@@ -18,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { compressImage } from "@/lib/compress-image";
+import { urlFileApi } from "@/lib/uploads-url";
 
 /* <--- halaman admin pengajuan STD/RAB dan approval FA ---> */
 
@@ -338,11 +339,7 @@ export default function HalamanPengajuanAdmin() {
  const bukaFile = (pathFile: string | null | undefined) => {
  if (!pathFile) return;
 
- const urlFile = pathFile.startsWith("http")
- ? pathFile
- : `${apiUrl}${pathFile}`;
-
- window.open(urlFile, "_blank", "noopener,noreferrer");
+ window.open(urlFileApi(apiUrl, pathFile), "_blank", "noopener,noreferrer");
  };
 
  const ambilData = async (mode: "awal" | "refresh" = "awal") => {

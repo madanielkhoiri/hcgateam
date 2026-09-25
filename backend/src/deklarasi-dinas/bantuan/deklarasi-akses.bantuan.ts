@@ -14,13 +14,14 @@ export const ROLE_PENYETUJU_DEKLARASI: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
+  UserRole.FA,
 ];
 
 /** Lempar 403 kalau role akun bukan salah satu penyetuju Deklarasi Dinas. */
 export function wajibPenyetujuDeklarasi(role: UserRole): void {
   if (!ROLE_PENYETUJU_DEKLARASI.includes(role)) {
     throw new ForbiddenException(
-      'Aksi ini hanya dapat dilakukan oleh Admin/Admin HC/Section Head',
+      'Aksi ini hanya dapat dilakukan oleh Admin/Admin HC/Section Head/FA',
     );
   }
 }
