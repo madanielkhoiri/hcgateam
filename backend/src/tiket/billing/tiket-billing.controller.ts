@@ -1,23 +1,34 @@
 // ==================================================
 // FILE: backend/src/tiket/billing/tiket-billing.controller.ts
-// FUNGSI: Endpoint upload ZIP invoice -> unduh PDF rekap grid
+// FUNGSI: Endpoint Billing (upload ZIP -> simpan histori + PDF rekap)
+// dan Rekapan (hitung rekonsiliasi Sub Total - PPN - PPH23)
 // ==================================================
 
 import {
   BadRequestException,
+  Body,
   Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
   Post,
-  Res,
+  Query,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
-import { TiketBillingRekapService } from './tiket-billing-rekap.service';
+import { BuatTiketBillingDto, HitungRekapDto } from './dto/tiket-billing.dto';
+import { TiketBillingService } from './tiket-billing.service';
+
+type AuthRequest = {
+  user: { id: number };
+};
 
 const zipUpload = FileInterceptor('zip', {
   storage: memoryStorage(),
@@ -48,26 +59,42 @@ const zipUpload = FileInterceptor('zip', {
 @UseGuards(JwtAuthGuard)
 @RequireAccessKey('GA_TRANSPORT_TIKET')
 export class TiketBillingController {
-  constructor(private readonly rekap: TiketBillingRekapService) {}
+  constructor(private readonly service: TiketBillingService) {}
 
-  @Post('rekap')
+  @Get()
+  daftar(@Query('bulan') bulan?: string, @Query('tahun') tahun?: string) {
+    return this.service.daftar({
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+    });
+  }
+
+  @Get(':id')
+  detail(@Param('id', ParseIntPipe) id: number) {
+    return this.service.detail(id);
+  }
+
+  @Post()
   @UseInterceptors(zipUpload)
-  async rekapkan(
+  async buat(
+    @Body() dto: BuatTiketBillingDto,
     @UploadedFile() zip: Express.Multer.File | undefined,
-    @Res() response: Response,
+    @Req() request: AuthRequest,
   ) {
     if (!zip) {
       throw new BadRequestException('File ZIP wajib diunggah');
     }
 
-    const pdf = await this.rekap.generate(zip.buffer);
+    return this.service.buat(dto, zip.buffer, zip.originalname, request.user.id);
+  }
 
-    response
-      .set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename="rekap-billing-tiket.pdf"',
-      })
-      .send(pdf);
+  @Patch(':id/hitung')
+  hitungRekap(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: HitungRekapDto,
+    @Req() request: AuthRequest,
+  ) {
+    return this.service.hitungRekap(id, dto, request.user.id);
   }
 }
 

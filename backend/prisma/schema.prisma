@@ -111,6 +111,9 @@ model User {
   suratTugasDisetujuiSh  SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
   suratTugasDisetujuiPjo SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
 
+  tiketBillingDibuat   TiketBilling[] @relation("PembuatTiketBilling")
+  tiketBillingDihitung TiketBilling[] @relation("PenghitungTiketBilling")
+
   workOrderDisetujuiGl  WorkOrder[] @relation("PenyetujuGlWorkOrder")
   workOrderDisetujuiSh  WorkOrder[] @relation("PenyetujuShWorkOrder")
   workOrderDisetujuiPjo WorkOrder[] @relation("PenyetujuPjoWorkOrder")
@@ -2538,6 +2541,39 @@ model TransportTiketFile {
 
   @@index([tiketId])
   @@map("transport_tiket_file")
+}
+
+/**
+ * Rekap billing tiket - upload ZIP invoice, digabung jadi 1 PDF grid,
+ * lalu (opsional, belakangan) dihitung rekonsiliasinya di modul Rekapan:
+ * Sub Total (otomatis dijumlah dari Grand Total tiap invoice) dikurangi
+ * PPN 11% & PPH 23, dibandingkan dengan Grand Total dari tagihan vendor.
+ */
+model TiketBilling {
+  id               Int       @id @default(autoincrement())
+  namaRekapan      String    @map("nama_rekapan")
+  bulan            Int
+  tahun            Int
+  namaFileZip      String    @map("nama_file_zip")
+  jumlahInvoice    Int       @map("jumlah_invoice")
+  subTotal         Int       @map("sub_total")
+  filePdf          String    @map("file_pdf")
+  ppn              Int?
+  pph23            Int?
+  grandTotalVendor Int?      @map("grand_total_vendor")
+  grandTotalHitung Int?      @map("grand_total_hitung")
+  dihitungOlehId   Int?      @map("dihitung_oleh_id")
+  dihitungPada     DateTime? @map("dihitung_pada")
+  createdBy        Int       @map("created_by")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  pembuat    User  @relation("PembuatTiketBilling", fields: [createdBy], references: [id], onDelete: Restrict)
+  penghitung User? @relation("PenghitungTiketBilling", fields: [dihitungOlehId], references: [id], onDelete: SetNull)
+
+  @@index([bulan, tahun])
+  @@index([createdBy])
+  @@map("tiket_billing")
 }
 
 enum StatusTravel {
