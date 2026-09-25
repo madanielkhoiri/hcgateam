@@ -3,7 +3,7 @@ import { UserRole } from '@prisma/client';
 import { wajibPenyetujuDeklarasi } from './deklarasi-akses.bantuan';
 
 describe('wajibPenyetujuDeklarasi', () => {
-  it.each([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+  it.each([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.FA])(
     'mengizinkan role %s menyetujui/verifikasi Deklarasi Dinas',
     (role) => {
       expect(() => wajibPenyetujuDeklarasi(role)).not.toThrow();

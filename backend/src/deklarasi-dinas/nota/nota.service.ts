@@ -287,6 +287,138 @@ export class NotaService {
   }
   // <--- end --->
 
+  // <--- OCR nota: dipakai saat upload baru dan saat foto nota diganti. Gagal OCR tidak melempar error, nominal diisi manual --->
+  private async bacaNotaDenganOcr(lokasiFile: string) {
+    let hasilOcrText = 'OCR otomatis gagal. Silakan isi nominal manual.';
+    let nominalOcr = 0;
+    let statusVerifikasi: StatusVerifikasiNota = 'BELUM_OCR';
+
+    try {
+      const hasilOcr = await this.ocrSpaceService.bacaNota(
+        lokasiFile.replace(/\\/g, '/'),
+      );
+
+      hasilOcrText = hasilOcr.hasil_ocr_text;
+      nominalOcr = Number(hasilOcr.nominal_ocr || 0);
+      statusVerifikasi = nominalOcr > 0 ? 'OCR_SELESAI' : 'BELUM_OCR';
+    } catch (error) {
+      console.error('OCR.space gagal:', error);
+    }
+
+    return { hasilOcrText, nominalOcr, statusVerifikasi };
+  }
+  // <--- end --->
+
+  private async validasiUbahNota(
+    idNota: number,
+    kategoriNota: string | undefined,
+  ) {
+    const nota = await this.ambilNotaAtauGagal(idNota);
+
+    const deklarasi = await this.ambilDeklarasiAtauGagal(nota.idDeklarasi);
+
+    this.pastikanDeklarasiBisaDiedit(deklarasi);
+
+    await this.pastikanSaldoBelumSelesai(deklarasi);
+
+    if (nota.statusVerifikasi === 'DIVERIFIKASI') {
+      throw new BadRequestException(
+        'Nota yang sudah diverifikasi tidak dapat diubah.',
+      );
+    }
+
+    const kategoriBaru =
+      kategoriNota !== undefined && String(kategoriNota).trim()
+        ? this.validasiKategoriNota(deklarasi, kategoriNota)
+        : undefined;
+
+    return { nota, kategoriBaru };
+  }
+
+  // <--- mengubah nota oleh karyawan: ganti foto (otomatis OCR ulang) dan/atau data settlement --->
+  async ubahNota(
+    idNota: number,
+    file: Express.Multer.File | undefined,
+    data: {
+      kategoriNota?: string;
+      barangJasa?: string;
+      picSettlement?: string;
+      keteranganSettlement?: string;
+      jumlahItemSettlement?: number;
+    },
+  ) {
+    const { nota, kategoriBaru } = await this.validasiUbahNota(
+      idNota,
+      data.kategoriNota,
+    ).catch(async (error: unknown) => {
+      // File yang sudah terlanjur disimpan multer jangan dibiarkan yatim.
+      await this.hapusFileJikaAda(file?.path);
+      throw error;
+    });
+
+    const teksAtauNull = (nilai: string | undefined) =>
+      nilai && String(nilai).trim() ? String(nilai).trim() : null;
+
+    const dataUpdate: Prisma.NotaUncheckedUpdateInput = {};
+
+    if (kategoriBaru) {
+      dataUpdate.kategoriNota = kategoriBaru;
+    }
+
+    if (data.barangJasa !== undefined) {
+      dataUpdate.barangJasa = teksAtauNull(data.barangJasa);
+    }
+
+    if (data.picSettlement !== undefined) {
+      dataUpdate.picSettlement = teksAtauNull(data.picSettlement);
+    }
+
+    if (data.keteranganSettlement !== undefined) {
+      dataUpdate.keteranganSettlement = teksAtauNull(data.keteranganSettlement);
+    }
+
+    if (data.jumlahItemSettlement !== undefined) {
+      dataUpdate.jumlahItemSettlement = Math.max(
+        1,
+        Math.floor(Number(data.jumlahItemSettlement || 1)),
+      );
+    }
+
+    if (file) {
+      const fileKompres = await this.kompresFotoNota(file);
+      const { hasilOcrText, nominalOcr, statusVerifikasi } =
+        await this.bacaNotaDenganOcr(fileKompres.path);
+
+      Object.assign(dataUpdate, {
+        namaFile: fileKompres.filename,
+        pathFile: `/uploads/nota/${fileKompres.filename}`,
+        hasilOcrText,
+        nominalOcr,
+        nominalFinal: nominalOcr,
+        apakahDikoreksi: false,
+        alasanKoreksi: null,
+        statusVerifikasi,
+      });
+    }
+
+    if (Object.keys(dataUpdate).length === 0) {
+      throw new BadRequestException('Tidak ada perubahan yang dikirim.');
+    }
+
+    const notaBaru = await this.prisma.nota.update({
+      where: { id: idNota },
+      data: dataUpdate,
+    });
+
+    if (file) {
+      await this.hapusFileJikaAda(nota.pathFile);
+      await this.hitungUlangTotalDeklarasiDanSaldo(nota.idDeklarasi);
+    }
+
+    return notaBaru;
+  }
+  // <--- end --->
+
   // <--- menyimpan upload nota satu per satu + revisi mengganti nota ditolak --->
   async simpanNotaUpload(
     idDeklarasi: number,
@@ -325,23 +457,8 @@ export class NotaService {
 
     const fileKompres = await this.kompresFotoNota(file);
 
-    let hasilOcrText = 'OCR otomatis gagal. Silakan isi nominal manual.';
-    let nominalOcr = 0;
-    let statusVerifikasi: StatusVerifikasiNota = 'BELUM_OCR';
-
-    try {
-      const lokasiFile = fileKompres.path.replace(/\\/g, '/');
-
-      const hasilOcr = await this.ocrSpaceService.bacaNota(lokasiFile);
-
-      hasilOcrText = hasilOcr.hasil_ocr_text;
-
-      nominalOcr = Number(hasilOcr.nominal_ocr || 0);
-
-      statusVerifikasi = nominalOcr > 0 ? 'OCR_SELESAI' : 'BELUM_OCR';
-    } catch (error) {
-      console.error('OCR.space gagal:', error);
-    }
+    const { hasilOcrText, nominalOcr, statusVerifikasi } =
+      await this.bacaNotaDenganOcr(fileKompres.path);
 
     const notaTersimpan = await this.prisma.nota.create({
       data: {

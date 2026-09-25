@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { compressImage } from "@/lib/compress-image";
+import { urlFileApi } from "@/lib/uploads-url";
 /* <--- dashboard karyawan upload nota + revisi nota + bukti pengembalian saldo ---> */
 type DataPenggunaTersimpan = {
  id: number;
@@ -314,6 +315,9 @@ function headerAuth(): Record<string, string> {
  sedangSimpanOcrManualDashboard,
  setSedangSimpanOcrManualDashboard,
  ] = useState<number | null>(null);
+ const [sedangProsesNotaId, setSedangProsesNotaId] = useState<number | null>(
+ null
+ );
  const [pesanError, setPesanError] = useState("");
  const [pesanSukses, setPesanSukses] = useState("");
  const [saldoDipilih, setSaldoDipilih] = useState<DataSaldo | null>(null);
@@ -485,10 +489,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  };
  const bukaFile = (pathFile: string | null | undefined) => {
  if (!pathFile) return;
- const urlFile = pathFile.startsWith("http")
- ? pathFile
- : `${apiUrl}${pathFile}`;
- window.open(urlFile, "_blank", "noopener,noreferrer");
+ window.open(urlFileApi(apiUrl, pathFile), "_blank", "noopener,noreferrer");
  };
  const ambilDataDashboard = async (
  idPengguna: number,
@@ -773,6 +774,106 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  );
  } finally {
  setSedangSimpanOcrManualDashboard(null);
+ }
+ };
+ const handleGantiFotoNota = async (
+ nota: DataNota,
+ nomorNota: number,
+ fileBaru: File | undefined
+ ) => {
+ if (!fileBaru) return;
+ const yakin = window.confirm(
+ `Ganti foto Nota ${nomorNota}? Foto lama akan diganti dan nominal dibaca ulang otomatis lewat OCR.`
+ );
+ if (!yakin) return;
+ try {
+ setPesanError("");
+ setPesanSukses("");
+ setSedangProsesNotaId(nota.id);
+ const fileTerkompres = await compressImage(fileBaru).catch(() => fileBaru);
+ const formData = new FormData();
+ formData.append("file_nota", fileTerkompres);
+ const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
+ method: "PATCH",
+ headers: headerAuth(),
+ body: formData,
+ });
+ const teksResponse = await response.text();
+ let hasil: any = null;
+ try {
+ hasil = teksResponse ? JSON.parse(teksResponse) : null;
+ } catch {
+ hasil = null;
+ }
+ if (!response.ok) {
+ throw new Error(
+ (Array.isArray(hasil?.message) ? hasil.message[0] : hasil?.message) ||
+ teksResponse ||
+ "Gagal mengganti foto nota."
+ );
+ }
+ if (pengguna) {
+ await ambilDataDashboard(pengguna.id, false);
+ }
+ setPesanSukses(
+ Number(hasil?.nominal_ocr || 0) > 0
+ ? `Foto Nota ${nomorNota} berhasil diganti. OCR membaca nominal ${formatRupiah(
+ hasil.nominal_ocr
+ )}, silakan periksa.`
+ : `Foto Nota ${nomorNota} berhasil diganti, tetapi OCR belum menemukan nominal. Isi nominal manual.`
+ );
+ } catch (error) {
+ setPesanError(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat mengganti foto nota."
+ );
+ } finally {
+ setSedangProsesNotaId(null);
+ }
+ };
+ const handleHapusNotaKaryawan = async (
+ nota: DataNota,
+ nomorNota: number
+ ) => {
+ const yakin = window.confirm(
+ `Yakin ingin menghapus Nota ${nomorNota}? Data yang dihapus tidak bisa dikembalikan.`
+ );
+ if (!yakin) return;
+ try {
+ setPesanError("");
+ setPesanSukses("");
+ setSedangProsesNotaId(nota.id);
+ const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
+ method: "DELETE",
+ headers: headerAuth(),
+ });
+ const teksResponse = await response.text();
+ let hasil: any = null;
+ try {
+ hasil = teksResponse ? JSON.parse(teksResponse) : null;
+ } catch {
+ hasil = null;
+ }
+ if (!response.ok) {
+ throw new Error(
+ (Array.isArray(hasil?.message) ? hasil.message[0] : hasil?.message) ||
+ teksResponse ||
+ "Gagal menghapus nota."
+ );
+ }
+ if (pengguna) {
+ await ambilDataDashboard(pengguna.id, false);
+ }
+ setPesanSukses(`Nota ${nomorNota} berhasil dihapus.`);
+ } catch (error) {
+ setPesanError(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat menghapus nota."
+ );
+ } finally {
+ setSedangProsesNotaId(null);
  }
  };
  const daftarKategoriBerdasarkanSaldo = (saldo: DataSaldo | null) => {
@@ -1934,7 +2035,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  : "bg-white hover:bg-[#eaf2ff]"
  }`}
  >
- <div className="min-w-0">
+ <div className="min-w-0 sm:flex-1">
  <div className="flex flex-wrap items-center gap-2">
  <span className="whitespace-nowrap rounded-full bg-[#eaf2ff] px-3 py-1 text-[11px] font-black text-[#0868f6]">
  Nota {nomorNota}
@@ -1959,7 +2060,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </div>
  )}
  </div>
- <div className="flex shrink-0 items-center gap-2">
+ <div className="flex flex-wrap items-center gap-2 sm:max-w-[62%] sm:justify-end">
  <span className="whitespace-nowrap rounded-xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
  {formatRupiah(nota.nominal_final)}
  </span>
@@ -1970,7 +2071,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  !dianggapMenungguPengembalian &&
  saldo.status_deklarasi_aktif !==
  "DISETUJUI" && (
- <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 p-1">
+ <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 p-1">
  <input
  type="text"
  inputMode="numeric"
@@ -2013,6 +2114,69 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  nota.id
  ? "..."
  : "Simpan"}
+ </button>
+ </div>
+ )}
+ {statusDeklarasiBolehUpload(
+ saldo.status_deklarasi_aktif
+ ) &&
+ saldo.status_saldo !== "SELESAI" &&
+ !dianggapMenungguPengembalian &&
+ saldo.status_deklarasi_aktif !==
+ "DISETUJUI" &&
+ nota.status_verifikasi !==
+ "DIVERIFIKASI" && (
+ <div
+ className="flex items-center gap-2"
+ onClick={(event) =>
+ event.stopPropagation()
+ }
+ >
+ <label
+ className={`inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#0868f6]/30 bg-white px-3 text-xs font-black text-[#0868f6] transition hover:bg-[#eaf2ff] ${
+ sedangProsesNotaId === nota.id
+ ? "pointer-events-none opacity-60"
+ : ""
+ }`}
+ title="Ganti foto nota, nominal dibaca ulang otomatis (OCR)"
+ >
+ {sedangProsesNotaId === nota.id
+ ? "Memproses..."
+ : "Ganti Foto"}
+ <input
+ type="file"
+ accept="image/jpeg,image/png,image/webp"
+ hidden
+ disabled={
+ sedangProsesNotaId === nota.id
+ }
+ onChange={(event) => {
+ const fileDipilih =
+ event.target.files?.[0];
+ event.target.value = "";
+ void handleGantiFotoNota(
+ nota,
+ nomorNota,
+ fileDipilih
+ );
+ }}
+ />
+ </label>
+ <button
+ type="button"
+ disabled={
+ sedangProsesNotaId === nota.id
+ }
+ onClick={() =>
+ void handleHapusNotaKaryawan(
+ nota,
+ nomorNota
+ )
+ }
+ className="h-9 shrink-0 rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+ style={{ fontSize: 12, fontWeight: 900 }}
+ >
+ Hapus
  </button>
  </div>
  )}
