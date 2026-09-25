@@ -2,8 +2,9 @@
 
 // ==================================================
 // FILE: frontend/src/app/ga/transport/tiket/rekapan/page.tsx
-// FUNGSI: Pilih 1 Billing, input PPN & PPH23, sistem hitung
-// Sub Total - PPN - PPH23 lalu bandingkan dengan Grand Total tagihan
+// FUNGSI: Pilih 1 Billing, input PPH23 (PPN cuma referensi - sudah
+// otomatis termasuk di Sub Total dari Grand Total tiap invoice), sistem
+// hitung Sub Total - PPH23 lalu bandingkan dengan Grand Total tagihan
 // vendor (cocok / selisih)
 // ==================================================
 
@@ -78,8 +79,11 @@ function TiketRekapanContent() {
   }, [dipilih?.id]);
 
   const subTotal = dipilih?.subTotal ?? 0;
-  const grandTotalHitungPreview =
-    subTotal - (Number(ppn) || 0) - (Number(pph23) || 0);
+  // PPN TIDAK dikurangi - Sub Total sudah dijumlah dari Grand Total tiap
+  // invoice, yang masing-masing sudah termasuk PPN tiket itu sendiri.
+  // Dikurangi lagi di sini = dobel hitung. PPN cuma disimpan sebagai
+  // referensi/cocokkan dengan breakdown internal.
+  const grandTotalHitungPreview = subTotal - (Number(pph23) || 0);
 
   async function hitungRekap() {
     if (!dipilih) {
@@ -126,10 +130,11 @@ function TiketRekapanContent() {
           <div>
             <h1>Rekapan</h1>
             <p>
-              Pilih Billing yang mau dihitung, input PPN 11% (VAT) &amp; PPH
-              23 (Bukti Potong), sistem hitung Sub Total dikurangi
-              keduanya lalu dibandingkan dengan Grand Total dari tagihan
-              resmi vendor.
+              Pilih Billing yang mau dihitung, input PPH 23 (Bukti Potong)
+              untuk dikurangi dari Sub Total, lalu dibandingkan dengan
+              Grand Total dari tagihan resmi vendor. PPN 11% (VAT) cuma
+              untuk referensi - sudah otomatis termasuk di Sub Total
+              (dijumlah dari Grand Total tiap invoice).
             </p>
           </div>
         </div>
@@ -195,7 +200,7 @@ function TiketRekapanContent() {
 
             <div className={styles.fieldGrid}>
               <label className={styles.field}>
-                <span>PPN 11% (VAT) - Rp</span>
+                <span>PPN 11% (VAT) - Rp (referensi, sudah termasuk di Sub Total)</span>
                 <input
                   className={styles.input}
                   type="number"
@@ -244,7 +249,7 @@ function TiketRekapanContent() {
               }}
             >
               <span style={{ fontSize: 11, color: '#526a85', fontWeight: 700 }}>
-                Sub Total - PPN - PPH23 =
+                Sub Total - PPH23 =
               </span>
               <strong style={{ fontSize: 15, color: '#17375f' }}>
                 {formatRupiah(grandTotalHitungPreview)}
