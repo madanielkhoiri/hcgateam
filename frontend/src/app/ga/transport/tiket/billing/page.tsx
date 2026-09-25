@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { ChangeEvent, useCallback, useEffect, useState } from 'react';
-import { FileStack, Loader2, UploadCloud } from 'lucide-react';
+import { FileStack, Loader2, Pencil, Trash2, UploadCloud } from 'lucide-react';
 import {
   formatPeriode,
   formatRupiah,
@@ -43,6 +43,12 @@ export default function TiketBillingPage() {
   const [bulanForm, setBulanForm] = useState(bulanBerjalan());
   const [tahunForm, setTahunForm] = useState(tahunBerjalan());
   const [proses, setProses] = useState(false);
+
+  const [editTarget, setEditTarget] = useState<TiketBilling | null>(null);
+  const [editNama, setEditNama] = useState('');
+  const [editBulan, setEditBulan] = useState(bulanBerjalan());
+  const [editTahun, setEditTahun] = useState(tahunBerjalan());
+  const [editProses, setEditProses] = useState(false);
 
   const tahunTersedia = Array.from({ length: 6 }, (_, i) => tahunBerjalan() - 4 + i);
 
@@ -119,6 +125,66 @@ export default function TiketBillingPage() {
       setGalat(error instanceof Error ? error.message : 'Rekap gagal dibuat');
     } finally {
       setProses(false);
+    }
+  }
+
+  function bukaEdit(item: TiketBilling) {
+    setEditTarget(item);
+    setEditNama(item.namaRekapan);
+    setEditBulan(item.bulan);
+    setEditTahun(item.tahun);
+    setGalat('');
+  }
+
+  async function simpanEdit() {
+    if (!editTarget) {
+      return;
+    }
+
+    if (!editNama.trim()) {
+      setGalat('Nama rekapan wajib diisi');
+      return;
+    }
+
+    setEditProses(true);
+    setGalat('');
+    setSukses('');
+
+    try {
+      await tiketBillingApi.ubah(editTarget.id, {
+        namaRekapan: editNama.trim(),
+        bulan: String(editBulan),
+        tahun: String(editTahun),
+      });
+
+      setSukses(`"${editNama.trim()}" berhasil diperbarui.`);
+      setEditTarget(null);
+      await muat();
+    } catch (error) {
+      setGalat(error instanceof Error ? error.message : 'Gagal menyimpan perubahan');
+    } finally {
+      setEditProses(false);
+    }
+  }
+
+  async function hapusBilling(item: TiketBilling) {
+    const yakin = window.confirm(
+      `Hapus rekap "${item.namaRekapan}"? PDF & data rekonsiliasinya ikut terhapus dan tidak bisa dikembalikan.`,
+    );
+
+    if (!yakin) {
+      return;
+    }
+
+    setGalat('');
+    setSukses('');
+
+    try {
+      await tiketBillingApi.hapus(item.id);
+      setSukses(`Rekap "${item.namaRekapan}" berhasil dihapus.`);
+      await muat();
+    } catch (error) {
+      setGalat(error instanceof Error ? error.message : 'Gagal menghapus rekap');
     }
   }
 
@@ -240,14 +306,27 @@ export default function TiketBillingPage() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Lihat PDF
+                          PDF
                         </a>
                         <Link
                           href={`/ga/transport/tiket/rekapan?billingId=${item.id}`}
                           className={styles.tombolKecil}
                         >
-                          Hitung Rekap
+                          Hitung
                         </Link>
+
+                        <div className={transportStyles.actions}>
+                          <button type="button" onClick={() => bukaEdit(item)} title="Edit">
+                            <Pencil />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void hapusBilling(item)}
+                            title="Hapus"
+                          >
+                            <Trash2 />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -339,6 +418,85 @@ export default function TiketBillingPage() {
                 ) : (
                   'Buat Rekap'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editTarget ? (
+        <div
+          className={styles.overlay}
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !editProses) {
+              setEditTarget(null);
+            }
+          }}
+        >
+          <div className={styles.dialog}>
+            <h3>Edit Rekapan</h3>
+            <p>Ubah nama, bulan, atau tahun - ZIP/PDF-nya tidak diproses ulang.</p>
+
+            <label className={styles.field}>
+              <span>Nama Rekapan</span>
+              <input
+                className={styles.input}
+                value={editNama}
+                onChange={(event) => setEditNama(event.target.value)}
+                autoFocus
+              />
+            </label>
+
+            <div className={styles.fieldGrid}>
+              <label className={styles.field}>
+                <span>Bulan</span>
+                <select
+                  className={styles.select}
+                  value={editBulan}
+                  onChange={(event) => setEditBulan(Number(event.target.value))}
+                >
+                  {LABEL_BULAN.map((label, index) => (
+                    <option key={label} value={index + 1}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.field}>
+                <span>Tahun</span>
+                <select
+                  className={styles.select}
+                  value={editTahun}
+                  onChange={(event) => setEditTahun(Number(event.target.value))}
+                >
+                  {tahunTersedia.map((tahun) => (
+                    <option key={tahun} value={tahun}>
+                      {tahun}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {galat ? <div className={styles.errorMessage}>{galat}</div> : null}
+
+            <div className={styles.dialogAksi}>
+              <button
+                type="button"
+                className={styles.tombolNetral}
+                onClick={() => setEditTarget(null)}
+                disabled={editProses}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={transportStyles.primary}
+                onClick={() => void simpanEdit()}
+                disabled={editProses}
+              >
+                {editProses ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
           </div>
