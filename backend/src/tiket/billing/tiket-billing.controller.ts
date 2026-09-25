@@ -8,6 +8,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -23,7 +24,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
-import { BuatTiketBillingDto, HitungRekapDto } from './dto/tiket-billing.dto';
+import {
+  BuatTiketBillingDto,
+  HitungRekapDto,
+  UbahTiketBillingDto,
+} from './dto/tiket-billing.dto';
 import { TiketBillingService } from './tiket-billing.service';
 
 type AuthRequest = {
@@ -95,6 +100,16 @@ export class TiketBillingController {
     @Req() request: AuthRequest,
   ) {
     return this.service.hitungRekap(id, dto, request.user.id);
+  }
+
+  @Patch(':id')
+  ubah(@Param('id', ParseIntPipe) id: number, @Body() dto: UbahTiketBillingDto) {
+    return this.service.ubah(id, dto);
+  }
+
+  @Delete(':id')
+  hapus(@Param('id', ParseIntPipe) id: number) {
+    return this.service.hapus(id);
   }
 }
 
