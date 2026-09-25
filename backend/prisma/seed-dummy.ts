@@ -167,14 +167,13 @@ function namaAcak(): string {
 }
 
 const DEPARTEMEN_LIST = [
-  'Human Capital',
-  'General Affair',
-  'Civil Infrastructure',
-  'Administrasi',
-  'Finance & Accounting',
-  'Produksi Tambang',
-  'HSE & Safety',
-  'IT & Sistem Informasi',
+  'HCGA',
+  'PLANT',
+  'PRODUKSI',
+  'SHE',
+  'ENGINEER',
+  'ICT MD',
+  'SCM - FAW',
 ];
 
 const JABATAN_LIST = [
@@ -349,7 +348,7 @@ async function main(): Promise<void> {
   }
 
   // Hubungkan akun login "karyawan" ke satu profil karyawan biar demo login terasa nyata.
-  const departemenHc = departemenRows.find((d) => d.namaDepartemen === 'Human Capital')!;
+  const departemenHc = departemenRows.find((d) => d.namaDepartemen === 'HCGA')!;
   const karyawanDemo = await prisma.karyawan.create({
     data: {
       nik: '12345678',
