@@ -10,7 +10,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
 import {
   Prisma,
   StatusFollowUp,
@@ -39,6 +39,15 @@ export class SubmitRekomendasiDto {
   @IsOptional()
   @IsString()
   catatanMedisTerbatas?: string;
+
+  /**
+   * Wajib bila status FU: nama penyakit/diagnosis yang membuat MCU ini Follow
+   * Up (boleh beberapa, dipisah koma). Dipakai untuk rekap dashboard.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(300, { message: 'Nama penyakit maksimal 300 karakter' })
+  penyakit?: string;
 
   /** Path file PDF rekomendasi hasil upload endpoint dokumen. */
   @IsOptional()
@@ -96,6 +105,11 @@ const REKOMENDASI_INCLUDE = {
   induksiUlang: { select: { id: true, status: true } },
 } satisfies Prisma.RekomendasiMcuInclude;
 
+/** Rapikan spasi berlebih supaya rekap tidak memecah penyakit yang sama karena ketikan. */
+function rapikanPenyakit(nilai?: string): string {
+  return (nilai ?? '').replace(/\s+/g, ' ').trim();
+}
+
 @Injectable()
 export class McuRekomendasiService {
   constructor(
@@ -104,6 +118,19 @@ export class McuRekomendasiService {
     private readonly berkas: McuFileService,
     private readonly notifikasi: McuNotifikasiService,
   ) {}
+
+  /**
+   * Nama penyakit = data medis: hanya HC & Dokter. Peran lain (mis. Admin
+   * Dept) tetap melihat status FIT/FU tapi kolom penyakit dikosongkan.
+   */
+  private saringPenyakit<T extends { penyakit: string | null }>(
+    baris: T,
+    aktor: AktorMcu,
+  ): T {
+    return this.akses.punyaPeran(aktor, UserRole.HC, UserRole.DOKTER)
+      ? baris
+      : { ...baris, penyakit: null };
+  }
 
   /**
    * Daftar administratif (termasuk catatan medis lengkap) — HANYA HC,
@@ -175,7 +202,11 @@ export class McuRekomendasiService {
       this.prisma.rekomendasiMcu.count({ where }),
     ]);
 
-    return hasilHalaman(data, total, param);
+    return hasilHalaman(
+      data.map((item) => this.saringPenyakit(item, aktor)),
+      total,
+      param,
+    );
   }
 
   /** Fetch mentah tanpa gerbang role — pemanggil (mis. pathSuratRujukan) wajib cek otorisasi sendiri. */
@@ -196,7 +227,7 @@ export class McuRekomendasiService {
   async detailAdmin(id: number, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER, UserRole.ADMIN_DEPT);
 
-    return this.detail(id);
+    return this.saringPenyakit(await this.detail(id), aktor);
   }
 
   /** Antrean hasil MCU yang menunggu keputusan Dokter. */
@@ -245,6 +276,14 @@ export class McuRekomendasiService {
       );
     }
 
+    const penyakit = rapikanPenyakit(dto.penyakit);
+
+    if (dto.status === StatusRekomendasi.FOLLOW_UP && !penyakit) {
+      throw new BadRequestException(
+        'Nama penyakit wajib diisi Dokter untuk rekomendasi Follow Up',
+      );
+    }
+
     const siklusKe = (hasil.rekomendasi[0]?.siklusKe ?? 0) + 1;
     const sekarang = new Date();
 
@@ -256,6 +295,7 @@ export class McuRekomendasiService {
           dokterId: aktor.id,
           status: dto.status,
           catatanMedisTerbatas: dto.catatanMedisTerbatas?.trim() || null,
+          penyakit: dto.status === StatusRekomendasi.FOLLOW_UP ? penyakit : null,
           filePdfRekomendasi: dto.filePdfRekomendasi ?? null,
           suratRujukanFu: dto.suratRujukanFu ?? null,
           nomorSuratRujukan:
@@ -383,7 +423,7 @@ export class McuRekomendasiService {
       }),
     );
 
-    return diperbarui;
+    return this.saringPenyakit(diperbarui, aktor);
   }
 
   /** Ringkasan yang aman dilihat karyawan: status saja, tanpa catatan medis. */
