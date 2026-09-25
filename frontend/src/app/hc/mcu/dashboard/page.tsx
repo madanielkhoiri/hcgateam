@@ -15,7 +15,9 @@ import { Memuat, Pesan } from '@/components/mcu/mcu-ui';
 import { StatCardRow, type StatCard } from '@/components/module-shell/stat-card-row';
 import AnimatedLineChart from '@/components/dashboard-charts/animated-line-chart';
 import SimplePieChart from '@/components/dashboard-charts/simple-pie-chart';
+import RekapPenyakit from '@/components/mcu/rekap-penyakit';
 import { mcuApi, type RingkasanMcu, type TrenDashboardMcu } from '@/lib/mcu-api';
+import { useMcu } from '../layout';
 import styles from '../mcu.module.css';
 
 const NAMA_BULAN = [
@@ -24,6 +26,8 @@ const NAMA_BULAN = [
 ];
 
 export default function DashboardMcuPage() {
+  // Rekap penyakit = data medis: hanya HC & Dokter (admin utama otomatis memegang semua peran).
+  const { punyaPeran } = useMcu();
   const [ringkasan, setRingkasan] = useState<RingkasanMcu | null>(null);
   const [tren, setTren] = useState<TrenDashboardMcu | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
@@ -163,6 +167,8 @@ export default function DashboardMcuPage() {
               satuan="kasus"
             />
           </div>
+
+          {punyaPeran('HC', 'DOKTER') ? <RekapPenyakit /> : null}
         </>
       )}
 

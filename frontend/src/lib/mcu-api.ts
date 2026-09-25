@@ -178,6 +178,8 @@ export type Rekomendasi = {
   id: number;
   status: StatusRekomendasi;
   catatanMedisTerbatas: string | null;
+  /** Nama penyakit penyebab Follow Up; hanya diisi untuk HC & Dokter (peran lain null). */
+  penyakit: string | null;
   filePdfRekomendasi: string | null;
   suratRujukanFu: string | null;
   nomorSuratRujukan: string | null;
@@ -301,6 +303,24 @@ export type RingkasanMcu = {
   followUpTerlambat: number;
   induksiMenunggu: number;
   induksiTerjadwal: number;
+};
+
+export type PeriodePenyakitMcu = 'TAHUN' | 'BULAN';
+
+/** Bentuk GET /mcu/dashboard/penyakit (hanya HC & Dokter). */
+export type RekapPenyakitMcu = {
+  periode: PeriodePenyakitMcu;
+  tahun: number;
+  bulan: number | null;
+  totalKasus: number;
+  penyakit: Array<{ nama: string; jumlah: number; persen: number }>;
+  /** Mode TAHUN: 12 bulan; mode BULAN: tiap hari dalam bulan itu. */
+  rincian: Array<{
+    kunci: number;
+    totalKasus: number;
+    teratas: { nama: string; jumlah: number } | null;
+  }>;
+  tahunTersedia: number[];
 };
 
 export type TrenDashboardMcu = {

@@ -1282,6 +1282,8 @@ model RekomendasiMcu {
   dokterId               Int               @map("dokter_id")
   status                 StatusRekomendasi
   catatanMedisTerbatas   String?           @map("catatan_medis_terbatas") @db.Text
+  // Nama penyakit/diagnosis yang membuat MCU ini Follow Up (diisi Dokter; boleh beberapa dipisah koma). Data medis: hanya HC & Dokter.
+  penyakit               String?           @db.Text
   filePdfRekomendasi     String?           @map("file_pdf_rekomendasi")
   suratRujukanFu         String?           @map("surat_rujukan_fu")
   nomorSuratRujukan      String?           @unique @map("nomor_surat_rujukan")

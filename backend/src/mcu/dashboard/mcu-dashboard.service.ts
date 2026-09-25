@@ -16,6 +16,49 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { durasiHari, hariIni } from '../mcu-date.util';
+import { pecahPenyakit } from '../mcu-penyakit.util';
+
+export type PeriodePenyakit = 'TAHUN' | 'BULAN';
+
+type BarisKasusPenyakit = {
+  penyakit: string | null;
+  tanggalSubmit: Date;
+  hasilMcu: { jadwalMcu: { karyawanId: number } };
+};
+
+/** Hitung penyakit terbanyak dari sekumpulan rekomendasi FU: jumlah = karyawan unik yang mengidap. */
+function hitungPenyakit(baris: BarisKasusPenyakit[]) {
+  const perPenyakit = new Map<string, { nama: string; karyawan: Set<number> }>();
+  const semuaKaryawan = new Set<number>();
+
+  for (const item of baris) {
+    const karyawanId = item.hasilMcu.jadwalMcu.karyawanId;
+    const nama = pecahPenyakit(item.penyakit);
+
+    if (nama.length === 0) {
+      continue;
+    }
+
+    semuaKaryawan.add(karyawanId);
+
+    for (const n of nama) {
+      const entri = perPenyakit.get(n.toLowerCase()) ?? { nama: n, karyawan: new Set<number>() };
+      entri.karyawan.add(karyawanId);
+      perPenyakit.set(n.toLowerCase(), entri);
+    }
+  }
+
+  const totalKasus = semuaKaryawan.size;
+  const daftar = Array.from(perPenyakit.values())
+    .map((entri) => ({
+      nama: entri.nama,
+      jumlah: entri.karyawan.size,
+      persen: totalKasus > 0 ? Math.round((entri.karyawan.size / totalKasus) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.jumlah - a.jumlah || a.nama.localeCompare(b.nama));
+
+  return { totalKasus, daftar };
+}
 
 @Injectable()
 export class McuDashboardService {
@@ -274,8 +317,92 @@ export class McuDashboardService {
     });
   }
 
-  /** History lengkap satu karyawan: seluruh siklus MCU sampai FIT. */
-  async historyKaryawan(karyawanId: number) {
+  /**
+   * Rekap penyakit penyebab Follow Up (diisi Dokter di rekomendasi) — penyakit
+   * terbanyak per tahun atau per bulan, plus rincian per bulan (mode TAHUN)
+   * atau per hari (mode BULAN). Satu karyawan dihitung sekali per penyakit di
+   * periode yang sama walau FU-nya berulang. Data medis: pemanggil wajib HC/Dokter.
+   */
+  async penyakitTerbanyak(periode: PeriodePenyakit, tahun: number, bulan?: number) {
+    const awal =
+      periode === 'BULAN'
+        ? new Date(Date.UTC(tahun, (bulan ?? 1) - 1, 1))
+        : new Date(Date.UTC(tahun, 0, 1));
+    const akhir =
+      periode === 'BULAN'
+        ? new Date(Date.UTC(tahun, bulan ?? 1, 1))
+        : new Date(Date.UTC(tahun + 1, 0, 1));
+
+    const [baris, rentangData] = await Promise.all([
+      this.prisma.rekomendasiMcu.findMany({
+        where: {
+          status: StatusRekomendasi.FOLLOW_UP,
+          penyakit: { not: null },
+          tanggalSubmit: { gte: awal, lt: akhir },
+        },
+        select: {
+          penyakit: true,
+          tanggalSubmit: true,
+          hasilMcu: { select: { jadwalMcu: { select: { karyawanId: true } } } },
+        },
+        orderBy: { tanggalSubmit: 'asc' },
+      }),
+      this.prisma.rekomendasiMcu.aggregate({
+        where: { status: StatusRekomendasi.FOLLOW_UP, penyakit: { not: null } },
+        _min: { tanggalSubmit: true },
+        _max: { tanggalSubmit: true },
+      }),
+    ]);
+
+    const utama = hitungPenyakit(baris);
+
+    const jumlahRincian =
+      periode === 'BULAN'
+        ? new Date(Date.UTC(tahun, bulan ?? 1, 0)).getUTCDate()
+        : 12;
+
+    const rincian = Array.from({ length: jumlahRincian }, (_, index) => {
+      const kunci = index + 1;
+      const hasil = hitungPenyakit(
+        baris.filter((item) =>
+          periode === 'BULAN'
+            ? item.tanggalSubmit.getUTCDate() === kunci
+            : item.tanggalSubmit.getUTCMonth() + 1 === kunci,
+        ),
+      );
+
+      return {
+        kunci,
+        totalKasus: hasil.totalKasus,
+        teratas: hasil.daftar[0]
+          ? { nama: hasil.daftar[0].nama, jumlah: hasil.daftar[0].jumlah }
+          : null,
+      };
+    });
+
+    const tahunSekarang = new Date().getUTCFullYear();
+    const tahunAwal = rentangData._min.tanggalSubmit?.getUTCFullYear() ?? tahunSekarang;
+    const tahunAkhir = Math.max(
+      rentangData._max.tanggalSubmit?.getUTCFullYear() ?? tahunSekarang,
+      tahunSekarang,
+    );
+
+    return {
+      periode,
+      tahun,
+      bulan: periode === 'BULAN' ? bulan ?? 1 : null,
+      totalKasus: utama.totalKasus,
+      penyakit: utama.daftar,
+      rincian,
+      tahunTersedia: Array.from(
+        { length: tahunAkhir - tahunAwal + 1 },
+        (_, index) => tahunAkhir - index,
+      ),
+    };
+  }
+
+  /** History lengkap satu karyawan: seluruh siklus MCU sampai FIT. Nama penyakit hanya untuk HC/Dokter. */
+  async historyKaryawan(karyawanId: number, bolehLihatPenyakit = false) {
     const karyawan = await this.prisma.karyawan.findUnique({
       where: { id: karyawanId },
       include: {
@@ -333,6 +460,23 @@ export class McuDashboardService {
       throw new NotFoundException('Karyawan tidak ditemukan');
     }
 
+    const riwayat = bolehLihatPenyakit
+      ? karyawan.jadwalMcu
+      : karyawan.jadwalMcu.map((jadwal) =>
+          jadwal.hasilMcu
+            ? {
+                ...jadwal,
+                hasilMcu: {
+                  ...jadwal.hasilMcu,
+                  rekomendasi: jadwal.hasilMcu.rekomendasi.map((rekom) => ({
+                    ...rekom,
+                    penyakit: null,
+                  })),
+                },
+              }
+            : jadwal,
+        );
+
     const seluruhRekomendasi = karyawan.jadwalMcu.flatMap(
       (jadwal) => jadwal.hasilMcu?.rekomendasi ?? [],
     );
@@ -360,7 +504,7 @@ export class McuDashboardService {
           (rekom) => rekom.status === StatusRekomendasi.FIT,
         ).length,
       },
-      riwayat: karyawan.jadwalMcu,
+      riwayat,
     };
   }
 }

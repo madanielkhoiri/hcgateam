@@ -244,6 +244,8 @@ function RekomendasiAdminPage() {
   const { punyaPeran } = useMcu();
   const adalahDokter = punyaPeran('DOKTER');
   const bolehTeruskan = punyaPeran('ADMIN_DEPT', 'HC');
+  // Nama penyakit = data medis: hanya HC & Dokter (backend juga mengosongkannya untuk peran lain).
+  const bolehLihatPenyakit = punyaPeran('HC', 'DOKTER');
 
   const [rekomendasi, setRekomendasi] = useState<Rekomendasi[]>([]);
   const [antrean, setAntrean] = useState<AntreanHasil[]>([]);
@@ -262,6 +264,7 @@ function RekomendasiAdminPage() {
 
   const [status, setStatus] = useState<StatusRekomendasi>('FIT');
   const [catatan, setCatatan] = useState('');
+  const [penyakit, setPenyakit] = useState('');
   const [filePdfRekomendasi, setFilePdfRekomendasi] = useState<string | null>(
     null,
   );
@@ -331,6 +334,7 @@ function RekomendasiAdminPage() {
     setNamaPasien(nama);
     setStatus('FIT');
     setCatatan('');
+    setPenyakit('');
     setFilePdfRekomendasi(null);
     setSuratRujukanFu(null);
     setReviewTerbuka(true);
@@ -377,6 +381,7 @@ function RekomendasiAdminPage() {
       await mcuApi.kirim(`/rekomendasi/hasil/${hasilMcuId}/submit`, {
         status,
         catatanMedisTerbatas: catatan.trim() || undefined,
+        penyakit: status === 'FOLLOW_UP' ? penyakit.trim() : undefined,
         filePdfRekomendasi: filePdfRekomendasi ?? undefined,
         suratRujukanFu: suratRujukanFu ?? undefined,
         hasilFollowUpAsalId: hasilFuAsalId ?? undefined,
@@ -669,6 +674,7 @@ function RekomendasiAdminPage() {
                   <th>Karyawan</th>
                   <th>Siklus</th>
                   <th>Status</th>
+                  {bolehLihatPenyakit ? <th>Penyakit</th> : null}
                   <th>Dokter</th>
                   <th>Tanggal Submit</th>
                   <th>Diteruskan</th>
@@ -695,6 +701,10 @@ function RekomendasiAdminPage() {
                     <td>
                       <BadgeStatus nilai={item.status} />
                     </td>
+
+                    {bolehLihatPenyakit ? (
+                      <td>{item.status === 'FOLLOW_UP' ? item.penyakit || '-' : '-'}</td>
+                    ) : null}
 
                     <td>{item.dokter.name}</td>
                     <td>{formatWaktu(item.tanggalSubmit)}</td>
@@ -777,6 +787,7 @@ function RekomendasiAdminPage() {
                 disabled={
                   proses ||
                   (status === 'FOLLOW_UP' && !suratRujukanFu) ||
+                  (status === 'FOLLOW_UP' && !penyakit.trim()) ||
                   mengunggah !== null
                 }
               >
@@ -833,6 +844,21 @@ function RekomendasiAdminPage() {
                 </span>
               ) : null}
             </Field>
+
+            {status === 'FOLLOW_UP' ? (
+              <Field label="Nama Penyakit / Diagnosis (wajib)" lebar>
+                <input
+                  className={styles.input}
+                  value={penyakit}
+                  onChange={(event) => setPenyakit(event.target.value)}
+                  maxLength={300}
+                  placeholder="Contoh: Hipertensi. Jika lebih dari satu, pisahkan dengan koma"
+                />
+                <span style={{ fontSize: 11, color: '#7688a0' }}>
+                  Dipakai untuk rekap penyakit terbanyak di dashboard MCU.
+                </span>
+              </Field>
+            ) : null}
 
             {status === 'FOLLOW_UP' ? (
               <Field label="Surat Rujukan FU dari Dokter (wajib)" lebar>
