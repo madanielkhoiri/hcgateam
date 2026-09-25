@@ -19,6 +19,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PDFDocument, PDFPage } from 'pdf-lib';
 import AdmZip from 'adm-zip';
+import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 /** Jarak aman di bawah baseline teks "Grand Total" sebelum dipotong (pt). */
 const PADDING_BAWAH_GRAND_TOTAL = 8;
@@ -77,13 +78,16 @@ export class TiketBillingRekapService {
   }
 
   /**
-   * Cari posisi Y (dari dasar halaman, satuan pt) baris yang memuat teks
-   * "Grand Total". Instance method (bukan fungsi lepas) supaya bisa
-   * di-mock via jest.spyOn di test — pdfjs-dist v5 murni ESM dan tidak
-   * bisa di-load langsung di lingkungan Jest (CommonJS) tanpa
-   * --experimental-vm-modules, padahal jalan normal di runtime Nest asli.
+   * Cari baris "Grand Total" di halaman 1 - posisi Y-nya (buat potong
+   * halaman) dan nominalnya (buat jumlah otomatis Sub Total Billing).
+   * Instance method (bukan fungsi lepas) supaya bisa di-mock via
+   * jest.spyOn di test — pdfjs-dist v5 murni ESM dan tidak bisa di-load
+   * langsung di lingkungan Jest (CommonJS) tanpa --experimental-vm-modules,
+   * padahal jalan normal di runtime Nest asli.
    */
-  private async cariBatasGrandTotal(pdfBytes: Buffer): Promise<number | null> {
+  private async cariGrandTotal(
+    pdfBytes: Buffer,
+  ): Promise<{ y: number; jumlah: number | null } | null> {
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
     const dokumen = await pdfjsLib.getDocument({
@@ -96,22 +100,42 @@ export class TiketBillingRekapService {
       const halaman = await dokumen.getPage(1);
       const konten = await halaman.getTextContent();
 
-      // Kelompokkan per baris (Y dibulatkan) - "Grand" & "Total" kadang jadi
-      // 2 text-run terpisah tapi tetap satu baris yang sama.
-      const baris = new Map<number, string>();
+      // Kelompokkan per baris pakai TOLERANSI jarak (bukan pembulatan ke
+      // grid tetap) - label & nominal di baris yang sama kadang beda
+      // transform Y sampai ~0.5pt (pernah ketemu 308.45 vs 308.55, atau
+      // 374.95 vs 375.05), dan pembulatan ke grid tetap tetap bisa kena
+      // batas .5 di titik lain. Urutkan dulu, lalu gabung item yang
+      // jaraknya dekat dari anchor baris berjalan.
+      const itemUrut = konten.items
+        .filter((item): item is TextItem => 'str' in item)
+        .sort((a, b) => b.transform[5] - a.transform[5]);
 
-      for (const item of konten.items) {
-        if (!('str' in item) || !('transform' in item)) {
-          continue;
+      const TOLERANSI_BARIS = 1.5; // pt
+      const baris: Array<{ y: number; teks: string }> = [];
+
+      for (const item of itemUrut) {
+        const y = item.transform[5];
+        const barisAktif = baris.at(-1);
+
+        if (barisAktif && Math.abs(y - barisAktif.y) <= TOLERANSI_BARIS) {
+          barisAktif.teks += item.str;
+        } else {
+          baris.push({ y, teks: item.str });
         }
-
-        const y = Math.round(item.transform[5]);
-        baris.set(y, `${baris.get(y) ?? ''}${item.str}`);
       }
 
-      for (const [y, teks] of baris) {
+      for (const { y, teks } of baris) {
         if (teks.toLowerCase().replace(/\s+/g, '').includes('grandtotal')) {
-          return y;
+          // Ambil angka nominal di baris ini - urutannya bisa "GrandTotal
+          // IDR 1,313,819.00" ATAU "1,313,819.00 Grand Total IDR"
+          // tergantung urutan text-run di content stream PDF sumbernya,
+          // jadi dicari di mana saja dalam baris (bukan cuma di ujung).
+          const angka = teks.match(/(\d{1,3}(?:,\d{3})*\.\d{1,2})/);
+          const jumlah = angka
+            ? Math.round(parseFloat(angka[1].replace(/,/g, '')))
+            : null;
+
+          return { y, jumlah };
         }
       }
 
@@ -121,10 +145,13 @@ export class TiketBillingRekapService {
     }
   }
 
-  async generate(zipBuffer: Buffer): Promise<Buffer> {
+  async generate(
+    zipBuffer: Buffer,
+  ): Promise<{ pdf: Buffer; subTotal: number; jumlahInvoice: number }> {
     const berkasPdf = this.bacaZip(zipBuffer);
 
     const sumber: InvoiceSumber[] = [];
+    let subTotal = 0;
 
     for (const berkas of berkasPdf) {
       let dokumenSumber: PDFDocument;
@@ -149,11 +176,13 @@ export class TiketBillingRekapService {
       // syarat & ketentuan di bawahnya tidak ikut ditampilkan di grid.
       // Kalau baris Grand Total tidak ketemu (layout tidak terduga),
       // pakai tinggi halaman penuh sebagai fallback aman.
-      const yGrandTotal = await this.cariBatasGrandTotal(berkas.data);
+      const grandTotal = await this.cariGrandTotal(berkas.data);
       const batasBawah =
-        yGrandTotal !== null
-          ? Math.max(0, yGrandTotal - PADDING_BAWAH_GRAND_TOTAL)
+        grandTotal !== null
+          ? Math.max(0, grandTotal.y - PADDING_BAWAH_GRAND_TOTAL)
           : 0;
+
+      subTotal += grandTotal?.jumlah ?? 0;
 
       const tinggiEfektif = height - batasBawah;
 
@@ -220,7 +249,12 @@ export class TiketBillingRekapService {
     }
 
     const bytes = await dokumenHasil.save();
-    return Buffer.from(bytes);
+
+    return {
+      pdf: Buffer.from(bytes),
+      subTotal,
+      jumlahInvoice: sumber.length,
+    };
   }
 
   /** Gambar 1 invoice (rata kolom kiri-atas selnya) di posisi (x, yAtas ke bawah). */
