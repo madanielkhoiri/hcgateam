@@ -108,11 +108,12 @@ describe('TiketBillingRekapService.generate', () => {
     expect(dokumenHasil.getPageCount()).toBe(2);
   });
 
-  it('invoice yang "kepanjangan" (Grand Total dekat dasar halaman) memaksa halaman itu turun jadi grid 6', async () => {
-    // 7 invoice pendek (potongan pendek, muat di grid 8) + 1 invoice
-    // panjang (Grand Total dekat dasar, potongan hampir 1 halaman penuh,
-    // tidak muat proporsional di sel 8-grid) dalam 1 batch pertama.
-    mockBatasGrandTotal(600, 600, 600, 600, 600, 600, 600, 60);
+  it('8 invoice yang "kepanjangan" (Grand Total jauh dari atas) cuma muat 6 di halaman pertama, sisanya lanjut halaman kedua', async () => {
+    // Semua invoice sama-sama panjang (potongan tinggi) - baris demi baris
+    // dipasang rapat mengikuti tinggi asli, begitu baris ke-4 (item 7 & 8)
+    // sudah tidak muat lagi di sisa halaman, berhenti di 6 (3 baris) dan
+    // sisa 2 invoice lanjut ke halaman berikutnya.
+    mockBatasGrandTotal(300, 300, 300, 300, 300, 300, 300, 300);
 
     const service = new TiketBillingRekapService();
     const data = await buatPdfPolos();
@@ -124,8 +125,6 @@ describe('TiketBillingRekapService.generate', () => {
     const hasil = await service.generate(buatZip(files));
     const dokumenHasil = await PDFDocument.load(hasil);
 
-    // 8 invoice tidak semuanya muat di grid 8 -> turun ke grid 6 (6 di
-    // halaman pertama), sisa 2 invoice lanjut ke halaman kedua.
     expect(dokumenHasil.getPageCount()).toBe(2);
   });
 
