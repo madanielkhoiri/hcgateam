@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bus,
   ChevronLeft,
+  FileStack,
   Fuel,
   Menu,
   PanelLeftClose,
@@ -57,6 +58,12 @@ const menuTiket = [
     label: 'Daftar Tiket',
     href: '/ga/transport/tiket/daftar',
     icon: Ticket,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
+  },
+  {
+    label: 'Billing',
+    href: '/ga/transport/tiket/billing',
+    icon: FileStack,
     accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
   },
 ];
