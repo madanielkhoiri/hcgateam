@@ -21,6 +21,20 @@ import {
 import transportStyles from '@/components/transport/transport.module.css';
 import styles from '../billing/billing.module.css';
 
+/** Buang semua karakter selain digit - dipakai supaya state tetap angka polos. */
+function bersihkanAngka(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+/** Format angka polos jadi "243.496.427" (titik ribuan) supaya gampang dibaca pas ngetik. */
+function formatRibuan(value: string): string {
+  if (!value) {
+    return '';
+  }
+
+  return new Intl.NumberFormat('id-ID').format(Number(value));
+}
+
 export default function TiketRekapanPage() {
   return (
     <Suspense fallback={<div className={styles.kosong}>Memuat...</div>}>
@@ -203,10 +217,10 @@ function TiketRekapanContent() {
                 <span>PPN 11% (VAT) - Rp (referensi, sudah termasuk di Sub Total)</span>
                 <input
                   className={styles.input}
-                  type="number"
-                  min="0"
-                  value={ppn}
-                  onChange={(event) => setPpn(event.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatRibuan(ppn)}
+                  onChange={(event) => setPpn(bersihkanAngka(event.target.value))}
                   placeholder="0"
                 />
               </label>
@@ -215,10 +229,10 @@ function TiketRekapanContent() {
                 <span>PPH 23 (Bukti Potong) - Rp</span>
                 <input
                   className={styles.input}
-                  type="number"
-                  min="0"
-                  value={pph23}
-                  onChange={(event) => setPph23(event.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatRibuan(pph23)}
+                  onChange={(event) => setPph23(bersihkanAngka(event.target.value))}
                   placeholder="0"
                 />
               </label>
@@ -228,10 +242,12 @@ function TiketRekapanContent() {
               <span>Grand Total (dari tagihan resmi vendor) - Rp</span>
               <input
                 className={styles.input}
-                type="number"
-                min="0"
-                value={grandTotalVendor}
-                onChange={(event) => setGrandTotalVendor(event.target.value)}
+                type="text"
+                inputMode="numeric"
+                value={formatRibuan(grandTotalVendor)}
+                onChange={(event) =>
+                  setGrandTotalVendor(bersihkanAngka(event.target.value))
+                }
                 placeholder="0"
               />
             </label>
