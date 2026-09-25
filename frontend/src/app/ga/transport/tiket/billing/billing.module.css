@@ -1,0 +1,78 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #d5e1ef;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(31, 68, 114, 0.07);
+}
+
+.uploadBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 18px;
+  color: #7c3caf;
+  background: #fbf7fe;
+  border: 1.5px dashed #d7bee8;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.uploadBox > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.uploadBox strong {
+  color: #17375f;
+  font-size: 13px;
+}
+
+.uploadBox small {
+  color: #8795a7;
+  font-size: 11px;
+}
+
+.uploadBox input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.errorMessage,
+.successMessage {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.errorMessage {
+  color: #b13232;
+  background: #fff0f0;
+  border: 1px solid #efcaca;
+}
+
+.successMessage {
+  color: #087747;
+  background: #e8f8ef;
+  border: 1px solid #bfe5cf;
+}
+
+.spin {
+  animation: putar 0.9s linear infinite;
+}
+
+@keyframes putar {
+  to {
+    transform: rotate(360deg);
+  }
+}
