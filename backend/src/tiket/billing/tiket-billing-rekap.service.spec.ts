@@ -4,23 +4,41 @@ import AdmZip from 'adm-zip';
 import { TiketBillingRekapService } from './tiket-billing-rekap.service';
 
 /**
- * cariBatasGrandTotal() sungguhan pakai pdfjs-dist (ESM murni) yang tidak
- * bisa di-load di lingkungan Jest tanpa --experimental-vm-modules — sudah
+ * cariGrandTotal() sungguhan pakai pdfjs-dist (ESM murni) yang tidak bisa
+ * di-load di lingkungan Jest tanpa --experimental-vm-modules — sudah
  * diverifikasi terpisah lewat ts-node bahwa kodenya jalan normal di
  * runtime Nest asli. Di test ini di-mock lewat jest.spyOn supaya fokus
- * menguji logika grid/potongan milik service sendiri, bukan pdfjs-nya.
+ * menguji logika grid/potongan/jumlah milik service sendiri, bukan
+ * pdfjs-nya.
  */
-function mockBatasGrandTotal(...urutanY: (number | null)[]) {
-  const spy = jest.spyOn(
-    TiketBillingRekapService.prototype as any,
-    'cariBatasGrandTotal',
-  );
-
-  for (const y of urutanY) {
-    spy.mockResolvedValueOnce(y);
+function mockGrandTotal(
+  spy: jest.SpyInstance,
+  ...urutan: Array<{ y: number; jumlah?: number | null } | null>
+) {
+  for (const item of urutan) {
+    spy.mockResolvedValueOnce(
+      item ? { y: item.y, jumlah: item.jumlah ?? null } : null,
+    );
   }
 
   return spy;
+}
+
+function buatSpyGrandTotal() {
+  return jest.spyOn(
+    TiketBillingRekapService.prototype as any,
+    'cariGrandTotal',
+  );
+}
+
+/** Versi ringkas untuk test yang cuma peduli posisi Y (jumlah tidak dipakai). */
+function mockBatasGrandTotal(...urutanY: (number | null)[]) {
+  const spy = buatSpyGrandTotal();
+
+  return mockGrandTotal(
+    spy,
+    ...urutanY.map((y) => (y === null ? null : { y })),
+  );
 }
 
 async function buatPdfPolos(width = 595, height = 842): Promise<Buffer> {
@@ -87,7 +105,7 @@ describe('TiketBillingRekapService.generate', () => {
     }));
 
     const hasil = await service.generate(buatZip(files));
-    const dokumenHasil = await PDFDocument.load(hasil);
+    const dokumenHasil = await PDFDocument.load(hasil.pdf);
 
     expect(dokumenHasil.getPageCount()).toBe(1);
   });
@@ -103,7 +121,7 @@ describe('TiketBillingRekapService.generate', () => {
     }));
 
     const hasil = await service.generate(buatZip(files));
-    const dokumenHasil = await PDFDocument.load(hasil);
+    const dokumenHasil = await PDFDocument.load(hasil.pdf);
 
     expect(dokumenHasil.getPageCount()).toBe(2);
   });
@@ -123,7 +141,7 @@ describe('TiketBillingRekapService.generate', () => {
     }));
 
     const hasil = await service.generate(buatZip(files));
-    const dokumenHasil = await PDFDocument.load(hasil);
+    const dokumenHasil = await PDFDocument.load(hasil.pdf);
 
     expect(dokumenHasil.getPageCount()).toBe(2);
   });
@@ -135,7 +153,7 @@ describe('TiketBillingRekapService.generate', () => {
     const data = await buatPdfPolos();
     const hasil = await service.generate(buatZip([{ nama: '001.pdf', data }]));
 
-    const dokumenHasil = await PDFDocument.load(hasil);
+    const dokumenHasil = await PDFDocument.load(hasil.pdf);
     expect(dokumenHasil.getPageCount()).toBe(1);
   });
 
@@ -154,7 +172,7 @@ describe('TiketBillingRekapService.generate', () => {
       ]),
     );
 
-    const dokumenHasil = await PDFDocument.load(hasil);
+    const dokumenHasil = await PDFDocument.load(hasil.pdf);
     expect(dokumenHasil.getPageCount()).toBe(1);
   });
 
@@ -171,7 +189,54 @@ describe('TiketBillingRekapService.generate', () => {
       ]),
     );
 
-    const dokumenHasil = await PDFDocument.load(hasil);
+    const dokumenHasil = await PDFDocument.load(hasil.pdf);
     expect(dokumenHasil.getPageCount()).toBe(1);
+  });
+
+  it('menjumlahkan nominal Grand Total tiap invoice jadi subTotal', async () => {
+    const spy = buatSpyGrandTotal();
+    mockGrandTotal(
+      spy,
+      { y: 450, jumlah: 1_313_819 },
+      { y: 450, jumlah: 3_581_666 },
+      { y: 450, jumlah: 250_000 },
+    );
+
+    const service = new TiketBillingRekapService();
+    const data = await buatPdfPolos();
+
+    const hasil = await service.generate(
+      buatZip([
+        { nama: '1.pdf', data },
+        { nama: '2.pdf', data },
+        { nama: '3.pdf', data },
+      ]),
+    );
+
+    expect(hasil.subTotal).toBe(1_313_819 + 3_581_666 + 250_000);
+    expect(hasil.jumlahInvoice).toBe(3);
+  });
+
+  it('invoice yang nominalnya gagal ditemukan dianggap 0, tidak menggagalkan proses', async () => {
+    const spy = buatSpyGrandTotal();
+    mockGrandTotal(
+      spy,
+      { y: 450, jumlah: 1_000_000 },
+      { y: 450, jumlah: null },
+      null,
+    );
+
+    const service = new TiketBillingRekapService();
+    const data = await buatPdfPolos();
+
+    const hasil = await service.generate(
+      buatZip([
+        { nama: '1.pdf', data },
+        { nama: '2.pdf', data },
+        { nama: '3.pdf', data },
+      ]),
+    );
+
+    expect(hasil.subTotal).toBe(1_000_000);
   });
 });

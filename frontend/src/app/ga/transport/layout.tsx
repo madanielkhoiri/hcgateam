@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3,
   Bus,
+  Calculator,
   ChevronLeft,
   FileStack,
   Fuel,
@@ -64,6 +65,12 @@ const menuTiket = [
     label: 'Billing',
     href: '/ga/transport/tiket/billing',
     icon: FileStack,
+    accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
+  },
+  {
+    label: 'Rekapan',
+    href: '/ga/transport/tiket/rekapan',
+    icon: Calculator,
     accessKey: ACCESS_KEYS.GA_TRANSPORT_TIKET,
   },
 ];
