@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { ChangeEvent, useCallback, useEffect, useState } from 'react';
-import { FileStack, Loader2, Pencil, Trash2, UploadCloud } from 'lucide-react';
+import { Check, FileStack, Loader2, Pencil, Trash2, UploadCloud, X } from 'lucide-react';
 import {
   formatPeriode,
   formatRupiah,
@@ -269,7 +269,7 @@ export default function TiketBillingPage() {
                   <th>Periode</th>
                   <th>Jml Invoice</th>
                   <th>Sub Total</th>
-                  <th>Status Rekap</th>
+                  <th>Grand Total (Rekap)</th>
                   <th>Dibuat</th>
                   <th>Aksi</th>
                 </tr>
@@ -286,10 +286,21 @@ export default function TiketBillingPage() {
                         <span className={styles.badgeNetral}>
                           Belum dihitung
                         </span>
-                      ) : item.grandTotalHitung === item.grandTotalVendor ? (
-                        <span className={styles.badgeCocok}>Cocok</span>
                       ) : (
-                        <span className={styles.badgeSelisih}>Selisih</span>
+                        <span
+                          className={
+                            item.grandTotalHitung === item.grandTotalVendor
+                              ? styles.hasilCocok
+                              : styles.hasilSelisih
+                          }
+                        >
+                          {formatRupiah(item.grandTotalHitung)}
+                          {item.grandTotalHitung === item.grandTotalVendor ? (
+                            <Check size={14} />
+                          ) : (
+                            <X size={14} />
+                          )}
+                        </span>
                       )}
                     </td>
                     <td>
