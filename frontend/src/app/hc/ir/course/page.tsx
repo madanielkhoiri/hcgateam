@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Eye,
   Inbox,
+  Pencil,
   PlayCircle,
   Plus,
   Trash2,
@@ -57,6 +58,10 @@ export default function IrCoursePage() {
   const [judulBaru, setJudulBaru] = useState('');
   const [deskripsiBaru, setDeskripsiBaru] = useState('');
   const [fileBaru, setFileBaru] = useState<File | null>(null);
+
+  const [editItem, setEditItem] = useState<IrCourseVideo | null>(null);
+  const [editJudul, setEditJudul] = useState('');
+  const [editDeskripsi, setEditDeskripsi] = useState('');
 
   const [videoDitonton, setVideoDitonton] = useState<IrCourseVideo | null>(null);
   const [penonton, setPenonton] = useState<IrCoursePenonton | null>(null);
@@ -111,8 +116,47 @@ export default function IrCoursePage() {
     }
   }
 
+  function bukaEdit(item: IrCourseVideo) {
+    setEditItem(item);
+    setEditJudul(item.judul);
+    setEditDeskripsi(item.deskripsi ?? '');
+    setGalat(null);
+  }
+
+  async function simpanEdit() {
+    if (!editItem) return;
+
+    if (!editJudul.trim()) {
+      setGalat('Judul video wajib diisi');
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+
+    try {
+      await irApi.course.ubah(editItem.id, {
+        judul: editJudul.trim(),
+        deskripsi: editDeskripsi.trim(),
+      });
+      setSukses('Video berhasil diperbarui');
+      setEditItem(null);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
   async function hapus(item: IrCourseVideo) {
-    if (!confirm(`Hapus video "${item.judul}"?`)) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus video "${item.judul}"? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
 
     try {
       await irApi.course.hapus(item.id);
@@ -248,7 +292,16 @@ export default function IrCoursePage() {
                     </button>
                     <button
                       type="button"
+                      className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                      onClick={() => bukaEdit(item)}
+                      aria-label="Edit video"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
                       className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                      aria-label="Hapus video"
                       onClick={() => hapus(item)}
                     >
                       <Trash2 size={13} />
@@ -331,6 +384,62 @@ export default function IrCoursePage() {
                   <span className={styles.dropzoneFile}>{fileBaru.name}</span>
                 ) : null}
               </label>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {editItem && (
+        <Dialog
+          judul="Edit Video IR Course"
+          keterangan="Ubah judul atau deskripsi. File video tidak berubah."
+          onTutup={() => setEditItem(null)}
+          aksi={
+            <>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGhost}`}
+                onClick={() => setEditItem(null)}
+                disabled={proses}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                onClick={simpanEdit}
+                disabled={proses}
+              >
+                {proses ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </>
+          }
+        >
+          <div className={styles.formStack}>
+            {galat && (
+              <div className={`${styles.alert} ${styles.alertError}`}>
+                <AlertCircle size={16} />
+                <span>{galat}</span>
+              </div>
+            )}
+
+            <div className={styles.formField}>
+              <label>Judul Video</label>
+              <input
+                className={styles.formInput}
+                value={editJudul}
+                onChange={(event) => setEditJudul(event.target.value)}
+              />
+            </div>
+
+            <div className={styles.formField}>
+              <label>Deskripsi (opsional)</label>
+              <textarea
+                className={styles.formTextarea}
+                value={editDeskripsi}
+                onChange={(event) => setEditDeskripsi(event.target.value)}
+                rows={2}
+              />
             </div>
           </div>
         </Dialog>

@@ -29,6 +29,7 @@ function buatService(overrides: {
 } = {}) {
   const meetingCreate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const meetingDelete = jest.fn().mockResolvedValue({});
+  const meetingUpdate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const dokumentasiCreate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const dokumentasiDelete = jest.fn().mockResolvedValue({});
   const momCreate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
@@ -40,6 +41,7 @@ function buatService(overrides: {
       findUnique: jest.fn().mockResolvedValue('meeting' in overrides ? overrides.meeting : meetingFixture()),
       findMany: jest.fn().mockResolvedValue(overrides.meetingFindMany ?? []),
       create: meetingCreate,
+      update: meetingUpdate,
       delete: meetingDelete,
     },
     progressMingguan: {
@@ -76,7 +78,7 @@ function buatService(overrides: {
 
   const service = new EpromMeetingService(prisma, akses, file);
 
-  return { service, prisma, file, meetingCreate, meetingDelete, dokumentasiCreate, dokumentasiDelete, momCreate, momUpdate, momDelete };
+  return { service, prisma, file, meetingCreate, meetingUpdate, meetingDelete, dokumentasiCreate, dokumentasiDelete, momCreate, momUpdate, momDelete };
 }
 
 describe('EpromMeetingService.daftarMeeting', () => {
@@ -284,5 +286,110 @@ describe('EpromMeetingService.hapusMom', () => {
 
     expect(momDelete).toHaveBeenCalledWith({ where: { id: 1 } });
     expect(hasil.message).toMatch(/berhasil dihapus/);
+  });
+});
+
+describe('EpromMeetingService.ubahMeeting', () => {
+  it('melempar NotFoundException kalau meeting tidak ada', async () => {
+    const { service } = buatService({ meeting: null });
+
+    await expect(service.ubahMeeting(aktor(UserRole.OWNER), 1, { tanggalMeeting: '2026-02-01' })).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('menolak Vendor bukan pemilik project', async () => {
+    const { service } = buatService({ projectAkses: { kontrak: { vendorId: 999 } } });
+
+    await expect(
+      service.ubahMeeting(aktor(UserRole.VENDOR, { vendorId: 1 }), 1, { tanggalMeeting: '2026-02-01' }),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('menolak body kosong', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubahMeeting(aktor(UserRole.OWNER), 1, {})).rejects.toThrow('Tidak ada data yang diubah');
+  });
+
+  it('menolak tipeLink tanpa refProgressId', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubahMeeting(aktor(UserRole.OWNER), 1, { tipeLink: 'BULANAN' })).rejects.toThrow(
+      'harus diubah bersamaan',
+    );
+  });
+
+  it('menolak progress milik project lain', async () => {
+    const { service } = buatService({ progressBulananDetail: { id: 2, projectId: 999 } });
+
+    await expect(
+      service.ubahMeeting(aktor(UserRole.OWNER), 1, { tipeLink: 'BULANAN', refProgressId: 2 }),
+    ).rejects.toThrow('tidak ditemukan pada project ini');
+  });
+
+  it('berhasil mengubah tanggal', async () => {
+    const { service, meetingUpdate } = buatService();
+
+    await service.ubahMeeting(aktor(UserRole.OWNER), 1, { tanggalMeeting: '2026-02-01' });
+
+    expect(meetingUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { tanggalMeeting: new Date('2026-02-01') },
+    });
+  });
+
+  it('berhasil mengubah sumber progress', async () => {
+    const { service, meetingUpdate } = buatService({ progressBulananDetail: { id: 2, projectId: 1 } });
+
+    await service.ubahMeeting(aktor(UserRole.OWNER), 1, { tipeLink: 'BULANAN', refProgressId: 2 });
+
+    expect(meetingUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { tipeLink: 'BULANAN', refProgressId: 2 },
+    });
+  });
+});
+
+describe('EpromMeetingService.ubahMom', () => {
+  it('melempar NotFoundException kalau MOM tidak ada', async () => {
+    const { service } = buatService({ momDetail: null });
+
+    await expect(service.ubahMom(aktor(UserRole.OWNER), 1, { pica: 'x' })).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak Vendor bukan pemilik project', async () => {
+    const { service } = buatService({ projectAkses: { kontrak: { vendorId: 999 } } });
+
+    await expect(service.ubahMom(aktor(UserRole.VENDOR, { vendorId: 1 }), 1, { pica: 'x' })).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('menolak ubah MOM yang sudah ditutup', async () => {
+    const { service } = buatService({
+      momDetail: { id: 1, meetingId: 1, statusClose: true, dueDate: new Date(), meeting: meetingFixture() },
+    });
+
+    await expect(service.ubahMom(aktor(UserRole.OWNER), 1, { pica: 'x' })).rejects.toThrow(
+      'sudah ditutup tidak dapat diubah',
+    );
+  });
+
+  it('menolak body kosong', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubahMom(aktor(UserRole.OWNER), 1, {})).rejects.toThrow('Tidak ada data yang diubah');
+  });
+
+  it('berhasil mengubah isi MOM yang belum ditutup', async () => {
+    const { service, momUpdate } = buatService();
+
+    await service.ubahMom(aktor(UserRole.OWNER), 1, { pica: ' Perbaiki ', dueDate: '2026-03-01', pic: ' Budi ' });
+
+    expect(momUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { pica: 'Perbaiki', dueDate: new Date('2026-03-01'), pic: 'Budi' },
+    });
   });
 });

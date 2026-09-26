@@ -24,7 +24,9 @@ function buatService(overrides: {
   fileDetail?: unknown;
   fileCreate?: jest.Mock;
   fileDelete?: jest.Mock;
+  fileUpdate?: jest.Mock;
 } = {}) {
+  const fileUpdate = overrides.fileUpdate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const folderCreate = overrides.folderCreate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const folderUpdate = overrides.folderUpdate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const folderDelete = overrides.folderDelete ?? jest.fn().mockResolvedValue({});
@@ -52,6 +54,7 @@ function buatService(overrides: {
       findMany: jest.fn().mockResolvedValue(overrides.fileFindMany ?? []),
       findUnique: jest.fn().mockResolvedValue('fileDetail' in overrides ? overrides.fileDetail : { id: 1, urlFile: 'drive/a.pdf' }),
       create: fileCreate,
+      update: fileUpdate,
       delete: fileDelete,
     },
   } as unknown as PrismaService;
@@ -63,7 +66,7 @@ function buatService(overrides: {
 
   const service = new DriveService(prisma, file);
 
-  return { service, prisma, file, folderCreate, folderUpdate, folderDelete, fileCreate, fileDelete };
+  return { service, prisma, file, folderCreate, folderUpdate, folderDelete, fileCreate, fileDelete, fileUpdate };
 }
 
 describe('DriveService.isiFolder', () => {
@@ -321,6 +324,38 @@ describe('DriveService.trenDanJenis', () => {
     expect(hasil.trenBulanan[6]).toEqual({ bulan: 7, total: 1 });
     // File tahun lalu tidak dihitung ke tren bulanan, tapi tetap dihitung ke breakdown jenis
     expect(hasil.jenisFile).toEqual({ dokumen: 2, spreadsheet: 1, gambar: 1, lainnya: 1 });
+  });
+});
+
+describe('DriveService.ubahFile', () => {
+  it('menolak role selain kelola', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubahFile(aktor(UserRole.KARYAWAN), 1, 'Baru.pdf')).rejects.toThrow(ForbiddenException);
+  });
+
+  it('melempar NotFoundException kalau file tidak ada', async () => {
+    const { service } = buatService({ fileDetail: null });
+
+    await expect(service.ubahFile(aktor(UserRole.ADMIN), 1, 'Baru.pdf')).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak nama file kosong', async () => {
+    const { service, fileUpdate } = buatService();
+
+    await expect(service.ubahFile(aktor(UserRole.ADMIN), 1, '   ')).rejects.toThrow(BadRequestException);
+    expect(fileUpdate).not.toHaveBeenCalled();
+  });
+
+  it('mengganti nama file (dipangkas) tanpa menyentuh file fisik', async () => {
+    const { service, fileUpdate, file } = buatService();
+
+    await service.ubahFile(aktor(UserRole.ADMIN), 1, '  Laporan CSR.pdf ');
+
+    expect(fileUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 1 }, data: { namaFile: 'Laporan CSR.pdf' } }),
+    );
+    expect(file.hapus).not.toHaveBeenCalled();
   });
 });
 

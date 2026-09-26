@@ -15,7 +15,7 @@ import { KipFileService } from './kip-file.service';
 import { BuatKipDto, LOKASI_HOUSEKEEPING_INDOOR, SimpanGpsLokasiDto } from './dto/kip.dto';
 
 /** Radius toleransi jarak dari titik GPS acuan lokasi (meter). */
-const RADIUS_TOLERANSI_METER = 10;
+const RADIUS_TOLERANSI_METER = 1;
 
 /** Jarak antar dua titik GPS pakai formula Haversine (meter). */
 function jarakMeter(lat1: number, lon1: number, lat2: number, lon2: number): number {

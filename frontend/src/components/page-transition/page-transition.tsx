@@ -17,7 +17,18 @@ export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div key={pathname} className={styles.enter}>
+    <div
+      key={pathname}
+      className={styles.enter}
+      // CSS `transform` (termasuk translateY(0) di akhir animasi) membuat
+      // elemen ini jadi containing block baru untuk descendant
+      // `position: fixed` — modal/dialog di halaman manapun jadi terpotong
+      // mengikuti batas div ini, bukan viewport penuh. Lepas animation
+      // begitu selesai supaya transform kembali ke none.
+      onAnimationEnd={(event) => {
+        event.currentTarget.style.animation = 'none';
+      }}
+    >
       {children}
     </div>
   );

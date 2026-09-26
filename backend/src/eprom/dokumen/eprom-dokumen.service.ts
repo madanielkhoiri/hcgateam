@@ -32,6 +32,11 @@ export class BuatDokumenSuratDto {
   tanggal: string;
 }
 
+export class UbahDokumenSuratDto {
+  @IsDateString()
+  tanggal: string;
+}
+
 @Injectable()
 export class EpromDokumenService {
   constructor(
@@ -71,6 +76,22 @@ export class EpromDokumenService {
         fileUrl,
         tanggal: new Date(dto.tanggal),
       },
+    });
+  }
+
+  /** Mengubah tanggal dokumen saja; file tidak diganti. */
+  async ubah(aktor: AktorEprom, id: number, dto: UbahDokumenSuratDto) {
+    const item = await this.prisma.dokumenSurat.findUnique({ where: { id } });
+
+    if (!item) {
+      throw new NotFoundException('Dokumen tidak ditemukan');
+    }
+
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+
+    return this.prisma.dokumenSurat.update({
+      where: { id },
+      data: { tanggal: new Date(dto.tanggal) },
     });
   }
 

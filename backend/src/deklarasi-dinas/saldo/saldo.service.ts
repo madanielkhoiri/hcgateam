@@ -57,6 +57,8 @@ export class SaldoService {
         totalPenggunaan: 0,
         sisaSaldo: nominalTransfer,
         tanggalTransfer: new Date(data.tanggal_transfer),
+        tanggalMulai: data.tanggal_mulai ? new Date(data.tanggal_mulai) : null,
+        tanggalSelesai: data.tanggal_selesai ? new Date(data.tanggal_selesai) : null,
         keterangan: data.keterangan ? data.keterangan.trim() : null,
         nomorStd:
           data.nomor_std && data.nomor_std.trim()

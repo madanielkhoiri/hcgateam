@@ -61,6 +61,30 @@ export class IrCourseService {
     });
   }
 
+  /** Ubah metadata video (judul/deskripsi); file video tidak diganti. */
+  async ubah(id: number, data: { judul?: string; deskripsi?: string }) {
+    const video = await this.prisma.irCourseVideo.findUnique({ where: { id } });
+
+    if (!video) {
+      throw new NotFoundException('Video tidak ditemukan');
+    }
+
+    const perubahan: { judul?: string; deskripsi?: string | null } = {};
+
+    if (data.judul !== undefined) {
+      if (!data.judul?.trim()) {
+        throw new BadRequestException('Judul video wajib diisi');
+      }
+      perubahan.judul = data.judul.trim();
+    }
+
+    if (data.deskripsi !== undefined) {
+      perubahan.deskripsi = data.deskripsi?.trim() || null;
+    }
+
+    return this.prisma.irCourseVideo.update({ where: { id }, data: perubahan });
+  }
+
   async hapus(id: number) {
     const video = await this.prisma.irCourseVideo.findUnique({ where: { id } });
 

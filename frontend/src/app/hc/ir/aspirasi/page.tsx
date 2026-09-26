@@ -16,6 +16,7 @@ import {
   ClipboardList,
   Inbox,
   MessageSquareText,
+  Pencil,
   Plus,
   Power,
   Trash2,
@@ -50,6 +51,10 @@ export default function AspirasiKaryawanPage() {
   const [tipeBaru, setTipeBaru] = useState<TipeAspirasiPertanyaan>('ESSAY');
   const [opsiBaru, setOpsiBaru] = useState<string[]>(['', '']);
   const [proses, setProses] = useState(false);
+
+  const [editItem, setEditItem] = useState<AspirasiPertanyaanKelola | null>(null);
+  const [teksEdit, setTeksEdit] = useState('');
+  const [opsiEdit, setOpsiEdit] = useState<string[]>([]);
 
   const [rekap, setRekap] = useState<AspirasiRekap | null>(null);
   const [jawabanForm, setJawabanForm] = useState<Record<number, string>>({});
@@ -144,6 +149,75 @@ export default function AspirasiKaryawanPage() {
     }
   }
 
+  function bukaEdit(item: AspirasiPertanyaanKelola) {
+    setEditItem(item);
+    setTeksEdit(item.teks);
+    setOpsiEdit(
+      item.tipe === 'PILIHAN_GANDA'
+        ? [...item.opsi]
+            .sort((a, b) => a.urutan - b.urutan)
+            .map((opsi) => opsi.teks)
+        : [],
+    );
+    setGalat(null);
+    setSukses(null);
+  }
+
+  function tambahOpsiEdit() {
+    setOpsiEdit((current) => [...current, '']);
+  }
+
+  function hapusOpsiEdit(index: number) {
+    setOpsiEdit((current) => current.filter((_, i) => i !== index));
+  }
+
+  function ubahOpsiEdit(index: number, nilai: string) {
+    setOpsiEdit((current) =>
+      current.map((item, i) => (i === index ? nilai : item)),
+    );
+  }
+
+  const opsiAsli = editItem
+    ? [...editItem.opsi].sort((a, b) => a.urutan - b.urutan).map((o) => o.teks)
+    : [];
+  const opsiEditBersih = opsiEdit.map((item) => item.trim()).filter(Boolean);
+  const opsiBerubah =
+    editItem?.tipe === 'PILIHAN_GANDA' &&
+    JSON.stringify(opsiEditBersih) !== JSON.stringify(opsiAsli);
+
+  async function simpanEdit() {
+    if (!editItem) return;
+
+    if (!teksEdit.trim()) {
+      setGalat('Teks pertanyaan wajib diisi');
+      return;
+    }
+
+    if (editItem.tipe === 'PILIHAN_GANDA' && opsiEditBersih.length < 2) {
+      setGalat('Pilihan ganda minimal 2 opsi');
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+
+    try {
+      await irApi.aspirasi.ubah(editItem.id, {
+        teks: teksEdit.trim(),
+        // Opsi hanya dikirim bila benar-benar berubah, karena backend
+        // mengganti seluruh opsi (jawaban lama ke opsi itu jadi kosong).
+        ...(opsiBerubah ? { opsi: opsiEditBersih } : {}),
+      });
+      setSukses('Pertanyaan berhasil diperbarui');
+      setEditItem(null);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
   async function ubahStatusAktif(item: AspirasiPertanyaanKelola) {
     try {
       await irApi.aspirasi.ubah(item.id, { aktif: !item.aktif });
@@ -154,7 +228,13 @@ export default function AspirasiKaryawanPage() {
   }
 
   async function hapusPertanyaan(item: AspirasiPertanyaanKelola) {
-    if (!confirm(`Hapus pertanyaan "${item.teks}"?`)) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus pertanyaan "${item.teks}"? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
 
     try {
       await irApi.aspirasi.hapus(item.id);
@@ -299,6 +379,14 @@ export default function AspirasiKaryawanPage() {
                   >
                     <BarChart3 size={13} />
                     Rekap
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                    onClick={() => bukaEdit(item)}
+                  >
+                    <Pencil size={13} />
+                    Edit
                   </button>
                   <button
                     type="button"
@@ -514,6 +602,104 @@ export default function AspirasiKaryawanPage() {
                   className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
                   style={{ alignSelf: 'flex-start' }}
                   onClick={tambahOpsi}
+                >
+                  <Plus size={13} />
+                  Tambah Opsi
+                </button>
+              </div>
+            )}
+          </div>
+        </Dialog>
+      )}
+
+      {editItem && (
+        <Dialog
+          judul="Edit Pertanyaan Aspirasi"
+          keterangan={`Tipe pertanyaan (${
+            editItem.tipe === 'PILIHAN_GANDA' ? 'Pilihan Ganda' : 'Essay'
+          }) tidak bisa diubah.`}
+          onTutup={() => setEditItem(null)}
+          aksi={
+            <>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGhost}`}
+                onClick={() => setEditItem(null)}
+                disabled={proses}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                onClick={simpanEdit}
+                disabled={proses}
+              >
+                {proses ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </>
+          }
+        >
+          <div className={styles.formStack}>
+            {galat && (
+              <div className={`${styles.alert} ${styles.alertError}`}>
+                <AlertCircle size={16} />
+                <span>{galat}</span>
+              </div>
+            )}
+
+            {editItem._count.jawaban > 0 && (
+              <div className={`${styles.alert} ${styles.alertError}`}>
+                <AlertCircle size={16} />
+                <span>
+                  Pertanyaan ini sudah punya {editItem._count.jawaban} jawaban.
+                  Mengubah teks pertanyaan dapat membuat jawaban lama tidak
+                  lagi sesuai
+                  {editItem.tipe === 'PILIHAN_GANDA'
+                    ? ', dan mengubah opsi akan mengosongkan pilihan pada jawaban yang sudah masuk'
+                    : ''}
+                  .
+                </span>
+              </div>
+            )}
+
+            <div className={styles.formField}>
+              <label>Teks Pertanyaan</label>
+              <textarea
+                className={styles.formTextarea}
+                value={teksEdit}
+                onChange={(event) => setTeksEdit(event.target.value)}
+                rows={2}
+              />
+            </div>
+
+            {editItem.tipe === 'PILIHAN_GANDA' && (
+              <div className={styles.formField}>
+                <label>Opsi Jawaban</label>
+                {opsiEdit.map((opsi, index) => (
+                  <div key={index} className={styles.opsiRow}>
+                    <input
+                      className={styles.formInput}
+                      value={opsi}
+                      onChange={(event) => ubahOpsiEdit(index, event.target.value)}
+                      placeholder={`Opsi ${index + 1}`}
+                    />
+                    {opsiEdit.length > 2 && (
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => hapusOpsiEdit(index)}
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
+                  style={{ alignSelf: 'flex-start' }}
+                  onClick={tambahOpsiEdit}
                 >
                   <Plus size={13} />
                   Tambah Opsi

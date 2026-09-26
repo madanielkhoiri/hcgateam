@@ -7,6 +7,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -71,5 +72,11 @@ export class AnakMagangController {
   ) {
     this.akses.wajibPeran(aktor, UserRole.HC);
     return this.service.ubah(id, dto);
+  }
+
+  @Delete(':id')
+  hapus(@Aktor() aktor: AktorMcu, @Param('id', ParseIntPipe) id: number) {
+    this.akses.wajibPeran(aktor, UserRole.HC);
+    return this.service.hapus(id);
   }
 }

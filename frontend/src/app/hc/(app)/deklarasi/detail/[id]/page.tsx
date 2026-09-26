@@ -7,15 +7,18 @@ import {
  CheckCircle2,
  FileText,
  MapPin,
+ Pencil,
  Printer,
  ReceiptText,
  RefreshCw,
  ShieldCheck,
+ Trash2,
  Wallet,
  XCircle,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { urlFileApi } from "@/lib/uploads-url";
 
 /* <--- halaman detail deklarasi + koreksi OCR manual per baris nota ---> */
 
@@ -25,7 +28,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string | null;
  nomor_telepon: string | null;
- role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "HC" | "KARYAWAN";
  kode_tiket?: string | null;
 };
 
@@ -42,10 +45,11 @@ type DataDeklarasi = {
  keterangan: string;
  nomor_std?: string | null;
  total_nominal: string | number;
- status: "DRAFT" | "DIAJUKAN" | "DIVERIFIKASI" | "DISETUJUI" | "DITOLAK";
+ status: "DRAFT" | "DIAJUKAN" | "DIVERIFIKASI" | "MENUNGGU_FA" | "DISETUJUI" | "DITOLAK";
+ alasan_ditolak?: string | null;
+ tanggal_disetujui?: string | null;
  dibuat_pada: string;
  diperbarui_pada: string;
- alasan_ditolak?: string | null;
 };
 
 type DataNota = {
@@ -140,37 +144,51 @@ export default function HalamanDetailDeklarasi() {
  "FORM_SETTLEMENT" | "DATABASE_SETTLEMENT"
  >("FORM_SETTLEMENT");
 
+ const [modalEditTerbuka, setModalEditTerbuka] = useState(false);
+ const [editTanggal, setEditTanggal] = useState("");
+ const [editLokasi, setEditLokasi] = useState("");
+ const [editKeterangan, setEditKeterangan] = useState("");
+ const [sedangSimpanEdit, setSedangSimpanEdit] = useState(false);
+ const [pesanErrorEdit, setPesanErrorEdit] = useState("");
+ const [sedangHapusNota, setSedangHapusNota] = useState<number | null>(null);
+
  const [nominalOcrManual, setNominalOcrManual] = useState<
  Record<number, string>
  >({});
 
  const apakahAdminFa =
- penggunaLogin?.role === "SUPER_ADMIN" ||
- penggunaLogin?.role === "ADMIN" ||
- penggunaLogin?.role === "SECTION_HEAD" ||
- penggunaLogin?.role === "FA";
+   penggunaLogin?.role === "SUPER_ADMIN" ||
+   penggunaLogin?.role === "ADMIN" ||
+   penggunaLogin?.role === "HC" ||
+   penggunaLogin?.role === "FA";
+ const tahapHc = ["SUPER_ADMIN", "ADMIN", "HC"].includes(penggunaLogin?.role || "");
+ const tahapFa = penggunaLogin?.role === "FA";
+
+ // Backend hanya mengizinkan edit deklarasi / hapus nota saat DRAFT atau DITOLAK.
+ const bolehEditDeklarasi =
+ !!deklarasi && ["DRAFT", "DITOLAK"].includes(deklarasi.status);
 
  const halamanKembali = apakahAdminFa ? "/hc/admin" : "/hc";
  const teksKembali = apakahAdminFa
  ? "Kembali ke Dashboard Admin"
  : "Kembali ke Dashboard";
 
- const bolehVerifikasi = apakahAdminFa && deklarasi?.status === "DIAJUKAN";
+ const bolehVerifikasi = tahapHc && deklarasi?.status === "DIAJUKAN";
 
  const bolehSetujui =
- apakahAdminFa &&
- deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi?.status);
+ tahapFa &&
+   deklarasi &&
+   ["MENUNGGU_FA", "DIVERIFIKASI"].includes(deklarasi?.status);
 
  const bolehTolak =
- apakahAdminFa &&
+ (tahapHc || tahapFa) &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi?.status);
+ ["DIAJUKAN", "DIVERIFIKASI", "MENUNGGU_FA"].includes(deklarasi?.status);
 
  const bolehKoreksiNota =
- apakahAdminFa &&
+ (tahapHc || tahapFa) &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI", "DITOLAK"].includes(deklarasi?.status);
+ ["DIAJUKAN", "DIVERIFIKASI", "MENUNGGU_FA", "DITOLAK"].includes(deklarasi?.status);
 
  const daftarNotaUrut = useMemo(() => {
  return [...daftarNota].sort((a, b) => {
@@ -565,6 +583,16 @@ export default function HalamanDetailDeklarasi() {
  }).format(hasilTanggal);
  };
 
+ const lamaPenyelesaianHari = () => {
+ if (!saldoDeklarasi?.tanggal_transfer || !deklarasi?.tanggal_disetujui) return null;
+ const tanggalTransfer = new Date(saldoDeklarasi.tanggal_transfer);
+ const tanggalDisetujui = new Date(deklarasi.tanggal_disetujui);
+ const hariTransfer = Date.UTC(tanggalTransfer.getFullYear(), tanggalTransfer.getMonth(), tanggalTransfer.getDate());
+ const hariDisetujui = Date.UTC(tanggalDisetujui.getFullYear(), tanggalDisetujui.getMonth(), tanggalDisetujui.getDate());
+ const selisih = Math.floor((hariDisetujui - hariTransfer) / 86400000);
+ return selisih >= 0 ? selisih : null;
+ };
+
  const formatTanggalSingkat = (tanggal: string | null | undefined) => {
  if (!tanggal) return "-";
 
@@ -637,20 +665,13 @@ export default function HalamanDetailDeklarasi() {
  return pecah[pecah.length - 1] || pathFile;
  };
 
- const urlFile = (pathFile: string | null | undefined) => {
- if (!pathFile) return "";
-
- if (pathFile.startsWith("http")) {
- return pathFile;
- }
-
- return `${apiUrl}${pathFile}`;
- };
+ const urlFile = (pathFile: string | null | undefined) =>
+ urlFileApi(apiUrl, pathFile);
 
  const warnaStatus = (status: string) => {
  if (status === "DRAFT") return "bg-slate-100 text-slate-700";
  if (status === "DIAJUKAN") return "bg-blue-50 text-blue-700";
- if (status === "DIVERIFIKASI") return "bg-amber-50 text-amber-700";
+ if (status === "DIVERIFIKASI" || status === "MENUNGGU_FA") return "bg-amber-50 text-amber-700";
  if (status === "DISETUJUI") return "bg-emerald-50 text-emerald-700";
  if (status === "DITOLAK") return "bg-red-50 text-red-700";
  return "bg-slate-100 text-slate-700";
@@ -1068,6 +1089,119 @@ export default function HalamanDetailDeklarasi() {
  );
  } finally {
  setSedangSimpanOcrManual(null);
+ }
+ };
+
+ const handleBukaEditDeklarasi = () => {
+ if (!deklarasi) return;
+
+ setEditTanggal(String(deklarasi.tanggal_kegiatan || "").slice(0, 10));
+ setEditLokasi(deklarasi.lokasi || "");
+ setEditKeterangan(deklarasi.keterangan || "");
+ setPesanErrorEdit("");
+ setModalEditTerbuka(true);
+ };
+
+ const handleSimpanEditDeklarasi = async () => {
+ if (!deklarasi) return;
+
+ if (!editTanggal) {
+ setPesanErrorEdit("Tanggal kegiatan wajib diisi.");
+ return;
+ }
+
+ if (!editLokasi.trim()) {
+ setPesanErrorEdit("Lokasi wajib diisi.");
+ return;
+ }
+
+ if (!editKeterangan.trim()) {
+ setPesanErrorEdit("Keterangan wajib diisi.");
+ return;
+ }
+
+ try {
+ setPesanErrorEdit("");
+ setPesanError("");
+ setPesanSukses("");
+ setSedangSimpanEdit(true);
+
+ const response = await fetch(`${apiUrl}/deklarasi/${deklarasi.id}/edit`, {
+ method: "PATCH",
+ headers: {
+ "Content-Type": "application/json",
+ ...headerAuth(),
+ },
+ body: JSON.stringify({
+ tanggal_kegiatan: editTanggal,
+ lokasi: editLokasi.trim(),
+ keterangan: editKeterangan.trim(),
+ }),
+ });
+
+ const hasil = await response.json().catch(() => null);
+
+ if (!response.ok) {
+ const pesan = Array.isArray(hasil?.message)
+ ? hasil.message.join(", ")
+ : hasil?.message;
+
+ throw new Error(pesan || "Gagal menyimpan perubahan deklarasi.");
+ }
+
+ setModalEditTerbuka(false);
+ await ambilUlangDataDetail();
+ setPesanSukses("Deklarasi berhasil diperbarui.");
+ } catch (error) {
+ setPesanErrorEdit(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat menyimpan perubahan deklarasi."
+ );
+ } finally {
+ setSedangSimpanEdit(false);
+ }
+ };
+
+ const handleHapusNota = async (nota: DataNota, nomorNota: number) => {
+ const yakin = window.confirm(
+ `Yakin ingin menghapus Nota ${nomorNota} (${ambilNamaFile(
+ nota.path_file
+ )})? Data yang dihapus tidak bisa dikembalikan.`
+ );
+
+ if (!yakin) return;
+
+ try {
+ setPesanError("");
+ setPesanSukses("");
+ setSedangHapusNota(nota.id);
+
+ const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
+ method: "DELETE",
+ headers: headerAuth(),
+ });
+
+ const hasil = await response.json().catch(() => null);
+
+ if (!response.ok) {
+ const pesan = Array.isArray(hasil?.message)
+ ? hasil.message.join(", ")
+ : hasil?.message;
+
+ throw new Error(pesan || "Gagal menghapus nota.");
+ }
+
+ await ambilUlangDataDetail();
+ setPesanSukses(`Nota ${nomorNota} berhasil dihapus.`);
+ } catch (error) {
+ setPesanError(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat menghapus nota."
+ );
+ } finally {
+ setSedangHapusNota(null);
  }
  };
 
@@ -1579,6 +1713,7 @@ export default function HalamanDetailDeklarasi() {
  return "hotel";
  }
  if (teksKategori.includes("MAKAN")) return "uang_makan";
+ if (teksKategori.includes("LAUNDRY")) return "lain_lain";
 
  return "lain_lain";
  };
@@ -1919,6 +2054,17 @@ export default function HalamanDetailDeklarasi() {
  Refresh
  </button>
 
+ {bolehEditDeklarasi && (
+ <button
+ type="button"
+ onClick={handleBukaEditDeklarasi}
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-[#0868f6] transition hover:bg-[#eaf2ff]"
+ >
+ <Pencil className="h-4 w-4" />
+ Edit Deklarasi
+ </button>
+ )}
+
  {deklarasi?.status === "DISETUJUI" && (
  <>
  {deklarasi?.jenis_deklarasi === "UANG_OPERASIONAL" ? (
@@ -1966,7 +2112,7 @@ export default function HalamanDetailDeklarasi() {
  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-900/20 transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
  >
  <ShieldCheck className="h-4 w-4" />
- {sedangUbahStatus ? "Memproses..." : "Verifikasi"}
+ {sedangUbahStatus ? "Memproses..." : "Setujui oleh HC"}
  </button>
  )}
 
@@ -2041,15 +2187,28 @@ export default function HalamanDetailDeklarasi() {
 
  <div>
  <div className="text-base font-black text-blue-700">
- Menunggu Pemeriksaan Admin / FA
+ Menunggu Persetujuan Admin HC
  </div>
 
  <div className="mt-1 text-sm leading-6 text-blue-700">
- Setujui atau tolak setiap nota terlebih dahulu. Jika nominal
- OCR salah, gunakan kolom OCR Manual di baris nota.
+ Admin HC akan memeriksa deklarasi dan nota terlebih dahulu.
+ Setelah disetujui HC, deklarasi diteruskan ke FA untuk
+ persetujuan akhir.
  </div>
  </div>
  </div>
+ </div>
+ )}
+ {deklarasi?.status === "MENUNGGU_FA" && (
+ <div className="mt-5 rounded-[28px] border border-amber-100 bg-amber-50 px-5 py-4">
+ <div className="text-base font-black text-amber-800">Menunggu Persetujuan FA</div>
+ <div className="mt-1 text-sm text-amber-800">Admin HC telah menyetujui deklarasi ini.</div>
+ </div>
+ )}
+ {deklarasi?.status === "DITOLAK" && deklarasi.alasan_ditolak && (
+ <div className="mt-5 rounded-[28px] border border-red-100 bg-red-50 px-5 py-4">
+ <div className="text-base font-black text-red-700">Alasan deklarasi ditolak</div>
+ <div className="mt-1 whitespace-pre-wrap text-sm text-red-700">{deklarasi.alasan_ditolak}</div>
  </div>
  )}
 
@@ -2104,7 +2263,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  </div>
 
- <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+ <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
  <div className="rounded-2xl bg-slate-50 px-4 py-4">
  <div className="text-xs font-semibold text-slate-500">
  Saldo Transfer
@@ -2114,6 +2273,9 @@ export default function HalamanDetailDeklarasi() {
  ? formatRupiah(saldoDeklarasi.nominal_transfer)
  : "-"}
  </div>
+ {saldoDeklarasi && (
+ <div className="mt-1 text-xs text-slate-500">Ditransfer {formatTanggal(saldoDeklarasi.tanggal_transfer)}</div>
+ )}
  </div>
 
  <div className="rounded-2xl bg-slate-50 px-4 py-4">
@@ -2139,6 +2301,13 @@ export default function HalamanDetailDeklarasi() {
  >
  {saldoDeklarasi ? formatRupiah(saldoDeklarasi.sisa_saldo) : "-"}
  </div>
+ </div>
+ <div className="rounded-2xl bg-emerald-50 px-4 py-4">
+ <div className="text-xs font-semibold text-emerald-700">Lama Penyelesaian Deklarasi</div>
+ <div className="mt-2 text-lg font-black text-emerald-800">
+ {lamaPenyelesaianHari() !== null ? `${lamaPenyelesaianHari()} hari` : deklarasi?.status === "DISETUJUI" ? "Tanggal transfer belum tersedia" : "Belum disetujui"}
+ </div>
+ {deklarasi?.tanggal_disetujui && <div className="mt-1 text-xs text-emerald-700">Disetujui {formatTanggalJam(deklarasi.tanggal_disetujui)}</div>}
  </div>
  </div>
 
@@ -2260,6 +2429,11 @@ export default function HalamanDetailDeklarasi() {
  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700">
  {formatKategoriNota(nota.kategori_nota)}
  </span>
+ {nota.keterangan_settlement && (nota.kategori_nota === "MAKAN" || nota.kategori_nota === "TRANSPORTASI") && (
+ <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+ {nota.keterangan_settlement}
+ </span>
+ )}
 
  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
  Upload Jam {formatJam(nota.dibuat_pada)}
@@ -2428,6 +2602,25 @@ export default function HalamanDetailDeklarasi() {
  </div>
  )}
 
+ {bolehEditDeklarasi &&
+ nota.status_verifikasi !== "DIVERIFIKASI" && (
+ <div className="mt-4">
+ <button
+ type="button"
+ disabled={sedangHapusNota === nota.id}
+ onClick={() => handleHapusNota(nota, nomorNota)}
+ className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+ >
+ {sedangHapusNota === nota.id ? (
+ <RefreshCw className="h-4 w-4 animate-spin" />
+ ) : (
+ <Trash2 className="h-4 w-4" />
+ )}
+ Hapus Nota
+ </button>
+ </div>
+ )}
+
  <div className="mt-3 text-xs font-semibold text-slate-400">
  ID Nota: #{nota.id} • Upload lengkap:{" "}
  {formatTanggalJam(nota.dibuat_pada)} • Upload Jam{" "}
@@ -2497,13 +2690,14 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => {
- const pathFile =
- saldoDeklarasi.path_file_bukti_pengembalian || "";
- const urlFile = pathFile.startsWith("http")
- ? pathFile
- : apiUrl + pathFile;
-
- window.open(urlFile, "_blank", "noopener,noreferrer");
+ window.open(
+ urlFileApi(
+ apiUrl,
+ saldoDeklarasi.path_file_bukti_pengembalian,
+ ),
+ "_blank",
+ "noopener,noreferrer",
+ );
  }}
  className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-purple-600 px-4 py-3 text-sm font-black text-white transition hover:bg-purple-700"
  >
@@ -2614,7 +2808,7 @@ export default function HalamanDetailDeklarasi() {
  <tbody>
  <tr>
  <td className="pdf-logo-cell" rowSpan={4}>
- <img src="/PPA_cut.png" alt="PPA" className="pdf-logo" />
+ <img src={urlFile("/uploads/signatures/PPA_cut.png")} alt="PPA" className="pdf-logo" />
  </td>
  <td className="pdf-title-cell" colSpan={4} rowSpan={4}>
  DEKLARASI PERJALANAN DINAS
@@ -2820,7 +3014,7 @@ export default function HalamanDetailDeklarasi() {
  <tbody>
  <tr>
  <td className="pdf-logo-cell" rowSpan={3}>
- <img src="/PPA_cut.png" alt="PPA" className="pdf-logo" />
+ <img src={urlFile("/uploads/signatures/PPA_cut.png")} alt="PPA" className="pdf-logo" />
  </td>
  <td className="pdf-title-cell" rowSpan={2}>
  SETTLEMENT PERMOHONAN BIAYA
@@ -3161,6 +3355,90 @@ export default function HalamanDetailDeklarasi() {
 
  </div>
  </section>
+ {modalEditTerbuka && (
+ <div
+ className="no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+ onClick={(event) => {
+ if (event.target === event.currentTarget && !sedangSimpanEdit) {
+ setModalEditTerbuka(false);
+ }
+ }}
+ >
+ <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
+ <h2 className="text-xl font-black text-slate-900">Edit Deklarasi</h2>
+ <p className="mt-1 text-sm text-slate-500">
+ Ubah tanggal kegiatan, lokasi, dan keterangan.
+ {deklarasi?.status === "DITOLAK"
+ ? " Setelah disimpan, status deklarasi kembali menjadi DRAFT."
+ : ""}
+ </p>
+
+ {pesanErrorEdit && (
+ <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+ {pesanErrorEdit}
+ </div>
+ )}
+
+ <div className="mt-4 grid gap-4">
+ <div>
+ <label className="mb-1 block text-sm font-bold text-slate-700">
+ Tanggal Kegiatan
+ </label>
+ <input
+ type="date"
+ value={editTanggal}
+ onChange={(event) => setEditTanggal(event.target.value)}
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
+ />
+ </div>
+
+ <div>
+ <label className="mb-1 block text-sm font-bold text-slate-700">
+ Lokasi
+ </label>
+ <input
+ type="text"
+ value={editLokasi}
+ onChange={(event) => setEditLokasi(event.target.value)}
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
+ />
+ </div>
+
+ <div>
+ <label className="mb-1 block text-sm font-bold text-slate-700">
+ Keterangan
+ </label>
+ <textarea
+ rows={3}
+ value={editKeterangan}
+ onChange={(event) => setEditKeterangan(event.target.value)}
+ className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0868f6] focus:ring-4 focus:ring-[#eaf2ff]"
+ />
+ </div>
+ </div>
+
+ <div className="mt-6 flex justify-end gap-3">
+ <button
+ type="button"
+ disabled={sedangSimpanEdit}
+ onClick={() => setModalEditTerbuka(false)}
+ className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+ >
+ Batal
+ </button>
+ <button
+ type="button"
+ disabled={sedangSimpanEdit}
+ onClick={handleSimpanEditDeklarasi}
+ className="rounded-2xl bg-[#0868f6] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0757d0] disabled:opacity-60"
+ >
+ {sedangSimpanEdit ? "Menyimpan..." : "Simpan"}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+
  <style jsx global>{`
  @media print {
 

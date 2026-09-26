@@ -21,7 +21,9 @@ function buatService(overrides: {
   createMany?: jest.Mock;
   albumDelete?: jest.Mock;
   fotoDelete?: jest.Mock;
+  albumUpdate?: jest.Mock;
 } = {}) {
+  const albumUpdate = overrides.albumUpdate ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const createMany = overrides.createMany ?? jest.fn().mockResolvedValue({});
   const albumDelete = overrides.albumDelete ?? jest.fn().mockResolvedValue({});
@@ -34,6 +36,7 @@ function buatService(overrides: {
         Promise.resolve('albumDetail' in overrides ? overrides.albumDetail : ('album' in overrides ? overrides.album : albumFixture())),
       ),
       create,
+      update: albumUpdate,
       delete: albumDelete,
     },
     albumFoto: {
@@ -50,7 +53,7 @@ function buatService(overrides: {
 
   const service = new AlbumService(prisma, file);
 
-  return { service, prisma, file, create, createMany, albumDelete, fotoDelete };
+  return { service, prisma, file, create, createMany, albumDelete, fotoDelete, albumUpdate };
 }
 
 describe('AlbumService.daftar', () => {
@@ -127,6 +130,55 @@ describe('AlbumService.tambahFoto', () => {
 
     expect(createMany).toHaveBeenCalledWith({
       data: [{ albumId: 1, urlFoto: 'album/a.jpg' }, { albumId: 1, urlFoto: 'album/b.jpg' }],
+    });
+  });
+});
+
+describe('AlbumService.ubahAlbum', () => {
+  it('menolak role selain kelola', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.ubahAlbum(aktor(UserRole.KARYAWAN), 1, { judul: 'Baru' }),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('melempar NotFoundException kalau album tidak ada', async () => {
+    const { service } = buatService({ album: null });
+
+    await expect(
+      service.ubahAlbum(aktor(UserRole.ADMIN), 1, { judul: 'Baru' }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('menolak judul kosong', async () => {
+    const { service, albumUpdate } = buatService();
+
+    await expect(
+      service.ubahAlbum(aktor(UserRole.ADMIN), 1, { judul: '   ' }),
+    ).rejects.toThrow(BadRequestException);
+    expect(albumUpdate).not.toHaveBeenCalled();
+  });
+
+  it('memperbarui judul dan deskripsi (dipangkas) dan mengosongkan deskripsi jadi null', async () => {
+    const { service, albumUpdate } = buatService();
+
+    await service.ubahAlbum(aktor(UserRole.ADMIN), 1, { judul: '  Judul Baru ', deskripsi: '   ' });
+
+    expect(albumUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { judul: 'Judul Baru', deskripsi: null },
+    });
+  });
+
+  it('tidak menyentuh field yang tidak dikirim', async () => {
+    const { service, albumUpdate } = buatService();
+
+    await service.ubahAlbum(aktor(UserRole.ADMIN), 1, { deskripsi: 'Keterangan' });
+
+    expect(albumUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { deskripsi: 'Keterangan' },
     });
   });
 });
