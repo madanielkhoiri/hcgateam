@@ -78,6 +78,8 @@ type DataSaldo = {
  sisa_saldo: string | number;
  nominal_pengembalian?: string | number | null;
  tanggal_transfer: string;
+ tanggal_mulai?: string | null;
+ tanggal_selesai?: string | null;
  keterangan: string | null;
  status_saldo: StatusSaldo;
  nama_file_bukti_pengembalian?: string | null;
@@ -132,13 +134,8 @@ const daftarKategoriPerjalananDinas: PilihanKategoriNota[] = [
  deskripsi: "Kategori biaya makan perjalanan dinas.",
  },
  {
- value: "AKOMODASI",
- label: "Akomodasi",
- deskripsi: "Hotel, penginapan, mess, dan biaya tempat tinggal.",
- },
- {
  value: "TRANSPORTASI",
- label: "Transportasi",
+ label: "Transport",
  deskripsi: "Tiket, BBM, taksi, ojek, parkir, dan perjalanan.",
  },
  {
@@ -327,6 +324,8 @@ const [fileNota, setFileNota] = useState<File | null>(null);
  const [jumlahItemSettlementNota, setJumlahItemSettlementNota] = useState("1");
  const [picSettlementNota, setPicSettlementNota] = useState("");
  const [keteranganSettlementNota, setKeteranganSettlementNota] = useState("");
+ const [waktuMakanNota, setWaktuMakanNota] = useState("");
+ const [ruteTransportNota, setRuteTransportNota] = useState("");
  const [notaRevisiDipilih, setNotaRevisiDipilih] = useState("");
  const [fileRevisiBatch, setFileRevisiBatch] = useState<
  Record<number, File | null>
@@ -409,6 +408,14 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  month: "short",
  year: "numeric",
  }).format(hasil);
+ };
+
+ const durasiPerjalanan = (saldo: DataSaldo) => {
+ if (!saldo.tanggal_mulai || !saldo.tanggal_selesai) return null;
+ const mulai = new Date(`${saldo.tanggal_mulai.slice(0, 10)}T00:00:00`);
+ const selesai = new Date(`${saldo.tanggal_selesai.slice(0, 10)}T00:00:00`);
+ const hari = Math.floor((selesai.getTime() - mulai.getTime()) / 86400000) + 1;
+ return hari > 0 ? hari : null;
  };
  const formatJam = (tanggal: string | null | undefined) => {
  if (!tanggal) return "-";
@@ -917,6 +924,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setBarangJasaNota("");
  setPicSettlementNota("");
  setKeteranganSettlementNota("");
+ setWaktuMakanNota("");
+ setRuteTransportNota("");
  setFileNota(null);
  setTimeout(() => {
  const inputNota = document.getElementById(
@@ -1140,6 +1149,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  () => fileRevisiAsli
  );
 
+ const kategoriRevisiAktif = kategoriRevisiBatch[nota.id] || nota.kategori_nota;
  if (saldoDipilih.jenis_saldo === "UANG_OPERASIONAL") {
  if (!(barangJasaRevisiBatch[String(nota.id)] || "").trim()) {
  throw new Error(`Nama Barang / Jasa revisi Nota #${nota.id} wajib diisi.`);
@@ -1152,6 +1162,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  if (!(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()) {
  throw new Error(`Keterangan revisi Nota #${nota.id} wajib diisi.`);
  }
+ } else if ((kategoriRevisiAktif === "MAKAN" || kategoriRevisiAktif === "TRANSPORTASI") && !(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()) {
+ throw new Error(kategoriRevisiAktif === "MAKAN" ? `Waktu makan revisi Nota #${nota.id} wajib diisi.` : `Tujuan/rute transportasi revisi Nota #${nota.id} wajib diisi.`);
  }
 
  const formData = new FormData();
@@ -1166,6 +1178,10 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("jumlah_item_settlement", String(Math.max(1, Math.floor(Number(jumlahItemSettlementRevisiBatch[String(nota.id)] || 1)))));
  formData.append("pic_settlement", (picSettlementRevisiBatch[String(nota.id)] || "").trim());
  formData.append("keterangan_settlement", (keteranganSettlementRevisiBatch[String(nota.id)] || "").trim());
+ } else if (kategoriRevisiAktif === "MAKAN") {
+ formData.append("keterangan_settlement", `Waktu makan: ${(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()}`);
+ } else if (kategoriRevisiAktif === "TRANSPORTASI") {
+ formData.append("keterangan_settlement", `Tujuan/rute: ${(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()}`);
  }
 
  formData.append("file_nota", fileRevisi);
@@ -1270,6 +1286,14 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  return;
  }
  }
+ if (saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "MAKAN" && !waktuMakanNota) {
+ setPesanError("Pilih waktu makan: pagi, siang, atau malam.");
+ return;
+ }
+ if (saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "TRANSPORTASI" && !ruteTransportNota.trim()) {
+ setPesanError("Isi tujuan atau rute transportasi.");
+ return;
+ }
  try {
  setPesanError("");
  setPesanSukses("");
@@ -1282,6 +1306,10 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("jumlah_item_settlement", jumlahItemSettlementNota || "1");
  formData.append("pic_settlement", picSettlementNota.trim());
  formData.append("keterangan_settlement", keteranganSettlementNota.trim());
+ } else if (kategoriDipilih === "MAKAN") {
+ formData.append("keterangan_settlement", `Waktu makan: ${waktuMakanNota}`);
+ } else if (kategoriDipilih === "TRANSPORTASI") {
+ formData.append("keterangan_settlement", `Tujuan/rute: ${ruteTransportNota.trim()}`);
  }
 
  const fileNotaTerkompres = await compressImage(fileNota).catch(
@@ -1930,6 +1958,13 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  <p className="mt-1 text-sm font-black text-slate-900">
  {formatRupiah(saldo.nominal_transfer)}
  </p>
+ {saldo.jenis_saldo === "PERJALANAN_DINAS" && (
+ <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+ {saldo.tanggal_mulai && saldo.tanggal_selesai ? (
+ <>Perjalanan {formatTanggal(saldo.tanggal_mulai)} – {formatTanggal(saldo.tanggal_selesai)} ({durasiPerjalanan(saldo) ?? "-"} hari). Uang mencakup Makan, Transport{(durasiPerjalanan(saldo) ?? 0) > 3 ? " & Laundry" : ""}.</>
+ ) : "Uang perjalanan mencakup Makan dan Transport. Tanggal perjalanan belum tercatat."}
+ </p>
+ )}
  </div>
  <div className="rounded-2xl bg-white p-4">
  <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
@@ -2574,6 +2609,21 @@ const indexNotaRevisiDipilih =
  </div>
  )}
 
+{saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && (kategoriAktif === "MAKAN" || kategoriAktif === "TRANSPORTASI") && (
+ <div className="mb-3">
+ <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+ {kategoriAktif === "MAKAN" ? "Waktu makan" : "Tujuan atau rute transportasi"}
+ </label>
+ {kategoriAktif === "MAKAN" ? (
+ <select value={keteranganSettlementRevisiBatch[String(nota.id)] || ""} onChange={(event) => setKeteranganSettlementRevisiBatch((prev) => ({ ...prev, [String(nota.id)]: event.target.value }))} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+ <option value="">Pilih waktu makan</option><option value="Pagi">Pagi</option><option value="Siang">Siang</option><option value="Malam">Malam</option>
+ </select>
+ ) : (
+ <input type="text" value={keteranganSettlementRevisiBatch[String(nota.id)] || ""} onChange={(event) => setKeteranganSettlementRevisiBatch((prev) => ({ ...prev, [String(nota.id)]: event.target.value }))} placeholder="Contoh: Kantor ke bandara" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800" />
+ )}
+ </div>
+ )}
+
 <input
  id={`file_revisi_batch_${nota.id}`}
  type="file"
@@ -2643,7 +2693,24 @@ const indexNotaRevisiDipilih =
  )
  )}
  </div>
- <div className={saldoDipilih.status_deklarasi_aktif === "DITOLAK" ? "hidden" : ""}> {saldoDipilih?.jenis_saldo === "UANG_OPERASIONAL" && (
+ <div className={saldoDipilih.status_deklarasi_aktif === "DITOLAK" ? "hidden" : ""}>
+ {saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "MAKAN" && (
+ <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+ <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-blue-700">Waktu makan</label>
+ <select value={waktuMakanNota} onChange={(event) => setWaktuMakanNota(event.target.value)} className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold text-slate-800">
+ <option value="">Pilih waktu makan</option><option value="Pagi">Pagi</option><option value="Siang">Siang</option><option value="Malam">Malam</option>
+ </select>
+ <p className="mt-2 text-xs font-semibold text-blue-700">Waktu makan ini akan terlihat pada rincian nota deklarasi.</p>
+ </div>
+ )}
+ {saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "TRANSPORTASI" && (
+ <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+ <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-blue-700">Tujuan atau rute transportasi</label>
+ <input type="text" value={ruteTransportNota} onChange={(event) => setRuteTransportNota(event.target.value)} placeholder="Contoh: Kantor ke bandara" className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold text-slate-800" />
+ <p className="mt-2 text-xs font-semibold text-blue-700">Tujuan transportasi ini akan terlihat pada rincian nota deklarasi.</p>
+ </div>
+ )}
+ {saldoDipilih?.jenis_saldo === "UANG_OPERASIONAL" && (
  <div className="grid gap-3 rounded-3xl border border-cyan-100 bg-cyan-50/70 p-4 sm:grid-cols-2">
  <div className="sm:col-span-2">
  <div className="mb-2 inline-flex rounded-full bg-cyan-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">

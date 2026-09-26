@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 // ==================================================
 // FILE: frontend/src/app/hc/tugas-dinas/[id]/page.tsx
 // FUNGSI: Detail Surat Tugas Dinas - unduh PDF, setujui/tolak (PJO)
 // ==================================================
 
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -17,7 +17,7 @@ import {
   RefreshCw,
   UserRound,
   XCircle,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   BadgeStatusSurat,
   Dialog,
@@ -26,16 +26,16 @@ import {
   Memuat,
   Panel,
   Pesan,
-} from '@/components/tugas-dinas/tugas-dinas-ui';
-import { getStoredUser } from '@/lib/access-control';
+} from "@/components/tugas-dinas/tugas-dinas-ui";
+import { getStoredUser } from "@/lib/access-control";
 import {
   formatRupiah,
   formatTanggal,
   formatTanggalWaktu,
   suratTugasApi,
   type SuratTugasDinas,
-} from '@/lib/surat-tugas-dinas-api';
-import styles from '../tugas-dinas.module.css';
+} from "@/lib/surat-tugas-dinas-api";
+import styles from "../tugas-dinas.module.css";
 
 export default function DetailTugasDinasPage() {
   const params = useParams<{ id: string }>();
@@ -50,7 +50,7 @@ export default function DetailTugasDinasPage() {
   const [sukses, setSukses] = useState<string | null>(null);
 
   const [dialogTolak, setDialogTolak] = useState(false);
-  const [alasanTolak, setAlasanTolak] = useState('');
+  const [alasanTolak, setAlasanTolak] = useState("");
 
   function terapkanSurat(data: SuratTugasDinas) {
     setSurat(data);
@@ -62,9 +62,7 @@ export default function DetailTugasDinasPage() {
     setGalat(null);
 
     try {
-      const data = await suratTugasApi.ambil<SuratTugasDinas>(
-        `/${params.id}`,
-      );
+      const data = await suratTugasApi.ambil<SuratTugasDinas>(`/${params.id}`);
       terapkanSurat(data);
     } catch (error) {
       setGalat((error as Error).message);
@@ -78,19 +76,20 @@ export default function DetailTugasDinasPage() {
   }, [muat]);
 
   const isAdmin =
-    currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+    currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN";
 
   const bolehMemproses =
     surat &&
     currentUser &&
     (isAdmin ||
-      (surat.status === 'MENUNGGU_SH' && currentUser.role === 'SECTION_HEAD') ||
-      (surat.status === 'MENUNGGU_PJO' && currentUser.role === 'PJO')) &&
-    (surat.status === 'MENUNGGU_SH' || surat.status === 'MENUNGGU_PJO');
+      (surat.status === "MENUNGGU_SH" && currentUser.role === "SECTION_HEAD") ||
+      (surat.status === "MENUNGGU_PJO" && currentUser.role === "PJO")) &&
+    (surat.status === "MENUNGGU_SH" || surat.status === "MENUNGGU_PJO");
 
-  const labelSetujui = surat?.status === 'MENUNGGU_SH'
-    ? 'Setujui sebagai SH'
-    : 'Setujui sebagai PJO';
+  const labelSetujui =
+    surat?.status === "MENUNGGU_SH"
+      ? "Setujui sebagai SH"
+      : "Setujui sebagai PJO";
 
   async function setujui() {
     if (!surat) return;
@@ -102,7 +101,7 @@ export default function DetailTugasDinasPage() {
         `/${surat.id}/setujui`,
       );
       terapkanSurat(hasil);
-      setSukses('Surat tugas dinas disetujui.');
+      setSukses("Surat tugas dinas disetujui.");
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
@@ -120,7 +119,7 @@ export default function DetailTugasDinasPage() {
         `/${surat.id}/cetak-ulang`,
       );
       terapkanSurat(hasil);
-      setSukses('PDF berhasil dicetak ulang dengan layout terbaru.');
+      setSukses("PDF berhasil dicetak ulang dengan layout terbaru.");
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
@@ -139,9 +138,9 @@ export default function DetailTugasDinasPage() {
         { alasan: alasanTolak.trim() },
       );
       terapkanSurat(hasil);
-      setSukses('Surat tugas dinas ditolak.');
+      setSukses("Surat tugas dinas ditolak.");
       setDialogTolak(false);
-      setAlasanTolak('');
+      setAlasanTolak("");
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
@@ -193,7 +192,7 @@ export default function DetailTugasDinasPage() {
           <button
             type="button"
             className={`${styles.tombol} ${styles.tombolNetral}`}
-            onClick={() => router.push('/hc/tugas-dinas')}
+            onClick={() => router.push("/hc/tugas-dinas")}
           >
             <ArrowLeft size={15} />
             Daftar Surat
@@ -214,7 +213,7 @@ export default function DetailTugasDinasPage() {
               <MapPin size={13} /> {surat.tujuanLokasi}
             </span>
             <span>
-              <Calendar size={13} /> {formatTanggal(surat.tanggalMulai)} -{' '}
+              <Calendar size={13} /> {formatTanggal(surat.tanggalMulai)} -{" "}
               {formatTanggal(surat.tanggalSelesai)}
             </span>
           </div>
@@ -224,18 +223,20 @@ export default function DetailTugasDinasPage() {
             <strong>{surat.keteranganTugas}</strong>
           </div>
 
-          <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div
+            style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}
+          >
             <BadgeStatusSurat nilai={surat.status} />
           </div>
 
-          {surat.status === 'DITOLAK' && surat.alasanTolak ? (
+          {surat.status === "DITOLAK" && surat.alasanTolak ? (
             <div style={{ marginTop: 12 }}>
               <Pesan jenis="error">Alasan ditolak: {surat.alasanTolak}</Pesan>
             </div>
           ) : null}
 
           {surat.filePdf ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <a
                 className={styles.pdfTombol}
                 href={`${suratTugasApi.urlPdf(surat.filePdf)}&v=${pdfVersi}`}
@@ -259,7 +260,7 @@ export default function DetailTugasDinasPage() {
           ) : null}
 
           {bolehMemproses ? (
-            <div style={{ marginTop: 18, display: 'flex', gap: 9 }}>
+            <div style={{ marginTop: 18, display: "flex", gap: 9 }}>
               <button
                 type="button"
                 className={styles.tombol}
@@ -267,7 +268,7 @@ export default function DetailTugasDinasPage() {
                 disabled={proses}
               >
                 <CheckCircle2 size={15} />
-                {proses ? 'Memproses...' : labelSetujui}
+                {proses ? "Memproses..." : labelSetujui}
               </button>
 
               <button
@@ -293,7 +294,7 @@ export default function DetailTugasDinasPage() {
             <strong>
               {surat.disetujuiShOleh
                 ? `Disetujui oleh ${surat.disetujuiShOleh.name} - ${formatTanggalWaktu(surat.disetujuiShPada)}`
-                : 'Menunggu persetujuan'}
+                : "Menunggu persetujuan"}
             </strong>
           </div>
           <div className={styles.detailRow}>
@@ -301,13 +302,16 @@ export default function DetailTugasDinasPage() {
             <strong>
               {surat.disetujuiPjoOleh
                 ? `Disetujui oleh ${surat.disetujuiPjoOleh.name} - ${formatTanggalWaktu(surat.disetujuiPjoPada)}`
-                : 'Menunggu persetujuan'}
+                : "Menunggu persetujuan"}
             </strong>
           </div>
         </Panel>
       </div>
 
-      <Panel judul="Diberikan Kepada" keterangan={`${surat.karyawan.length} karyawan`}>
+      <Panel
+        judul="Diberikan Kepada"
+        keterangan={`${surat.karyawan.length} karyawan`}
+      >
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
@@ -343,39 +347,91 @@ export default function DetailTugasDinasPage() {
         <Panel judul="Akomodasi">
           <div className={styles.detailRow}>
             <span>Penginapan / Hotel</span>
-            <strong>{surat.penginapanHotel || '-'}</strong>
+            <strong>{surat.penginapanHotel || "-"}</strong>
           </div>
           <div className={styles.detailRow}>
             <span>Bantuan Transportasi</span>
-            <strong>{surat.bantuanTransportasi || '-'}</strong>
+            <strong>{surat.bantuanTransportasi || "-"}</strong>
           </div>
           <div className={styles.detailRow}>
             <span>Uang Perjalanan</span>
             <strong>
               {surat.uangPerjalananNominal != null
-                ? `${formatRupiah(surat.uangPerjalananNominal)}${surat.uangPerjalananKeterangan ? ` / ${surat.uangPerjalananKeterangan}` : ''}`
-                : '-'}
+                ? `${formatRupiah(surat.uangPerjalananNominal)}${surat.uangPerjalananKeterangan ? ` / ${surat.uangPerjalananKeterangan}` : ""}`
+                : "-"}
             </strong>
           </div>
           <div className={styles.detailRow}>
             <span>Akomodasi</span>
             <strong>
               {surat.akomodasiNominal != null
-                ? `${formatRupiah(surat.akomodasiNominal)}${surat.akomodasiKeterangan ? ` / ${surat.akomodasiKeterangan}` : ''}`
-                : '-'}
+                ? `${formatRupiah(surat.akomodasiNominal)}${surat.akomodasiKeterangan ? ` / ${surat.akomodasiKeterangan}` : ""}`
+                : "-"}
             </strong>
           </div>
           <div className={styles.detailRow}>
             <span>Laundry</span>
             <strong>
               {surat.laundryNominal != null
-                ? `${formatRupiah(surat.laundryNominal)}${surat.laundryKeterangan ? ` / ${surat.laundryKeterangan}` : ''}`
-                : '-'}
+                ? `${formatRupiah(surat.laundryNominal)}${surat.laundryKeterangan ? ` / ${surat.laundryKeterangan}` : ""}`
+                : "-"}
             </strong>
           </div>
           <div className={styles.detailRow}>
             <span>Jumlah</span>
             <strong>{formatRupiah(surat.jumlahAkomodasi)}</strong>
+          </div>
+          <h3 style={{ marginTop: 18, marginBottom: 8 }}>
+            Rincian per karyawan
+          </h3>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Nama / NRP</th>
+                  <th>Uang Perjalanan</th>
+                  <th>Akomodasi</th>
+                  <th>Laundry</th>
+                  <th>Jumlah</th>
+                </tr>
+              </thead>
+              <tbody>
+                {surat.karyawan.map((item) => {
+                  const jumlah =
+                    (item.uangPerjalananNominal ?? 0) +
+                    (item.akomodasiNominal ?? 0) +
+                    (item.laundryNominal ?? 0);
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        {item.nama}
+                        <br />
+                        <small>{item.nrp}</small>
+                      </td>
+                      <td>
+                        {formatRupiah(item.uangPerjalananNominal)}
+                        {item.uangPerjalananKeterangan
+                          ? ` / ${item.uangPerjalananKeterangan}`
+                          : ""}
+                      </td>
+                      <td>
+                        {formatRupiah(item.akomodasiNominal)}
+                        {item.akomodasiKeterangan
+                          ? ` / ${item.akomodasiKeterangan}`
+                          : ""}
+                      </td>
+                      <td>
+                        {formatRupiah(item.laundryNominal)}
+                        {item.laundryKeterangan
+                          ? ` / ${item.laundryKeterangan}`
+                          : ""}
+                      </td>
+                      <td>{formatRupiah(jumlah)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </Panel>
       ) : null}
@@ -402,7 +458,7 @@ export default function DetailTugasDinasPage() {
                 onClick={() => void tolak()}
                 disabled={proses || alasanTolak.trim().length < 3}
               >
-                {proses ? 'Menyimpan...' : 'Tolak Surat'}
+                {proses ? "Menyimpan..." : "Tolak Surat"}
               </button>
             </>
           }

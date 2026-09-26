@@ -87,6 +87,8 @@ type DataPengajuan = {
  nama_file_bukti_transfer: string | null;
  path_file_bukti_transfer: string | null;
  tanggal_transfer: string | null;
+ tanggal_mulai: string | null;
+ tanggal_selesai: string | null;
  id_saldo: number | null;
  status_pengajuan: StatusPengajuan;
  catatan_admin: string | null;
@@ -99,6 +101,8 @@ type FormPengajuan = {
  id_pengguna: string;
  jenis_pengajuan: JenisPengajuan;
  tanggal_pengajuan: string;
+ tanggal_mulai: string;
+ tanggal_selesai: string;
  lokasi: string;
  keterangan: string;
  nomor_std: string;
@@ -118,6 +122,8 @@ const formAwal: FormPengajuan = {
  id_pengguna: "",
  jenis_pengajuan: "PERJALANAN_DINAS",
  tanggal_pengajuan: new Date().toISOString().slice(0, 10),
+ tanggal_mulai: "",
+ tanggal_selesai: "",
  lokasi: "",
  keterangan: "",
  nomor_std: "",
@@ -145,6 +151,8 @@ export default function HalamanPengajuanAdmin() {
 
  const [formPengajuan, setFormPengajuan] =
  useState<FormPengajuan>(formAwal);
+ const [cariKaryawan, setCariKaryawan] = useState("");
+ const [dropdownKaryawanTerbuka, setDropdownKaryawanTerbuka] = useState(false);
 
  const [formBuktiTransfer, setFormBuktiTransfer] =
  useState<FormBuktiTransfer>(formBuktiTransferAwal);
@@ -421,6 +429,19 @@ export default function HalamanPengajuanAdmin() {
  .sort((a, b) => a.nama.localeCompare(b.nama));
  }, [daftarPengguna]);
 
+ const karyawanTerpilih = daftarKaryawanAktif.find(
+ (pengguna) => String(pengguna.id) === formPengajuan.id_pengguna,
+ );
+ const hasilCariKaryawan = useMemo(() => {
+ const keyword = cariKaryawan.trim().toLocaleLowerCase("id-ID");
+ if (!keyword) return daftarKaryawanAktif.slice(0, 20);
+ return daftarKaryawanAktif
+ .filter((pengguna) =>
+ `${pengguna.nama} ${pengguna.nrp}`.toLocaleLowerCase("id-ID").includes(keyword),
+ )
+ .slice(0, 20);
+ }, [cariKaryawan, daftarKaryawanAktif]);
+
  const tahunTersedia = useMemo(() => {
  const tahunSekarang = new Date().getFullYear();
  return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
@@ -603,6 +624,8 @@ export default function HalamanPengajuanAdmin() {
  ...formAwal,
  tanggal_pengajuan: new Date().toISOString().slice(0, 10),
  });
+ setCariKaryawan("");
+ setDropdownKaryawanTerbuka(false);
 
  const inputStd = document.getElementById(
  "file_std"
@@ -630,6 +653,17 @@ export default function HalamanPengajuanAdmin() {
  if (!formPengajuan.id_pengguna) {
  setPesanError("Karyawan wajib dipilih.");
  return;
+ }
+
+ if (formPengajuan.jenis_pengajuan === "PERJALANAN_DINAS") {
+ if (!formPengajuan.tanggal_mulai || !formPengajuan.tanggal_selesai) {
+ setPesanError("Tanggal mulai dan selesai perjalanan wajib diisi.");
+ return;
+ }
+ if (formPengajuan.tanggal_selesai < formPengajuan.tanggal_mulai) {
+ setPesanError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+ return;
+ }
  }
 
  if (
@@ -684,6 +718,10 @@ export default function HalamanPengajuanAdmin() {
  formData.append("id_pengguna", formPengajuan.id_pengguna);
  formData.append("jenis_pengajuan", formPengajuan.jenis_pengajuan);
  formData.append("tanggal_pengajuan", formPengajuan.tanggal_pengajuan);
+ if (formPengajuan.jenis_pengajuan === "PERJALANAN_DINAS") {
+ formData.append("tanggal_mulai", formPengajuan.tanggal_mulai);
+ formData.append("tanggal_selesai", formPengajuan.tanggal_selesai);
+ }
  formData.append("lokasi", formPengajuan.lokasi.trim());
  formData.append("keterangan", formPengajuan.keterangan.trim());
 
@@ -1116,21 +1154,48 @@ export default function HalamanPengajuanAdmin() {
  Karyawan
  </label>
 
- <select
- value={formPengajuan.id_pengguna}
- onChange={(event) =>
- ubahForm("id_pengguna", event.target.value)
- }
- className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-[#0868f6] focus:bg-white focus:ring-4 focus:ring-[#eaf2ff]"
+ <div className="relative">
+ <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+ <input
+ type="search"
+ value={cariKaryawan}
+ onFocus={() => setDropdownKaryawanTerbuka(true)}
+ onChange={(event) => {
+ setCariKaryawan(event.target.value);
+ setDropdownKaryawanTerbuka(true);
+ setFormPengajuan((sebelumnya) => ({ ...sebelumnya, id_pengguna: "" }));
+ }}
+ placeholder="Ketik nama atau NRP karyawan..."
+ autoComplete="off"
+ className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-bold outline-none transition focus:border-[#0868f6] focus:bg-white focus:ring-4 focus:ring-[#eaf2ff]"
+ aria-expanded={dropdownKaryawanTerbuka}
+ aria-controls="hasil-cari-karyawan-pengajuan"
+ />
+ {dropdownKaryawanTerbuka && (
+ <div id="hasil-cari-karyawan-pengajuan" className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+ {hasilCariKaryawan.length ? hasilCariKaryawan.map((pengguna) => (
+ <button
+ key={pengguna.id}
+ type="button"
+ onClick={() => {
+ ubahForm("id_pengguna", String(pengguna.id));
+ setCariKaryawan(`${pengguna.nama} / ${pengguna.nrp}`);
+ setDropdownKaryawanTerbuka(false);
+ }}
+ className="flex w-full flex-col rounded-xl px-3 py-2 text-left hover:bg-[#eaf2ff]"
  >
- <option value="">Pilih karyawan</option>
-
- {daftarKaryawanAktif.map((pengguna) => (
- <option key={pengguna.id} value={pengguna.id}>
- {pengguna.nama} / {pengguna.nrp}
- </option>
- ))}
- </select>
+ <span className="text-sm font-bold text-slate-900">{pengguna.nama}</span>
+ <span className="text-xs font-semibold text-slate-500">NRP {pengguna.nrp || "-"}</span>
+ </button>
+ )) : (
+ <p className="px-3 py-4 text-sm text-slate-500">Karyawan dengan nama atau NRP tersebut tidak ditemukan.</p>
+ )}
+ </div>
+ )}
+ </div>
+ {karyawanTerpilih && !dropdownKaryawanTerbuka && (
+ <p className="mt-2 text-xs font-semibold text-emerald-700">Terpilih: {karyawanTerpilih.nama} / {karyawanTerpilih.nrp}</p>
+ )}
  </div>
 
  <div>
@@ -1170,6 +1235,19 @@ export default function HalamanPengajuanAdmin() {
  />
  </div>
  </div>
+
+ {formPengajuan.jenis_pengajuan === "PERJALANAN_DINAS" && (
+ <>
+ <div>
+ <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-slate-500">Tanggal Mulai Dinas</label>
+ <input type="date" required value={formPengajuan.tanggal_mulai} onChange={(event) => ubahForm("tanggal_mulai", event.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-[#0868f6] focus:bg-white focus:ring-4 focus:ring-[#eaf2ff]" />
+ </div>
+ <div>
+ <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-slate-500">Tanggal Selesai Dinas</label>
+ <input type="date" required min={formPengajuan.tanggal_mulai || undefined} value={formPengajuan.tanggal_selesai} onChange={(event) => ubahForm("tanggal_selesai", event.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-[#0868f6] focus:bg-white focus:ring-4 focus:ring-[#eaf2ff]" />
+ </div>
+ </>
+ )}
 
  <div>
  <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-slate-500">

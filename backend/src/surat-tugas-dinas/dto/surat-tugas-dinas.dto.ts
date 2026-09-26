@@ -36,6 +36,36 @@ export class KaryawanTugasDto {
   @IsNotEmpty()
   @MaxLength(150)
   jabatan: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  uangPerjalananNominal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  uangPerjalananKeterangan?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  akomodasiNominal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  akomodasiKeterangan?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  laundryNominal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  laundryKeterangan?: string;
 }
 
 export class BuatSuratTugasDinasDto {

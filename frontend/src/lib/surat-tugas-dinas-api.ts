@@ -3,19 +3,15 @@
 // FUNGSI: Klien API Form Tugas Dinas (R & D) + tipe data bersama
 // ==================================================
 
-import { getAccessToken } from './access-control';
-import { urlUploads } from './uploads-url';
+import { getAccessToken } from "./access-control";
+import { urlUploads } from "./uploads-url";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
-export type { HasilHalaman } from './pagination';
+export type { HasilHalaman } from "./pagination";
 
 export type StatusSuratTugas =
-  | 'MENUNGGU_SH'
-  | 'MENUNGGU_PJO'
-  | 'DISETUJUI'
-  | 'DITOLAK';
+  "MENUNGGU_SH" | "MENUNGGU_PJO" | "DISETUJUI" | "DITOLAK";
 
 export type KaryawanTugas = {
   id: number;
@@ -24,6 +20,12 @@ export type KaryawanTugas = {
   nama: string;
   departemen: string;
   jabatan: string;
+  uangPerjalananNominal: number | null;
+  uangPerjalananKeterangan: string | null;
+  akomodasiNominal: number | null;
+  akomodasiKeterangan: string | null;
+  laundryNominal: number | null;
+  laundryKeterangan: string | null;
 };
 
 export type AkunRingkas = {
@@ -81,7 +83,7 @@ export class SuratTugasApiError extends Error {
     readonly status: number,
   ) {
     super(message);
-    this.name = 'SuratTugasApiError';
+    this.name = "SuratTugasApiError";
   }
 }
 
@@ -95,7 +97,7 @@ async function bacaError(response: Response): Promise<string> {
     const data = (await response.json()) as { message?: string | string[] };
 
     if (Array.isArray(data.message)) {
-      return data.message.join(', ');
+      return data.message.join(", ");
     }
 
     return data.message || `Permintaan gagal (${response.status})`;
@@ -104,18 +106,15 @@ async function bacaError(response: Response): Promise<string> {
   }
 }
 
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}/surat-tugas-dinas${path}`, {
     ...init,
     headers: {
       ...headerAuth(),
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
-    cache: 'no-store',
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -134,13 +133,13 @@ export const suratTugasApi = {
 
   kirim: <T>(path: string, body?: unknown) =>
     request<T>(path, {
-      method: 'POST',
+      method: "POST",
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }),
 
   ubah: <T>(path: string, body?: unknown) =>
     request<T>(path, {
-      method: 'PATCH',
+      method: "PATCH",
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }),
 
@@ -148,50 +147,50 @@ export const suratTugasApi = {
 };
 
 export function formatRupiah(nilai: number | null | undefined): string {
-  return `Rp ${new Intl.NumberFormat('id-ID').format(nilai ?? 0)}`;
+  return `Rp ${new Intl.NumberFormat("id-ID").format(nilai ?? 0)}`;
 }
 
 export function formatTanggal(nilai: string | null | undefined): string {
   if (!nilai) {
-    return '-';
+    return "-";
   }
 
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
   }).format(new Date(nilai));
 }
 
 export function formatTanggalWaktu(nilai: string | null | undefined): string {
   if (!nilai) {
-    return '-';
+    return "-";
   }
 
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(nilai));
 }
 
 export const LABEL_STATUS_SURAT_TUGAS: Record<StatusSuratTugas, string> = {
-  MENUNGGU_SH: 'Menunggu Persetujuan SH',
-  MENUNGGU_PJO: 'Menunggu Persetujuan PJO',
-  DISETUJUI: 'Disetujui',
-  DITOLAK: 'Ditolak',
+  MENUNGGU_SH: "Menunggu Persetujuan SH",
+  MENUNGGU_PJO: "Menunggu Persetujuan PJO",
+  DISETUJUI: "Disetujui",
+  DITOLAK: "Ditolak",
 };
 
 export function nadaStatusSuratTugas(nilai: StatusSuratTugas): string {
   switch (nilai) {
-    case 'DISETUJUI':
-      return 'sukses';
-    case 'DITOLAK':
-      return 'bahaya';
+    case "DISETUJUI":
+      return "sukses";
+    case "DITOLAK":
+      return "bahaya";
     default:
-      return 'peringatan';
+      return "peringatan";
   }
 }

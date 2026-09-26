@@ -253,7 +253,9 @@ export class DeklarasiService {
     return this.prisma.deklarasi.update({
       where: { id: idDeklarasi },
       data: {
-        status: 'DIAJUKAN'
+        status: 'DIAJUKAN',
+        alasanDitolak: null,
+        tanggalDisetujui: null,
       }
     });
   }
@@ -379,7 +381,17 @@ export class DeklarasiService {
       throw new NotFoundException('Deklarasi tidak ditemukan.');
     }
 
+    const role = aktor.role;
+    const bolehTahapHc =
+      role === UserRole.ADMIN ||
+      role === UserRole.SUPER_ADMIN ||
+      role === UserRole.HC;
+    const bolehTahapFa = role === UserRole.FA;
+
     if (data.status === 'DIVERIFIKASI') {
+      if (!bolehTahapHc) {
+        throw new BadRequestException('Tahap ini hanya dapat diproses Admin HC.');
+      }
       if (deklarasi.status !== 'DIAJUKAN') {
         throw new BadRequestException(
           'Hanya deklarasi DIAJUKAN yang dapat diverifikasi.',
@@ -388,20 +400,27 @@ export class DeklarasiService {
 
       deklarasi = await this.prisma.deklarasi.update({
         where: { id: idDeklarasi },
-        data: { status: 'DIVERIFIKASI' }
+        data: { status: 'MENUNGGU_FA', alasanDitolak: null }
       });
     }
 
     if (data.status === 'DISETUJUI') {
-      if (!['DIAJUKAN', 'DIVERIFIKASI'].includes(deklarasi.status)) {
+      if (!bolehTahapFa) {
+        throw new BadRequestException('Persetujuan akhir hanya dapat dilakukan FA.');
+      }
+      if (deklarasi.status !== 'MENUNGGU_FA' && deklarasi.status !== 'DIVERIFIKASI') {
         throw new BadRequestException(
-          'Hanya deklarasi DIAJUKAN atau DIVERIFIKASI yang dapat disetujui.',
+          'Deklarasi harus disetujui Admin HC sebelum diproses FA.',
         );
       }
 
       deklarasi = await this.prisma.deklarasi.update({
         where: { id: idDeklarasi },
-        data: { status: 'DISETUJUI' }
+        data: {
+          status: 'DISETUJUI',
+          alasanDitolak: null,
+          tanggalDisetujui: new Date(),
+        }
       });
 
       await this.updateStatusSaldoSetelahDeklarasiDisetujui(
@@ -412,7 +431,10 @@ export class DeklarasiService {
     }
 
     if (data.status === 'DITOLAK') {
-      if (!['DIAJUKAN', 'DIVERIFIKASI'].includes(deklarasi.status)) {
+      if (
+        (!bolehTahapHc && !bolehTahapFa) ||
+        !['DIAJUKAN', 'DIVERIFIKASI', 'MENUNGGU_FA'].includes(deklarasi.status)
+      ) {
         throw new BadRequestException(
           'Hanya deklarasi DIAJUKAN atau DIVERIFIKASI yang dapat ditolak.',
         );
@@ -424,13 +446,12 @@ export class DeklarasiService {
         throw new BadRequestException('Alasan penolakan wajib diisi.');
       }
 
-      const keteranganUpdate = `${deklarasi.keterangan}\n\nALASAN DITOLAK: ${alasan}`;
-
       deklarasi = await this.prisma.deklarasi.update({
         where: { id: idDeklarasi },
         data: {
           status: 'DITOLAK',
-          keterangan: keteranganUpdate
+          alasanDitolak: alasan,
+          tanggalDisetujui: null,
         }
       });
 

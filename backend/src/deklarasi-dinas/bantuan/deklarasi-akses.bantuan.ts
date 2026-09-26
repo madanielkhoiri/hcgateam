@@ -13,7 +13,7 @@ import { UserRole } from '@prisma/client';
 export const ROLE_PENYETUJU_DEKLARASI: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
-  UserRole.SECTION_HEAD,
+  UserRole.HC,
   UserRole.FA,
 ];
 

@@ -38,6 +38,14 @@ export class BuatSaldoDto {
 
   @IsOptional()
   @IsString()
+  tanggal_mulai?: string;
+
+  @IsOptional()
+  @IsString()
+  tanggal_selesai?: string;
+
+  @IsOptional()
+  @IsString()
   keterangan?: string;
 
   @IsOptional()
