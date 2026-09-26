@@ -28,7 +28,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string | null;
  nomor_telepon: string | null;
- role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "HC" | "KARYAWAN";
  kode_tiket?: string | null;
 };
 
@@ -45,10 +45,11 @@ type DataDeklarasi = {
  keterangan: string;
  nomor_std?: string | null;
  total_nominal: string | number;
- status: "DRAFT" | "DIAJUKAN" | "DIVERIFIKASI" | "DISETUJUI" | "DITOLAK";
+ status: "DRAFT" | "DIAJUKAN" | "DIVERIFIKASI" | "MENUNGGU_FA" | "DISETUJUI" | "DITOLAK";
+ alasan_ditolak?: string | null;
+ tanggal_disetujui?: string | null;
  dibuat_pada: string;
  diperbarui_pada: string;
- alasan_ditolak?: string | null;
 };
 
 type DataNota = {
@@ -156,10 +157,12 @@ export default function HalamanDetailDeklarasi() {
  >({});
 
  const apakahAdminFa =
- penggunaLogin?.role === "SUPER_ADMIN" ||
- penggunaLogin?.role === "ADMIN" ||
- penggunaLogin?.role === "SECTION_HEAD" ||
- penggunaLogin?.role === "FA";
+   penggunaLogin?.role === "SUPER_ADMIN" ||
+   penggunaLogin?.role === "ADMIN" ||
+   penggunaLogin?.role === "HC" ||
+   penggunaLogin?.role === "FA";
+ const tahapHc = ["SUPER_ADMIN", "ADMIN", "HC"].includes(penggunaLogin?.role || "");
+ const tahapFa = penggunaLogin?.role === "FA";
 
  // Backend hanya mengizinkan edit deklarasi / hapus nota saat DRAFT atau DITOLAK.
  const bolehEditDeklarasi =
@@ -170,22 +173,22 @@ export default function HalamanDetailDeklarasi() {
  ? "Kembali ke Dashboard Admin"
  : "Kembali ke Dashboard";
 
- const bolehVerifikasi = apakahAdminFa && deklarasi?.status === "DIAJUKAN";
+ const bolehVerifikasi = tahapHc && deklarasi?.status === "DIAJUKAN";
 
  const bolehSetujui =
- apakahAdminFa &&
- deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi?.status);
+ tahapFa &&
+   deklarasi &&
+   ["MENUNGGU_FA", "DIVERIFIKASI"].includes(deklarasi?.status);
 
  const bolehTolak =
- apakahAdminFa &&
+ (tahapHc || tahapFa) &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI"].includes(deklarasi?.status);
+ ["DIAJUKAN", "DIVERIFIKASI", "MENUNGGU_FA"].includes(deklarasi?.status);
 
  const bolehKoreksiNota =
- apakahAdminFa &&
+ (tahapHc || tahapFa) &&
  deklarasi &&
- ["DIAJUKAN", "DIVERIFIKASI", "DITOLAK"].includes(deklarasi?.status);
+ ["DIAJUKAN", "DIVERIFIKASI", "MENUNGGU_FA", "DITOLAK"].includes(deklarasi?.status);
 
  const daftarNotaUrut = useMemo(() => {
  return [...daftarNota].sort((a, b) => {
@@ -580,6 +583,16 @@ export default function HalamanDetailDeklarasi() {
  }).format(hasilTanggal);
  };
 
+ const lamaPenyelesaianHari = () => {
+ if (!saldoDeklarasi?.tanggal_transfer || !deklarasi?.tanggal_disetujui) return null;
+ const tanggalTransfer = new Date(saldoDeklarasi.tanggal_transfer);
+ const tanggalDisetujui = new Date(deklarasi.tanggal_disetujui);
+ const hariTransfer = Date.UTC(tanggalTransfer.getFullYear(), tanggalTransfer.getMonth(), tanggalTransfer.getDate());
+ const hariDisetujui = Date.UTC(tanggalDisetujui.getFullYear(), tanggalDisetujui.getMonth(), tanggalDisetujui.getDate());
+ const selisih = Math.floor((hariDisetujui - hariTransfer) / 86400000);
+ return selisih >= 0 ? selisih : null;
+ };
+
  const formatTanggalSingkat = (tanggal: string | null | undefined) => {
  if (!tanggal) return "-";
 
@@ -658,7 +671,7 @@ export default function HalamanDetailDeklarasi() {
  const warnaStatus = (status: string) => {
  if (status === "DRAFT") return "bg-slate-100 text-slate-700";
  if (status === "DIAJUKAN") return "bg-blue-50 text-blue-700";
- if (status === "DIVERIFIKASI") return "bg-amber-50 text-amber-700";
+ if (status === "DIVERIFIKASI" || status === "MENUNGGU_FA") return "bg-amber-50 text-amber-700";
  if (status === "DISETUJUI") return "bg-emerald-50 text-emerald-700";
  if (status === "DITOLAK") return "bg-red-50 text-red-700";
  return "bg-slate-100 text-slate-700";
@@ -1700,6 +1713,7 @@ export default function HalamanDetailDeklarasi() {
  return "hotel";
  }
  if (teksKategori.includes("MAKAN")) return "uang_makan";
+ if (teksKategori.includes("LAUNDRY")) return "lain_lain";
 
  return "lain_lain";
  };
@@ -2098,7 +2112,7 @@ export default function HalamanDetailDeklarasi() {
  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-900/20 transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
  >
  <ShieldCheck className="h-4 w-4" />
- {sedangUbahStatus ? "Memproses..." : "Verifikasi"}
+ {sedangUbahStatus ? "Memproses..." : "Setujui oleh HC"}
  </button>
  )}
 
@@ -2173,15 +2187,28 @@ export default function HalamanDetailDeklarasi() {
 
  <div>
  <div className="text-base font-black text-blue-700">
- Menunggu Pemeriksaan Admin / FA
+ Menunggu Persetujuan Admin HC
  </div>
 
  <div className="mt-1 text-sm leading-6 text-blue-700">
- Setujui atau tolak setiap nota terlebih dahulu. Jika nominal
- OCR salah, gunakan kolom OCR Manual di baris nota.
+ Admin HC akan memeriksa deklarasi dan nota terlebih dahulu.
+ Setelah disetujui HC, deklarasi diteruskan ke FA untuk
+ persetujuan akhir.
  </div>
  </div>
  </div>
+ </div>
+ )}
+ {deklarasi?.status === "MENUNGGU_FA" && (
+ <div className="mt-5 rounded-[28px] border border-amber-100 bg-amber-50 px-5 py-4">
+ <div className="text-base font-black text-amber-800">Menunggu Persetujuan FA</div>
+ <div className="mt-1 text-sm text-amber-800">Admin HC telah menyetujui deklarasi ini.</div>
+ </div>
+ )}
+ {deklarasi?.status === "DITOLAK" && deklarasi.alasan_ditolak && (
+ <div className="mt-5 rounded-[28px] border border-red-100 bg-red-50 px-5 py-4">
+ <div className="text-base font-black text-red-700">Alasan deklarasi ditolak</div>
+ <div className="mt-1 whitespace-pre-wrap text-sm text-red-700">{deklarasi.alasan_ditolak}</div>
  </div>
  )}
 
@@ -2236,7 +2263,7 @@ export default function HalamanDetailDeklarasi() {
  </div>
  </div>
 
- <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+ <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
  <div className="rounded-2xl bg-slate-50 px-4 py-4">
  <div className="text-xs font-semibold text-slate-500">
  Saldo Transfer
@@ -2246,6 +2273,9 @@ export default function HalamanDetailDeklarasi() {
  ? formatRupiah(saldoDeklarasi.nominal_transfer)
  : "-"}
  </div>
+ {saldoDeklarasi && (
+ <div className="mt-1 text-xs text-slate-500">Ditransfer {formatTanggal(saldoDeklarasi.tanggal_transfer)}</div>
+ )}
  </div>
 
  <div className="rounded-2xl bg-slate-50 px-4 py-4">
@@ -2271,6 +2301,13 @@ export default function HalamanDetailDeklarasi() {
  >
  {saldoDeklarasi ? formatRupiah(saldoDeklarasi.sisa_saldo) : "-"}
  </div>
+ </div>
+ <div className="rounded-2xl bg-emerald-50 px-4 py-4">
+ <div className="text-xs font-semibold text-emerald-700">Lama Penyelesaian Deklarasi</div>
+ <div className="mt-2 text-lg font-black text-emerald-800">
+ {lamaPenyelesaianHari() !== null ? `${lamaPenyelesaianHari()} hari` : deklarasi?.status === "DISETUJUI" ? "Tanggal transfer belum tersedia" : "Belum disetujui"}
+ </div>
+ {deklarasi?.tanggal_disetujui && <div className="mt-1 text-xs text-emerald-700">Disetujui {formatTanggalJam(deklarasi.tanggal_disetujui)}</div>}
  </div>
  </div>
 
@@ -2392,6 +2429,11 @@ export default function HalamanDetailDeklarasi() {
  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700">
  {formatKategoriNota(nota.kategori_nota)}
  </span>
+ {nota.keterangan_settlement && (nota.kategori_nota === "MAKAN" || nota.kategori_nota === "TRANSPORTASI") && (
+ <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+ {nota.keterangan_settlement}
+ </span>
+ )}
 
  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
  Upload Jam {formatJam(nota.dibuat_pada)}
@@ -2766,7 +2808,7 @@ export default function HalamanDetailDeklarasi() {
  <tbody>
  <tr>
  <td className="pdf-logo-cell" rowSpan={4}>
- <img src="/PPA_cut.png" alt="PPA" className="pdf-logo" />
+ <img src={urlFile("/uploads/signatures/PPA_cut.png")} alt="PPA" className="pdf-logo" />
  </td>
  <td className="pdf-title-cell" colSpan={4} rowSpan={4}>
  DEKLARASI PERJALANAN DINAS
@@ -2972,7 +3014,7 @@ export default function HalamanDetailDeklarasi() {
  <tbody>
  <tr>
  <td className="pdf-logo-cell" rowSpan={3}>
- <img src="/PPA_cut.png" alt="PPA" className="pdf-logo" />
+ <img src={urlFile("/uploads/signatures/PPA_cut.png")} alt="PPA" className="pdf-logo" />
  </td>
  <td className="pdf-title-cell" rowSpan={2}>
  SETTLEMENT PERMOHONAN BIAYA
