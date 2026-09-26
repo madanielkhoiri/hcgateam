@@ -1,6 +1,6 @@
 // ==================================================
 // FILE: backend/src/mcu/jadwal/mcu-jadwal.service.ts
-// FUNGSI: Penjadwalan MCU, lock H-3 hari, override HC
+// FUNGSI: Penjadwalan MCU, lock H-3 hari, override HC/Admin
 // Referensi: Bagian 4.0, 4.2 & 4.9 alur-workflow-mcu-periodik-v3.md
 // ==================================================
 
@@ -241,7 +241,7 @@ export class McuJadwalService {
   // TULIS
   // ==================================================
 
-  /** Admin Dept menentukan jadwal, lalu submit ke karyawan. */
+  /** Admin Dept menentukan jadwal, lalu submit ke karyawan. Role ADMIN boleh melewati batas H-3. */
   async buat(dto: BuatJadwalMcuDto, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.ADMIN_DEPT, UserRole.HC);
 
@@ -264,7 +264,11 @@ export class McuJadwalService {
 
     const tanggalMcu = tanggalSaja(dto.tanggalMcu);
 
-    this.pastikanBatasPendaftaran(tanggalMcu);
+    const olehAdmin = aktor.role === UserRole.ADMIN;
+
+    if (!olehAdmin) {
+      this.pastikanBatasPendaftaran(tanggalMcu);
+    }
 
     const jadwalBerjalan = await this.prisma.jadwalMcu.findFirst({
       where: {
@@ -292,7 +296,9 @@ export class McuJadwalService {
         tanggalMcu,
         jenisMcu: dto.jenisMcu ?? JenisMcu.BERKALA,
         klinikId: dto.klinikId ?? null,
-        statusPendaftaran: StatusPendaftaran.DRAFT,
+        statusPendaftaran: olehAdmin
+          ? this.statusMenurutTanggal(tanggalMcu)
+          : StatusPendaftaran.DRAFT,
         tanggalLock: this.hitungTanggalLock(tanggalMcu),
         catatan: dto.catatan?.trim() || null,
         dibuatOlehId: aktor.id,

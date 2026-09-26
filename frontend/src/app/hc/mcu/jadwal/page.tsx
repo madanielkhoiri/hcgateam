@@ -58,9 +58,10 @@ function rentangDariBulanTahun(bulan: string, tahun: string): { dari?: string; s
 }
 
 export default function JadwalMcuPage() {
-  const { punyaPeran } = useMcu();
+  const { punyaPeran, user } = useMcu();
   const bolehJadwalkan = punyaPeran('ADMIN_DEPT', 'HC');
   const adalahHc = punyaPeran('HC');
+  const adalahAdmin = user.role === 'ADMIN';
 
   const [jadwal, setJadwal] = useState<JadwalMcu[]>([]);
   const [karyawan, setKaryawan] = useState<Karyawan[]>([]);
@@ -525,7 +526,11 @@ export default function JadwalMcuPage() {
       {dialogBuat ? (
         <Dialog
           judul="Buat Jadwal MCU"
-          keterangan="Pendaftaran final minimal H-3 hari sebelum tanggal pelaksanaan."
+          keterangan={
+            adalahAdmin
+              ? 'Admin dapat mendaftarkan karyawan tanpa batas H-3. Jadwal dalam masa H-3 langsung berstatus terkunci.'
+              : 'Pendaftaran final minimal H-3 hari sebelum tanggal pelaksanaan.'
+          }
           onTutup={() => setDialogBuat(false)}
           aksi={
             <>
