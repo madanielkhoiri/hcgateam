@@ -135,7 +135,7 @@ describe('McuJadwalService.buat', () => {
     );
   });
 
-  it('menolak penjadwalan kurang dari H-3 hari', async () => {
+  it('menolak penjadwalan kurang dari H-3 hari untuk HC', async () => {
     const { service } = buatService();
     const besok = isoTanggal(tambahHari(hariIni(), 1));
 
@@ -143,6 +143,42 @@ describe('McuJadwalService.buat', () => {
       service.buat({ ...DTO_DASAR, tanggalMcu: besok } as any, aktor(UserRole.HC)),
     ).rejects.toThrow(/paling lambat H-3 hari/);
   });
+
+  it('ADMIN boleh mendaftarkan karyawan kurang dari H-3 hari', async () => {
+    const { service, create } = buatService();
+    const besok = tambahHari(hariIni(), 1);
+
+    await expect(
+      service.buat(
+        { ...DTO_DASAR, tanggalMcu: isoTanggal(besok) } as any,
+        aktor(UserRole.ADMIN),
+      ),
+    ).resolves.toBeDefined();
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          statusPendaftaran: StatusPendaftaran.TERKUNCI,
+          tanggalLock: tambahHari(besok, -3),
+        }),
+      }),
+    );
+  });
+
+  it.each([UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+    '%s tetap mengikuti batas pendaftaran H-3',
+    async (role) => {
+      const { service } = buatService();
+      const besok = isoTanggal(tambahHari(hariIni(), 1));
+
+      await expect(
+        service.buat(
+          { ...DTO_DASAR, tanggalMcu: besok } as any,
+          aktor(role),
+        ),
+      ).rejects.toThrow(/paling lambat H-3 hari/);
+    },
+  );
 
   it('menolak kalau karyawan masih punya jadwal berjalan (DRAFT/TERKUNCI)', async () => {
     const { service } = buatService({ jadwalBerjalan: jadwalFixture() });
