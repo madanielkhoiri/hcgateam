@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { compressImage } from "@/lib/compress-image";
+import { urlFileApi } from "@/lib/uploads-url";
 /* <--- dashboard karyawan upload nota + revisi nota + bukti pengembalian saldo ---> */
 type DataPenggunaTersimpan = {
  id: number;
@@ -77,6 +78,8 @@ type DataSaldo = {
  sisa_saldo: string | number;
  nominal_pengembalian?: string | number | null;
  tanggal_transfer: string;
+ tanggal_mulai?: string | null;
+ tanggal_selesai?: string | null;
  keterangan: string | null;
  status_saldo: StatusSaldo;
  nama_file_bukti_pengembalian?: string | null;
@@ -131,13 +134,8 @@ const daftarKategoriPerjalananDinas: PilihanKategoriNota[] = [
  deskripsi: "Kategori biaya makan perjalanan dinas.",
  },
  {
- value: "AKOMODASI",
- label: "Akomodasi",
- deskripsi: "Hotel, penginapan, mess, dan biaya tempat tinggal.",
- },
- {
  value: "TRANSPORTASI",
- label: "Transportasi",
+ label: "Transport",
  deskripsi: "Tiket, BBM, taksi, ojek, parkir, dan perjalanan.",
  },
  {
@@ -314,6 +312,9 @@ function headerAuth(): Record<string, string> {
  sedangSimpanOcrManualDashboard,
  setSedangSimpanOcrManualDashboard,
  ] = useState<number | null>(null);
+ const [sedangProsesNotaId, setSedangProsesNotaId] = useState<number | null>(
+ null
+ );
  const [pesanError, setPesanError] = useState("");
  const [pesanSukses, setPesanSukses] = useState("");
  const [saldoDipilih, setSaldoDipilih] = useState<DataSaldo | null>(null);
@@ -323,6 +324,8 @@ const [fileNota, setFileNota] = useState<File | null>(null);
  const [jumlahItemSettlementNota, setJumlahItemSettlementNota] = useState("1");
  const [picSettlementNota, setPicSettlementNota] = useState("");
  const [keteranganSettlementNota, setKeteranganSettlementNota] = useState("");
+ const [waktuMakanNota, setWaktuMakanNota] = useState("");
+ const [ruteTransportNota, setRuteTransportNota] = useState("");
  const [notaRevisiDipilih, setNotaRevisiDipilih] = useState("");
  const [fileRevisiBatch, setFileRevisiBatch] = useState<
  Record<number, File | null>
@@ -406,6 +409,14 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  year: "numeric",
  }).format(hasil);
  };
+
+ const durasiPerjalanan = (saldo: DataSaldo) => {
+ if (!saldo.tanggal_mulai || !saldo.tanggal_selesai) return null;
+ const mulai = new Date(`${saldo.tanggal_mulai.slice(0, 10)}T00:00:00`);
+ const selesai = new Date(`${saldo.tanggal_selesai.slice(0, 10)}T00:00:00`);
+ const hari = Math.floor((selesai.getTime() - mulai.getTime()) / 86400000) + 1;
+ return hari > 0 ? hari : null;
+ };
  const formatJam = (tanggal: string | null | undefined) => {
  if (!tanggal) return "-";
  const hasil = new Date(tanggal);
@@ -485,10 +496,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  };
  const bukaFile = (pathFile: string | null | undefined) => {
  if (!pathFile) return;
- const urlFile = pathFile.startsWith("http")
- ? pathFile
- : `${apiUrl}${pathFile}`;
- window.open(urlFile, "_blank", "noopener,noreferrer");
+ window.open(urlFileApi(apiUrl, pathFile), "_blank", "noopener,noreferrer");
  };
  const ambilDataDashboard = async (
  idPengguna: number,
@@ -775,6 +783,106 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setSedangSimpanOcrManualDashboard(null);
  }
  };
+ const handleGantiFotoNota = async (
+ nota: DataNota,
+ nomorNota: number,
+ fileBaru: File | undefined
+ ) => {
+ if (!fileBaru) return;
+ const yakin = window.confirm(
+ `Ganti foto Nota ${nomorNota}? Foto lama akan diganti dan nominal dibaca ulang otomatis lewat OCR.`
+ );
+ if (!yakin) return;
+ try {
+ setPesanError("");
+ setPesanSukses("");
+ setSedangProsesNotaId(nota.id);
+ const fileTerkompres = await compressImage(fileBaru).catch(() => fileBaru);
+ const formData = new FormData();
+ formData.append("file_nota", fileTerkompres);
+ const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
+ method: "PATCH",
+ headers: headerAuth(),
+ body: formData,
+ });
+ const teksResponse = await response.text();
+ let hasil: any = null;
+ try {
+ hasil = teksResponse ? JSON.parse(teksResponse) : null;
+ } catch {
+ hasil = null;
+ }
+ if (!response.ok) {
+ throw new Error(
+ (Array.isArray(hasil?.message) ? hasil.message[0] : hasil?.message) ||
+ teksResponse ||
+ "Gagal mengganti foto nota."
+ );
+ }
+ if (pengguna) {
+ await ambilDataDashboard(pengguna.id, false);
+ }
+ setPesanSukses(
+ Number(hasil?.nominal_ocr || 0) > 0
+ ? `Foto Nota ${nomorNota} berhasil diganti. OCR membaca nominal ${formatRupiah(
+ hasil.nominal_ocr
+ )}, silakan periksa.`
+ : `Foto Nota ${nomorNota} berhasil diganti, tetapi OCR belum menemukan nominal. Isi nominal manual.`
+ );
+ } catch (error) {
+ setPesanError(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat mengganti foto nota."
+ );
+ } finally {
+ setSedangProsesNotaId(null);
+ }
+ };
+ const handleHapusNotaKaryawan = async (
+ nota: DataNota,
+ nomorNota: number
+ ) => {
+ const yakin = window.confirm(
+ `Yakin ingin menghapus Nota ${nomorNota}? Data yang dihapus tidak bisa dikembalikan.`
+ );
+ if (!yakin) return;
+ try {
+ setPesanError("");
+ setPesanSukses("");
+ setSedangProsesNotaId(nota.id);
+ const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
+ method: "DELETE",
+ headers: headerAuth(),
+ });
+ const teksResponse = await response.text();
+ let hasil: any = null;
+ try {
+ hasil = teksResponse ? JSON.parse(teksResponse) : null;
+ } catch {
+ hasil = null;
+ }
+ if (!response.ok) {
+ throw new Error(
+ (Array.isArray(hasil?.message) ? hasil.message[0] : hasil?.message) ||
+ teksResponse ||
+ "Gagal menghapus nota."
+ );
+ }
+ if (pengguna) {
+ await ambilDataDashboard(pengguna.id, false);
+ }
+ setPesanSukses(`Nota ${nomorNota} berhasil dihapus.`);
+ } catch (error) {
+ setPesanError(
+ error instanceof Error
+ ? error.message
+ : "Terjadi kesalahan saat menghapus nota."
+ );
+ } finally {
+ setSedangProsesNotaId(null);
+ }
+ };
  const daftarKategoriBerdasarkanSaldo = (saldo: DataSaldo | null) => {
  if (!saldo) return daftarKategoriPerjalananDinas;
  if (saldo.jenis_saldo === "UANG_OPERASIONAL") {
@@ -816,6 +924,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setBarangJasaNota("");
  setPicSettlementNota("");
  setKeteranganSettlementNota("");
+ setWaktuMakanNota("");
+ setRuteTransportNota("");
  setFileNota(null);
  setTimeout(() => {
  const inputNota = document.getElementById(
@@ -1039,6 +1149,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  () => fileRevisiAsli
  );
 
+ const kategoriRevisiAktif = kategoriRevisiBatch[nota.id] || nota.kategori_nota;
  if (saldoDipilih.jenis_saldo === "UANG_OPERASIONAL") {
  if (!(barangJasaRevisiBatch[String(nota.id)] || "").trim()) {
  throw new Error(`Nama Barang / Jasa revisi Nota #${nota.id} wajib diisi.`);
@@ -1051,6 +1162,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  if (!(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()) {
  throw new Error(`Keterangan revisi Nota #${nota.id} wajib diisi.`);
  }
+ } else if ((kategoriRevisiAktif === "MAKAN" || kategoriRevisiAktif === "TRANSPORTASI") && !(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()) {
+ throw new Error(kategoriRevisiAktif === "MAKAN" ? `Waktu makan revisi Nota #${nota.id} wajib diisi.` : `Tujuan/rute transportasi revisi Nota #${nota.id} wajib diisi.`);
  }
 
  const formData = new FormData();
@@ -1065,6 +1178,10 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("jumlah_item_settlement", String(Math.max(1, Math.floor(Number(jumlahItemSettlementRevisiBatch[String(nota.id)] || 1)))));
  formData.append("pic_settlement", (picSettlementRevisiBatch[String(nota.id)] || "").trim());
  formData.append("keterangan_settlement", (keteranganSettlementRevisiBatch[String(nota.id)] || "").trim());
+ } else if (kategoriRevisiAktif === "MAKAN") {
+ formData.append("keterangan_settlement", `Waktu makan: ${(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()}`);
+ } else if (kategoriRevisiAktif === "TRANSPORTASI") {
+ formData.append("keterangan_settlement", `Tujuan/rute: ${(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()}`);
  }
 
  formData.append("file_nota", fileRevisi);
@@ -1169,6 +1286,14 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  return;
  }
  }
+ if (saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "MAKAN" && !waktuMakanNota) {
+ setPesanError("Pilih waktu makan: pagi, siang, atau malam.");
+ return;
+ }
+ if (saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "TRANSPORTASI" && !ruteTransportNota.trim()) {
+ setPesanError("Isi tujuan atau rute transportasi.");
+ return;
+ }
  try {
  setPesanError("");
  setPesanSukses("");
@@ -1181,6 +1306,10 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("jumlah_item_settlement", jumlahItemSettlementNota || "1");
  formData.append("pic_settlement", picSettlementNota.trim());
  formData.append("keterangan_settlement", keteranganSettlementNota.trim());
+ } else if (kategoriDipilih === "MAKAN") {
+ formData.append("keterangan_settlement", `Waktu makan: ${waktuMakanNota}`);
+ } else if (kategoriDipilih === "TRANSPORTASI") {
+ formData.append("keterangan_settlement", `Tujuan/rute: ${ruteTransportNota.trim()}`);
  }
 
  const fileNotaTerkompres = await compressImage(fileNota).catch(
@@ -1829,6 +1958,13 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  <p className="mt-1 text-sm font-black text-slate-900">
  {formatRupiah(saldo.nominal_transfer)}
  </p>
+ {saldo.jenis_saldo === "PERJALANAN_DINAS" && (
+ <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+ {saldo.tanggal_mulai && saldo.tanggal_selesai ? (
+ <>Perjalanan {formatTanggal(saldo.tanggal_mulai)} – {formatTanggal(saldo.tanggal_selesai)} ({durasiPerjalanan(saldo) ?? "-"} hari). Uang mencakup Makan, Transport{(durasiPerjalanan(saldo) ?? 0) > 3 ? " & Laundry" : ""}.</>
+ ) : "Uang perjalanan mencakup Makan dan Transport. Tanggal perjalanan belum tercatat."}
+ </p>
+ )}
  </div>
  <div className="rounded-2xl bg-white p-4">
  <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
@@ -1934,7 +2070,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  : "bg-white hover:bg-[#eaf2ff]"
  }`}
  >
- <div className="min-w-0">
+ <div className="min-w-0 sm:flex-1">
  <div className="flex flex-wrap items-center gap-2">
  <span className="whitespace-nowrap rounded-full bg-[#eaf2ff] px-3 py-1 text-[11px] font-black text-[#0868f6]">
  Nota {nomorNota}
@@ -1959,7 +2095,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </div>
  )}
  </div>
- <div className="flex shrink-0 items-center gap-2">
+ <div className="flex flex-wrap items-center gap-2 sm:max-w-[62%] sm:justify-end">
  <span className="whitespace-nowrap rounded-xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
  {formatRupiah(nota.nominal_final)}
  </span>
@@ -1970,7 +2106,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  !dianggapMenungguPengembalian &&
  saldo.status_deklarasi_aktif !==
  "DISETUJUI" && (
- <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 p-1">
+ <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 p-1">
  <input
  type="text"
  inputMode="numeric"
@@ -2013,6 +2149,69 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  nota.id
  ? "..."
  : "Simpan"}
+ </button>
+ </div>
+ )}
+ {statusDeklarasiBolehUpload(
+ saldo.status_deklarasi_aktif
+ ) &&
+ saldo.status_saldo !== "SELESAI" &&
+ !dianggapMenungguPengembalian &&
+ saldo.status_deklarasi_aktif !==
+ "DISETUJUI" &&
+ nota.status_verifikasi !==
+ "DIVERIFIKASI" && (
+ <div
+ className="flex items-center gap-2"
+ onClick={(event) =>
+ event.stopPropagation()
+ }
+ >
+ <label
+ className={`inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#0868f6]/30 bg-white px-3 text-xs font-black text-[#0868f6] transition hover:bg-[#eaf2ff] ${
+ sedangProsesNotaId === nota.id
+ ? "pointer-events-none opacity-60"
+ : ""
+ }`}
+ title="Ganti foto nota, nominal dibaca ulang otomatis (OCR)"
+ >
+ {sedangProsesNotaId === nota.id
+ ? "Memproses..."
+ : "Ganti Foto"}
+ <input
+ type="file"
+ accept="image/jpeg,image/png,image/webp"
+ hidden
+ disabled={
+ sedangProsesNotaId === nota.id
+ }
+ onChange={(event) => {
+ const fileDipilih =
+ event.target.files?.[0];
+ event.target.value = "";
+ void handleGantiFotoNota(
+ nota,
+ nomorNota,
+ fileDipilih
+ );
+ }}
+ />
+ </label>
+ <button
+ type="button"
+ disabled={
+ sedangProsesNotaId === nota.id
+ }
+ onClick={() =>
+ void handleHapusNotaKaryawan(
+ nota,
+ nomorNota
+ )
+ }
+ className="h-9 shrink-0 rounded-lg border border-red-200 bg-white px-3 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+ style={{ fontSize: 12, fontWeight: 900 }}
+ >
+ Hapus
  </button>
  </div>
  )}
@@ -2410,6 +2609,21 @@ const indexNotaRevisiDipilih =
  </div>
  )}
 
+{saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && (kategoriAktif === "MAKAN" || kategoriAktif === "TRANSPORTASI") && (
+ <div className="mb-3">
+ <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+ {kategoriAktif === "MAKAN" ? "Waktu makan" : "Tujuan atau rute transportasi"}
+ </label>
+ {kategoriAktif === "MAKAN" ? (
+ <select value={keteranganSettlementRevisiBatch[String(nota.id)] || ""} onChange={(event) => setKeteranganSettlementRevisiBatch((prev) => ({ ...prev, [String(nota.id)]: event.target.value }))} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+ <option value="">Pilih waktu makan</option><option value="Pagi">Pagi</option><option value="Siang">Siang</option><option value="Malam">Malam</option>
+ </select>
+ ) : (
+ <input type="text" value={keteranganSettlementRevisiBatch[String(nota.id)] || ""} onChange={(event) => setKeteranganSettlementRevisiBatch((prev) => ({ ...prev, [String(nota.id)]: event.target.value }))} placeholder="Contoh: Kantor ke bandara" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800" />
+ )}
+ </div>
+ )}
+
 <input
  id={`file_revisi_batch_${nota.id}`}
  type="file"
@@ -2479,7 +2693,24 @@ const indexNotaRevisiDipilih =
  )
  )}
  </div>
- <div className={saldoDipilih.status_deklarasi_aktif === "DITOLAK" ? "hidden" : ""}> {saldoDipilih?.jenis_saldo === "UANG_OPERASIONAL" && (
+ <div className={saldoDipilih.status_deklarasi_aktif === "DITOLAK" ? "hidden" : ""}>
+ {saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "MAKAN" && (
+ <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+ <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-blue-700">Waktu makan</label>
+ <select value={waktuMakanNota} onChange={(event) => setWaktuMakanNota(event.target.value)} className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold text-slate-800">
+ <option value="">Pilih waktu makan</option><option value="Pagi">Pagi</option><option value="Siang">Siang</option><option value="Malam">Malam</option>
+ </select>
+ <p className="mt-2 text-xs font-semibold text-blue-700">Waktu makan ini akan terlihat pada rincian nota deklarasi.</p>
+ </div>
+ )}
+ {saldoDipilih?.jenis_saldo === "PERJALANAN_DINAS" && kategoriDipilih === "TRANSPORTASI" && (
+ <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+ <label className="mb-2 block text-xs font-black uppercase tracking-[0.15em] text-blue-700">Tujuan atau rute transportasi</label>
+ <input type="text" value={ruteTransportNota} onChange={(event) => setRuteTransportNota(event.target.value)} placeholder="Contoh: Kantor ke bandara" className="w-full rounded-xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold text-slate-800" />
+ <p className="mt-2 text-xs font-semibold text-blue-700">Tujuan transportasi ini akan terlihat pada rincian nota deklarasi.</p>
+ </div>
+ )}
+ {saldoDipilih?.jenis_saldo === "UANG_OPERASIONAL" && (
  <div className="grid gap-3 rounded-3xl border border-cyan-100 bg-cyan-50/70 p-4 sm:grid-cols-2">
  <div className="sm:col-span-2">
  <div className="mb-2 inline-flex rounded-full bg-cyan-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">

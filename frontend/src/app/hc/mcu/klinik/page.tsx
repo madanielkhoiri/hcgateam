@@ -7,7 +7,7 @@
 // ==================================================
 
 import Link from 'next/link';
-import { ArrowLeft, Building2, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, Building2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
@@ -149,6 +149,30 @@ export default function KlinikMcuPage() {
       }
 
       setDialogTerbuka(false);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
+  async function hapus(item: Klinik) {
+    if (
+      !confirm(
+        `Yakin ingin menghapus klinik "${item.namaKlinik}"? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+    setSukses(null);
+
+    try {
+      await mcuApi.hapus(`/klinik/${item.id}`);
+      setSukses(`Klinik "${item.namaKlinik}" berhasil dihapus`);
       await muat();
     } catch (error) {
       setGalat((error as Error).message);
@@ -300,14 +324,26 @@ export default function KlinikMcuPage() {
 
                     <td>
                       {adalahHc ? (
-                        <button
-                          type="button"
-                          className={`${styles.tombol} ${styles.tombolLembut} ${styles.tombolKecil}`}
-                          onClick={() => bukaEdit(item)}
-                        >
-                          <Pencil size={12} />
-                          Edit
-                        </button>
+                        <div className={styles.rowAksi}>
+                          <button
+                            type="button"
+                            className={`${styles.tombol} ${styles.tombolLembut} ${styles.tombolKecil}`}
+                            onClick={() => bukaEdit(item)}
+                          >
+                            <Pencil size={12} />
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`}
+                            onClick={() => void hapus(item)}
+                            disabled={proses}
+                          >
+                            <Trash2 size={12} />
+                            Hapus
+                          </button>
+                        </div>
                       ) : null}
                     </td>
                   </tr>

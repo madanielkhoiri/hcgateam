@@ -153,7 +153,7 @@ describe('McuRekomendasiService.submit', () => {
 
     await service.submit(
       100,
-      { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf' } as any,
+      { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf', penyakit: 'Hipertensi' } as any,
       aktor(UserRole.DOKTER),
     );
 
@@ -179,6 +179,76 @@ describe('McuRekomendasiService.submit', () => {
         data: expect.objectContaining({ status: StatusFollowUp.SELESAI }),
       }),
     );
+  });
+});
+
+describe('McuRekomendasiService — nama penyakit rekomendasi Follow Up', () => {
+  const fu = { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf' };
+
+  it('menolak rekomendasi FOLLOW_UP tanpa nama penyakit', async () => {
+    const { service, create } = buatService();
+
+    await expect(service.submit(100, fu as any, aktor(UserRole.DOKTER))).rejects.toThrow(
+      'Nama penyakit wajib diisi Dokter',
+    );
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('menolak nama penyakit yang hanya spasi', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.submit(100, { ...fu, penyakit: '   ' } as any, aktor(UserRole.DOKTER)),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('menyimpan nama penyakit dengan spasi berlebih dirapikan', async () => {
+    const { service, create } = buatService();
+
+    await service.submit(100, { ...fu, penyakit: '  Diabetes   Melitus , Hipertensi ' } as any, aktor(UserRole.DOKTER));
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ penyakit: 'Diabetes Melitus , Hipertensi' }),
+      }),
+    );
+  });
+
+  it('rekomendasi FIT tidak menyimpan penyakit walau ada yang terkirim', async () => {
+    const { service, create } = buatService();
+
+    await service.submit(100, { status: StatusRekomendasi.FIT, penyakit: 'Hipertensi' } as any, aktor(UserRole.DOKTER));
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ penyakit: null }) }),
+    );
+  });
+
+  it('detailAdmin(): HC dan Dokter melihat penyakit, Admin Dept tidak', async () => {
+    const detail = {
+      id: 1,
+      status: StatusRekomendasi.FOLLOW_UP,
+      penyakit: 'Hipertensi',
+      hasilMcu: { jadwalMcu: { karyawanId: 7 } },
+    };
+
+    for (const peran of [UserRole.HC, UserRole.DOKTER]) {
+      const { service } = buatService({ rekomendasiDetail: detail });
+      await expect(service.detailAdmin(1, aktor(peran))).resolves.toMatchObject({ penyakit: 'Hipertensi' });
+    }
+
+    const { service } = buatService({ rekomendasiDetail: detail });
+    await expect(service.detailAdmin(1, aktor(UserRole.ADMIN_DEPT))).resolves.toMatchObject({ penyakit: null });
+  });
+
+  it('daftar(): penyakit disembunyikan dari Admin Dept tetapi tampil untuk HC', async () => {
+    const baris = () => [{ id: 1, status: StatusRekomendasi.FOLLOW_UP, penyakit: 'Hipertensi' }];
+
+    const hc = buatService({ rekomendasiFindMany: jest.fn().mockResolvedValue(baris()) });
+    expect((await hc.service.daftar({}, aktor(UserRole.HC))).data[0].penyakit).toBe('Hipertensi');
+
+    const dept = buatService({ rekomendasiFindMany: jest.fn().mockResolvedValue(baris()) });
+    expect((await dept.service.daftar({}, aktor(UserRole.ADMIN_DEPT))).data[0].penyakit).toBeNull();
   });
 });
 

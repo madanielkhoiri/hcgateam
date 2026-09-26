@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -49,6 +50,17 @@ export class IrDokumenController {
   ) {
     this.akses.wajibKelola(aktor);
     return this.service.unggah(kategori, judul, file, aktor);
+  }
+
+  @Patch(':id')
+  ubah(
+    @Aktor() aktor: AktorIr,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('judul') judul?: string,
+    @Body('kategori') kategori?: string,
+  ) {
+    this.akses.wajibKelola(aktor);
+    return this.service.ubah(id, { judul, kategori });
   }
 
   @Delete(':id')

@@ -1,0 +1,296 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #d5e1ef;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(31, 68, 114, 0.07);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.panelHead h2 {
+  margin: 0;
+  color: #17375f;
+  font-size: 17px;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.select,
+.input {
+  height: 40px;
+  padding: 0 12px;
+  color: #193b62;
+  background: #f8fbff;
+  border: 1px solid #cbd9e8;
+  border-radius: 10px;
+  outline: 0;
+  font: inherit;
+  font-size: 12px;
+}
+
+.uploadBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 18px;
+  color: #7c3caf;
+  background: #fbf7fe;
+  border: 1.5px dashed #d7bee8;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.uploadBox > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.uploadBox strong {
+  color: #17375f;
+  font-size: 13px;
+}
+
+.uploadBox small {
+  color: #8795a7;
+  font-size: 11px;
+}
+
+.uploadBox input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.errorMessage,
+.successMessage {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.errorMessage {
+  color: #b13232;
+  background: #fff0f0;
+  border: 1px solid #efcaca;
+}
+
+.successMessage {
+  color: #087747;
+  background: #e8f8ef;
+  border: 1px solid #bfe5cf;
+}
+
+.kosong {
+  padding: 40px 20px;
+  color: #8492a8;
+  text-align: center;
+  font-size: 13px;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 11px 12px;
+  color: #62758e;
+  background: #f6f9fc;
+  border-bottom: 1px solid #dfe8f1;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 11px 12px;
+  color: #294564;
+  border-bottom: 1px solid #edf1f6;
+  font-size: 11px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.subText {
+  margin-top: 2px;
+  color: #8a9aaf;
+  font-size: 9.5px;
+}
+
+.rowAksi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tombolKecil {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  color: #0870e6;
+  background: #edf5ff;
+  border: 1px solid #cfe0f7;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tombolKecil:hover {
+  background: #e2efff;
+}
+
+
+.tombolNetral {
+  min-height: 42px;
+  padding: 0 16px;
+  color: #526a85;
+  background: #f4f7fa;
+  border: 1px solid #dce4ed;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.badgeNetral {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #6d7f99;
+  background: #eef2f7;
+}
+
+.hasilCocok,
+.hasilSelisih {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hasilCocok {
+  color: #087b44;
+  background: #e5f7ed;
+}
+
+.hasilSelisih {
+  color: #b42318;
+  background: #fee4e2;
+}
+
+.spin {
+  animation: putar 0.9s linear infinite;
+}
+
+@keyframes putar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Dialog popup ---------- */
+
+.overlay {
+  position: fixed;
+  z-index: 500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 28, 50, 0.54);
+}
+
+.dialog {
+  width: min(460px, 100%);
+  padding: 24px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 25px 70px rgba(10, 30, 55, 0.25);
+}
+
+.dialog h3 {
+  margin: 0 0 4px;
+  color: #17375f;
+  font-size: 16px;
+}
+
+.dialog p {
+  margin: 0 0 16px;
+  color: #77889f;
+  font-size: 11.5px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.field span {
+  color: #526a86;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.field .select,
+.field .input {
+  width: 100%;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dialogAksi {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}

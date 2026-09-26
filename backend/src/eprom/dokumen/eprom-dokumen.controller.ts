@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -22,7 +23,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
-import { BuatDokumenSuratDto, EpromDokumenService } from './eprom-dokumen.service';
+import { BuatDokumenSuratDto, EpromDokumenService, UbahDokumenSuratDto } from './eprom-dokumen.service';
 
 @Controller('eprom/dokumen')
 @UseGuards(JwtAuthGuard)
@@ -47,6 +48,15 @@ export class EpromDokumenController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.service.buat(aktor, dto, file);
+  }
+
+  @Patch(':id')
+  ubah(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahDokumenSuratDto,
+  ) {
+    return this.service.ubah(aktor, id, dto);
   }
 
   @Delete(':id')

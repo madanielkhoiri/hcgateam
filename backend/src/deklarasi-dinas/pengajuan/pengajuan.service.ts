@@ -51,6 +51,15 @@ export class PengajuanService {
       throw new BadRequestException('Nomor STD wajib diisi untuk Perjalanan Dinas.');
     }
 
+    if (data.jenis_pengajuan === 'PERJALANAN_DINAS') {
+      if (!data.tanggal_mulai || !data.tanggal_selesai) {
+        throw new BadRequestException('Tanggal mulai dan selesai perjalanan wajib diisi.');
+      }
+      if (new Date(data.tanggal_selesai) < new Date(data.tanggal_mulai)) {
+        throw new BadRequestException('Tanggal selesai tidak boleh sebelum tanggal mulai.');
+      }
+    }
+
     if (
       data.jenis_pengajuan === 'UANG_OPERASIONAL' &&
       (!data.nomor_rab || !data.nomor_rab.trim())
@@ -111,6 +120,8 @@ export class PengajuanService {
         statusPengajuan: 'DIAJUKAN',
         catatanAdmin: null,
         tanggalPengajuan: new Date(tanggalPengajuan),
+        tanggalMulai: data.tanggal_mulai ? new Date(data.tanggal_mulai) : null,
+        tanggalSelesai: data.tanggal_selesai ? new Date(data.tanggal_selesai) : null,
       }
     });
 
@@ -298,6 +309,8 @@ export class PengajuanService {
       jenis_saldo: pengajuan.jenisPengajuan,
       nominal_transfer: nominalTransfer,
       tanggal_transfer: tanggalTransfer,
+      tanggal_mulai: pengajuan.tanggalMulai?.toISOString().slice(0, 10),
+      tanggal_selesai: pengajuan.tanggalSelesai?.toISOString().slice(0, 10),
       keterangan:
         data.keterangan && String(data.keterangan).trim()
           ? String(data.keterangan).trim()

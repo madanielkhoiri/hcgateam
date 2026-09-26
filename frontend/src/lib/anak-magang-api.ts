@@ -133,6 +133,8 @@ export const anakMagangApi = {
 
   ubah: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  hapus: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
 
 export const LABEL_STATUS_ANAK_MAGANG: Record<StatusAnakMagang, string> = {

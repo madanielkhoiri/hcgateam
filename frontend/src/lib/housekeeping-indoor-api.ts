@@ -143,6 +143,8 @@ export const housekeepingIndoorApi = {
     files.forEach((file) => form.append('file', file));
     return request<HousekeepingIndoorLaporan>('/housekeeping-indoor', { method: 'POST', body: form });
   },
+  ubah: (id: number, data: { lokasi?: LokasiHousekeepingIndoor; namaPetugas?: string }) =>
+    request<HousekeepingIndoorLaporan>(`/housekeeping-indoor/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   hapus: (id: number) => request<{ message: string }>(`/housekeeping-indoor/${id}`, { method: 'DELETE' }),
   ringkasan: () => request<RingkasanHousekeepingIndoor>('/housekeeping-indoor/dashboard/ringkasan'),
   trenDanLokasi: () => request<TrenDashboardHousekeepingIndoor>('/housekeeping-indoor/dashboard/tren'),

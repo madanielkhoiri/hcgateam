@@ -158,7 +158,7 @@ describe("unduhBerkas", () => {
  it("melempar McuApiError kalau gagal, tanpa sempat memicu unduhan", async () => {
  mockFetchSekali({ ok: false, status: 403, json: async () => ({ message: "Dilarang" }) });
 
- await expect(unduhBerkas("/hasil/1", "hasil.pdf")).rejects.toMatchObject({
+ await expect(unduhBerkas("/hasil/1")).rejects.toMatchObject({
  status: 403,
  });
  });

@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -23,7 +24,11 @@ import { LokasiHousekeepingIndoor } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { HousekeepingIndoorService } from './housekeeping-indoor.service';
-import { BuatHousekeepingIndoorDto, LOKASI_HOUSEKEEPING_INDOOR } from './dto/housekeeping-indoor.dto';
+import {
+  BuatHousekeepingIndoorDto,
+  LOKASI_HOUSEKEEPING_INDOOR,
+  UbahHousekeepingIndoorDto,
+} from './dto/housekeeping-indoor.dto';
 
 @Controller('housekeeping-indoor')
 @UseGuards(JwtAuthGuard)
@@ -57,6 +62,11 @@ export class HousekeepingIndoorController {
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
     return this.service.buat(dto, files ?? [], req.user.id);
+  }
+
+  @Patch(':id')
+  ubah(@Param('id', ParseIntPipe) id: number, @Body() dto: UbahHousekeepingIndoorDto) {
+    return this.service.ubah(id, dto);
   }
 
   @Delete(':id')
