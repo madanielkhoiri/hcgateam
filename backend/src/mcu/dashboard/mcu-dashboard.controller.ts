@@ -4,10 +4,12 @@
 // ==================================================
 
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
   ParseIntPipe,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
@@ -48,12 +50,49 @@ export class McuDashboardController {
     return this.service.durasiProses();
   }
 
+  /** Rekap penyakit penyebab Follow Up: data medis, hanya HC & Dokter (bukan Admin Dept). */
+  @Get('dashboard/penyakit')
+  penyakitTerbanyak(
+    @Aktor() aktor: AktorMcu,
+    @Query('periode') periode?: string,
+    @Query('tahun') tahun?: string,
+    @Query('bulan') bulan?: string,
+  ) {
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER);
+
+    const periodeValid = (periode ?? 'TAHUN').toUpperCase();
+
+    if (periodeValid !== 'TAHUN' && periodeValid !== 'BULAN') {
+      throw new BadRequestException('Periode harus TAHUN atau BULAN');
+    }
+
+    const sekarang = new Date();
+    const tahunAngka = tahun ? Number(tahun) : sekarang.getUTCFullYear();
+    const bulanAngka = bulan ? Number(bulan) : sekarang.getUTCMonth() + 1;
+
+    if (!Number.isInteger(tahunAngka) || tahunAngka < 2000 || tahunAngka > 2100) {
+      throw new BadRequestException('Tahun tidak valid');
+    }
+
+    if (
+      periodeValid === 'BULAN' &&
+      (!Number.isInteger(bulanAngka) || bulanAngka < 1 || bulanAngka > 12)
+    ) {
+      throw new BadRequestException('Bulan tidak valid');
+    }
+
+    return this.service.penyakitTerbanyak(periodeValid, tahunAngka, bulanAngka);
+  }
+
   @Get('history/:karyawanId')
   historyKaryawan(
     @Aktor() aktor: AktorMcu,
     @Param('karyawanId', ParseIntPipe) karyawanId: number,
   ) {
     this.akses.wajibPeran(aktor, ...PERAN_DASHBOARD);
-    return this.service.historyKaryawan(karyawanId);
+    return this.service.historyKaryawan(
+      karyawanId,
+      this.akses.punyaPeran(aktor, UserRole.HC, UserRole.DOKTER),
+    );
   }
 }

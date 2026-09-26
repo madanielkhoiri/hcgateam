@@ -107,6 +107,11 @@ export const albumApi = {
       method: 'POST',
       body: JSON.stringify({ judul, deskripsi }),
     }),
+  ubah: (id: number, data: { judul?: string; deskripsi?: string }) =>
+    request<{ id: number; judul: string; deskripsi: string | null }>(`/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   tambahFoto: (albumId: number, files: File[]) => {
     const form = new FormData();
     files.forEach((file) => form.append('files', file));

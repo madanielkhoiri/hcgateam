@@ -22,6 +22,7 @@ import {
   PackageMinus,
   PackagePlus,
   PanelLeftClose,
+  Scissors,
   ShieldCheck,
   ShoppingBag,
   ToolCase,
@@ -42,7 +43,7 @@ type MenuItem = {
   icon: React.ElementType;
 };
 
-type SectionId = "inventory" | "pekerjaan" | "aktivitas" | "project" | "safety";
+type SectionId = "inventory" | "pekerjaan" | "aktivitas" | "potongRumput" | "project" | "safety";
 
 type MenuGroup = {
   id: string;
@@ -207,10 +208,22 @@ const menuGroups: MenuGroup[] = [
         href: "/ga/inventory/daily-report",
         icon: FileText,
       },
+    ],
+  },
+  // Potong Rumput sudah dipisah dari Aktivitas Harian — sekarang bernaung di
+  // GS (General Service) > Housekeeping > Outdoor pada menu utama GA
+  // (lihat ga/page.tsx), jadi tidak lagi digabung ke grup Aktivitas Harian
+  // di sidebar modul ini.
+  {
+    id: "potong-rumput",
+    section: "potongRumput",
+    label: "Potong Rumput",
+    icon: Scissors,
+    items: [
       {
-        label: "Potong Rumput",
+        label: "Riwayat Potong Rumput",
         href: "/ga/inventory/potong-rumput",
-        icon: FileText,
+        icon: Scissors,
       },
     ],
   },
@@ -261,16 +274,17 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     ? "project"
     : pathname.includes("/p5m")
       ? "safety"
-      : pathname.includes("/daily-report") ||
-          pathname.includes("/potong-rumput")
-        ? "aktivitas"
-        : pathname.includes("/work-order") ||
-            pathname.includes("/work-orders") ||
-            pathname.includes("/dashboard-work-order") ||
-            pathname.includes("/serah-terima-pekerjaan") ||
-            pathname.includes("/handovers")
-          ? "pekerjaan"
-          : "inventory";
+      : pathname.includes("/potong-rumput")
+        ? "potongRumput"
+        : pathname.includes("/daily-report")
+          ? "aktivitas"
+          : pathname.includes("/work-order") ||
+              pathname.includes("/work-orders") ||
+              pathname.includes("/dashboard-work-order") ||
+              pathname.includes("/serah-terima-pekerjaan") ||
+              pathname.includes("/handovers")
+            ? "pekerjaan"
+            : "inventory";
 
   const dalamCivilElectric = pathname.startsWith("/ga/inventory/civil-electric");
 
@@ -278,6 +292,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     inventory: dalamCivilElectric ? "Inventory Electric" : "Inventory",
     pekerjaan: "Pekerjaan",
     aktivitas: "Aktivitas Harian",
+    potongRumput: "Potong Rumput",
     project: "Project",
     safety: "Safety Meeting",
   }[activeSection];
@@ -286,6 +301,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     inventory: ACCESS_KEYS.GA_INVENTORY,
     pekerjaan: ACCESS_KEYS.GA_PEKERJAAN,
     aktivitas: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
+    potongRumput: ACCESS_KEYS.GA_AKTIVITAS_HARIAN,
     project: ACCESS_KEYS.GA_PROJECT,
     safety: ACCESS_KEYS.GA_SAFETY_MEETING,
   }[activeSection];

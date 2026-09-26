@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
 import { McuNotifikasiService } from '../notifikasi/mcu-notifikasi.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import { hariIni, tambahHari } from '../mcu-date.util';
 import { McuJadwalService } from './mcu-jadwal.service';
 
@@ -57,6 +58,8 @@ function buatService(overrides: {
   update?: jest.Mock;
   updateMany?: jest.Mock;
   departemenFindMany?: jest.Mock;
+  whatsappAktif?: boolean;
+  whatsappKirim?: jest.Mock;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data, karyawan: karyawanFixture(), klinik: null }));
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ ...(jadwalFixture() as object), ...data }));
@@ -90,9 +93,14 @@ function buatService(overrides: {
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;
 
-  const service = new McuJadwalService(prisma, akses, notifikasi);
+  const whatsapp = {
+    aktif: overrides.whatsappAktif ?? true,
+    kirim: overrides.whatsappKirim ?? jest.fn().mockResolvedValue(true),
+  } as unknown as WhatsappService;
 
-  return { service, prisma, create, update, updateMany, findMany, count };
+  const service = new McuJadwalService(prisma, akses, notifikasi, whatsapp);
+
+  return { service, prisma, create, update, updateMany, findMany, count, whatsapp };
 }
 
 const DTO_DASAR = { karyawanId: 7, tanggalMcu: isoTanggal(tambahHari(hariIni(), 10)) };
@@ -127,7 +135,7 @@ describe('McuJadwalService.buat', () => {
     );
   });
 
-  it('menolak penjadwalan kurang dari H-3 hari', async () => {
+  it('menolak penjadwalan kurang dari H-3 hari untuk HC', async () => {
     const { service } = buatService();
     const besok = isoTanggal(tambahHari(hariIni(), 1));
 
@@ -135,6 +143,42 @@ describe('McuJadwalService.buat', () => {
       service.buat({ ...DTO_DASAR, tanggalMcu: besok } as any, aktor(UserRole.HC)),
     ).rejects.toThrow(/paling lambat H-3 hari/);
   });
+
+  it('ADMIN boleh mendaftarkan karyawan kurang dari H-3 hari', async () => {
+    const { service, create } = buatService();
+    const besok = tambahHari(hariIni(), 1);
+
+    await expect(
+      service.buat(
+        { ...DTO_DASAR, tanggalMcu: isoTanggal(besok) } as any,
+        aktor(UserRole.ADMIN),
+      ),
+    ).resolves.toBeDefined();
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          statusPendaftaran: StatusPendaftaran.TERKUNCI,
+          tanggalLock: tambahHari(besok, -3),
+        }),
+      }),
+    );
+  });
+
+  it.each([UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+    '%s tetap mengikuti batas pendaftaran H-3',
+    async (role) => {
+      const { service } = buatService();
+      const besok = isoTanggal(tambahHari(hariIni(), 1));
+
+      await expect(
+        service.buat(
+          { ...DTO_DASAR, tanggalMcu: besok } as any,
+          aktor(role),
+        ),
+      ).rejects.toThrow(/paling lambat H-3 hari/);
+    },
+  );
 
   it('menolak kalau karyawan masih punya jadwal berjalan (DRAFT/TERKUNCI)', async () => {
     const { service } = buatService({ jadwalBerjalan: jadwalFixture() });
@@ -191,7 +235,8 @@ describe('McuJadwalService.buatBatch', () => {
       kirimBanyak: jest.fn().mockResolvedValue(undefined),
       duaKanal: jest.fn().mockReturnValue([]),
     } as unknown as McuNotifikasiService;
-    const service = new McuJadwalService(prisma, akses, notifikasi);
+    const whatsapp = { aktif: false, kirim: jest.fn() } as unknown as WhatsappService;
+    const service = new McuJadwalService(prisma, akses, notifikasi, whatsapp);
 
     const hasil = await service.buatBatch(
       { jadwal: [{ ...DTO_DASAR, karyawanId: 1 }, { ...DTO_DASAR, karyawanId: 2 }] } as any,
@@ -309,19 +354,60 @@ describe('McuJadwalService.batalkan', () => {
 });
 
 describe('McuJadwalService.kunciJadwalJatuhTempo', () => {
+  const jadwalAkanTerkunci = [
+    { id: 1, tanggalMcu: tambahHari(hariIni(), 3), karyawan: { nama: 'Budi', gender: null, noTelepon: '0812' } },
+    { id: 2, tanggalMcu: tambahHari(hariIni(), 3), karyawan: { nama: 'Ani', gender: null, noTelepon: null } },
+  ];
+
   it('mengunci semua jadwal DRAFT yang tanggalLock-nya sudah lewat', async () => {
-    const updateMany = jest.fn().mockResolvedValue({ count: 3 });
-    const { service } = buatService({ updateMany });
+    const jadwalFindMany = jest.fn().mockResolvedValue(jadwalAkanTerkunci);
+    const updateMany = jest.fn().mockResolvedValue({ count: 2 });
+    const { service } = buatService({ jadwalFindMany, updateMany });
 
     const hasil = await service.kunciJadwalJatuhTempo();
 
-    expect(updateMany).toHaveBeenCalledWith(
+    expect(jadwalFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ statusPendaftaran: StatusPendaftaran.DRAFT }),
-        data: { statusPendaftaran: StatusPendaftaran.TERKUNCI },
       }),
     );
-    expect(hasil).toEqual({ terkunci: 3 });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: { in: [1, 2] } },
+      data: { statusPendaftaran: StatusPendaftaran.TERKUNCI },
+    });
+    expect(hasil).toEqual({ terkunci: 2 });
+  });
+
+  it('tidak memanggil updateMany kalau tidak ada jadwal yang jatuh tempo', async () => {
+    const jadwalFindMany = jest.fn().mockResolvedValue([]);
+    const updateMany = jest.fn();
+    const { service } = buatService({ jadwalFindMany, updateMany });
+
+    const hasil = await service.kunciJadwalJatuhTempo();
+
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(hasil).toEqual({ terkunci: 0 });
+  });
+
+  it('kirim WA reminder H-3 hari ke karyawan yang punya nomor telepon saja', async () => {
+    const jadwalFindMany = jest.fn().mockResolvedValue(jadwalAkanTerkunci);
+    const whatsappKirim = jest.fn().mockResolvedValue(true);
+    const { service } = buatService({ jadwalFindMany, whatsappKirim });
+
+    await service.kunciJadwalJatuhTempo();
+
+    expect(whatsappKirim).toHaveBeenCalledTimes(1);
+    expect(whatsappKirim).toHaveBeenCalledWith('0812', expect.stringContaining('Reminder MCU'));
+  });
+
+  it('tidak kirim WA sama sekali kalau whatsapp tidak aktif', async () => {
+    const jadwalFindMany = jest.fn().mockResolvedValue(jadwalAkanTerkunci);
+    const whatsappKirim = jest.fn();
+    const { service } = buatService({ jadwalFindMany, whatsappKirim, whatsappAktif: false });
+
+    await service.kunciJadwalJatuhTempo();
+
+    expect(whatsappKirim).not.toHaveBeenCalled();
   });
 });
 

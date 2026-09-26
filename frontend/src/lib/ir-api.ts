@@ -165,6 +165,12 @@ export const irApi = {
       form.append('file', file);
       return request<DokumenIr>('/dokumen', { method: 'POST', body: form });
     },
+    ubah: (id: number, data: { judul?: string; kategori?: KategoriDokumenIr }) =>
+      request<DokumenIr>(`/dokumen/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
     hapus: (id: number) =>
       request<{ message: string }>(`/dokumen/${id}`, { method: 'DELETE' }),
   },
@@ -216,6 +222,12 @@ export const irApi = {
         body: form,
       });
     },
+    ubah: (id: number, data: { judul?: string; deskripsi?: string }) =>
+      request<IrCourseVideo>(`/course/video/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
     hapus: (id: number) =>
       request<{ message: string }>(`/course/video/${id}`, {
         method: 'DELETE',

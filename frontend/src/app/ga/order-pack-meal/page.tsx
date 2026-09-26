@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  CheckCircle2,
+  ClipboardCheck,
   Eye,
   FileCheck2,
   LogOut,
   MinusCircle,
   Pencil,
   Plus,
+  Receipt,
   Search,
   Trash2,
   UploadCloud,
@@ -25,13 +28,16 @@ import {
   useState,
 } from "react";
 import { compressImage } from "@/lib/compress-image";
+import { urlUploads } from "@/lib/uploads-url";
 import styles from "./order-pack-meal.module.css";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:3001/api";
 
-const BACKEND_URL = API_URL;
+function fileUrl(pathRelatif: string) {
+  return urlUploads(pathRelatif.replace(/^\/?uploads\//, ""));
+}
 
 const STAFF_ROLES = new Set([
   "ADMIN",
@@ -53,6 +59,9 @@ type OrderItem = {
   notes?: string | null;
 };
 
+type StatusApprovalPackMeal = "MENUNGGU" | "DISETUJUI" | "DITOLAK";
+type StatusDeliveryPackMeal = "DIPROSES" | "SELESAI" | "DIBATALKAN";
+
 type PackMealOrder = {
   id: number;
   orderNumber: string;
@@ -61,16 +70,31 @@ type PackMealOrder = {
   neededDate: string;
   deliveryLocation: string;
   department?: string | null;
-  contactNumber?: string | null;
+  kegiatan?: string | null;
   deliveryTime?: string | null;
   notes?: string | null;
   approvedFormPath: string;
   totalPacks: number;
+  vendor?: string | null;
+  statusApproval: StatusApprovalPackMeal;
+  statusDelivery: StatusDeliveryPackMeal;
   createdBy: number;
   createdAt: string;
   updatedAt: string;
   creator: LoginUser;
   items: OrderItem[];
+};
+
+const LABEL_APPROVAL: Record<StatusApprovalPackMeal, string> = {
+  MENUNGGU: "Menunggu",
+  DISETUJUI: "Disetujui",
+  DITOLAK: "Ditolak",
+};
+
+const LABEL_DELIVERY: Record<StatusDeliveryPackMeal, string> = {
+  DIPROSES: "Diproses",
+  SELESAI: "Selesai",
+  DIBATALKAN: "Dibatalkan",
 };
 
 type FormRow = {
@@ -169,7 +193,7 @@ export default function OrderPackMealPage() {
   const [neededDate, setNeededDate] = useState(today());
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [department, setDepartment] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
+  const [kegiatan, setKegiatan] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<FormRow[]>([createRow()]);
@@ -177,6 +201,20 @@ export default function OrderPackMealPage() {
   const [existingApprovedFormPath, setExistingApprovedFormPath] =
     useState("");
   const [fileInputKey, setFileInputKey] = useState(0);
+
+  const [successPopup, setSuccessPopup] = useState<{
+    orderNumber: string;
+    isNew: boolean;
+  } | null>(null);
+
+  const [statusOrder, setStatusOrder] = useState<PackMealOrder | null>(null);
+  const [statusVendor, setStatusVendor] = useState("");
+  const [statusApproval, setStatusApproval] =
+    useState<StatusApprovalPackMeal>("MENUNGGU");
+  const [statusDelivery, setStatusDelivery] =
+    useState<StatusDeliveryPackMeal>("DIPROSES");
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState("");
 
   const isStaff = Boolean(user && STAFF_ROLES.has(user.role));
 
@@ -318,7 +356,7 @@ export default function OrderPackMealPage() {
     setNeededDate(today());
     setDeliveryLocation("");
     setDepartment("");
-    setContactNumber("");
+    setKegiatan("");
     setDeliveryTime("");
     setNotes("");
     setRows([createRow()]);
@@ -339,12 +377,99 @@ export default function OrderPackMealPage() {
     setNeededDate(order.neededDate.slice(0, 10));
     setDeliveryLocation(order.deliveryLocation);
     setDepartment(order.department ?? "");
-    setContactNumber(order.contactNumber ?? "");
+    setKegiatan(order.kegiatan ?? "");
     setDeliveryTime(order.deliveryTime ?? "");
     setNotes(order.notes ?? "");
     setRows(order.items.map((item) => createRow(item)));
     setExistingApprovedFormPath(order.approvedFormPath);
     setModalOpen(true);
+  }
+
+  function openStatusEditor(order: PackMealOrder) {
+    setStatusOrder(order);
+    setStatusVendor(order.vendor ?? "");
+    setStatusApproval(order.statusApproval);
+    setStatusDelivery(order.statusDelivery);
+    setStatusError("");
+  }
+
+  async function saveStatus(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!statusOrder) {
+      return;
+    }
+
+    try {
+      setStatusSaving(true);
+      setStatusError("");
+
+      const formData = new FormData();
+      formData.append("vendor", statusVendor.trim());
+      formData.append("statusApproval", statusApproval);
+      formData.append("statusDelivery", statusDelivery);
+
+      await request(`order-pack-meal/${statusOrder.id}`, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      setMessage(`Vendor & status order ${statusOrder.orderNumber} berhasil diperbarui`);
+      setStatusOrder(null);
+      await loadOrders();
+    } catch (submitError) {
+      setStatusError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Vendor & status gagal disimpan",
+      );
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
+  async function openResi(order: PackMealOrder) {
+    setError("");
+
+    const popup = window.open("", "_blank");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/order-pack-meal/${order.id}/resi`,
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+
+        throw new Error(
+          Array.isArray(result.message)
+            ? result.message[0]
+            : result.message || "Resi gagal dibuat",
+        );
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      if (popup) {
+        popup.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (resiError) {
+      popup?.close();
+
+      setError(
+        resiError instanceof Error ? resiError.message : "Resi gagal dibuat",
+      );
+    }
   }
 
   function updateRow(key: string, patch: Partial<FormRow>) {
@@ -396,7 +521,7 @@ export default function OrderPackMealPage() {
       formData.append("neededDate", neededDate);
       formData.append("deliveryLocation", deliveryLocation.trim());
       formData.append("department", department.trim());
-      formData.append("contactNumber", contactNumber.trim());
+      formData.append("kegiatan", kegiatan.trim());
       formData.append("deliveryTime", deliveryTime);
       formData.append("notes", notes.trim());
       formData.append(
@@ -423,13 +548,10 @@ export default function OrderPackMealPage() {
         body: formData,
       });
 
-      const successMessage =
-        editingId === null
-          ? `Order berhasil disimpan dengan nomor ${result.orderNumber}`
-          : `Order ${result.orderNumber} berhasil diperbarui`;
+      const isNew = editingId === null;
 
       resetForm();
-      setMessage(successMessage);
+      setSuccessPopup({ orderNumber: result.orderNumber, isNew });
 
       if (isStaff) {
         setModalOpen(false);
@@ -511,12 +633,12 @@ export default function OrderPackMealPage() {
           </label>
 
           <label>
-            <span>Nomor Kontak</span>
+            <span>Nama Kegiatan</span>
             <input
               type="text"
-              value={contactNumber}
-              placeholder="Nomor yang dapat dihubungi"
-              onChange={(event) => setContactNumber(event.target.value)}
+              value={kegiatan}
+              placeholder="Contoh: Kegiatan FGD PTPKKP"
+              onChange={(event) => setKegiatan(event.target.value)}
             />
           </label>
 
@@ -659,7 +781,7 @@ export default function OrderPackMealPage() {
           {existingApprovedFormPath && (
             <a
               className={styles.currentFile}
-              href={`${BACKEND_URL}${existingApprovedFormPath}`}
+              href={fileUrl(existingApprovedFormPath)}
               target="_blank"
               rel="noreferrer"
             >
@@ -671,10 +793,6 @@ export default function OrderPackMealPage() {
 
         {error && (
           <div className={styles.errorMessage}>{error}</div>
-        )}
-
-        {!inModal && message && (
-          <div className={styles.successMessage}>{message}</div>
         )}
 
         <div className={styles.formActions}>
@@ -749,10 +867,6 @@ export default function OrderPackMealPage() {
             </div>
           </div>
 
-          {message && (
-            <div className={styles.successMessage}>{message}</div>
-          )}
-
           <section className={styles.guestFormCard}>
             {orderForm(false)}
           </section>
@@ -761,6 +875,32 @@ export default function OrderPackMealPage() {
         <footer className={styles.footer}>
           © 2026 ONE FOR ALL · Portal Internal
         </footer>
+
+        {successPopup && (
+          <div className={styles.modalOverlay}>
+            <section className={`${styles.modal} ${styles.successModal}`}>
+              <div className={styles.successIcon}>
+                <CheckCircle2 size={34} />
+              </div>
+              <h2>
+                {successPopup.isNew
+                  ? "Order Berhasil Disimpan"
+                  : "Order Berhasil Diperbarui"}
+              </h2>
+              <p>Nomor Order</p>
+              <strong className={styles.successOrderNumber}>
+                {successPopup.orderNumber}
+              </strong>
+              <button
+                type="button"
+                className={styles.saveButton}
+                onClick={() => setSuccessPopup(null)}
+              >
+                Tutup
+              </button>
+            </section>
+          </div>
+        )}
       </main>
     );
   }
@@ -897,6 +1037,8 @@ export default function OrderPackMealPage() {
                     <th>Jam Antar</th>
                     <th>Jenis Order</th>
                     <th>Total Pack</th>
+                    <th>Vendor</th>
+                    <th>Status</th>
                     <th>Form Approved</th>
                     <th>Aksi</th>
                   </tr>
@@ -937,10 +1079,25 @@ export default function OrderPackMealPage() {
                           {order.totalPacks.toLocaleString("id-ID")} Pack
                         </span>
                       </td>
+                      <td>{order.vendor || "-"}</td>
+                      <td>
+                        <div className={styles.statusStack}>
+                          <span
+                            className={`${styles.statusBadge} ${styles[`approval${order.statusApproval}`]}`}
+                          >
+                            {LABEL_APPROVAL[order.statusApproval]}
+                          </span>
+                          <span
+                            className={`${styles.statusBadge} ${styles[`delivery${order.statusDelivery}`]}`}
+                          >
+                            {LABEL_DELIVERY[order.statusDelivery]}
+                          </span>
+                        </div>
+                      </td>
                       <td>
                         <a
                           className={styles.fileButton}
-                          href={`${BACKEND_URL}${order.approvedFormPath}`}
+                          href={fileUrl(order.approvedFormPath)}
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -957,6 +1114,22 @@ export default function OrderPackMealPage() {
                             onClick={() => setDetailOrder(order)}
                           >
                             <Eye size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.detailButton}
+                            title="Vendor & Status"
+                            onClick={() => openStatusEditor(order)}
+                          >
+                            <ClipboardCheck size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.detailButton}
+                            title="Unduh Resi"
+                            onClick={() => void openResi(order)}
+                          >
+                            <Receipt size={16} />
                           </button>
                           <button
                             type="button"
@@ -1054,12 +1227,24 @@ export default function OrderPackMealPage() {
                   <strong>{detailOrder.department || "-"}</strong>
                 </div>
                 <div>
-                  <span>Nomor Kontak</span>
-                  <strong>{detailOrder.contactNumber || "-"}</strong>
+                  <span>Kegiatan</span>
+                  <strong>{detailOrder.kegiatan || "-"}</strong>
                 </div>
                 <div>
                   <span>Jam Antar</span>
                   <strong>{detailOrder.deliveryTime || "-"}</strong>
+                </div>
+                <div>
+                  <span>Vendor</span>
+                  <strong>{detailOrder.vendor || "-"}</strong>
+                </div>
+                <div>
+                  <span>Approval</span>
+                  <strong>{LABEL_APPROVAL[detailOrder.statusApproval]}</strong>
+                </div>
+                <div>
+                  <span>Delivery</span>
+                  <strong>{LABEL_DELIVERY[detailOrder.statusDelivery]}</strong>
                 </div>
                 <div className={styles.detailFull}>
                   <span>Lokasi Pengantaran</span>
@@ -1101,17 +1286,141 @@ export default function OrderPackMealPage() {
                 <span>
                   Total <strong>{detailOrder.totalPacks} Pack</strong>
                 </span>
-                <a
-                  href={`${BACKEND_URL}${detailOrder.approvedFormPath}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.fileButton}
-                >
-                  <FileCheck2 size={16} />
-                  Buka Form Approved
-                </a>
+                <div className={styles.detailFooterActions}>
+                  <button
+                    type="button"
+                    className={styles.fileButton}
+                    onClick={() => void openResi(detailOrder)}
+                  >
+                    <Receipt size={16} />
+                    Unduh Resi
+                  </button>
+                  <a
+                    href={fileUrl(detailOrder.approvedFormPath)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.fileButton}
+                  >
+                    <FileCheck2 size={16} />
+                    Buka Form Approved
+                  </a>
+                </div>
               </div>
             </div>
+          </section>
+        </div>
+      )}
+
+      {statusOrder && (
+        <div className={styles.modalOverlay}>
+          <section className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Vendor & Status</h2>
+                <p>{statusOrder.orderNumber}</p>
+              </div>
+              <button type="button" onClick={() => setStatusOrder(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form className={styles.form} onSubmit={saveStatus}>
+              <div className={styles.formGrid}>
+                <label className={styles.fullField}>
+                  <span>Vendor</span>
+                  <input
+                    type="text"
+                    value={statusVendor}
+                    placeholder="Contoh: RTPKS"
+                    onChange={(event) => setStatusVendor(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  <span>Status Approval</span>
+                  <select
+                    value={statusApproval}
+                    onChange={(event) =>
+                      setStatusApproval(
+                        event.target.value as StatusApprovalPackMeal,
+                      )
+                    }
+                  >
+                    {Object.entries(LABEL_APPROVAL).map(([value, label]) => (
+                      <option value={value} key={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Status Delivery</span>
+                  <select
+                    value={statusDelivery}
+                    onChange={(event) =>
+                      setStatusDelivery(
+                        event.target.value as StatusDeliveryPackMeal,
+                      )
+                    }
+                  >
+                    {Object.entries(LABEL_DELIVERY).map(([value, label]) => (
+                      <option value={value} key={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {statusError && (
+                <div className={styles.errorMessage}>{statusError}</div>
+              )}
+
+              <div className={styles.formActions}>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  onClick={() => setStatusOrder(null)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className={styles.saveButton}
+                  disabled={statusSaving}
+                >
+                  <ClipboardCheck size={17} />
+                  {statusSaving ? "Menyimpan..." : "Simpan"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {successPopup && (
+        <div className={styles.modalOverlay}>
+          <section className={`${styles.modal} ${styles.successModal}`}>
+            <div className={styles.successIcon}>
+              <CheckCircle2 size={34} />
+            </div>
+            <h2>
+              {successPopup.isNew
+                ? "Order Berhasil Disimpan"
+                : "Order Berhasil Diperbarui"}
+            </h2>
+            <p>Nomor Order</p>
+            <strong className={styles.successOrderNumber}>
+              {successPopup.orderNumber}
+            </strong>
+            <button
+              type="button"
+              className={styles.saveButton}
+              onClick={() => setSuccessPopup(null)}
+            >
+              Tutup
+            </button>
           </section>
         </div>
       )}

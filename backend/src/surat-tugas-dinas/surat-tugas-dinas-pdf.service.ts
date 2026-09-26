@@ -95,9 +95,18 @@ export class SuratTugasDinasPdfService {
     y += 18;
 
     y = this.gambarInfoTugas(document, y, left, width, surat);
-    y += 32;
+    y += 14;
 
-    this.gambarTandaTangan(document, y, left, width, surat);
+    y = this.gambarAkomodasi(document, y, left, width, surat);
+    y += 18;
+    y = this.gambarRincianAkomodasi(document, y, left, width, surat);
+
+    if (y + 145 > document.page.height - 37) {
+      document.addPage({ size: 'A4', margin: 0 });
+      this.gambarBingkaiHalaman(document);
+      y = 37;
+    }
+    this.gambarTandaTangan(document, y + 10, left, width, surat);
   }
 
   private gambarHeader(
@@ -111,7 +120,11 @@ export class SuratTugasDinasPdfService {
     const metadataWidth = 190;
     const titleWidth = width - logoWidth - metadataWidth;
 
-    document.lineWidth(1).strokeColor('#000000').rect(left, top, width, height).stroke();
+    document
+      .lineWidth(1)
+      .strokeColor('#000000')
+      .rect(left, top, width, height)
+      .stroke();
 
     document
       .moveTo(left + logoWidth, top)
@@ -152,7 +165,7 @@ export class SuratTugasDinasPdfService {
       ['No Dokumen', 'PPA-ADR-F-HCGA-36'],
       ['Revisi', '0'],
       ['Tgl Efektif', '13/06/2022'],
-      ['Halaman', '1 dari 1'],
+      ['Halaman', 'Lihat lembar'],
     ];
 
     rows.forEach((row, index) => {
@@ -251,7 +264,10 @@ export class SuratTugasDinasPdfService {
           });
 
         if (x > left) {
-          document.moveTo(x, rowTop).lineTo(x, rowTop + headerHeight).stroke();
+          document
+            .moveTo(x, rowTop)
+            .lineTo(x, rowTop + headerHeight)
+            .stroke();
         }
 
         x += item.width;
@@ -294,7 +310,10 @@ export class SuratTugasDinasPdfService {
           });
 
         if (x > left) {
-          document.moveTo(x, y).lineTo(x, y + rowHeight).stroke();
+          document
+            .moveTo(x, y)
+            .lineTo(x, y + rowHeight)
+            .stroke();
         }
 
         x += kolomItem.width;
@@ -349,6 +368,165 @@ export class SuratTugasDinasPdfService {
     return y;
   }
 
+  private formatRupiah(nilai: number): string {
+    return new Intl.NumberFormat('id-ID').format(nilai);
+  }
+
+  private gambarAkomodasi(
+    document: PDFKit.PDFDocument,
+    top: number,
+    left: number,
+    width: number,
+    surat: SuratLengkap,
+  ): number {
+    const labelWidth = 130;
+    let y = top;
+
+    document
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor('#000000')
+      .text('Akomodasi', left, y);
+
+    y += 17;
+
+    const baris = (label: string, nilai: string, tebal = false) => {
+      document
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor('#000000')
+        .text(label, left, y, { width: labelWidth });
+
+      document
+        .font(tebal ? 'Helvetica-Bold' : 'Helvetica')
+        .fontSize(9)
+        .text(nilai, left + labelWidth, y, { width: width - labelWidth });
+
+      y += 17;
+    };
+
+    const nilaiUang = (
+      nominal: number | null,
+      keterangan: string | null,
+    ): string => {
+      if (nominal == null) {
+        return '-';
+      }
+
+      const rupiah = `Rp ${this.formatRupiah(nominal)}`;
+      return keterangan ? `${rupiah} / ${keterangan}` : rupiah;
+    };
+
+    baris('Penginapan / Hotel', surat.penginapanHotel || '-');
+    baris('Bantuan Transportasi', surat.bantuanTransportasi || '-');
+    baris('Uang Perjalanan', nilaiUang(surat.uangPerjalananNominal, null));
+    baris('Akomodasi', nilaiUang(surat.akomodasiNominal, null));
+    baris('Laundry', nilaiUang(surat.laundryNominal, null));
+    baris('Jumlah', `Rp ${this.formatRupiah(surat.jumlahAkomodasi)}`, true);
+
+    return y;
+  }
+
+  private gambarRincianAkomodasi(
+    document: PDFKit.PDFDocument,
+    top: number,
+    left: number,
+    width: number,
+    surat: SuratLengkap,
+  ): number {
+    document
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor('#000000')
+      .text('Rincian Akomodasi per Karyawan', left, top);
+    let y = top + 16;
+    const columns = [
+      { label: 'Nama / NRP', width: width * 0.24 },
+      { label: 'Uang Perjalanan', width: width * 0.2 },
+      { label: 'Akomodasi', width: width * 0.2 },
+      { label: 'Laundry', width: width * 0.16 },
+      { label: 'Jumlah', width: width * 0.2 },
+    ];
+    const rowHeight = 28;
+    const drawHeader = (at: number) => {
+      let x = left;
+      document
+        .lineWidth(0.7)
+        .rect(left, at, width, 22)
+        .fillAndStroke('#bdd7ee', '#000000');
+      for (const col of columns) {
+        document
+          .font('Helvetica-Bold')
+          .fontSize(7)
+          .fillColor('#000000')
+          .text(col.label, x + 3, at + 7, {
+            width: col.width - 6,
+            align: 'center',
+          });
+        if (x > left)
+          document
+            .moveTo(x, at)
+            .lineTo(x, at + 22)
+            .stroke();
+        x += col.width;
+      }
+    };
+    drawHeader(y);
+    y += 22;
+    for (const item of surat.karyawan) {
+      if (y + rowHeight > document.page.height - 70) {
+        document.addPage({ size: 'A4', margin: 0 });
+        this.gambarBingkaiHalaman(document);
+        y = 37;
+        this.gambarHeader(document, y, left, width);
+        y += 90;
+        document
+          .font('Helvetica-Bold')
+          .fontSize(9)
+          .fillColor('#000000')
+          .text('Rincian Akomodasi per Karyawan (lanjutan)', left, y);
+        y += 16;
+      }
+      const jumlah =
+        (item.uangPerjalananNominal ?? 0) +
+        (item.akomodasiNominal ?? 0) +
+        (item.laundryNominal ?? 0);
+      const amount = (nominal: number | null, keterangan: string | null) => {
+        const text = `Rp ${this.formatRupiah(nominal ?? 0)}`;
+        return keterangan ? `${text} - ${keterangan}` : text;
+      };
+      const values = [
+        `${item.nama}\n${item.nrp}`,
+        amount(item.uangPerjalananNominal, item.uangPerjalananKeterangan),
+        amount(item.akomodasiNominal, item.akomodasiKeterangan),
+        amount(item.laundryNominal, item.laundryKeterangan),
+        `Rp ${this.formatRupiah(jumlah)}`,
+      ];
+      let x = left;
+      document.lineWidth(0.6).rect(left, y, width, rowHeight).stroke();
+      columns.forEach((col, index) => {
+        document
+          .font('Helvetica')
+          .fontSize(6.5)
+          .fillColor('#000000')
+          .text(values[index], x + 3, y + 5, {
+            width: col.width - 6,
+            height: rowHeight - 8,
+            ellipsis: true,
+            align: index === 0 ? 'left' : 'center',
+          });
+        if (x > left)
+          document
+            .moveTo(x, y)
+            .lineTo(x, y + rowHeight)
+            .stroke();
+        x += col.width;
+      });
+      y += rowHeight;
+    }
+    return y;
+  }
+
   private gambarTandaTangan(
     document: PDFKit.PDFDocument,
     top: number,
@@ -368,10 +546,15 @@ export class SuratTugasDinasPdfService {
     document
       .font('Helvetica')
       .fontSize(9)
-      .text(`Tabalong, ${this.formatTanggalPanjang(tanggalSh)}`, left + kolomWidth, top, {
-        width: kolomWidth,
-        align: 'center',
-      });
+      .text(
+        `Tabalong, ${this.formatTanggalPanjang(tanggalSh)}`,
+        left + kolomWidth,
+        top,
+        {
+          width: kolomWidth,
+          align: 'center',
+        },
+      );
 
     document.text('Dibuat Oleh,', left + kolomWidth, top + 15, {
       width: kolomWidth,
@@ -380,11 +563,16 @@ export class SuratTugasDinasPdfService {
 
     if (shSudahSetuju && existsSync(SH_SIGNER.file)) {
       try {
-        document.image(SH_SIGNER.file, left + kolomWidth + kolomWidth / 2 - 40, top + 32, {
-          fit: [80, 55],
-          align: 'center',
-          valign: 'center',
-        });
+        document.image(
+          SH_SIGNER.file,
+          left + kolomWidth + kolomWidth / 2 - 40,
+          top + 32,
+          {
+            fit: [80, 55],
+            align: 'center',
+            valign: 'center',
+          },
+        );
       } catch {
         // Abaikan tanda tangan rusak.
       }
@@ -452,7 +640,9 @@ export class SuratTugasDinasPdfService {
         .fontSize(7.5)
         .fillColor('#8a6a12')
         .text(
-          shSudahSetuju ? '(Menunggu Persetujuan PJO)' : '(Menunggu Persetujuan SH)',
+          shSudahSetuju
+            ? '(Menunggu Persetujuan PJO)'
+            : '(Menunggu Persetujuan SH)',
           left,
           top + 55,
           { width: kolomWidth, align: 'center' },

@@ -34,6 +34,50 @@ function pastikanFolderNotaAda() {
   return folder;
 }
 
+// <--- opsi upload foto nota (upload baru dan ganti foto): hanya gambar, tanpa batas MB dari kode aplikasi, foto dikompres di NotaService --->
+const opsiUploadNota = {
+  storage: diskStorage({
+    destination: (
+      req: unknown,
+      file: unknown,
+      callback: (error: Error | null, destination: string) => void,
+    ) => {
+      callback(null, pastikanFolderNotaAda());
+    },
+
+    filename: (
+      req: unknown,
+      file: { originalname: string },
+      callback: (error: Error | null, filename: string) => void,
+    ) => {
+      const ekstensiAman = extname(file.originalname).toLowerCase() || '.jpg';
+
+      callback(
+        null,
+        `${Date.now()}-${Math.round(Math.random() * 1_000_000)}${ekstensiAman}`,
+      );
+    },
+  }),
+
+  fileFilter: (
+    req: unknown,
+    file: { mimetype: string },
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
+    const tipeDiizinkan = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!tipeDiizinkan.includes(file.mimetype)) {
+      return callback(
+        new Error('File nota harus berupa JPG, PNG, atau WEBP.'),
+        false,
+      );
+    }
+
+    callback(null, true);
+  },
+};
+// <--- end --->
+
 // <--- fitur controller upload nota deklarasi + koreksi per nota --->
 @UseInterceptors(SnakeCaseInterceptor)
 @Controller('nota')
@@ -72,49 +116,34 @@ export class NotaController {
   }
   // <--- end --->
 
+  // <--- karyawan mengubah nota: ganti foto (otomatis OCR ulang) dan/atau data settlement --->
+  @Patch(':idNota')
+  @UseInterceptors(FileInterceptor('file_nota', opsiUploadNota))
+  ubahNota(
+    @Param('idNota') idNota: string,
+    @Body('kategori_nota') kategoriNota: string | undefined,
+    @Body('barang_jasa') barangJasa: string | undefined,
+    @Body('pic_settlement') picSettlement: string | undefined,
+    @Body('keterangan_settlement') keteranganSettlement: string | undefined,
+    @Body('jumlah_item_settlement') jumlahItemSettlement: string | undefined,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.notaService.ubahNota(Number(idNota), file, {
+      kategoriNota,
+      barangJasa,
+      picSettlement,
+      keteranganSettlement,
+      jumlahItemSettlement:
+        jumlahItemSettlement !== undefined && jumlahItemSettlement !== ''
+          ? Number(jumlahItemSettlement)
+          : undefined,
+    });
+  }
+  // <--- end --->
+
   // <--- upload gambar nota satu per satu + kategori nota, tanpa batas MB dari kode aplikasi --->
   @Post('upload/:idDeklarasi')
-  @UseInterceptors(
-    FileInterceptor('file_nota', {
-      storage: diskStorage({
-        destination: (req, file, callback) => {
-          const folder = pastikanFolderNotaAda();
-
-          callback(null, folder);
-        },
-
-        filename: (req, file, callback) => {
-          const ekstensiAsli = extname(file.originalname).toLowerCase();
-          const ekstensiAman = ekstensiAsli || '.jpg';
-
-          const namaUnik = `${Date.now()}-${Math.round(
-            Math.random() * 1_000_000,
-          )}${ekstensiAman}`;
-
-          callback(null, namaUnik);
-        },
-      }),
-
-      fileFilter: (req, file, callback) => {
-        const tipeDiizinkan = ['image/jpeg', 'image/png', 'image/webp'];
-
-        if (!tipeDiizinkan.includes(file.mimetype)) {
-          return callback(
-            new Error('File nota harus berupa JPG, PNG, atau WEBP.'),
-            false,
-          );
-        }
-
-        callback(null, true);
-      },
-
-      /*
-       * Tidak memakai limit fileSize.
-       * Upload nota tidak dibatasi MB dari kode aplikasi.
-       * Foto tetap dikompres di NotaService.
-       */
-    }),
-  )
+  @UseInterceptors(FileInterceptor('file_nota', opsiUploadNota))
   uploadNota(
     @Param('idDeklarasi') idDeklarasi: string,
     @Body('kategori_nota') kategoriNota: string,

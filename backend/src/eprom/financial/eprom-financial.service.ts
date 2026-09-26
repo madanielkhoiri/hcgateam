@@ -25,6 +25,14 @@ export class BuatOpnameDto {
   progressPersen: number;
 }
 
+export class UbahOpnameDto {
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  progressPersen: number;
+}
+
 export class ReviewOpnameDto {
   @IsIn(['APPROVED', 'REJECTED'])
   status: 'APPROVED' | 'REJECTED';
@@ -82,6 +90,22 @@ export class EpromFinancialService {
         status: dto.status as StatusApprovalEprom,
         komentar: dto.komentar?.trim() || null,
       },
+    });
+  }
+
+  /** Ubah persentase progress opname yang masih PENDING. File tidak diganti. */
+  async ubah(aktor: AktorEprom, id: number, dto: UbahOpnameDto) {
+    const item = await this.itemAtauThrow(id);
+
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+
+    if (item.status !== StatusApprovalEprom.PENDING) {
+      throw new BadRequestException('Item yang sudah direview tidak dapat diubah');
+    }
+
+    return this.prisma.opnamePekerjaan.update({
+      where: { id },
+      data: { progressPersen: dto.progressPersen },
     });
   }
 

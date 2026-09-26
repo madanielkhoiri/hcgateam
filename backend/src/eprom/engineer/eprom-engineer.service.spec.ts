@@ -390,3 +390,53 @@ describe('EpromEngineerService.daftar — denganApproval', () => {
     expect(hasil.effectiveFileUrl).toBe('eprom/signed-final.pdf');
   });
 });
+
+describe('EpromEngineerService.ubah', () => {
+  it('melempar NotFoundException kalau item tidak ada', async () => {
+    const { service } = buatService({ item: null });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'shop-drawing', 1, { nama: 'Baru' })).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('menolak Vendor yang bukan pemilik project item tersebut', async () => {
+    const { service } = buatService({ projectAkses: { kontrak: { vendorId: 999 } } });
+
+    await expect(
+      service.ubah(aktor(UserRole.VENDOR, { vendorId: 1 }), 'shop-drawing', 1, { nama: 'Baru' }),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('menolak tipe yang tidak punya field nama', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'peralatan-list', 1, { nama: 'Baru' })).rejects.toThrow(
+      'tidak memiliki data yang dapat diubah',
+    );
+  });
+
+  it('menolak ubah item yang sudah direview', async () => {
+    const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'shop-drawing', 1, { nama: 'Baru' })).rejects.toThrow(
+      'sudah direview tidak dapat diubah',
+    );
+  });
+
+  it('menolak nama kosong', async () => {
+    const { service } = buatService();
+
+    await expect(service.ubah(aktor(UserRole.OWNER), 'shop-drawing', 1, { nama: '   ' })).rejects.toThrow(
+      'Nama wajib diisi',
+    );
+  });
+
+  it('berhasil mengubah nama item PENDING', async () => {
+    const { service, sharedModel } = buatService();
+
+    await service.ubah(aktor(UserRole.OWNER), 'material-approval', 1, { nama: '  Semen  ' });
+
+    expect(sharedModel.update).toHaveBeenCalledWith({ where: { id: 1 }, data: { namaMaterial: 'Semen' } });
+  });
+});

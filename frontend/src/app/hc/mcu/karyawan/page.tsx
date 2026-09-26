@@ -10,7 +10,7 @@
 // ==================================================
 
 import Link from 'next/link';
-import { ArrowLeft, BellRing, Database, Pencil, Users } from 'lucide-react';
+import { ArrowLeft, BellRing, Database, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeStatus,
@@ -27,10 +27,31 @@ import {
   mcuApi,
   nilaiInputTanggal,
   type Departemen,
+  type GenderKaryawan,
   type Karyawan,
 } from '@/lib/mcu-api';
 import { useMcu } from '../layout';
 import styles from '../mcu.module.css';
+
+type FormTambahKaryawan = {
+  nik: string;
+  nama: string;
+  gender: GenderKaryawan | '';
+  departemenId: string;
+  jabatan: string;
+  email: string;
+  noTelepon: string;
+};
+
+const formTambahKosong: FormTambahKaryawan = {
+  nik: '',
+  nama: '',
+  gender: '',
+  departemenId: '',
+  jabatan: '',
+  email: '',
+  noTelepon: '',
+};
 
 type FormMcuKaryawan = {
   tanggalMcuTerakhir: string;
@@ -76,6 +97,10 @@ export default function KaryawanMcuPage() {
 
   const [karyawanDiedit, setKaryawanDiedit] = useState<Karyawan | null>(null);
   const [form, setForm] = useState<FormMcuKaryawan>(formKosong);
+
+  const [tambahTerbuka, setTambahTerbuka] = useState(false);
+  const [formTambah, setFormTambah] =
+    useState<FormTambahKaryawan>(formTambahKosong);
 
   const muat = useCallback(async () => {
     setMemuat(true);
@@ -139,6 +164,46 @@ export default function KaryawanMcuPage() {
     });
   }
 
+  function bukaTambah() {
+    setFormTambah({
+      ...formTambahKosong,
+      departemenId: departemen[0] ? String(departemen[0].id) : '',
+    });
+    setGalat(null);
+    setTambahTerbuka(true);
+  }
+
+  /**
+   * Tambah karyawan baru langsung dari modul MCU — memanggil endpoint yang
+   * sama persis dengan card Database Karyawan (satu tabel, satu sumber
+   * data), supaya tidak perlu bolak-balik modul cuma untuk daftarkan
+   * karyawan baru yang mau dijadwalkan MCU-nya.
+   */
+  async function simpanTambah() {
+    setProses(true);
+    setGalat(null);
+
+    try {
+      await mcuApi.kirim('/karyawan', {
+        nik: formTambah.nik.trim(),
+        nama: formTambah.nama.trim(),
+        gender: formTambah.gender || undefined,
+        departemenId: Number(formTambah.departemenId),
+        jabatan: formTambah.jabatan.trim() || undefined,
+        email: formTambah.email.trim() || undefined,
+        noTelepon: formTambah.noTelepon.trim() || undefined,
+      });
+
+      setSukses('Karyawan baru berhasil ditambahkan');
+      setTambahTerbuka(false);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
   async function simpan() {
     if (!karyawanDiedit) {
       return;
@@ -160,6 +225,30 @@ export default function KaryawanMcuPage() {
 
       setSukses('Data MCU karyawan berhasil diperbarui');
       setKaryawanDiedit(null);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
+  async function hapus(item: Karyawan) {
+    if (
+      !confirm(
+        `Yakin ingin menghapus karyawan "${item.nama}"? Data juga terhapus dari Database Karyawan dan tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+    setSukses(null);
+
+    try {
+      await mcuApi.hapus(`/karyawan/${item.id}`);
+      setSukses(`Karyawan "${item.nama}" berhasil dihapus`);
       await muat();
     } catch (error) {
       setGalat((error as Error).message);
@@ -232,6 +321,17 @@ export default function KaryawanMcuPage() {
             <Database size={15} />
             Buka Database Karyawan
           </Link>
+
+          {bolehKelola ? (
+            <button
+              type="button"
+              className={styles.tombol}
+              onClick={bukaTambah}
+            >
+              <Plus size={15} />
+              Tambah Karyawan
+            </button>
+          ) : null}
 
           {bolehKelola ? (
             <button
@@ -397,6 +497,18 @@ export default function KaryawanMcuPage() {
                             Data MCU
                           </button>
                         ) : null}
+
+                        {bolehKelola ? (
+                          <button
+                            type="button"
+                            className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`}
+                            onClick={() => void hapus(item)}
+                            disabled={proses}
+                          >
+                            <Trash2 size={12} />
+                            Hapus
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -504,6 +616,134 @@ export default function KaryawanMcuPage() {
                 </select>
               </Field>
             ) : null}
+          </div>
+        </Dialog>
+      ) : null}
+
+      {tambahTerbuka ? (
+        <Dialog
+          judul="Tambah Karyawan"
+          keterangan="Identitas & kontak dasar karyawan - sama persis dengan card Database Karyawan (satu tabel, satu sumber data), jadi begitu tersimpan langsung muncul juga di sana."
+          onTutup={() => setTambahTerbuka(false)}
+          aksi={
+            <>
+              <button
+                type="button"
+                className={`${styles.tombol} ${styles.tombolNetral}`}
+                onClick={() => setTambahTerbuka(false)}
+                disabled={proses}
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                className={styles.tombol}
+                onClick={simpanTambah}
+                disabled={
+                  proses ||
+                  !formTambah.nik.trim() ||
+                  !formTambah.nama.trim() ||
+                  !formTambah.departemenId
+                }
+              >
+                {proses ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </>
+          }
+        >
+          <div className={styles.formGrid}>
+            <Field label="NIK">
+              <input
+                className={styles.input}
+                value={formTambah.nik}
+                onChange={(event) =>
+                  setFormTambah({ ...formTambah, nik: event.target.value })
+                }
+              />
+            </Field>
+
+            <Field label="Nama Lengkap">
+              <input
+                className={styles.input}
+                value={formTambah.nama}
+                onChange={(event) =>
+                  setFormTambah({ ...formTambah, nama: event.target.value })
+                }
+              />
+            </Field>
+
+            <Field label="Gender (otomatis sapaan Bapak/Ibu di notifikasi WA)">
+              <select
+                className={styles.select}
+                value={formTambah.gender}
+                onChange={(event) =>
+                  setFormTambah({
+                    ...formTambah,
+                    gender: event.target.value as FormTambahKaryawan['gender'],
+                  })
+                }
+              >
+                <option value="">Belum diisi</option>
+                <option value="LAKI_LAKI">Laki-laki</option>
+                <option value="PEREMPUAN">Perempuan</option>
+              </select>
+            </Field>
+
+            <Field label="Departemen">
+              <select
+                className={styles.select}
+                value={formTambah.departemenId}
+                onChange={(event) =>
+                  setFormTambah({
+                    ...formTambah,
+                    departemenId: event.target.value,
+                  })
+                }
+              >
+                <option value="">Pilih departemen</option>
+                {departemen.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.namaDepartemen}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Jabatan">
+              <input
+                className={styles.input}
+                value={formTambah.jabatan}
+                onChange={(event) =>
+                  setFormTambah({ ...formTambah, jabatan: event.target.value })
+                }
+              />
+            </Field>
+
+            <Field label="No. Telepon">
+              <input
+                className={styles.input}
+                placeholder="08xxxxxxxxxx"
+                value={formTambah.noTelepon}
+                onChange={(event) =>
+                  setFormTambah({
+                    ...formTambah,
+                    noTelepon: event.target.value,
+                  })
+                }
+              />
+            </Field>
+
+            <Field label="Email">
+              <input
+                className={styles.input}
+                type="email"
+                value={formTambah.email}
+                onChange={(event) =>
+                  setFormTambah({ ...formTambah, email: event.target.value })
+                }
+              />
+            </Field>
           </div>
         </Dialog>
       ) : null}

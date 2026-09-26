@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Modal } from "@/components/civil-project/modal";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -61,6 +62,15 @@ function labelEkstra(tipe: TipeProgress, item: ProgressItem): string {
   if (tipe === "progress-mingguan") return `Minggu ke-${item.mingguKe ?? "-"}`;
   if (tipe === "progress-bulanan") return formatBulanLabel(item.bulan);
   return LABEL_TIPE_PROGRESS[tipe];
+}
+
+function namaProgress(tipe: TipeProgress, item: ProgressItem): string {
+  const ekstra = tipe === "progress-harian" || tipe === "progress-mingguan" || tipe === "progress-bulanan"
+    ? labelEkstra(tipe, item)
+    : item.bulan
+      ? formatBulanLabel(item.bulan)
+      : "";
+  return ekstra ? `${LABEL_TIPE_PROGRESS[tipe]} (${ekstra})` : LABEL_TIPE_PROGRESS[tipe];
 }
 
 export default function KonstruksiDetailPage() {
@@ -147,6 +157,10 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [namaBaru, setNamaBaru] = useState("");
   const [fileBaru, setFileBaru] = useState<File | null>(null);
   const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
+  const [editItem, setEditItem] = useState<KonstruksiItem | null>(null);
+  const [editNama, setEditNama] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const muatItems = useCallback(() => {
     setLoading(true);
@@ -191,8 +205,32 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     }
   }
 
+  function bukaEdit(item: KonstruksiItem) {
+    setEditItem(item);
+    setEditNama(item.namaTahap ?? item.namaPekerjaan ?? "");
+    setEditError(null);
+  }
+
+  async function simpanEdit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editItem) return;
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      await epromApi.konstruksi.ubah(tipe, editItem.id, editNama.trim());
+      setEditItem(null);
+      muatItems();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Gagal menyimpan perubahan");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   async function hapus(item: KonstruksiItem) {
-    if (!confirm(`Hapus ${LABEL_TIPE_KONSTRUKSI[tipe]} ini?`)) return;
+    const nama = item.namaTahap ?? item.namaPekerjaan;
+    const label = nama ? `${LABEL_TIPE_KONSTRUKSI[tipe]} "${nama}"` : LABEL_TIPE_KONSTRUKSI[tipe];
+    if (!confirm(`Yakin ingin menghapus ${label}? Data yang dihapus tidak bisa dikembalikan.`)) return;
     try {
       await epromApi.konstruksi.hapus(tipe, item.id);
       muatItems();
@@ -284,19 +322,55 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             )}
 
             {item.status === "PENDING" && (boleh || vendorSaya) && (
-              <button
-                type="button"
-                className={engineerStyles.iconButtonDanger}
-                onClick={() => hapus(item)}
-                title="Hapus"
-                style={{ marginTop: 10 }}
-              >
-                <Trash2 size={13} />
-              </button>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                {namaField && (
+                  <button
+                    type="button"
+                    className={engineerStyles.iconButton}
+                    onClick={() => bukaEdit(item)}
+                    title="Edit"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={engineerStyles.iconButtonDanger}
+                  onClick={() => hapus(item)}
+                  title="Hapus"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
             )}
           </div>
         ))}
       </div>
+
+      {editItem && namaField && (
+        <Modal title={`Edit ${LABEL_TIPE_KONSTRUKSI[tipe]}`} onClose={() => setEditItem(null)}>
+          <form
+            className={engineerStyles.formCard}
+            onSubmit={simpanEdit}
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+          >
+            <label>
+              {namaField}
+              <input value={editNama} onChange={(e) => setEditNama(e.target.value)} required />
+            </label>
+            <small style={{ color: "#5b7391" }}>File dokumen tidak dapat diganti lewat Edit.</small>
+            {editError && <p className={engineerStyles.errorText}>{editError}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="submit" className={engineerStyles.primaryButton} disabled={editSubmitting}>
+                {editSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
+              <button type="button" className={engineerStyles.secondaryButton} onClick={() => setEditItem(null)}>
+                Batal
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -372,7 +446,12 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   }
 
   async function hapus(item: ProgressItem) {
-    if (!confirm("Hapus data ini?")) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus ${namaProgress(tipe, item)}? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await epromApi.progress.hapus(tipe, item.id);
       muat();
@@ -609,7 +688,12 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   }
 
   async function hapus(item: ProgressItem) {
-    if (!confirm("Hapus data ini?")) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus ${namaProgress(tipe, item)}? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    )
+      return;
     try {
       await epromApi.progress.hapus(tipe, item.id);
       muat();

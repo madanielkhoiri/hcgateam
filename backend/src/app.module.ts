@@ -6,6 +6,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { HandoversModule } from './handovers/handovers.module';
 import { ConfigModule } from '@nestjs/config';
@@ -75,6 +76,11 @@ import { KipModule } from './kip/kip.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Penjadwal cron internal — dipakai modul MCU Periodik untuk reminder
+    // H-3 bulan, penguncian jadwal H-3 hari, dan reminder Follow Up
+    // terlambat yang jalan otomatis harian tanpa perlu diklik manual.
+    ScheduleModule.forRoot(),
 
     // Rate limiting global — default longgar (aman untuk kantor yang
     // berbagi 1 IP publik). Endpoint login dibatasi lebih ketat lewat

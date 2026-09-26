@@ -82,16 +82,17 @@ export class SuratTugasDinasService {
     tahun?: number,
     cari?: string,
   ) {
-    const statusValid = (
-      Object.values(StatusSuratTugas) as string[]
-    ).includes(status ?? '')
+    const statusValid = (Object.values(StatusSuratTugas) as string[]).includes(
+      status ?? '',
+    )
       ? (status as StatusSuratTugas)
       : undefined;
 
     // Filter bulan/tahun dipindah ke sini (dulu di frontend, cuma memfilter
     // baris yang sudah termuat) supaya tetap benar walau daftarnya dipaginate.
     // Pilih bulan tanpa tahun dianggap tahun berjalan (default paling wajar).
-    const tahunEfektif = tahun ?? (bulan ? new Date().getUTCFullYear() : undefined);
+    const tahunEfektif =
+      tahun ?? (bulan ? new Date().getUTCFullYear() : undefined);
     const rentangTanggalMulai = tahunEfektif
       ? {
           gte: new Date(Date.UTC(tahunEfektif, bulan ? bulan - 1 : 0, 1)),
@@ -176,6 +177,24 @@ export class SuratTugasDinasService {
       );
     }
 
+    const jumlahAkomodasi = dto.karyawan.reduce(
+      (total, item) =>
+        total +
+        (item.uangPerjalananNominal ?? 0) +
+        (item.akomodasiNominal ?? 0) +
+        (item.laundryNominal ?? 0),
+      0,
+    );
+    const totalPerKategori = (
+      kategori: 'uangPerjalananNominal' | 'akomodasiNominal' | 'laundryNominal',
+    ) => {
+      const total = dto.karyawan.reduce(
+        (jumlah, item) => jumlah + (item[kategori] ?? 0),
+        0,
+      );
+      return total || null;
+    };
+
     const dibuat = await this.prisma.suratTugasDinas.create({
       data: {
         nomor,
@@ -183,6 +202,15 @@ export class SuratTugasDinasService {
         tanggalMulai,
         tanggalSelesai,
         keteranganTugas: dto.keteranganTugas.trim(),
+        penginapanHotel: dto.penginapanHotel?.trim() || null,
+        bantuanTransportasi: dto.bantuanTransportasi?.trim() || null,
+        uangPerjalananNominal: totalPerKategori('uangPerjalananNominal'),
+        uangPerjalananKeterangan: null,
+        akomodasiNominal: totalPerKategori('akomodasiNominal'),
+        akomodasiKeterangan: null,
+        laundryNominal: totalPerKategori('laundryNominal'),
+        laundryKeterangan: null,
+        jumlahAkomodasi,
         dibuatOlehId: aktor.id,
         status: StatusSuratTugas.MENUNGGU_SH,
         karyawan: {
@@ -192,6 +220,13 @@ export class SuratTugasDinasService {
             nama: item.nama.trim(),
             departemen: item.departemen.trim(),
             jabatan: item.jabatan.trim(),
+            uangPerjalananNominal: item.uangPerjalananNominal ?? null,
+            uangPerjalananKeterangan:
+              item.uangPerjalananKeterangan?.trim() || null,
+            akomodasiNominal: item.akomodasiNominal ?? null,
+            akomodasiKeterangan: item.akomodasiKeterangan?.trim() || null,
+            laundryNominal: item.laundryNominal ?? null,
+            laundryKeterangan: item.laundryKeterangan?.trim() || null,
           })),
         },
       },
@@ -243,7 +278,10 @@ export class SuratTugasDinasService {
 
     await this.prisma.suratTugasDinas.update({
       where: { id },
-      data: { status: StatusSuratTugas.DITOLAK, alasanTolak: dto.alasan.trim() },
+      data: {
+        status: StatusSuratTugas.DITOLAK,
+        alasanTolak: dto.alasan.trim(),
+      },
     });
 
     return this.cetakUlang(id);

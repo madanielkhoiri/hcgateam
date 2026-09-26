@@ -86,6 +86,15 @@ export class DriveController {
     return this.service.unggahFile(aktor, id, file);
   }
 
+  @Patch('file/:id')
+  ubahFile(
+    @Aktor() aktor: AktorPostingan,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('namaFile') namaFile: string,
+  ) {
+    return this.service.ubahFile(aktor, id, namaFile);
+  }
+
   @Delete('file/:id')
   hapusFile(@Aktor() aktor: AktorPostingan, @Param('id', ParseIntPipe) id: number) {
     return this.service.hapusFile(aktor, id);

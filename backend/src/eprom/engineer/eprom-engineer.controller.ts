@@ -29,6 +29,7 @@ import {
   BuatEngineerDto,
   EpromEngineerService,
   ReviewEngineerDto,
+  UbahEngineerDto,
 } from './eprom-engineer.service';
 
 @Controller('eprom/engineer')
@@ -134,6 +135,16 @@ export class EpromEngineerController {
       this.service.validasiTipe(tipeRaw),
       id,
     );
+  }
+
+  @Patch(':tipe/:id')
+  ubah(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahEngineerDto,
+  ) {
+    return this.service.ubah(aktor, this.service.validasiTipe(tipeRaw), id, dto);
   }
 
   @Delete(':tipe/:id')

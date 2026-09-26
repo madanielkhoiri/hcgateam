@@ -15,6 +15,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -250,6 +251,30 @@ export default function DaftarKaryawanPage() {
     }
   }
 
+  async function hapus(item: Karyawan) {
+    if (
+      !confirm(
+        `Yakin ingin menghapus karyawan "${item.nama}"? Data yang dihapus tidak bisa dikembalikan.`,
+      )
+    ) {
+      return;
+    }
+
+    setProses(true);
+    setGalat(null);
+    setSukses(null);
+
+    try {
+      await karyawanApi.hapus(`/${item.id}`);
+      setSukses(`Karyawan "${item.nama}" berhasil dihapus`);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    } finally {
+      setProses(false);
+    }
+  }
+
   return (
     <>
       <div className={styles.pageHead}>
@@ -407,6 +432,18 @@ export default function DaftarKaryawanPage() {
                           >
                             <Pencil size={12} />
                             Edit
+                          </button>
+                        ) : null}
+
+                        {bolehKelola ? (
+                          <button
+                            type="button"
+                            className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`}
+                            onClick={() => void hapus(item)}
+                            disabled={proses}
+                          >
+                            <Trash2 size={12} />
+                            Hapus
                           </button>
                         ) : null}
                       </div>

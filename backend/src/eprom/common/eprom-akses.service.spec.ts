@@ -26,7 +26,13 @@ function buatService(overrides: { project?: unknown; vendor?: unknown } = {}) {
 describe('EpromAksesService.isOwner / isVendor', () => {
   const service = buatService().service;
 
-  it.each([UserRole.OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+  it.each([
+    UserRole.OWNER,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+    UserRole.SECTION_HEAD,
+    UserRole.GRUP_LEADER,
+  ])(
     'role %s dianggap setara Owner',
     (role) => {
       expect(service.isOwner(aktor(role))).toBe(true);

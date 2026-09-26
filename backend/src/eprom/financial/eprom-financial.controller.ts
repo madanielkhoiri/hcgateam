@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
-import { BuatOpnameDto, EpromFinancialService, ReviewOpnameDto } from './eprom-financial.service';
+import { BuatOpnameDto, EpromFinancialService, ReviewOpnameDto, UbahOpnameDto } from './eprom-financial.service';
 
 @Controller('eprom/financial')
 @UseGuards(JwtAuthGuard)
@@ -58,6 +58,15 @@ export class EpromFinancialController {
     @Body() dto: ReviewOpnameDto,
   ) {
     return this.service.review(aktor, id, dto);
+  }
+
+  @Patch('opname/:id')
+  ubah(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahOpnameDto,
+  ) {
+    return this.service.ubah(aktor, id, dto);
   }
 
   @Delete('opname/:id')

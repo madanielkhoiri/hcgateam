@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UploadedFiles,
   UseGuards,
@@ -56,6 +57,16 @@ export class AlbumController {
     @Body('deskripsi') deskripsi?: string,
   ) {
     return this.service.buat(aktor, judul, deskripsi);
+  }
+
+  @Patch(':id')
+  ubah(
+    @Aktor() aktor: AktorPostingan,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('judul') judul?: string,
+    @Body('deskripsi') deskripsi?: string,
+  ) {
+    return this.service.ubahAlbum(aktor, id, { judul, deskripsi });
   }
 
   @Post(':id/foto')

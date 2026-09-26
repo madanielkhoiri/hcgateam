@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UploadedFile,
   UseGuards,
@@ -56,6 +57,17 @@ export class IrCourseController {
   ) {
     this.akses.wajibKelola(aktor);
     return this.service.unggah(judul, deskripsi, file, aktor);
+  }
+
+  @Patch('video/:id')
+  ubah(
+    @Aktor() aktor: AktorIr,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('judul') judul?: string,
+    @Body('deskripsi') deskripsi?: string,
+  ) {
+    this.akses.wajibKelola(aktor);
+    return this.service.ubah(id, { judul, deskripsi });
   }
 
   @Delete('video/:id')

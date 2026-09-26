@@ -924,6 +924,11 @@ export const epromApi = {
       request<EngineerItem>(`/engineer/${tipe}/${id}/approve-tanpa-ttd`, {
         method: 'POST',
       }),
+    ubah: (tipe: TipeEngineer, id: number, nama: string) =>
+      request<EngineerItem>(`/engineer/${tipe}/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nama }),
+      }),
     hapus: (tipe: TipeEngineer, id: number) =>
       request<{ message: string }>(`/engineer/${tipe}/${id}`, { method: 'DELETE' }),
     ringkasan: (projectId: number) =>
@@ -944,6 +949,11 @@ export const epromApi = {
       request<KonstruksiItem>(`/konstruksi/${tipe}/${id}/review`, {
         method: 'PATCH',
         body: JSON.stringify({ status, komentar }),
+      }),
+    ubah: (tipe: TipeKonstruksi, id: number, nama: string) =>
+      request<KonstruksiItem>(`/konstruksi/${tipe}/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nama }),
       }),
     hapus: (tipe: TipeKonstruksi, id: number) =>
       request<{ message: string }>(`/konstruksi/${tipe}/${id}`, { method: 'DELETE' }),
@@ -1004,6 +1014,10 @@ export const epromApi = {
       refProgressId: number;
       tanggalMeeting: string;
     }) => request<MeetingItem>('/meeting', { method: 'POST', body: JSON.stringify(data) }),
+    ubah: (
+      id: number,
+      data: { tanggalMeeting?: string; tipeLink?: TipeLinkMeeting; refProgressId?: number },
+    ) => request<MeetingItem>(`/meeting/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     hapus: (id: number) => request<{ message: string }>(`/meeting/${id}`, { method: 'DELETE' }),
 
     daftarDokumentasi: (meetingId: number) =>
@@ -1027,6 +1041,8 @@ export const epromApi = {
       form.append('file', file);
       return request<MomItem>(`/meeting/mom/${id}/close`, { method: 'PATCH', body: form });
     },
+    ubahMom: (id: number, data: { pica?: string; dueDate?: string; pic?: string }) =>
+      request<MomItem>(`/meeting/mom/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     hapusMom: (id: number) => request<{ message: string }>(`/meeting/mom/${id}`, { method: 'DELETE' }),
   },
 
@@ -1041,6 +1057,8 @@ export const epromApi = {
       if (file) form.append('file', file);
       return request<DokumenSuratItem>('/dokumen', { method: 'POST', body: form });
     },
+    ubah: (id: number, data: { tanggal: string }) =>
+      request<DokumenSuratItem>(`/dokumen/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     hapus: (id: number) => request<{ message: string }>(`/dokumen/${id}`, { method: 'DELETE' }),
   },
 
@@ -1058,6 +1076,8 @@ export const epromApi = {
         method: 'PATCH',
         body: JSON.stringify({ status, komentar }),
       }),
+    ubah: (id: number, data: { progressPersen: number }) =>
+      request<OpnameItem>(`/financial/opname/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     hapus: (id: number) => request<{ message: string }>(`/financial/opname/${id}`, { method: 'DELETE' }),
     ringkasan: (projectId: number) =>
       request<{ 'opname-pekerjaan': number }>(`/financial/ringkasan/${projectId}`),

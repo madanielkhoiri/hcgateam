@@ -646,7 +646,19 @@ export class WorkOrdersService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    const workOrder = await this.findOne(id);
+
+    if (workOrder.statusApproval === StatusApprovalWorkOrder.DISETUJUI) {
+      throw new BadRequestException(
+        'Work Order yang sudah disetujui tidak dapat dihapus',
+      );
+    }
+
+    if (workOrder.handover) {
+      throw new BadRequestException(
+        'Work Order yang sudah memiliki Serah Terima tidak dapat dihapus',
+      );
+    }
 
     await this.prisma.workOrder.delete({
       where: {

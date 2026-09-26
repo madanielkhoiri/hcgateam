@@ -1,0 +1,4 @@
+ALTER TYPE "StatusDeklarasi" ADD VALUE IF NOT EXISTS 'MENUNGGU_FA';
+
+ALTER TABLE "deklarasi"
+ADD COLUMN IF NOT EXISTS "alasan_ditolak" TEXT;

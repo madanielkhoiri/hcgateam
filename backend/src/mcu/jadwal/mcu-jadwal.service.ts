@@ -1,6 +1,6 @@
 // ==================================================
 // FILE: backend/src/mcu/jadwal/mcu-jadwal.service.ts
-// FUNGSI: Penjadwalan MCU, lock H-3 hari, override HC
+// FUNGSI: Penjadwalan MCU, lock H-3 hari, override HC/Admin
 // Referensi: Bagian 4.0, 4.2 & 4.9 alur-workflow-mcu-periodik-v3.md
 // ==================================================
 
@@ -24,6 +24,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
+  GenderKaryawan,
   JenisMcu,
   Prisma,
   StatusKerja,
@@ -32,6 +33,8 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
+import { sapaanKaryawan } from '../../common/sapaan.util';
 import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
 import { McuAksesService } from '../common/mcu-akses.service';
 import { AktorMcu } from '../common/mcu-aktor';
@@ -135,6 +138,7 @@ export class McuJadwalService {
     private readonly prisma: PrismaService,
     private readonly akses: McuAksesService,
     private readonly notifikasi: McuNotifikasiService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   // ==================================================
@@ -237,7 +241,7 @@ export class McuJadwalService {
   // TULIS
   // ==================================================
 
-  /** Admin Dept menentukan jadwal, lalu submit ke karyawan. */
+  /** Admin Dept menentukan jadwal, lalu submit ke karyawan. Role ADMIN boleh melewati batas H-3. */
   async buat(dto: BuatJadwalMcuDto, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.ADMIN_DEPT, UserRole.HC);
 
@@ -260,7 +264,11 @@ export class McuJadwalService {
 
     const tanggalMcu = tanggalSaja(dto.tanggalMcu);
 
-    this.pastikanBatasPendaftaran(tanggalMcu);
+    const olehAdmin = aktor.role === UserRole.ADMIN;
+
+    if (!olehAdmin) {
+      this.pastikanBatasPendaftaran(tanggalMcu);
+    }
 
     const jadwalBerjalan = await this.prisma.jadwalMcu.findFirst({
       where: {
@@ -288,7 +296,9 @@ export class McuJadwalService {
         tanggalMcu,
         jenisMcu: dto.jenisMcu ?? JenisMcu.BERKALA,
         klinikId: dto.klinikId ?? null,
-        statusPendaftaran: StatusPendaftaran.DRAFT,
+        statusPendaftaran: olehAdmin
+          ? this.statusMenurutTanggal(tanggalMcu)
+          : StatusPendaftaran.DRAFT,
         tanggalLock: this.hitungTanggalLock(tanggalMcu),
         catatan: dto.catatan?.trim() || null,
         dibuatOlehId: aktor.id,
@@ -427,19 +437,65 @@ export class McuJadwalService {
   }
 
   /**
-   * Kunci seluruh jadwal yang sudah melewati tanggal lock.
-   * Dipanggil dari halaman HC atau penjadwal harian.
+   * Kunci seluruh jadwal yang sudah melewati tanggal lock, sekaligus kirim
+   * WA reminder H-3 hari ke karyawan yang bersangkutan bahwa jadwalnya
+   * sudah final. Dipanggil dari halaman HC atau penjadwal harian.
    */
   async kunciJadwalJatuhTempo() {
-    const hasil = await this.prisma.jadwalMcu.updateMany({
+    const jadwalAkanTerkunci = await this.prisma.jadwalMcu.findMany({
       where: {
         statusPendaftaran: StatusPendaftaran.DRAFT,
         tanggalLock: { lte: hariIni() },
       },
+      select: {
+        id: true,
+        tanggalMcu: true,
+        karyawan: { select: { nama: true, gender: true, noTelepon: true } },
+      },
+    });
+
+    if (jadwalAkanTerkunci.length === 0) {
+      return { terkunci: 0 };
+    }
+
+    await this.prisma.jadwalMcu.updateMany({
+      where: { id: { in: jadwalAkanTerkunci.map((jadwal) => jadwal.id) } },
       data: { statusPendaftaran: StatusPendaftaran.TERKUNCI },
     });
 
-    return { terkunci: hasil.count };
+    await this.kirimWaReminderLock(jadwalAkanTerkunci);
+
+    return { terkunci: jadwalAkanTerkunci.length };
+  }
+
+  /** Reminder WA H-3 hari ke karyawan yang jadwalnya baru saja dikunci. */
+  private async kirimWaReminderLock(
+    daftar: Array<{
+      tanggalMcu: Date;
+      karyawan: { nama: string; gender: GenderKaryawan | null; noTelepon: string | null };
+    }>,
+  ): Promise<void> {
+    if (!this.whatsapp.aktif) {
+      return;
+    }
+
+    for (const jadwal of daftar) {
+      const nomor = jadwal.karyawan.noTelepon;
+
+      if (!nomor) {
+        continue;
+      }
+
+      const pesan =
+        `Halo ${sapaanKaryawan(jadwal.karyawan.gender)} ${jadwal.karyawan.nama} 👋\n\n` +
+        `*Reminder MCU Periodik* Anda\n\n` +
+        `🗓️ Jadwal MCU: ${formatTanggalIndonesia(jadwal.tanggalMcu)}\n` +
+        `🔒 Tinggal H-${HARI_LOCK_PENDAFTARAN} hari — jadwal ini sekarang *terkunci* dan tidak bisa diubah lagi kecuali oleh HC.\n\n` +
+        'Mohon pastikan hadir sesuai jadwal, terima kasih 🙏';
+
+      // Pakai device WA GA (default) dulu - device HC masih paket terbatas.
+      await this.whatsapp.kirim(nomor, pesan);
+    }
   }
 
   // ==================================================

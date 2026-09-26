@@ -10,12 +10,14 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
+import type { Response } from 'express';
 import { mkdirSync } from 'node:fs';
 import { extname } from 'node:path';
 import { diskStorage } from 'multer';
@@ -24,6 +26,7 @@ import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { CreatePackMealOrderDto } from './dto/create-pack-meal-order.dto';
 import { UpdatePackMealOrderDto } from './dto/update-pack-meal-order.dto';
 import { OrderPackMealService } from './order-pack-meal.service';
+import { OrderPackMealReceiptPdfService } from './order-pack-meal-receipt-pdf.service';
 
 type AuthRequest = {
   user: {
@@ -79,7 +82,10 @@ const approvedFormUpload = FileInterceptor('approvedForm', {
 @UseGuards(JwtAuthGuard)
 @RequireAccessKey('GA_ORDER_PACK_MEAL')
 export class OrderPackMealController {
-  constructor(private readonly service: OrderPackMealService) {}
+  constructor(
+    private readonly service: OrderPackMealService,
+    private readonly resiPdf: OrderPackMealReceiptPdfService,
+  ) {}
 
   @Get()
   findAll(@Req() request: AuthRequest, @Query('search') search?: string) {
@@ -87,11 +93,39 @@ export class OrderPackMealController {
   }
 
   @Get(':id')
-  findOne(
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() request: AuthRequest) {
+    return this.service.findOne(id, request.user);
+  }
+
+  @Get(':id/resi')
+  async unduhResi(
     @Param('id', ParseIntPipe) id: number,
     @Req() request: AuthRequest,
+    @Res() response: Response,
   ) {
-    return this.service.findOne(id, request.user);
+    const order = await this.service.findOne(id, request.user);
+
+    const pdf = await this.resiPdf.generate({
+      orderNumber: order.orderNumber,
+      neededDate: order.neededDate,
+      pemesan: order.creator.name,
+      department: order.department,
+      kegiatan: order.kegiatan,
+      deliveryLocation: order.deliveryLocation,
+      deliveryTime: order.deliveryTime,
+      vendor: order.vendor,
+      statusApproval: order.statusApproval,
+      statusDelivery: order.statusDelivery,
+      totalPacks: order.totalPacks,
+      items: order.items,
+    });
+
+    response
+      .set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="resi-${order.orderNumber}.pdf"`,
+      })
+      .send(pdf);
   }
 
   @Post()
@@ -131,10 +165,7 @@ export class OrderPackMealController {
   }
 
   @Delete(':id')
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() request: AuthRequest,
-  ) {
+  remove(@Param('id', ParseIntPipe) id: number, @Req() request: AuthRequest) {
     return this.service.remove(id, request.user);
   }
 }

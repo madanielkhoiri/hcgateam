@@ -206,6 +206,26 @@ export class DriveService {
     });
   }
 
+  async ubahFile(aktor: AktorPostingan, id: number, namaFile: string) {
+    this.wajibKelola(aktor);
+
+    const item = await this.prisma.driveFile.findUnique({ where: { id } });
+
+    if (!item) {
+      throw new NotFoundException('File tidak ditemukan');
+    }
+
+    if (!namaFile?.trim()) {
+      throw new BadRequestException('Nama file tidak boleh kosong');
+    }
+
+    return this.prisma.driveFile.update({
+      where: { id },
+      data: { namaFile: namaFile.trim() },
+      include: { uploadedBy: { select: { id: true, name: true, nrp: true } } },
+    });
+  }
+
   async hapusFile(aktor: AktorPostingan, id: number) {
     this.wajibKelola(aktor);
 
