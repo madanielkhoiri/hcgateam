@@ -796,6 +796,7 @@ enum StatusDeklarasi {
   DRAFT
   DIAJUKAN
   DIVERIFIKASI
+  MENUNGGU_FA
   DISETUJUI
   DITOLAK
 }
@@ -814,6 +815,8 @@ model Deklarasi {
   nomorStd        String?         @map("nomor_std") @db.VarChar(120)
   totalNominal    Decimal         @default(0) @map("total_nominal") @db.Decimal(15, 2)
   status          StatusDeklarasi @default(DRAFT)
+  alasanDitolak   String?         @map("alasan_ditolak") @db.Text
+  tanggalDisetujui DateTime?      @map("tanggal_disetujui") @db.Timestamp(3)
   createdAt       DateTime        @default(now()) @map("dibuat_pada")
   updatedAt       DateTime        @updatedAt @map("diperbarui_pada")
 
@@ -922,6 +925,8 @@ model Saldo {
   sisaSaldo                      Decimal                 @default(0) @map("sisa_saldo") @db.Decimal(15, 2)
   nominalPengembalian            Decimal                 @default(0) @map("nominal_pengembalian") @db.Decimal(15, 2)
   tanggalTransfer                DateTime                @map("tanggal_transfer") @db.Date
+  tanggalMulai                   DateTime?               @map("tanggal_mulai") @db.Date
+  tanggalSelesai                 DateTime?               @map("tanggal_selesai") @db.Date
   keterangan                     String?                 @map("keterangan") @db.Text
   nomorStd                       String?                 @map("nomor_std") @db.VarChar(120)
   statusSaldo                    StatusSaldo             @default(AKTIF) @map("status_saldo")
@@ -963,6 +968,8 @@ model Pengajuan {
   namaFileBuktiTransfer String?         @map("nama_file_bukti_transfer") @db.VarChar(255)
   pathFileBuktiTransfer String?         @map("path_file_bukti_transfer") @db.VarChar(255)
   tanggalTransfer       DateTime?       @map("tanggal_transfer") @db.Date
+  tanggalMulai          DateTime?       @map("tanggal_mulai") @db.Date
+  tanggalSelesai        DateTime?       @map("tanggal_selesai") @db.Date
   idSaldo               Int?            @map("id_saldo")
   statusPengajuan       StatusPengajuan @default(DIAJUKAN) @map("status_pengajuan")
   catatanAdmin          String?         @map("catatan_admin") @db.Text
@@ -1520,13 +1527,19 @@ model SuratTugasDinas {
 }
 
 model SuratTugasKaryawan {
-  id           Int    @id @default(autoincrement())
-  suratTugasId Int    @map("surat_tugas_id")
-  urutan       Int
-  nrp          String
-  nama         String
-  departemen   String
-  jabatan      String
+  id                       Int    @id @default(autoincrement())
+  suratTugasId             Int    @map("surat_tugas_id")
+  urutan                   Int
+  nrp                      String
+  nama                     String
+  departemen               String
+  jabatan                  String
+  uangPerjalananNominal    Int?   @map("uang_perjalanan_nominal")
+  uangPerjalananKeterangan String? @map("uang_perjalanan_keterangan") @db.Text
+  akomodasiNominal         Int?   @map("akomodasi_nominal")
+  akomodasiKeterangan      String? @map("akomodasi_keterangan") @db.Text
+  laundryNominal           Int?   @map("laundry_nominal")
+  laundryKeterangan        String? @map("laundry_keterangan") @db.Text
 
   suratTugas SuratTugasDinas @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
 

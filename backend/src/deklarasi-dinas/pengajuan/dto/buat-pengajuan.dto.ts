@@ -51,6 +51,14 @@ export class BuatPengajuanDto {
   tanggal_pengajuan?: string;
 
   @IsOptional()
+  @IsString({ message: 'Tanggal mulai perjalanan tidak valid.' })
+  tanggal_mulai?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Tanggal selesai perjalanan tidak valid.' })
+  tanggal_selesai?: string;
+
+  @IsOptional()
   @IsString({
     message: 'Nomor STD tidak valid.',
   })

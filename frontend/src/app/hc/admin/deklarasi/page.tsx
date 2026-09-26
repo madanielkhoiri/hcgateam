@@ -22,7 +22,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string;
  nomor_telepon: string;
- role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
+ role: "SUPER_ADMIN" | "ADMIN" | "FA" | "HC" | "KARYAWAN";
  kode_tiket?: string;
 };
 
@@ -31,6 +31,7 @@ type StatusDeklarasi =
  | "DRAFT"
  | "DIAJUKAN"
  | "DIVERIFIKASI"
+ | "MENUNGGU_FA"
  | "DISETUJUI"
  | "DITOLAK";
 
@@ -75,6 +76,7 @@ function HalamanAdminDeklarasiKonten() {
  "DRAFT",
  "DIAJUKAN",
  "DIVERIFIKASI",
+ "MENUNGGU_FA",
  "DISETUJUI",
  "DITOLAK",
  ].includes(statusUrl)
@@ -96,8 +98,8 @@ function HalamanAdminDeklarasiKonten() {
  return (
  role === "SUPER_ADMIN" ||
  role === "ADMIN" ||
- role === "SECTION_HEAD" ||
- role === "FA"
+ role === "FA" ||
+ role === "HC"
  );
  };
 
@@ -363,6 +365,7 @@ function HalamanAdminDeklarasiKonten() {
  { value: "DIAJUKAN", label: "Diajukan" },
  { value: "DRAFT", label: "Draft" },
  { value: "DIVERIFIKASI", label: "Diverifikasi" },
+ { value: "MENUNGGU_FA", label: "Menunggu FA" },
  { value: "DISETUJUI", label: "Disetujui" },
  { value: "DITOLAK", label: "Ditolak" },
  ];
