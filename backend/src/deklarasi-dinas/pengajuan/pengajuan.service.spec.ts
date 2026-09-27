@@ -42,6 +42,8 @@ function buatService(overrides: {
   update?: jest.Mock;
   deleteFn?: jest.Mock;
   buatSaldo?: jest.Mock;
+  stdOtomatis?: unknown;
+  stdFindFirst?: jest.Mock;
 } = {}) {
   const create = overrides.create ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
@@ -58,6 +60,11 @@ function buatService(overrides: {
       create,
       update,
       delete: deleteFn,
+    },
+    suratTugasDinas: {
+      findFirst:
+        overrides.stdFindFirst ??
+        jest.fn().mockResolvedValue(overrides.stdOtomatis ?? null),
     },
   } as unknown as PrismaService;
 
@@ -87,12 +94,21 @@ describe('PengajuanService.buatPengajuan — validasi', () => {
     ).rejects.toThrow('Pengguna wajib dipilih');
   });
 
-  it('menolak PERJALANAN_DINAS tanpa file STD', async () => {
+  it('menolak PERJALANAN_DINAS tanpa file STD dan tanpa STD otomatis', async () => {
     const { service } = buatService();
 
     await expect(
-      service.buatPengajuan({ id_pengguna: '1', jenis_pengajuan: 'PERJALANAN_DINAS' } as any, undefined, fileFixture()),
-    ).rejects.toThrow('File STD wajib diupload');
+      service.buatPengajuan(
+        {
+          id_pengguna: '1',
+          jenis_pengajuan: 'PERJALANAN_DINAS',
+          tanggal_mulai: '2026-09-28',
+          tanggal_selesai: '2026-09-30',
+        } as any,
+        undefined,
+        fileFixture(),
+      ),
+    ).rejects.toThrow('STD otomatis tidak ditemukan');
   });
 
   it('menolak tanpa file RAB', async () => {
@@ -107,7 +123,17 @@ describe('PengajuanService.buatPengajuan — validasi', () => {
     const { service } = buatService();
 
     await expect(
-      service.buatPengajuan({ id_pengguna: '1', jenis_pengajuan: 'PERJALANAN_DINAS', nomor_std: '  ' } as any, fileFixture(), fileFixture()),
+      service.buatPengajuan(
+        {
+          id_pengguna: '1',
+          jenis_pengajuan: 'PERJALANAN_DINAS',
+          nomor_std: '  ',
+          tanggal_mulai: '2026-09-28',
+          tanggal_selesai: '2026-09-30',
+        } as any,
+        fileFixture(),
+        fileFixture(),
+      ),
     ).rejects.toThrow('Nomor STD wajib diisi');
   });
 
@@ -155,7 +181,13 @@ describe('PengajuanService.buatPengajuan — sukses', () => {
     const { service, create } = buatService();
 
     await service.buatPengajuan(
-      { id_pengguna: '1', jenis_pengajuan: 'PERJALANAN_DINAS', nomor_std: 'STD-1' } as any,
+      {
+        id_pengguna: '1',
+        jenis_pengajuan: 'PERJALANAN_DINAS',
+        nomor_std: 'STD-1',
+        tanggal_mulai: '2026-09-28',
+        tanggal_selesai: '2026-09-30',
+      } as any,
       fileFixture('std.pdf'),
       fileFixture('rab.pdf'),
     );
@@ -169,6 +201,84 @@ describe('PengajuanService.buatPengajuan — sukses', () => {
           pathFileRab: '/uploads/pengajuan/rab.pdf',
           nominalTransfer: 0,
         }),
+      }),
+    );
+  });
+
+  it('mengisi nomor dan file STD otomatis dari Surat Tugas Dinas yang disetujui', async () => {
+    const { service, create } = buatService({
+      stdOtomatis: {
+        id: 17,
+        nomor: 'STD/017/IX/2026',
+        tujuanLokasi: 'Site Weda',
+        tanggalMulai: new Date('2026-09-28'),
+        tanggalSelesai: new Date('2026-09-30'),
+        filePdf: 'surat-tugas-dinas/surat-tugas-017.pdf',
+        createdAt: new Date('2026-09-27'),
+      },
+    });
+
+    await service.buatPengajuan(
+      {
+        id_pengguna: '1',
+        jenis_pengajuan: 'PERJALANAN_DINAS',
+        nomor_std: 'NOMOR-DARI-CLIENT-TIDAK-DIPAKAI',
+        tanggal_mulai: '2026-09-28',
+        tanggal_selesai: '2026-09-30',
+      } as any,
+      undefined,
+      fileFixture('rab.pdf'),
+    );
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          nomorStd: 'STD/017/IX/2026',
+          namaFileStd: 'surat-tugas-017.pdf',
+          pathFileStd:
+            '/uploads/surat-tugas-dinas/surat-tugas-017.pdf',
+        }),
+      }),
+    );
+  });
+});
+
+describe('PengajuanService.ambilStdOtomatis', () => {
+  it('mencari STD disetujui berdasarkan NRP dan rentang tanggal', async () => {
+    const stdFindFirst = jest.fn().mockResolvedValue({
+      id: 5,
+      nomor: 'STD-5',
+      tujuanLokasi: 'Jakarta',
+      tanggalMulai: new Date('2026-10-01'),
+      tanggalSelesai: new Date('2026-10-03'),
+      filePdf: 'surat-tugas-dinas/std-5.pdf',
+    });
+    const { service } = buatService({ stdFindFirst });
+
+    const hasil = await service.ambilStdOtomatis(
+      1,
+      '2026-10-01',
+      '2026-10-03',
+    );
+
+    expect(stdFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'DISETUJUI',
+          tanggalMulai: new Date('2026-10-01'),
+          tanggalSelesai: new Date('2026-10-03'),
+          karyawan: {
+            some: {
+              nrp: { equals: '12345', mode: 'insensitive' },
+            },
+          },
+        }),
+      }),
+    );
+    expect(hasil).toEqual(
+      expect.objectContaining({
+        nomor: 'STD-5',
+        pathFileStd: '/uploads/surat-tugas-dinas/std-5.pdf',
       }),
     );
   });
@@ -384,6 +494,25 @@ describe('PengajuanService.hapusPengajuan', () => {
 
     expect(deleteFn).toHaveBeenCalledWith({ where: { id: 1 } });
     expect(hasil.message).toMatch(/berhasil dihapus/);
+  });
+
+  it('tidak menghapus PDF bersama dari Surat Tugas Dinas', async () => {
+    const { service } = buatService({
+      pengajuanDetail: pengajuanFixture({
+        statusPengajuan: 'DIAJUKAN',
+        pathFileStd: '/uploads/surat-tugas-dinas/std-5.pdf',
+      }),
+    });
+    const hapusFile = jest
+      .spyOn(service as any, 'hapusFileJikaAda')
+      .mockResolvedValue(undefined);
+
+    await service.hapusPengajuan(1, aktor());
+
+    expect(hapusFile).not.toHaveBeenCalledWith(
+      './uploads/surat-tugas-dinas/std-5.pdf',
+    );
+    expect(hapusFile).toHaveBeenCalledWith('./uploads/pengajuan/rab.pdf');
   });
 });
 

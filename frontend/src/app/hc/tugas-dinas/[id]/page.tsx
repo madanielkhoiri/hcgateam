@@ -29,6 +29,7 @@ import {
 } from "@/components/tugas-dinas/tugas-dinas-ui";
 import { getStoredUser } from "@/lib/access-control";
 import {
+  durasiHariTugas,
   formatRupiah,
   formatTanggal,
   formatTanggalWaktu,
@@ -169,6 +170,33 @@ export default function DetailTugasDinasPage() {
     );
   }
 
+  const laundryTersedia =
+    durasiHariTugas(surat.tanggalMulai, surat.tanggalSelesai) >= 3;
+  const penerimaMakan = surat.karyawan.filter(
+    (item) => (item.uangPerjalananNominal ?? 0) > 0,
+  ).length;
+  const penerimaTransportasi = surat.karyawan.filter(
+    (item) => (item.akomodasiNominal ?? 0) > 0,
+  ).length;
+  const penerimaLaundry = surat.karyawan.filter(
+    (item) => (item.laundryNominal ?? 0) > 0,
+  ).length;
+  const totalMakan = surat.karyawan.reduce(
+    (total, item) => total + (item.uangPerjalananNominal ?? 0),
+    0,
+  );
+  const totalTransportasi = surat.karyawan.reduce(
+    (total, item) => total + (item.akomodasiNominal ?? 0),
+    0,
+  );
+  const totalLaundry = laundryTersedia
+    ? surat.karyawan.reduce(
+        (total, item) => total + (item.laundryNominal ?? 0),
+        0,
+      )
+    : 0;
+  const totalKeseluruhan = totalMakan + totalTransportasi + totalLaundry;
+
   return (
     <>
       <Link href="/hc/tugas-dinas" className={styles.backButton}>
@@ -222,6 +250,13 @@ export default function DetailTugasDinasPage() {
             <span>Keterangan Tugas</span>
             <strong>{surat.keteranganTugas}</strong>
           </div>
+
+          {surat.suratTugasAsal ? (
+            <div className={styles.detailRow}>
+              <span>Surat Tugas Dinas Asal</span>
+              <strong>{surat.suratTugasAsal.nomor}</strong>
+            </div>
+          ) : null}
 
           <div
             style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}
@@ -339,11 +374,7 @@ export default function DetailTugasDinasPage() {
         </div>
       </Panel>
 
-      {surat.penginapanHotel ||
-      surat.bantuanTransportasi ||
-      surat.uangPerjalananNominal != null ||
-      surat.akomodasiNominal != null ||
-      surat.laundryNominal != null ? (
+      {surat.denganAkomodasi ? (
         <Panel judul="Akomodasi">
           <div className={styles.detailRow}>
             <span>Penginapan / Hotel</span>
@@ -354,31 +385,37 @@ export default function DetailTugasDinasPage() {
             <strong>{surat.bantuanTransportasi || "-"}</strong>
           </div>
           <div className={styles.detailRow}>
-            <span>Uang Perjalanan</span>
+            <span>Rute Perjalanan</span>
+            <strong>{surat.rutePerjalanan || "-"}</strong>
+          </div>
+          <div className={styles.detailRow}>
+            <span>Makan</span>
             <strong>
               {surat.uangPerjalananNominal != null
-                ? `${formatRupiah(surat.uangPerjalananNominal)}${surat.uangPerjalananKeterangan ? ` / ${surat.uangPerjalananKeterangan}` : ""}`
+                ? `${formatRupiah(surat.uangPerjalananNominal)} / ${penerimaMakan} Orang / Lihat rincian per karyawan`
                 : "-"}
             </strong>
           </div>
           <div className={styles.detailRow}>
-            <span>Akomodasi</span>
+            <span>Uang Perjalanan / Transportasi</span>
             <strong>
               {surat.akomodasiNominal != null
-                ? `${formatRupiah(surat.akomodasiNominal)}${surat.akomodasiKeterangan ? ` / ${surat.akomodasiKeterangan}` : ""}`
+                ? `${formatRupiah(surat.akomodasiNominal)} / ${penerimaTransportasi} Orang / Lihat rincian per karyawan`
                 : "-"}
             </strong>
           </div>
+          {laundryTersedia ? (
+            <div className={styles.detailRow}>
+              <span>Laundry</span>
+              <strong>
+                {surat.laundryNominal != null
+                  ? `${formatRupiah(surat.laundryNominal)} / ${penerimaLaundry} Orang / Laundry`
+                  : "-"}
+              </strong>
+            </div>
+          ) : null}
           <div className={styles.detailRow}>
-            <span>Laundry</span>
-            <strong>
-              {surat.laundryNominal != null
-                ? `${formatRupiah(surat.laundryNominal)}${surat.laundryKeterangan ? ` / ${surat.laundryKeterangan}` : ""}`
-                : "-"}
-            </strong>
-          </div>
-          <div className={styles.detailRow}>
-            <span>Jumlah</span>
+            <span>Total Uang Akomodasi</span>
             <strong>{formatRupiah(surat.jumlahAkomodasi)}</strong>
           </div>
           <h3 style={{ marginTop: 18, marginBottom: 8 }}>
@@ -389,10 +426,10 @@ export default function DetailTugasDinasPage() {
               <thead>
                 <tr>
                   <th>Nama / NRP</th>
-                  <th>Uang Perjalanan</th>
-                  <th>Akomodasi</th>
-                  <th>Laundry</th>
-                  <th>Jumlah</th>
+                  <th>Makan</th>
+                  <th>Transportasi</th>
+                  {laundryTersedia ? <th>Laundry</th> : null}
+                  <th>Total per Karyawan</th>
                 </tr>
               </thead>
               <tbody>
@@ -400,7 +437,7 @@ export default function DetailTugasDinasPage() {
                   const jumlah =
                     (item.uangPerjalananNominal ?? 0) +
                     (item.akomodasiNominal ?? 0) +
-                    (item.laundryNominal ?? 0);
+                    (laundryTersedia ? (item.laundryNominal ?? 0) : 0);
                   return (
                     <tr key={item.id}>
                       <td>
@@ -410,27 +447,49 @@ export default function DetailTugasDinasPage() {
                       </td>
                       <td>
                         {formatRupiah(item.uangPerjalananNominal)}
-                        {item.uangPerjalananKeterangan
-                          ? ` / ${item.uangPerjalananKeterangan}`
-                          : ""}
+                        {item.frekuensiMakan ? (
+                          <>
+                            <br />
+                            <small>
+                              {formatRupiah(
+                                Math.round(
+                                  (item.uangPerjalananNominal ?? 0) /
+                                    item.frekuensiMakan,
+                                ),
+                              )}
+                              {`/makan / Uang Makan Selama Perjalanan (${item.frekuensiMakan}x)`}
+                            </small>
+                          </>
+                        ) : null}
                       </td>
                       <td>
                         {formatRupiah(item.akomodasiNominal)}
-                        {item.akomodasiKeterangan
-                          ? ` / ${item.akomodasiKeterangan}`
-                          : ""}
+                        {item.ruteTransportasiLokal ? (
+                          <>
+                            <br />
+                            <small>{item.ruteTransportasiLokal}</small>
+                          </>
+                        ) : null}
                       </td>
-                      <td>
-                        {formatRupiah(item.laundryNominal)}
-                        {item.laundryKeterangan
-                          ? ` / ${item.laundryKeterangan}`
-                          : ""}
-                      </td>
+                      {laundryTersedia ? (
+                        <td>{formatRupiah(item.laundryNominal)}</td>
+                      ) : null}
                       <td>{formatRupiah(jumlah)}</td>
                     </tr>
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr style={{ background: "#eef4f9", fontWeight: 700 }}>
+                  <td>JUMLAH</td>
+                  <td>{formatRupiah(totalMakan)}</td>
+                  <td>{formatRupiah(totalTransportasi)}</td>
+                  {laundryTersedia ? (
+                    <td>{formatRupiah(totalLaundry)}</td>
+                  ) : null}
+                  <td>{formatRupiah(totalKeseluruhan)}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </Panel>

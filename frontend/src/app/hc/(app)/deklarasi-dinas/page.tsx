@@ -797,9 +797,8 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setPesanError("");
  setPesanSukses("");
  setSedangProsesNotaId(nota.id);
- const fileTerkompres = await compressImage(fileBaru).catch(() => fileBaru);
  const formData = new FormData();
- formData.append("file_nota", fileTerkompres);
+ formData.append("file_nota", fileBaru);
  const response = await fetch(`${apiUrl}/nota/${nota.id}`, {
  method: "PATCH",
  headers: headerAuth(),
@@ -999,14 +998,10 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setPesanSukses("");
  setSedangUpload(true);
 
- const fileRevisiTerkompres = await compressImage(fileRevisi).catch(
- () => fileRevisi
- );
-
  const formData = new FormData();
  formData.append("kategori_nota", nota.kategori_nota);
  formData.append("id_nota_revisi", String(nota.id));
- formData.append("file_nota", fileRevisiTerkompres);
+ formData.append("file_nota", fileRevisi);
 
  const response = await fetch(
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
@@ -1145,10 +1140,6 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  throw new Error(`File revisi untuk Nota #${nota.id} belum dipilih.`);
  }
 
- const fileRevisi = await compressImage(fileRevisiAsli).catch(
- () => fileRevisiAsli
- );
-
  const kategoriRevisiAktif = kategoriRevisiBatch[nota.id] || nota.kategori_nota;
  if (saldoDipilih.jenis_saldo === "UANG_OPERASIONAL") {
  if (!(barangJasaRevisiBatch[String(nota.id)] || "").trim()) {
@@ -1184,7 +1175,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("keterangan_settlement", `Tujuan/rute: ${(keteranganSettlementRevisiBatch[String(nota.id)] || "").trim()}`);
  }
 
- formData.append("file_nota", fileRevisi);
+ formData.append("file_nota", fileRevisiAsli);
 
  const response = await fetch(
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
@@ -1312,10 +1303,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  formData.append("keterangan_settlement", `Tujuan/rute: ${ruteTransportNota.trim()}`);
  }
 
- const fileNotaTerkompres = await compressImage(fileNota).catch(
- () => fileNota
- );
- formData.append("file_nota", fileNotaTerkompres);
+ formData.append("file_nota", fileNota);
  const response = await fetch(
  `${apiUrl}/nota/upload/${saldoDipilih.id_deklarasi_aktif}`,
  {

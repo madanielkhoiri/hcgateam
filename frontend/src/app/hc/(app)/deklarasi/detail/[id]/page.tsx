@@ -1224,7 +1224,28 @@ export default function HalamanDetailDeklarasi() {
  document.body.classList.add("pdf-form-settlement-print");
  }
 
- setTimeout(() => {
+ setTimeout(async () => {
+ const gambarNota = Array.from(
+ document.querySelectorAll<HTMLImageElement>(".pdf-nota-image")
+ );
+
+ await Promise.all(
+ gambarNota.map((gambar) => {
+ if (gambar.complete) return Promise.resolve();
+
+ return new Promise<void>((selesai) => {
+ const batasTunggu = window.setTimeout(selesai, 5000);
+ const tuntaskan = () => {
+ window.clearTimeout(batasTunggu);
+ selesai();
+ };
+
+ gambar.addEventListener("load", tuntaskan, { once: true });
+ gambar.addEventListener("error", tuntaskan, { once: true });
+ });
+ })
+ );
+
  window.print();
 
  setTimeout(() => {
@@ -1725,6 +1746,12 @@ export default function HalamanDetailDeklarasi() {
  const totalDeklarasiPdf = daftarNotaUrut.reduce((total, nota) => {
  return total + normalisasiAngka(nota.nominal_final);
  }, 0);
+
+ const notaLampiranPdf = daftarNotaUrut.filter(
+ (nota) =>
+ nota.status_verifikasi === "DIVERIFIKASI" &&
+ Boolean(nota.path_file)
+ );
 
  const selisihPdf = jumlahUangMukaPdf - totalDeklarasiPdf;
  const nilaiSelisihPdf = Math.abs(selisihPdf);
@@ -3353,6 +3380,37 @@ export default function HalamanDetailDeklarasi() {
  </div>
  )}
 
+ {deklarasi?.status === "DISETUJUI" &&
+ notaLampiranPdf.map((nota, index) => (
+ <article className="pdf-page pdf-nota-page" key={`lampiran-nota-${nota.id}`}>
+ <header className="pdf-nota-header">
+ <div>
+ <div className="pdf-nota-title">LAMPIRAN NOTA {index + 1}</div>
+ <div className="pdf-nota-subtitle">
+ {deklarasi.kode_deklarasi} - {formatKategoriNota(nota.kategori_nota)}
+ </div>
+ </div>
+ <div className="pdf-nota-meta">
+ <div>{formatTanggal(nota.dibuat_pada)}</div>
+ <strong>{formatRupiah(nota.nominal_final)}</strong>
+ </div>
+ </header>
+
+ <div className="pdf-nota-image-frame">
+ <img
+ src={urlFile(nota.path_file)}
+ alt={`Nota ${index + 1} - ${formatKategoriNota(nota.kategori_nota)}`}
+ className="pdf-nota-image"
+ />
+ </div>
+
+ <footer className="pdf-nota-footer">
+ <span>{deklarasi.nama_pengguna} / {deklarasi.nrp}</span>
+ <span>{ambilNamaFile(nota.path_file)}</span>
+ </footer>
+ </article>
+ ))}
+
  </div>
  </section>
  {modalEditTerbuka && (
@@ -4069,6 +4127,72 @@ export default function HalamanDetailDeklarasi() {
  font-family: Arial, Helvetica, sans-serif;
  font-size: 8px;
  line-height: 1.12;
+ }
+
+ .pdf-nota-page {
+ min-height: 273mm;
+ box-sizing: border-box;
+ break-before: page;
+ page-break-before: always;
+ display: flex;
+ flex-direction: column;
+ font-family: Arial, Helvetica, sans-serif;
+ }
+
+ .pdf-nota-header {
+ display: flex;
+ align-items: flex-end;
+ justify-content: space-between;
+ gap: 8mm;
+ border-bottom: 1px solid #111;
+ padding: 0 0 3mm;
+ }
+
+ .pdf-nota-title {
+ font-size: 13px;
+ line-height: 1.2;
+ font-weight: 700;
+ }
+
+ .pdf-nota-subtitle,
+ .pdf-nota-meta,
+ .pdf-nota-footer {
+ font-size: 8px;
+ line-height: 1.35;
+ }
+
+ .pdf-nota-meta {
+ flex: 0 0 auto;
+ text-align: right;
+ }
+
+ .pdf-nota-image-frame {
+ flex: 1;
+ min-height: 0;
+ margin: 5mm 0 3mm;
+ border: 1px solid #cbd5e1;
+ padding: 4mm;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ overflow: hidden;
+ background: #fff;
+ }
+
+ .pdf-nota-image {
+ display: block;
+ max-width: 100%;
+ max-height: 244mm;
+ width: auto;
+ height: auto;
+ object-fit: contain;
+ }
+
+ .pdf-nota-footer {
+ display: flex;
+ justify-content: space-between;
+ gap: 6mm;
+ color: #334155;
  }
 
  .pdf-table {
