@@ -51,7 +51,7 @@ model User {
   username           String?   @unique
   nrp                String?   @unique
   email              String?   @unique
-  phoneNumber        String?   @map("phone_number")
+  phoneNumber        String?   @unique @map("phone_number")
   passwordHash       String    @map("password_hash")
   role               UserRole  @default(KARYAWAN)
   isActive           Boolean   @default(true) @map("is_active")
@@ -110,6 +110,7 @@ model User {
   suratTugasDibuat       SuratTugasDinas[] @relation("PembuatSuratTugas")
   suratTugasDisetujuiSh  SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
   suratTugasDisetujuiPjo SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
+  advanceStdDikonfirmasi  SuratTugasKaryawan[] @relation("KonfirmasiAdvanceStdKaryawan")
 
   tiketBillingDibuat   TiketBilling[] @relation("PembuatTiketBilling")
   tiketBillingDihitung TiketBilling[] @relation("PenghitungTiketBilling")
@@ -1492,12 +1493,15 @@ enum StatusSuratTugas {
 model SuratTugasDinas {
   id                       Int              @id @default(autoincrement())
   nomor                    String           @unique
+  denganAkomodasi          Boolean          @default(false) @map("dengan_akomodasi")
+  suratTugasAsalId         Int?             @map("surat_tugas_asal_id")
   tujuanLokasi             String           @map("tujuan_lokasi")
   tanggalMulai             DateTime         @map("tanggal_mulai") @db.Date
   tanggalSelesai           DateTime         @map("tanggal_selesai") @db.Date
   keteranganTugas          String           @map("keterangan_tugas") @db.Text
   penginapanHotel          String?          @map("penginapan_hotel")
   bantuanTransportasi      String?          @map("bantuan_transportasi") @db.Text
+  rutePerjalanan           String?          @map("rute_perjalanan") @db.Text
   uangPerjalananNominal    Int?             @map("uang_perjalanan_nominal")
   uangPerjalananKeterangan String?          @map("uang_perjalanan_keterangan") @db.Text
   akomodasiNominal         Int?             @map("akomodasi_nominal")
@@ -1519,10 +1523,13 @@ model SuratTugasDinas {
   dibuatOleh       User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
   disetujuiShOleh  User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
   disetujuiPjoOleh User?                @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
+  suratTugasAsal   SuratTugasDinas?      @relation("AsalStdAkomodasi", fields: [suratTugasAsalId], references: [id], onDelete: Restrict)
+  stdAkomodasi     SuratTugasDinas[]     @relation("AsalStdAkomodasi")
   karyawan         SuratTugasKaryawan[]
 
   @@index([status])
   @@index([dibuatOlehId])
+  @@index([suratTugasAsalId])
   @@map("surat_tugas_dinas")
 }
 
@@ -1540,10 +1547,20 @@ model SuratTugasKaryawan {
   akomodasiKeterangan      String? @map("akomodasi_keterangan") @db.Text
   laundryNominal           Int?   @map("laundry_nominal")
   laundryKeterangan        String? @map("laundry_keterangan") @db.Text
+  frekuensiMakan           Int?   @map("frekuensi_makan")
+  ruteTransportasiLokal    String? @map("rute_transportasi_lokal") @db.Text
+  advanceDikonfirmasiPada  DateTime? @map("advance_dikonfirmasi_pada")
+  advanceDikonfirmasiOlehId Int? @map("advance_dikonfirmasi_oleh_id")
+  advancePembuatNama       String? @map("advance_pembuat_nama")
+  advanceShNama            String? @map("advance_sh_nama")
+  advanceShJabatan         String? @map("advance_sh_jabatan")
+  advanceFilePdf           String? @map("advance_file_pdf")
 
-  suratTugas SuratTugasDinas @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
+  suratTugas                SuratTugasDinas @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
+  advanceDikonfirmasiOleh   User? @relation("KonfirmasiAdvanceStdKaryawan", fields: [advanceDikonfirmasiOlehId], references: [id], onDelete: SetNull)
 
   @@index([suratTugasId])
+  @@index([advanceDikonfirmasiOlehId])
   @@map("surat_tugas_karyawan")
 }
 

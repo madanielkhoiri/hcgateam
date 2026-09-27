@@ -34,7 +34,7 @@ function pastikanFolderNotaAda() {
   return folder;
 }
 
-// <--- opsi upload foto nota (upload baru dan ganti foto): hanya gambar, tanpa batas MB dari kode aplikasi, foto dikompres di NotaService --->
+// <--- opsi upload foto nota (upload baru dan ganti foto): hanya gambar dan disimpan dalam kualitas asli --->
 const opsiUploadNota = {
   storage: diskStorage({
     destination: (

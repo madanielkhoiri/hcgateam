@@ -1,16 +1,30 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SuratTugasDinasPdfService } from './surat-tugas-dinas-pdf.service';
 
 function karyawanFixture(overrides: Record<string, unknown> = {}) {
-  return { urutan: 1, nrp: '12345', nama: 'Budi', departemen: 'HC', jabatan: 'Staff', ...overrides };
+  return {
+    urutan: 1,
+    nrp: '12345',
+    nama: 'Budi',
+    departemen: 'HC',
+    jabatan: 'Staff',
+    ...overrides,
+  };
 }
 
 function suratFixture(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
     nomor: 'ST-001/2026',
+    denganAkomodasi: false,
     tujuanLokasi: 'Jakarta',
     tanggalMulai: new Date('2026-01-05'),
     tanggalSelesai: new Date('2026-01-10'),
@@ -50,7 +64,9 @@ describe('SuratTugasDinasPdfService.buatFile', () => {
   });
 
   it('nomor surat dengan karakter terlarang disanitasi jadi tanda hubung', async () => {
-    const path = await service.buatFile(suratFixture({ nomor: 'ST/001:2026*A' }));
+    const path = await service.buatFile(
+      suratFixture({ nomor: 'ST/001:2026*A' }),
+    );
 
     expect(path).toBe('surat-tugas-dinas/surat-tugas-ST-001-2026-A.pdf');
   });
@@ -62,6 +78,26 @@ describe('SuratTugasDinasPdfService.buatFile', () => {
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
   });
 
+  it('tidak menggambar akomodasi pada Surat Tugas Dinas biasa', async () => {
+    const gambarAkomodasi = jest.spyOn(service as any, 'gambarAkomodasi');
+    const gambarRincian = jest.spyOn(service as any, 'gambarRincianAkomodasi');
+
+    await service.buatFile(suratFixture({ denganAkomodasi: false }));
+
+    expect(gambarAkomodasi).not.toHaveBeenCalled();
+    expect(gambarRincian).not.toHaveBeenCalled();
+  });
+
+  it('menggambar akomodasi hanya pada STD Akomodasi', async () => {
+    const gambarAkomodasi = jest.spyOn(service as any, 'gambarAkomodasi');
+    const gambarRincian = jest.spyOn(service as any, 'gambarRincianAkomodasi');
+
+    await service.buatFile(suratFixture({ denganAkomodasi: true }));
+
+    expect(gambarAkomodasi).toHaveBeenCalledTimes(1);
+    expect(gambarRincian).toHaveBeenCalledTimes(1);
+  });
+
   // Logo dan tanda tangan SH/PJO di-resolve dari path absolut process.cwd() SAAT
   // MODUL DI-IMPORT (konstanta top-level), bukan dari chdir() di beforeEach —
   // jadi setiap generate di sini selalu memuat aset asli uploads/signatures/
@@ -71,7 +107,10 @@ describe('SuratTugasDinasPdfService.buatFile', () => {
   it.each(['MENUNGGU_SH', 'MENUNGGU_PJO', 'DISETUJUI', 'DITOLAK'])(
     'berhasil generate untuk status %s tanpa crash',
     async (status) => {
-      const surat = suratFixture({ status, alasanTolak: status === 'DITOLAK' ? 'Data tidak lengkap' : null });
+      const surat = suratFixture({
+        status,
+        alasanTolak: status === 'DITOLAK' ? 'Data tidak lengkap' : null,
+      });
 
       await expect(service.buatFile(surat)).resolves.toMatch(/\.pdf$/);
     },
@@ -79,10 +118,16 @@ describe('SuratTugasDinasPdfService.buatFile', () => {
 
   it('berhasil generate dengan banyak baris karyawan yang memicu halaman baru', async () => {
     const banyakKaryawan = Array.from({ length: 40 }, (_, i) =>
-      karyawanFixture({ urutan: i + 1, nrp: String(10000 + i), nama: `Karyawan ${i + 1}` }),
+      karyawanFixture({
+        urutan: i + 1,
+        nrp: String(10000 + i),
+        nama: `Karyawan ${i + 1}`,
+      }),
     );
 
-    const path = await service.buatFile(suratFixture({ karyawan: banyakKaryawan }));
+    const path = await service.buatFile(
+      suratFixture({ karyawan: banyakKaryawan }),
+    );
 
     expect(path).toMatch(/\.pdf$/);
   });
