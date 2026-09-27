@@ -23,6 +23,12 @@ export default function OrderPackMealLayout({
           href: '/ga/order-pack-meal',
           icon: 'utensils-crossed',
         },
+        {
+          label: 'Rekap Order Mining',
+          href: '/ga/order-pack-meal-mining',
+          icon: 'utensils-crossed',
+        },
+        { label: 'Input Jumlah Mining', href: '/ga/order-pack-meal-mining/input', icon: 'utensils-crossed' },
       ]}
     >
       {children}
