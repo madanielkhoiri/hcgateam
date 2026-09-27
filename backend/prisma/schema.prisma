@@ -85,11 +85,12 @@ model User {
   preActivityChecks PreActivityCheck[]      @relation("PreActivityCheckCreator")
   postActivities    PostActivity[]          @relation("PostActivityCreator")
 
-  p5mMeetings      P5mMeeting[]      @relation("P5mMeetingCreator")
-  preActivities    PreActivity[]     @relation("PreActivityCreator")
-  safetyMeetings   SafetyMeeting[]
-  transportRecords TransportRecord[] @relation("TransportRecordCreator")
-  packMealOrders   PackMealOrder[]   @relation("PackMealOrderCreator")
+  p5mMeetings           P5mMeeting[]          @relation("P5mMeetingCreator")
+  preActivities         PreActivity[]         @relation("PreActivityCreator")
+  safetyMeetings        SafetyMeeting[]
+  transportRecords      TransportRecord[]     @relation("TransportRecordCreator")
+  packMealOrders        PackMealOrder[]       @relation("PackMealOrderCreator")
+  miningPackMealEntries MiningPackMealEntry[] @relation("MiningPackMealEntryCreator")
 
   profilKaryawan     Karyawan?
   departemenDikelola Departemen[]       @relation("AdminDepartemen")
@@ -107,10 +108,10 @@ model User {
   tiketHelpdeskDibuat   TiketHelpdesk[] @relation("PembuatTiketHelpdesk")
   tiketHelpdeskDiproses TiketHelpdesk[] @relation("PicTiketHelpdesk")
 
-  suratTugasDibuat       SuratTugasDinas[] @relation("PembuatSuratTugas")
-  suratTugasDisetujuiSh  SuratTugasDinas[] @relation("PenyetujuShSuratTugas")
-  suratTugasDisetujuiPjo SuratTugasDinas[] @relation("PenyetujuPjoSuratTugas")
-  advanceStdDikonfirmasi  SuratTugasKaryawan[] @relation("KonfirmasiAdvanceStdKaryawan")
+  suratTugasDibuat       SuratTugasDinas[]    @relation("PembuatSuratTugas")
+  suratTugasDisetujuiSh  SuratTugasDinas[]    @relation("PenyetujuShSuratTugas")
+  suratTugasDisetujuiPjo SuratTugasDinas[]    @relation("PenyetujuPjoSuratTugas")
+  advanceStdDikonfirmasi SuratTugasKaryawan[] @relation("KonfirmasiAdvanceStdKaryawan")
 
   tiketBillingDibuat   TiketBilling[] @relation("PembuatTiketBilling")
   tiketBillingDihitung TiketBilling[] @relation("PenghitungTiketBilling")
@@ -785,6 +786,43 @@ model PackMealOrderItem {
 }
 
 // ==================================================
+// ORDER PACK MEAL MINING - pencatatan rutin harian per area
+// ==================================================
+
+model MiningPackMealEntry {
+  id                     Int      @id @default(autoincrement())
+  date                   DateTime @db.Date
+  area                   String
+  dropLocation           String?  @map("drop_location")
+  dropTimes              String?  @map("drop_times")
+  orderedBy              String?  @map("ordered_by")
+  notes                  String?  @db.Text
+  rosterLunch            Int      @default(0) @map("roster_lunch")
+  rosterDinner           Int      @default(0) @map("roster_dinner")
+  rosterSpecialMeal      Int      @default(0) @map("roster_special_meal")
+  rosterSpecialSnack     Int      @default(0) @map("roster_special_snack")
+  additionalLunch        Int      @default(0) @map("additional_lunch")
+  additionalDinner       Int      @default(0) @map("additional_dinner")
+  additionalSpecialMeal  Int      @default(0) @map("additional_special_meal")
+  additionalSpecialSnack Int      @default(0) @map("additional_special_snack")
+  receivedLunch          Int?     @map("received_lunch")
+  receivedDinner         Int?     @map("received_dinner")
+  receivedSpecialMeal    Int?     @map("received_special_meal")
+  receivedSpecialSnack   Int?     @map("received_special_snack")
+  createdBy              Int      @map("created_by")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  creator User @relation("MiningPackMealEntryCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@unique([date, area])
+  @@index([date])
+  @@index([area])
+  @@index([createdBy])
+  @@map("mining_pack_meal_entries")
+}
+
+// ==================================================
 // DEKLARASI DINAS MODULE
 // ==================================================
 
@@ -803,23 +841,23 @@ enum StatusDeklarasi {
 }
 
 model Deklarasi {
-  id              Int             @id @default(autoincrement())
-  kodeDeklarasi   String          @unique @map("kode_deklarasi") @db.VarChar(80)
-  idPengguna      Int             @map("id_pengguna")
-  idSaldo         Int?            @map("id_saldo")
-  nrp             String          @map("nrp") @db.VarChar(50)
-  namaPengguna    String          @map("nama_pengguna") @db.VarChar(120)
-  jenisDeklarasi  JenisDeklarasi  @map("jenis_deklarasi")
-  tanggalKegiatan DateTime        @map("tanggal_kegiatan") @db.Date
-  lokasi          String          @map("lokasi") @db.VarChar(150)
-  keterangan      String          @map("keterangan") @db.Text
-  nomorStd        String?         @map("nomor_std") @db.VarChar(120)
-  totalNominal    Decimal         @default(0) @map("total_nominal") @db.Decimal(15, 2)
-  status          StatusDeklarasi @default(DRAFT)
-  alasanDitolak   String?         @map("alasan_ditolak") @db.Text
-  tanggalDisetujui DateTime?      @map("tanggal_disetujui") @db.Timestamp(3)
-  createdAt       DateTime        @default(now()) @map("dibuat_pada")
-  updatedAt       DateTime        @updatedAt @map("diperbarui_pada")
+  id               Int             @id @default(autoincrement())
+  kodeDeklarasi    String          @unique @map("kode_deklarasi") @db.VarChar(80)
+  idPengguna       Int             @map("id_pengguna")
+  idSaldo          Int?            @map("id_saldo")
+  nrp              String          @map("nrp") @db.VarChar(50)
+  namaPengguna     String          @map("nama_pengguna") @db.VarChar(120)
+  jenisDeklarasi   JenisDeklarasi  @map("jenis_deklarasi")
+  tanggalKegiatan  DateTime        @map("tanggal_kegiatan") @db.Date
+  lokasi           String          @map("lokasi") @db.VarChar(150)
+  keterangan       String          @map("keterangan") @db.Text
+  nomorStd         String?         @map("nomor_std") @db.VarChar(120)
+  totalNominal     Decimal         @default(0) @map("total_nominal") @db.Decimal(15, 2)
+  status           StatusDeklarasi @default(DRAFT)
+  alasanDitolak    String?         @map("alasan_ditolak") @db.Text
+  tanggalDisetujui DateTime?       @map("tanggal_disetujui") @db.Timestamp(3)
+  createdAt        DateTime        @default(now()) @map("dibuat_pada")
+  updatedAt        DateTime        @updatedAt @map("diperbarui_pada")
 
   @@map("deklarasi")
 }
@@ -1523,8 +1561,8 @@ model SuratTugasDinas {
   dibuatOleh       User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
   disetujuiShOleh  User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
   disetujuiPjoOleh User?                @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
-  suratTugasAsal   SuratTugasDinas?      @relation("AsalStdAkomodasi", fields: [suratTugasAsalId], references: [id], onDelete: Restrict)
-  stdAkomodasi     SuratTugasDinas[]     @relation("AsalStdAkomodasi")
+  suratTugasAsal   SuratTugasDinas?     @relation("AsalStdAkomodasi", fields: [suratTugasAsalId], references: [id], onDelete: Restrict)
+  stdAkomodasi     SuratTugasDinas[]    @relation("AsalStdAkomodasi")
   karyawan         SuratTugasKaryawan[]
 
   @@index([status])
@@ -1534,30 +1572,30 @@ model SuratTugasDinas {
 }
 
 model SuratTugasKaryawan {
-  id                       Int    @id @default(autoincrement())
-  suratTugasId             Int    @map("surat_tugas_id")
-  urutan                   Int
-  nrp                      String
-  nama                     String
-  departemen               String
-  jabatan                  String
-  uangPerjalananNominal    Int?   @map("uang_perjalanan_nominal")
-  uangPerjalananKeterangan String? @map("uang_perjalanan_keterangan") @db.Text
-  akomodasiNominal         Int?   @map("akomodasi_nominal")
-  akomodasiKeterangan      String? @map("akomodasi_keterangan") @db.Text
-  laundryNominal           Int?   @map("laundry_nominal")
-  laundryKeterangan        String? @map("laundry_keterangan") @db.Text
-  frekuensiMakan           Int?   @map("frekuensi_makan")
-  ruteTransportasiLokal    String? @map("rute_transportasi_lokal") @db.Text
-  advanceDikonfirmasiPada  DateTime? @map("advance_dikonfirmasi_pada")
-  advanceDikonfirmasiOlehId Int? @map("advance_dikonfirmasi_oleh_id")
-  advancePembuatNama       String? @map("advance_pembuat_nama")
-  advanceShNama            String? @map("advance_sh_nama")
-  advanceShJabatan         String? @map("advance_sh_jabatan")
-  advanceFilePdf           String? @map("advance_file_pdf")
+  id                        Int       @id @default(autoincrement())
+  suratTugasId              Int       @map("surat_tugas_id")
+  urutan                    Int
+  nrp                       String
+  nama                      String
+  departemen                String
+  jabatan                   String
+  uangPerjalananNominal     Int?      @map("uang_perjalanan_nominal")
+  uangPerjalananKeterangan  String?   @map("uang_perjalanan_keterangan") @db.Text
+  akomodasiNominal          Int?      @map("akomodasi_nominal")
+  akomodasiKeterangan       String?   @map("akomodasi_keterangan") @db.Text
+  laundryNominal            Int?      @map("laundry_nominal")
+  laundryKeterangan         String?   @map("laundry_keterangan") @db.Text
+  frekuensiMakan            Int?      @map("frekuensi_makan")
+  ruteTransportasiLokal     String?   @map("rute_transportasi_lokal") @db.Text
+  advanceDikonfirmasiPada   DateTime? @map("advance_dikonfirmasi_pada")
+  advanceDikonfirmasiOlehId Int?      @map("advance_dikonfirmasi_oleh_id")
+  advancePembuatNama        String?   @map("advance_pembuat_nama")
+  advanceShNama             String?   @map("advance_sh_nama")
+  advanceShJabatan          String?   @map("advance_sh_jabatan")
+  advanceFilePdf            String?   @map("advance_file_pdf")
 
-  suratTugas                SuratTugasDinas @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
-  advanceDikonfirmasiOleh   User? @relation("KonfirmasiAdvanceStdKaryawan", fields: [advanceDikonfirmasiOlehId], references: [id], onDelete: SetNull)
+  suratTugas              SuratTugasDinas @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
+  advanceDikonfirmasiOleh User?           @relation("KonfirmasiAdvanceStdKaryawan", fields: [advanceDikonfirmasiOlehId], references: [id], onDelete: SetNull)
 
   @@index([suratTugasId])
   @@index([advanceDikonfirmasiOlehId])
