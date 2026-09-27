@@ -566,7 +566,8 @@ describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
       suratTugasDinas: { findMany, count },
     } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
-    const service = new SuratTugasDinasService(prisma, pdf);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new SuratTugasDinasService(prisma, pdf, whatsapp);
 
     await service.daftar(KARYAWAN);
 
@@ -584,7 +585,8 @@ describe('SuratTugasDinasService.daftar & detail — visibilitas', () => {
       suratTugasDinas: { findMany, count },
     } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
-    const service = new SuratTugasDinasService(prisma, pdf);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new SuratTugasDinasService(prisma, pdf, whatsapp);
 
     await service.daftar(SH);
 
@@ -623,7 +625,8 @@ describe('SuratTugasDinasService.daftar — pencarian (cari)', () => {
       suratTugasDinas: { findMany, count },
     } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
-    const service = new SuratTugasDinasService(prisma, pdf);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new SuratTugasDinasService(prisma, pdf, whatsapp);
 
     await service.daftar(SH);
 
@@ -639,7 +642,8 @@ describe('SuratTugasDinasService.daftar — pencarian (cari)', () => {
       suratTugasDinas: { findMany, count },
     } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
-    const service = new SuratTugasDinasService(prisma, pdf);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new SuratTugasDinasService(prisma, pdf, whatsapp);
 
     await service.daftar(
       SH,
@@ -680,7 +684,8 @@ describe('SuratTugasDinasService.daftar — pencarian (cari)', () => {
       suratTugasDinas: { findMany, count },
     } as unknown as PrismaService;
     const pdf = {} as unknown as SuratTugasDinasPdfService;
-    const service = new SuratTugasDinasService(prisma, pdf);
+    const whatsapp = {} as unknown as WhatsappService;
+    const service = new SuratTugasDinasService(prisma, pdf, whatsapp);
 
     await service.daftar(
       SH,
