@@ -26,6 +26,8 @@ export type KaryawanTugas = {
   akomodasiKeterangan: string | null;
   laundryNominal: number | null;
   laundryKeterangan: string | null;
+  frekuensiMakan: number | null;
+  ruteTransportasiLokal: string | null;
 };
 
 export type AkunRingkas = {
@@ -34,15 +36,31 @@ export type AkunRingkas = {
   role: string;
 };
 
+export type PilihanKaryawanAkomodasi = {
+  suratTugasId: number;
+  nomorSurat: string;
+  tujuanLokasi: string;
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  keteranganTugas: string;
+  nrp: string;
+  nama: string;
+  departemen: string;
+  jabatan: string;
+};
+
 export type SuratTugasDinas = {
   id: number;
   nomor: string;
+  denganAkomodasi: boolean;
+  suratTugasAsalId: number | null;
   tujuanLokasi: string;
   tanggalMulai: string;
   tanggalSelesai: string;
   keteranganTugas: string;
   penginapanHotel: string | null;
   bantuanTransportasi: string | null;
+  rutePerjalanan: string | null;
   uangPerjalananNominal: number | null;
   uangPerjalananKeterangan: string | null;
   akomodasiNominal: number | null;
@@ -60,6 +78,11 @@ export type SuratTugasDinas = {
   dibuatOleh: AkunRingkas;
   disetujuiShOleh: AkunRingkas | null;
   disetujuiPjoOleh: AkunRingkas | null;
+  suratTugasAsal: {
+    id: number;
+    nomor: string;
+    keteranganTugas: string;
+  } | null;
 };
 
 /** Ringkasan angka kartu dashboard Form Tugas Dinas - lihat surat-tugas-dinas-dashboard.service.ts. */
@@ -148,6 +171,21 @@ export const suratTugasApi = {
 
 export function formatRupiah(nilai: number | null | undefined): string {
   return `Rp ${new Intl.NumberFormat("id-ID").format(nilai ?? 0)}`;
+}
+
+export function durasiHariTugas(
+  tanggalMulai: string | null | undefined,
+  tanggalSelesai: string | null | undefined,
+): number {
+  if (!tanggalMulai || !tanggalSelesai) {
+    return 0;
+  }
+
+  const mulai = new Date(tanggalMulai);
+  const selesai = new Date(tanggalSelesai);
+  const selisih = selesai.getTime() - mulai.getTime();
+
+  return selisih < 0 ? 0 : Math.floor(selisih / 86_400_000) + 1;
 }
 
 export function formatTanggal(nilai: string | null | undefined): string {

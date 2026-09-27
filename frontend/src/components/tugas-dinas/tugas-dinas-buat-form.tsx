@@ -15,8 +15,10 @@ import { useEffect, useState } from "react";
 import { Field, Pesan } from "@/components/tugas-dinas/tugas-dinas-ui";
 import { karyawanApi, type Karyawan } from "@/lib/karyawan-api";
 import {
+  durasiHariTugas,
   formatRupiah,
   suratTugasApi,
+  type PilihanKaryawanAkomodasi,
   type SuratTugasDinas,
 } from "@/lib/surat-tugas-dinas-api";
 import styles from "@/app/hc/tugas-dinas/tugas-dinas.module.css";
@@ -27,11 +29,22 @@ type BarisKaryawan = {
   departemen: string;
   jabatan: string;
   uangPerjalananNominal: string;
-  uangPerjalananKeterangan: string;
   akomodasiNominal: string;
-  akomodasiKeterangan: string;
+  ruteTransportasiLokal: string;
   laundryNominal: string;
-  laundryKeterangan: string;
+};
+
+type PilihanKaryawanForm = {
+  nrp: string;
+  nama: string;
+  departemen: string;
+  jabatan: string;
+  suratTugasId?: number;
+  nomorSurat?: string;
+  tujuanLokasi?: string;
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+  keteranganTugas?: string;
 };
 
 export function TugasDinasBuatForm({
@@ -49,19 +62,28 @@ export function TugasDinasBuatForm({
 
   const [penginapanHotel, setPenginapanHotel] = useState("");
   const [bantuanTransportasi, setBantuanTransportasi] = useState("");
+  const [rutePerjalanan, setRutePerjalanan] = useState("");
   const [baris, setBaris] = useState<BarisKaryawan[]>([]);
+  const [suratTugasAsalId, setSuratTugasAsalId] = useState<number | null>(null);
+  const durasiHari = durasiHariTugas(tanggalMulai, tanggalSelesai);
+  const laundryTersedia = durasiHari >= 3;
+  const frekuensiMakanOtomatis = durasiHari > 0 ? durasiHari * 3 : 0;
 
-  const jumlahAkomodasi = baris.reduce(
-    (total, row) =>
-      total +
-      (Number(row.uangPerjalananNominal) || 0) +
-      (Number(row.akomodasiNominal) || 0) +
-      (Number(row.laundryNominal) || 0),
+  const totalMakan = baris.reduce(
+    (total, row) => total + (Number(row.uangPerjalananNominal) || 0),
     0,
   );
+  const totalTransportasi = baris.reduce(
+    (total, row) => total + (Number(row.akomodasiNominal) || 0),
+    0,
+  );
+  const totalLaundry = laundryTersedia
+    ? baris.reduce((total, row) => total + (Number(row.laundryNominal) || 0), 0)
+    : 0;
+  const jumlahAkomodasi = totalMakan + totalTransportasi + totalLaundry;
 
   const [cari, setCari] = useState("");
-  const [hasilCari, setHasilCari] = useState<Karyawan[]>([]);
+  const [hasilCari, setHasilCari] = useState<PilihanKaryawanForm[]>([]);
   const [dropdownTerbuka, setDropdownTerbuka] = useState(false);
   const [mencari, setMencari] = useState(false);
 
@@ -69,7 +91,7 @@ export function TugasDinasBuatForm({
   const [galat, setGalat] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!cari.trim() || cari.trim().length < 2) {
+    if (!withAkomodasi && (!cari.trim() || cari.trim().length < 2)) {
       setHasilCari([]);
       return;
     }
@@ -78,52 +100,99 @@ export function TugasDinasBuatForm({
     setMencari(true);
 
     const timer = setTimeout(() => {
-      karyawanApi
-        .ambil<Karyawan[]>(`?cari=${encodeURIComponent(cari.trim())}`)
-        .then((hasil) => {
+      void (async () => {
+        try {
+          let hasil: PilihanKaryawanForm[];
+
+          if (withAkomodasi) {
+            const query = cari.trim()
+              ? `?cari=${encodeURIComponent(cari.trim())}`
+              : "";
+            const pilihan = await suratTugasApi.ambil<
+              PilihanKaryawanAkomodasi[]
+            >(`/pilihan-akomodasi${query}`);
+            hasil = suratTugasAsalId
+              ? pilihan.filter((item) => item.suratTugasId === suratTugasAsalId)
+              : pilihan;
+          } else {
+            const karyawan = await karyawanApi.ambil<Karyawan[]>(
+              `?cari=${encodeURIComponent(cari.trim())}`,
+            );
+            hasil = karyawan.map((item) => ({
+              nrp: item.nik,
+              nama: item.nama,
+              departemen: item.departemen.namaDepartemen,
+              jabatan: item.jabatan ?? "",
+            }));
+          }
+
           if (aktif) {
             setHasilCari(hasil.slice(0, 8));
           }
-        })
-        .catch(() => {
+        } catch {
           if (aktif) {
             setHasilCari([]);
           }
-        })
-        .finally(() => {
+        } finally {
           if (aktif) {
             setMencari(false);
           }
-        });
+        }
+      })();
     }, 300);
 
     return () => {
       aktif = false;
       clearTimeout(timer);
     };
-  }, [cari]);
+  }, [cari, suratTugasAsalId, withAkomodasi]);
 
-  function tambahBaris(item: Karyawan) {
-    if (baris.some((row) => row.nrp === item.nik)) {
+  function tambahBaris(item: PilihanKaryawanForm) {
+    if (baris.some((row) => row.nrp === item.nrp)) {
       setCari("");
       setHasilCari([]);
       setDropdownTerbuka(false);
       return;
     }
 
+    if (withAkomodasi) {
+      if (
+        !item.suratTugasId ||
+        !item.tujuanLokasi ||
+        !item.tanggalMulai ||
+        !item.tanggalSelesai ||
+        !item.keteranganTugas
+      ) {
+        setGalat("Data Surat Tugas Dinas asal tidak lengkap.");
+        return;
+      }
+
+      if (suratTugasAsalId && suratTugasAsalId !== item.suratTugasId) {
+        setGalat(
+          "Karyawan harus berasal dari Surat Tugas Dinas yang sama. Hapus pilihan sebelumnya untuk mengganti surat.",
+        );
+        return;
+      }
+
+      setSuratTugasAsalId(item.suratTugasId);
+      setTujuanLokasi(item.tujuanLokasi);
+      setTanggalMulai(item.tanggalMulai.slice(0, 10));
+      setTanggalSelesai(item.tanggalSelesai.slice(0, 10));
+      setKeteranganTugas(item.keteranganTugas);
+      setGalat(null);
+    }
+
     setBaris((current) => [
       ...current,
       {
-        nrp: item.nik,
+        nrp: item.nrp,
         nama: item.nama,
-        departemen: item.departemen.namaDepartemen,
-        jabatan: item.jabatan ?? "",
+        departemen: item.departemen,
+        jabatan: item.jabatan,
         uangPerjalananNominal: "",
-        uangPerjalananKeterangan: "",
         akomodasiNominal: "",
-        akomodasiKeterangan: "",
+        ruteTransportasiLokal: "",
         laundryNominal: "",
-        laundryKeterangan: "",
       },
     ]);
     setCari("");
@@ -142,11 +211,9 @@ export function TugasDinasBuatForm({
     kolom: keyof Pick<
       BarisKaryawan,
       | "uangPerjalananNominal"
-      | "uangPerjalananKeterangan"
       | "akomodasiNominal"
-      | "akomodasiKeterangan"
+      | "ruteTransportasiLokal"
       | "laundryNominal"
-      | "laundryKeterangan"
     >,
     nilai: string,
   ) {
@@ -158,7 +225,16 @@ export function TugasDinasBuatForm({
   }
 
   function hapusBaris(index: number) {
-    setBaris((current) => current.filter((_, idx) => idx !== index));
+    const tersisa = baris.filter((_, idx) => idx !== index);
+    setBaris(tersisa);
+
+    if (withAkomodasi && tersisa.length === 0) {
+      setSuratTugasAsalId(null);
+      setTujuanLokasi("");
+      setTanggalMulai("");
+      setTanggalSelesai("");
+      setKeteranganTugas("");
+    }
   }
 
   async function submit() {
@@ -168,31 +244,38 @@ export function TugasDinasBuatForm({
     try {
       const hasil = await suratTugasApi.kirim<SuratTugasDinas>("", {
         nomor: nomor.trim(),
+        denganAkomodasi: withAkomodasi,
         tujuanLokasi: tujuanLokasi.trim(),
         tanggalMulai,
         tanggalSelesai,
         keteranganTugas: keteranganTugas.trim(),
         ...(withAkomodasi
           ? {
+              suratTugasAsalId,
               penginapanHotel: penginapanHotel.trim() || undefined,
               bantuanTransportasi: bantuanTransportasi.trim() || undefined,
+              rutePerjalanan: rutePerjalanan.trim() || undefined,
             }
           : {}),
         karyawan: baris.map((row) => ({
-          ...row,
+          nrp: row.nrp,
+          nama: row.nama,
+          departemen: row.departemen,
+          jabatan: row.jabatan,
           uangPerjalananNominal: row.uangPerjalananNominal
             ? Number(row.uangPerjalananNominal)
             : undefined,
           akomodasiNominal: row.akomodasiNominal
             ? Number(row.akomodasiNominal)
             : undefined,
-          laundryNominal: row.laundryNominal
-            ? Number(row.laundryNominal)
-            : undefined,
-          uangPerjalananKeterangan:
-            row.uangPerjalananKeterangan.trim() || undefined,
-          akomodasiKeterangan: row.akomodasiKeterangan.trim() || undefined,
-          laundryKeterangan: row.laundryKeterangan.trim() || undefined,
+          ruteTransportasiLokal: row.ruteTransportasiLokal.trim() || undefined,
+          ...(laundryTersedia
+            ? {
+                laundryNominal: row.laundryNominal
+                  ? Number(row.laundryNominal)
+                  : undefined,
+              }
+            : {}),
         })),
       });
 
@@ -210,7 +293,8 @@ export function TugasDinasBuatForm({
     tanggalMulai &&
     tanggalSelesai &&
     keteranganTugas.trim().length > 0 &&
-    baris.length > 0;
+    baris.length > 0 &&
+    (!withAkomodasi || suratTugasAsalId != null);
 
   return (
     <>
@@ -231,7 +315,7 @@ export function TugasDinasBuatForm({
             </h1>
             <p>
               {withAkomodasi
-                ? "Untuk tugas dinas yang perlu penginapan/transportasi/laundry. Pilih karyawan dari Database Karyawan, lengkapi detail tugas & akomodasi, PDF akan dibuat otomatis."
+                ? "Pilih karyawan dari Surat Tugas Dinas yang sudah disetujui SH dan PJO. Lokasi, tanggal, keterangan tugas, serta identitas karyawan akan terisi otomatis."
                 : "Pilih karyawan dari Database Karyawan (NRP & nama), lengkapi detail tugas, PDF akan dibuat otomatis."}{" "}
               Setelah dibuat, surat menunggu persetujuan SH lalu PJO.
             </p>
@@ -263,6 +347,7 @@ export function TugasDinasBuatForm({
               className={styles.input}
               value={tujuanLokasi}
               onChange={(event) => setTujuanLokasi(event.target.value)}
+              readOnly={withAkomodasi}
               placeholder="PPA SITE ADARO INDONESIA"
             />
           </Field>
@@ -273,6 +358,7 @@ export function TugasDinasBuatForm({
               type="date"
               value={tanggalMulai}
               onChange={(event) => setTanggalMulai(event.target.value)}
+              readOnly={withAkomodasi}
             />
           </Field>
 
@@ -282,6 +368,7 @@ export function TugasDinasBuatForm({
               type="date"
               value={tanggalSelesai}
               onChange={(event) => setTanggalSelesai(event.target.value)}
+              readOnly={withAkomodasi}
             />
           </Field>
 
@@ -290,6 +377,7 @@ export function TugasDinasBuatForm({
               className={styles.input}
               value={keteranganTugas}
               onChange={(event) => setKeteranganTugas(event.target.value)}
+              readOnly={withAkomodasi}
               placeholder="DIKLAT & SERTIFIKASI BNSP"
             />
           </Field>
@@ -305,7 +393,13 @@ export function TugasDinasBuatForm({
         </div>
 
         <div className={styles.pickerWrap}>
-          <Field label="Cari karyawan (nama/NIK) dari Database Karyawan">
+          <Field
+            label={
+              withAkomodasi
+                ? "Pilih dari STD disetujui (NRP / nama / keterangan tugas)"
+                : "Cari karyawan (nama/NIK) dari Database Karyawan"
+            }
+          >
             <input
               className={styles.input}
               value={cari}
@@ -315,11 +409,15 @@ export function TugasDinasBuatForm({
               }}
               onFocus={() => setDropdownTerbuka(true)}
               onBlur={() => setTimeout(() => setDropdownTerbuka(false), 150)}
-              placeholder="Ketik nama atau NIK..."
+              placeholder={
+                withAkomodasi
+                  ? "Ketik NRP, nama, atau keterangan tugas..."
+                  : "Ketik nama atau NIK..."
+              }
             />
           </Field>
 
-          {dropdownTerbuka && cari.trim().length >= 2 ? (
+          {dropdownTerbuka && (withAkomodasi || cari.trim().length >= 2) ? (
             <div className={styles.pickerDropdown}>
               {mencari ? (
                 <div className={styles.pickerItem}>
@@ -332,15 +430,20 @@ export function TugasDinasBuatForm({
               ) : (
                 hasilCari.map((item) => (
                   <button
-                    key={item.id}
+                    key={`${item.suratTugasId ?? "master"}-${item.nrp}`}
                     type="button"
                     className={styles.pickerItem}
                     onClick={() => tambahBaris(item)}
                   >
-                    <strong>{item.nama}</strong>
+                    <strong>
+                      {withAkomodasi
+                        ? `${item.nrp} - ${item.nama} - ${item.keteranganTugas}`
+                        : item.nama}
+                    </strong>
                     <span>
-                      {item.nik} - {item.departemen.namaDepartemen}
-                      {item.jabatan ? ` - ${item.jabatan}` : ""}
+                      {withAkomodasi
+                        ? `STD ${item.nomorSurat} - ${item.departemen}`
+                        : `${item.nrp} - ${item.departemen}${item.jabatan ? ` - ${item.jabatan}` : ""}`}
                     </span>
                   </button>
                 ))
@@ -375,6 +478,7 @@ export function TugasDinasBuatForm({
                         className={styles.input}
                         style={{ minWidth: 160 }}
                         value={row.jabatan}
+                        readOnly={withAkomodasi}
                         onChange={(event) =>
                           ubahJabatan(index, event.target.value)
                         }
@@ -402,7 +506,19 @@ export function TugasDinasBuatForm({
           <div className={styles.panelHead}>
             <div>
               <h2>Akomodasi</h2>
-              <p>Penginapan, transportasi, dan laundry selama tugas dinas.</p>
+              <p>
+                Uang Akomodasi adalah total Makan + Transportasi + Laundry
+                seluruh karyawan. Laundry tersedia untuk perjalanan minimal 3
+                hari.
+              </p>
+              {tanggalMulai && tanggalSelesai ? (
+                <p style={{ marginTop: 4 }}>
+                  Durasi perjalanan: {durasiHari} hari. Laundry{" "}
+                  {laundryTersedia
+                    ? "diberikan karena durasi minimal 3 hari."
+                    : "tidak diberikan karena durasi kurang dari 3 hari."}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -421,7 +537,16 @@ export function TugasDinasBuatForm({
                 className={styles.input}
                 value={bantuanTransportasi}
                 onChange={(event) => setBantuanTransportasi(event.target.value)}
-                placeholder="Contoh: Travel & Tiket Pesawat / Bandara BDJ - CGK (PP)"
+                placeholder="Contoh: Travel & Tiket Pesawat"
+              />
+            </Field>
+
+            <Field label="Rute Perjalanan" lebar>
+              <input
+                className={styles.input}
+                value={rutePerjalanan}
+                onChange={(event) => setRutePerjalanan(event.target.value)}
+                placeholder="Contoh: Bandara BDJ - CGK (PP)"
               />
             </Field>
           </div>
@@ -448,51 +573,98 @@ export function TugasDinasBuatForm({
                     </span>
                   </strong>
                   <div className={styles.formGrid} style={{ marginTop: 10 }}>
-                    {(
-                      [
-                        [
-                          "Uang Perjalanan",
-                          "uangPerjalananNominal",
-                          "uangPerjalananKeterangan",
-                        ],
-                        [
-                          "Akomodasi",
-                          "akomodasiNominal",
-                          "akomodasiKeterangan",
-                        ],
-                        ["Laundry", "laundryNominal", "laundryKeterangan"],
-                      ] as const
-                    ).map(([label, nominalKey, keteranganKey]) => (
-                      <div key={label}>
-                        <Field label={`${label} (Rp)`}>
-                          <input
-                            className={styles.input}
-                            type="number"
-                            min="0"
-                            value={row[nominalKey]}
-                            onChange={(event) =>
-                              ubahAlokasi(index, nominalKey, event.target.value)
-                            }
-                            placeholder="0"
-                          />
-                        </Field>
-                        <Field label="Keterangan">
-                          <input
-                            className={styles.input}
-                            value={row[keteranganKey]}
-                            onChange={(event) =>
-                              ubahAlokasi(
-                                index,
-                                keteranganKey,
-                                event.target.value,
+                    <Field label="Makan (Rp)">
+                      <input
+                        className={styles.input}
+                        type="number"
+                        min="0"
+                        value={row.uangPerjalananNominal}
+                        onChange={(event) =>
+                          ubahAlokasi(
+                            index,
+                            "uangPerjalananNominal",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="0"
+                      />
+                    </Field>
+                    <Field label="Uang per 1x Makan (Rp)">
+                      <input
+                        className={styles.input}
+                        readOnly
+                        value={
+                          frekuensiMakanOtomatis > 0
+                            ? Math.round(
+                                (Number(row.uangPerjalananNominal) || 0) /
+                                  frekuensiMakanOtomatis,
                               )
-                            }
-                            placeholder="Keterangan alokasi"
-                          />
-                        </Field>
-                      </div>
-                    ))}
+                            : ""
+                        }
+                        placeholder="0"
+                      />
+                    </Field>
+                    <Field label="Transportasi (Rp)">
+                      <input
+                        className={styles.input}
+                        type="number"
+                        min="0"
+                        value={row.akomodasiNominal}
+                        onChange={(event) =>
+                          ubahAlokasi(
+                            index,
+                            "akomodasiNominal",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="0"
+                      />
+                    </Field>
+                    <Field label="Rute Uang Perjalanan / Transportasi Lokal">
+                      <input
+                        className={styles.input}
+                        value={row.ruteTransportasiLokal}
+                        onChange={(event) =>
+                          ubahAlokasi(
+                            index,
+                            "ruteTransportasiLokal",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Contoh: Bandara - Hotel (PP)"
+                      />
+                    </Field>
+                    {laundryTersedia ? (
+                      <Field label="Laundry (Rp)">
+                        <input
+                          className={styles.input}
+                          type="number"
+                          min="0"
+                          value={row.laundryNominal}
+                          onChange={(event) =>
+                            ubahAlokasi(
+                              index,
+                              "laundryNominal",
+                              event.target.value,
+                            )
+                          }
+                          placeholder="0"
+                        />
+                      </Field>
+                    ) : null}
                   </div>
+                  {!laundryTersedia && tanggalMulai && tanggalSelesai ? (
+                    <p
+                      style={{
+                        marginTop: 8,
+                        color: "#667085",
+                        fontSize: 12,
+                      }}
+                    >
+                      Laundry tidak berlaku karena durasi perjalanan{" "}
+                      {durasiHari} hari (minimal 3 hari).
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -506,18 +678,46 @@ export function TugasDinasBuatForm({
           <div
             style={{
               marginTop: 14,
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              gap: 10,
+              marginLeft: "auto",
+              maxWidth: 360,
+              display: "grid",
+              gap: 7,
             }}
           >
-            <span style={{ fontSize: 12, color: "#667085", fontWeight: 600 }}>
-              Jumlah
-            </span>
-            <strong style={{ fontSize: 15 }}>
-              {formatRupiah(jumlahAkomodasi)}
-            </strong>
+            {(
+              [
+                ["Total Makan", totalMakan],
+                ["Total Transportasi", totalTransportasi],
+                ...(laundryTersedia ? [["Total Laundry", totalLaundry]] : []),
+              ] as Array<[string, number]>
+            ).map(([label, nilai]) => (
+              <div
+                key={label}
+                style={{ display: "flex", justifyContent: "space-between" }}
+              >
+                <span
+                  style={{ fontSize: 12, color: "#667085", fontWeight: 600 }}
+                >
+                  {label}
+                </span>
+                <strong style={{ fontSize: 13 }}>{formatRupiah(nilai)}</strong>
+              </div>
+            ))}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                borderTop: "1px solid #d0d5dd",
+                paddingTop: 9,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700 }}>
+                Total Uang Akomodasi
+              </span>
+              <strong style={{ fontSize: 15 }}>
+                {formatRupiah(jumlahAkomodasi)}
+              </strong>
+            </div>
           </div>
         </section>
       ) : null}

@@ -58,6 +58,11 @@ export class SuratTugasDinasController {
     );
   }
 
+  @Get('pilihan-akomodasi')
+  pilihanAkomodasi(@Query('cari') cari?: string) {
+    return this.service.pilihanAkomodasi(cari?.trim() || undefined);
+  }
+
   @Get(':id')
   detail(@Param('id', ParseIntPipe) id: number, @Req() request: AuthRequest) {
     return this.service.detail(id, request.user);
