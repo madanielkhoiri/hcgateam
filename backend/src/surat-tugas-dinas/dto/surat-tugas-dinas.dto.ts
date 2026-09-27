@@ -6,6 +6,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
+  IsBoolean,
   IsDateString,
   IsInt,
   IsNotEmpty,
@@ -65,6 +66,11 @@ export class KaryawanTugasDto {
   @IsOptional()
   @IsString()
   @MaxLength(250)
+  ruteTransportasiLokal?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
   laundryKeterangan?: string;
 }
 
@@ -73,6 +79,15 @@ export class BuatSuratTugasDinasDto {
   @IsNotEmpty({ message: 'Nomor surat wajib diisi' })
   @MaxLength(120)
   nomor: string;
+
+  @IsOptional()
+  @IsBoolean()
+  denganAkomodasi?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  suratTugasAsalId?: number;
 
   @IsString()
   @IsNotEmpty({ message: 'Tujuan/Lokasi wajib diisi' })
@@ -98,6 +113,11 @@ export class BuatSuratTugasDinasDto {
   @IsString()
   @MaxLength(250)
   bantuanTransportasi?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  rutePerjalanan?: string;
 
   @IsOptional()
   @IsInt()
