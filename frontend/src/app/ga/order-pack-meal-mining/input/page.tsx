@@ -1,0 +1,23 @@
+'use client';
+
+import { CalendarDays, RefreshCw, Save } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getAccessToken } from '@/lib/access-control';
+import { type MiningApiRow, rowsForDate, toEntryPayload } from '../mining-template';
+import styles from '../order-pack-meal-mining.module.css';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const NUMBER_FIELDS = ['rosterLunch','rosterDinner','rosterSpecialMeal','rosterSpecialSnack','additionalLunch','additionalDinner','additionalSpecialMeal','additionalSpecialSnack'] as const;
+type NumberField = (typeof NUMBER_FIELDS)[number];
+function todayPontianak(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Pontianak',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function final(row:MiningApiRow,type:'Lunch'|'Dinner'|'SpecialMeal'|'SpecialSnack'){return Number(row[`roster${type}`]||0)+Number(row[`additional${type}`]||0);}
+
+export default function MiningOrderInputPage(){
+ const[date,setDate]=useState(todayPontianak());const[monthRows,setMonthRows]=useState<MiningApiRow[]>([]);
+ const[loading,setLoading]=useState(true);const[saving,setSaving]=useState(false);const[error,setError]=useState('');const[message,setMessage]=useState('');
+ const load=useCallback(async()=>{setLoading(true);setError('');try{const response=await fetch(`${API_URL}/order-pack-meal-mining?month=${date.slice(0,7)}`,{headers:{Authorization:`Bearer ${getAccessToken()??''}`},cache:'no-store'});const result=await response.json().catch(()=>null);if(!response.ok)throw new Error(result?.message||'Gagal memuat data input.');setMonthRows(result as MiningApiRow[]);}catch(caught){setError(caught instanceof Error?caught.message:'Gagal memuat data input.');}finally{setLoading(false);}},[date]);
+ useEffect(()=>{void load();},[load]);const rows=useMemo(()=>rowsForDate(monthRows,date),[monthRows,date]);
+ function update(index:number,key:NumberField,value:string){const target=rows[index];const updated={...target,[key]:Math.max(0,Math.floor(Number(value)||0))};setMonthRows(current=>{const found=current.some(row=>row.date.slice(0,10)===date&&row.area.toUpperCase()===target.area);if(!found)return[...current,updated];return current.map(row=>row.date.slice(0,10)===date&&row.area.toUpperCase()===target.area?updated:row);});setMessage('');}
+ async function save(){setSaving(true);setError('');setMessage('');try{const response=await fetch(`${API_URL}/order-pack-meal-mining/bulk`,{method:'POST',headers:{Authorization:`Bearer ${getAccessToken()??''}`,'Content-Type':'application/json'},body:JSON.stringify({entries:rows.map(row=>toEntryPayload(row,date))})});const result=await response.json().catch(()=>null);if(!response.ok)throw new Error(Array.isArray(result?.message)?result.message.join(', '):result?.message||'Gagal menyimpan jumlah.');setMessage(`Jumlah untuk ${date} berhasil disimpan.`);await load();}catch(caught){setError(caught instanceof Error?caught.message:'Gagal menyimpan jumlah.');}finally{setSaving(false);}}
+ return <main className={styles.page}><section className={styles.inputHero}><div><span>ORDER PACK MEAL MINING</span><h1>Input Jumlah Harian</h1><p>Daftar lokasi sudah baku. Isi roster dan tambahan; final order dihitung otomatis.</p></div><label><CalendarDays size={16}/> Tanggal<input type="date" value={date} onChange={event=>setDate(event.target.value)}/></label></section><section className={styles.inputToolbar}><button onClick={()=>void load()} disabled={loading}><RefreshCw size={15}/> Muat Ulang</button><button className={styles.saveInputButton} onClick={()=>void save()} disabled={loading||saving}><Save size={15}/> {saving?'Menyimpan...':'Simpan Jumlah'}</button></section>{(error||message)&&<div className={error?styles.error:styles.success}>{error||message}</div>}<section className={styles.inputTableWrap}><table className={styles.inputTable}><thead><tr><th rowSpan={2}>List Order</th><th colSpan={4}>Roster Pack Meal</th><th colSpan={4}>Additional</th><th colSpan={4}>Final Order</th></tr><tr>{Array.from({length:3}).flatMap((_,group)=>['Makan Siang','Makan Malam','Makan Spesial','Snack Spesial'].map(label=><th key={`${group}-${label}`}>{label}</th>))}</tr></thead><tbody>{loading?<tr><td colSpan={13} className={styles.empty}>Memuat data...</td></tr>:rows.map((row,index)=><tr key={row.area}><td>{row.area}</td>{NUMBER_FIELDS.map(key=><td key={key}><input type="number" min="0" value={row[key]} onChange={event=>update(index,key,event.target.value)}/></td>)}<td>{final(row,'Lunch')}</td><td>{final(row,'Dinner')}</td><td>{final(row,'SpecialMeal')}</td><td>{final(row,'SpecialSnack')}</td></tr>)}</tbody></table></section></main>;
+}
