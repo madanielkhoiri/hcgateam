@@ -4,12 +4,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as fs from 'fs/promises';
+import { basename } from 'node:path';
 
 import { SaldoService } from '../saldo/saldo.service';
 import { BuatPengajuanDto } from './dto/buat-pengajuan.dto';
 import { UpdateStatusPengajuanDto } from './dto/update-status-pengajuan.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, Pengajuan, UserRole } from '@prisma/client';
+import {
+  Prisma,
+  Pengajuan,
+  StatusSuratTugas,
+  UserRole,
+} from '@prisma/client';
 import { wajibPenyetujuDeklarasi } from '../bantuan/deklarasi-akses.bantuan';
 
 // <--- fitur service pengajuan STD, RAB, approval FA, notif WA, dan bukti transfer --->
@@ -32,23 +38,12 @@ export class PengajuanService {
       throw new BadRequestException('Pengguna wajib dipilih.');
     }
 
-    if (data.jenis_pengajuan === 'PERJALANAN_DINAS' && !fileStd) {
-      throw new BadRequestException('File STD wajib diupload untuk Perjalanan Dinas.');
-    }
-
     if (!fileRab) {
       throw new BadRequestException('File RAB wajib diupload.');
     }
 
     if (!data.jenis_pengajuan) {
       throw new BadRequestException('Jenis pengajuan wajib dipilih.');
-    }
-
-    if (
-      data.jenis_pengajuan === 'PERJALANAN_DINAS' &&
-      (!data.nomor_std || !data.nomor_std.trim())
-    ) {
-      throw new BadRequestException('Nomor STD wajib diisi untuk Perjalanan Dinas.');
     }
 
     if (data.jenis_pengajuan === 'PERJALANAN_DINAS') {
@@ -81,6 +76,35 @@ export class PengajuanService {
       throw new BadRequestException('Akun karyawan tidak aktif.');
     }
 
+    const stdOtomatis =
+      data.jenis_pengajuan === 'PERJALANAN_DINAS' && !fileStd
+        ? await this.temukanStdDisetujui(
+            pengguna.nrp,
+            data.tanggal_mulai,
+            data.tanggal_selesai,
+          )
+        : null;
+
+    if (
+      data.jenis_pengajuan === 'PERJALANAN_DINAS' &&
+      !fileStd &&
+      !stdOtomatis
+    ) {
+      throw new BadRequestException(
+        'STD otomatis tidak ditemukan. Pastikan Surat Tugas Dinas karyawan sudah disetujui dan tanggal perjalanannya sesuai, atau upload file STD secara manual.',
+      );
+    }
+
+    if (
+      data.jenis_pengajuan === 'PERJALANAN_DINAS' &&
+      !stdOtomatis &&
+      (!data.nomor_std || !data.nomor_std.trim())
+    ) {
+      throw new BadRequestException(
+        'Nomor STD wajib diisi untuk Perjalanan Dinas.',
+      );
+    }
+
     const tanggalPengajuan =
       data.tanggal_pengajuan && data.tanggal_pengajuan.trim()
         ? data.tanggal_pengajuan.trim()
@@ -101,15 +125,20 @@ export class PengajuanService {
             ? data.keterangan.trim()
             : null,
         nomorStd:
-          data.nomor_std && data.nomor_std.trim()
+          stdOtomatis?.nomor ??
+          (data.nomor_std && data.nomor_std.trim()
             ? data.nomor_std.trim()
-            : null,
+            : null),
         nomorRab:
           data.nomor_rab && data.nomor_rab.trim()
             ? data.nomor_rab.trim()
             : null,
-        namaFileStd: fileStd ? fileStd.filename : null,
-        pathFileStd: fileStd ? `/uploads/pengajuan/${fileStd.filename}` : null,
+        namaFileStd: fileStd
+          ? fileStd.filename
+          : stdOtomatis?.namaFileStd ?? null,
+        pathFileStd: fileStd
+          ? `/uploads/pengajuan/${fileStd.filename}`
+          : stdOtomatis?.pathFileStd ?? null,
         namaFileRab: fileRab.filename,
         pathFileRab: `/uploads/pengajuan/${fileRab.filename}`,
         nominalTransfer: 0,
@@ -134,6 +163,41 @@ export class PengajuanService {
     return pengajuan;
   }
   // <--- end --->
+
+  /**
+   * Cari PDF Surat Tugas Dinas final untuk akun karyawan. NRP menjadi
+   * penghubung karena satu STD dapat memuat beberapa karyawan. Jika tanggal
+   * perjalanan sudah dipilih, hanya STD dengan rentang yang sama yang boleh
+   * terisi otomatis agar dokumen tidak tertukar dengan perjalanan lain.
+   */
+  async ambilStdOtomatis(
+    idPengguna: number,
+    tanggalMulai?: string,
+    tanggalSelesai?: string,
+  ) {
+    if (!Number.isInteger(idPengguna) || idPengguna <= 0) {
+      throw new BadRequestException('ID pengguna tidak valid.');
+    }
+
+    const pengguna = await this.prisma.user.findUnique({
+      where: { id: idPengguna },
+      select: { nrp: true, isActive: true },
+    });
+
+    if (!pengguna) {
+      throw new NotFoundException('Data karyawan tidak ditemukan.');
+    }
+
+    if (!pengguna.isActive) {
+      throw new BadRequestException('Akun karyawan tidak aktif.');
+    }
+
+    return this.temukanStdDisetujui(
+      pengguna.nrp,
+      tanggalMulai,
+      tanggalSelesai,
+    );
+  }
 
   // <--- mengambil semua pengajuan --->
   async ambilSemuaPengajuan() {
@@ -351,7 +415,9 @@ export class PengajuanService {
 
     await this.prisma.pengajuan.delete({ where: { id: idPengajuan } });
 
-    if (pengajuan.pathFileStd) {
+    // PDF STD otomatis adalah file bersama milik modul Surat Tugas Dinas.
+    // Hanya file upload khusus Pengajuan yang boleh ikut dihapus.
+    if (pengajuan.pathFileStd?.startsWith('/uploads/pengajuan/')) {
       await this.hapusFileJikaAda(`.${pengajuan.pathFileStd}`);
     }
 
@@ -488,6 +554,64 @@ export class PengajuanService {
     }
 
     return jenis;
+  }
+
+  private async temukanStdDisetujui(
+    nrp: string | null,
+    tanggalMulai?: string,
+    tanggalSelesai?: string,
+  ) {
+    const nrpBersih = nrp?.trim();
+
+    if (!nrpBersih) {
+      return null;
+    }
+
+    const pakaiRentangTanggal = Boolean(tanggalMulai && tanggalSelesai);
+    const surat = await this.prisma.suratTugasDinas.findFirst({
+      where: {
+        status: StatusSuratTugas.DISETUJUI,
+        filePdf: { not: null },
+        karyawan: {
+          some: {
+            nrp: { equals: nrpBersih, mode: 'insensitive' },
+          },
+        },
+        ...(pakaiRentangTanggal
+          ? {
+              tanggalMulai: new Date(tanggalMulai as string),
+              tanggalSelesai: new Date(tanggalSelesai as string),
+            }
+          : {}),
+      },
+      orderBy: [{ tanggalMulai: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        nomor: true,
+        tujuanLokasi: true,
+        tanggalMulai: true,
+        tanggalSelesai: true,
+        filePdf: true,
+      },
+    });
+
+    if (!surat?.filePdf) {
+      return null;
+    }
+
+    const pathRelatif = surat.filePdf
+      .replace(/^[/\\]+/, '')
+      .replace(/^uploads[/\\]/i, '');
+
+    return {
+      suratTugasId: surat.id,
+      nomor: surat.nomor,
+      tujuanLokasi: surat.tujuanLokasi,
+      tanggalMulai: surat.tanggalMulai,
+      tanggalSelesai: surat.tanggalSelesai,
+      namaFileStd: basename(pathRelatif),
+      pathFileStd: `/uploads/${pathRelatif.replace(/\\/g, '/')}`,
+    };
   }
 
   private async hapusFileJikaAda(pathFile: string) {

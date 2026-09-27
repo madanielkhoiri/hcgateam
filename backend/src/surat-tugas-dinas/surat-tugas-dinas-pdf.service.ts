@@ -18,6 +18,16 @@ type SuratLengkap = Prisma.SuratTugasDinasGetPayload<{
 
 const SIGNATURE_DIR = join(process.cwd(), 'uploads', 'signatures');
 const LOGO_PATH = join(SIGNATURE_DIR, 'PPA_cut.png');
+const ARIAL_PATH = join(
+  process.env.WINDIR || 'C:\\Windows',
+  'Fonts',
+  'arial.ttf',
+);
+const ARIAL_BOLD_PATH = join(
+  process.env.WINDIR || 'C:\\Windows',
+  'Fonts',
+  'arialbd.ttf',
+);
 
 const SH_SIGNER = {
   nama: 'SINGGIEH PRANANDA',
@@ -58,6 +68,13 @@ export class SuratTugasDinasPdfService {
       doc.on('end', () => resolve(Buffer.concat(potongan)));
       doc.on('error', reject);
 
+      if (existsSync(ARIAL_PATH)) {
+        doc.registerFont('Arial', ARIAL_PATH);
+      }
+      if (existsSync(ARIAL_BOLD_PATH)) {
+        doc.registerFont('Arial-Bold', ARIAL_BOLD_PATH);
+      }
+
       this.gambarHalaman(doc, surat);
 
       doc.end();
@@ -97,9 +114,11 @@ export class SuratTugasDinasPdfService {
     y = this.gambarInfoTugas(document, y, left, width, surat);
     y += 14;
 
-    y = this.gambarAkomodasi(document, y, left, width, surat);
-    y += 18;
-    y = this.gambarRincianAkomodasi(document, y, left, width, surat);
+    if (surat.denganAkomodasi) {
+      y = this.gambarAkomodasi(document, y, left, width, surat);
+      y += 18;
+      y = this.gambarRincianAkomodasi(document, y, left, width, surat);
+    }
 
     if (y + 145 > document.page.height - 37) {
       document.addPage({ size: 'A4', margin: 0 });
@@ -372,6 +391,15 @@ export class SuratTugasDinasPdfService {
     return new Intl.NumberFormat('id-ID').format(nilai);
   }
 
+  private laundryTersedia(surat: SuratLengkap): boolean {
+    const durasiHari =
+      Math.floor(
+        (surat.tanggalSelesai.getTime() - surat.tanggalMulai.getTime()) /
+          (24 * 60 * 60 * 1000),
+      ) + 1;
+    return durasiHari >= 3;
+  }
+
   private gambarAkomodasi(
     document: PDFKit.PDFDocument,
     top: number,
@@ -390,7 +418,10 @@ export class SuratTugasDinasPdfService {
 
     y += 17;
 
-    const baris = (label: string, nilai: string, tebal = false) => {
+    const baris = (label: string, nilai: string, nilaiSamping?: string) => {
+      const ruangNilai = width - labelWidth;
+      const nilaiUtamaWidth = nilaiSamping ? ruangNilai * 0.55 : ruangNilai;
+
       document
         .font('Helvetica-Bold')
         .fontSize(9)
@@ -398,31 +429,28 @@ export class SuratTugasDinasPdfService {
         .text(label, left, y, { width: labelWidth });
 
       document
-        .font(tebal ? 'Helvetica-Bold' : 'Helvetica')
+        .font('Helvetica')
         .fontSize(9)
-        .text(nilai, left + labelWidth, y, { width: width - labelWidth });
+        .text(nilai, left + labelWidth, y, { width: nilaiUtamaWidth - 8 });
+
+      if (nilaiSamping) {
+        document.text(
+          `/ ${nilaiSamping}`,
+          left + labelWidth + nilaiUtamaWidth,
+          y,
+          { width: ruangNilai - nilaiUtamaWidth },
+        );
+      }
 
       y += 17;
     };
 
-    const nilaiUang = (
-      nominal: number | null,
-      keterangan: string | null,
-    ): string => {
-      if (nominal == null) {
-        return '-';
-      }
-
-      const rupiah = `Rp ${this.formatRupiah(nominal)}`;
-      return keterangan ? `${rupiah} / ${keterangan}` : rupiah;
-    };
-
     baris('Penginapan / Hotel', surat.penginapanHotel || '-');
-    baris('Bantuan Transportasi', surat.bantuanTransportasi || '-');
-    baris('Uang Perjalanan', nilaiUang(surat.uangPerjalananNominal, null));
-    baris('Akomodasi', nilaiUang(surat.akomodasiNominal, null));
-    baris('Laundry', nilaiUang(surat.laundryNominal, null));
-    baris('Jumlah', `Rp ${this.formatRupiah(surat.jumlahAkomodasi)}`, true);
+    baris(
+      'Bantuan Transportasi',
+      surat.bantuanTransportasi || '-',
+      surat.rutePerjalanan || undefined,
+    );
 
     return y;
   }
@@ -434,20 +462,33 @@ export class SuratTugasDinasPdfService {
     width: number,
     surat: SuratLengkap,
   ): number {
+    const fontNormal = existsSync(ARIAL_PATH) ? 'Arial' : 'Helvetica';
+    const fontBold = existsSync(ARIAL_BOLD_PATH)
+      ? 'Arial-Bold'
+      : 'Helvetica-Bold';
+
     document
-      .font('Helvetica-Bold')
+      .font(fontBold)
       .fontSize(9)
       .fillColor('#000000')
       .text('Rincian Akomodasi per Karyawan', left, top);
     let y = top + 16;
-    const columns = [
-      { label: 'Nama / NRP', width: width * 0.24 },
-      { label: 'Uang Perjalanan', width: width * 0.2 },
-      { label: 'Akomodasi', width: width * 0.2 },
-      { label: 'Laundry', width: width * 0.16 },
-      { label: 'Jumlah', width: width * 0.2 },
-    ];
-    const rowHeight = 28;
+    const pakaiLaundry = this.laundryTersedia(surat);
+    const columns = pakaiLaundry
+      ? [
+          { label: 'Nama / NRP', width: width * 0.22 },
+          { label: 'Makan', width: width * 0.3 },
+          { label: 'Transportasi', width: width * 0.18 },
+          { label: 'Laundry', width: width * 0.13 },
+          { label: 'Total', width: width * 0.17 },
+        ]
+      : [
+          { label: 'Nama / NRP', width: width * 0.24 },
+          { label: 'Makan', width: width * 0.34 },
+          { label: 'Transportasi', width: width * 0.22 },
+          { label: 'Total', width: width * 0.2 },
+        ];
+    const rowHeight = 44;
     const drawHeader = (at: number) => {
       let x = left;
       document
@@ -456,7 +497,7 @@ export class SuratTugasDinasPdfService {
         .fillAndStroke('#bdd7ee', '#000000');
       for (const col of columns) {
         document
-          .font('Helvetica-Bold')
+          .font(fontBold)
           .fontSize(7)
           .fillColor('#000000')
           .text(col.label, x + 3, at + 7, {
@@ -481,39 +522,58 @@ export class SuratTugasDinasPdfService {
         this.gambarHeader(document, y, left, width);
         y += 90;
         document
-          .font('Helvetica-Bold')
+          .font(fontBold)
           .fontSize(9)
           .fillColor('#000000')
           .text('Rincian Akomodasi per Karyawan (lanjutan)', left, y);
         y += 16;
+        drawHeader(y);
+        y += 22;
       }
       const jumlah =
         (item.uangPerjalananNominal ?? 0) +
         (item.akomodasiNominal ?? 0) +
-        (item.laundryNominal ?? 0);
-      const amount = (nominal: number | null, keterangan: string | null) => {
-        const text = `Rp ${this.formatRupiah(nominal ?? 0)}`;
-        return keterangan ? `${text} - ${keterangan}` : text;
+        (pakaiLaundry ? (item.laundryNominal ?? 0) : 0);
+      const amount = (nominal: number | null, detail?: string | null) => {
+        const rupiah = `Rp ${this.formatRupiah(nominal ?? 0)}`;
+        return detail ? `${rupiah}\n${detail}` : rupiah;
       };
       const values = [
         `${item.nama}\n${item.nrp}`,
-        amount(item.uangPerjalananNominal, item.uangPerjalananKeterangan),
-        amount(item.akomodasiNominal, item.akomodasiKeterangan),
-        amount(item.laundryNominal, item.laundryKeterangan),
+        amount(
+          item.uangPerjalananNominal,
+          item.frekuensiMakan
+            ? `Rp ${this.formatRupiah(
+                Math.round(
+                  (item.uangPerjalananNominal ?? 0) / item.frekuensiMakan,
+                ),
+              )} / Uang Makan Selama Perjalanan ( ${item.frekuensiMakan}x )`
+            : null,
+        ),
+        amount(item.akomodasiNominal, item.ruteTransportasiLokal),
+        ...(pakaiLaundry ? [amount(item.laundryNominal)] : []),
         `Rp ${this.formatRupiah(jumlah)}`,
       ];
       let x = left;
       document.lineWidth(0.6).rect(left, y, width, rowHeight).stroke();
       columns.forEach((col, index) => {
+        const textWidth = col.width - 8;
+        document.font(fontNormal).fontSize(6.5);
+        const textHeight = document.heightOfString(values[index], {
+          width: textWidth,
+          align: 'center',
+        });
+        const textTop = y + Math.max(4, (rowHeight - textHeight) / 2);
+
         document
-          .font('Helvetica')
+          .font(fontNormal)
           .fontSize(6.5)
           .fillColor('#000000')
-          .text(values[index], x + 3, y + 5, {
-            width: col.width - 6,
+          .text(values[index], x + 4, textTop, {
+            width: textWidth,
             height: rowHeight - 8,
             ellipsis: true,
-            align: index === 0 ? 'left' : 'center',
+            align: 'center',
           });
         if (x > left)
           document
@@ -524,6 +584,71 @@ export class SuratTugasDinasPdfService {
       });
       y += rowHeight;
     }
+
+    const totalMakan = surat.karyawan.reduce(
+      (total, item) => total + (item.uangPerjalananNominal ?? 0),
+      0,
+    );
+    const totalTransportasi = surat.karyawan.reduce(
+      (total, item) => total + (item.akomodasiNominal ?? 0),
+      0,
+    );
+    const totalLaundry = pakaiLaundry
+      ? surat.karyawan.reduce(
+          (total, item) => total + (item.laundryNominal ?? 0),
+          0,
+        )
+      : 0;
+    const totalKeseluruhan = totalMakan + totalTransportasi + totalLaundry;
+    const footerHeight = 26;
+
+    if (y + footerHeight > document.page.height - 70) {
+      document.addPage({ size: 'A4', margin: 0 });
+      this.gambarBingkaiHalaman(document);
+      y = 37;
+      this.gambarHeader(document, y, left, width);
+      y += 90;
+      document
+        .font(fontBold)
+        .fontSize(9)
+        .fillColor('#000000')
+        .text('Jumlah Rincian Akomodasi', left, y);
+      y += 16;
+      drawHeader(y);
+      y += 22;
+    }
+
+    const footerValues = [
+      'JUMLAH',
+      `Rp ${this.formatRupiah(totalMakan)}`,
+      `Rp ${this.formatRupiah(totalTransportasi)}`,
+      ...(pakaiLaundry ? [`Rp ${this.formatRupiah(totalLaundry)}`] : []),
+      `Rp ${this.formatRupiah(totalKeseluruhan)}`,
+    ];
+    let footerX = left;
+    document
+      .lineWidth(0.7)
+      .rect(left, y, width, footerHeight)
+      .fillAndStroke('#eef4f9', '#000000');
+    columns.forEach((col, index) => {
+      document
+        .font(fontBold)
+        .fontSize(7)
+        .fillColor('#000000')
+        .text(footerValues[index], footerX + 4, y + 9, {
+          width: col.width - 8,
+          align: 'center',
+        });
+      if (footerX > left) {
+        document
+          .moveTo(footerX, y)
+          .lineTo(footerX, y + footerHeight)
+          .stroke();
+      }
+      footerX += col.width;
+    });
+    y += footerHeight;
+
     return y;
   }
 

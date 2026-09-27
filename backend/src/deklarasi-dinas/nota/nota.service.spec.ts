@@ -125,11 +125,13 @@ describe('NotaService.ubahNota — karyawan ganti foto (OCR ulang) dan data nota
 
     await service.ubahNota(5, fileBaru(), {});
 
-    expect(bacaNota).toHaveBeenCalledTimes(1);
+    expect(bacaNota).toHaveBeenCalledWith('uploads/nota-uji/tidak-ada.png');
     expect(notaUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 5 },
         data: expect.objectContaining({
+          namaFile: 'tidak-ada.png',
+          pathFile: '/uploads/nota/tidak-ada.png',
           nominalOcr: 130500,
           nominalFinal: 130500,
           apakahDikoreksi: false,
