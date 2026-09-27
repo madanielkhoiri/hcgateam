@@ -24,7 +24,9 @@ function buatService(prismaOverrides: Record<string, unknown> = {}) {
     },
     ...prismaOverrides,
   } as unknown as PrismaService;
-  const auditLog = { catat: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogService;
+  const auditLog = {
+    catat: jest.fn().mockResolvedValue(undefined),
+  } as unknown as AuditLogService;
   const service = new UsersService(prisma, auditLog);
 
   return { service, prisma, auditLog };
@@ -37,13 +39,17 @@ describe('UsersService — hak akses admin', () => {
   it('findAll menolak aktor yang bukan Admin/Section Head', async () => {
     const { service } = buatService();
 
-    await expect(service.findAll(AKTOR_KARYAWAN)).rejects.toThrow(ForbiddenException);
+    await expect(service.findAll(AKTOR_KARYAWAN)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('getAccessCatalog menolak aktor yang bukan Admin/Section Head', () => {
     const { service } = buatService();
 
-    expect(() => service.getAccessCatalog(AKTOR_KARYAWAN)).toThrow(ForbiddenException);
+    expect(() => service.getAccessCatalog(AKTOR_KARYAWAN)).toThrow(
+      ForbiddenException,
+    );
   });
 
   it('getAccessCatalog mengembalikan katalog untuk aktor Admin', () => {
@@ -56,7 +62,10 @@ describe('UsersService — hak akses admin', () => {
 describe('UsersService.update — proteksi akun sendiri', () => {
   it('menolak admin menonaktifkan akun sendiri', async () => {
     const { service, prisma } = buatService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 1, role: UserRole.ADMIN });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 1,
+      role: UserRole.ADMIN,
+    });
 
     await expect(
       service.update(1, { isActive: false } as any, AKTOR_ADMIN),
@@ -65,7 +74,10 @@ describe('UsersService.update — proteksi akun sendiri', () => {
 
   it('menolak admin mengganti role akun sendiri ke role lain', async () => {
     const { service, prisma } = buatService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 1, role: UserRole.ADMIN });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 1,
+      role: UserRole.ADMIN,
+    });
 
     await expect(
       service.update(1, { role: UserRole.KARYAWAN } as any, AKTOR_ADMIN),
@@ -76,9 +88,17 @@ describe('UsersService.update — proteksi akun sendiri', () => {
 describe('UsersService.update — cabut sesi otomatis', () => {
   it('mencabut sesi (set tokenValidAfter) kalau password diganti admin', async () => {
     const { service, prisma } = buatService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, role: UserRole.KARYAWAN, isActive: true });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 2,
+      role: UserRole.KARYAWAN,
+      isActive: true,
+    });
 
-    await service.update(2, { password: 'passwordbaru123' } as any, AKTOR_ADMIN);
+    await service.update(
+      2,
+      { password: 'passwordbaru123' } as any,
+      AKTOR_ADMIN,
+    );
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -89,7 +109,11 @@ describe('UsersService.update — cabut sesi otomatis', () => {
 
   it('mencabut sesi kalau akun (bukan diri sendiri) dinonaktifkan', async () => {
     const { service, prisma } = buatService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, role: UserRole.KARYAWAN, isActive: true });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 2,
+      role: UserRole.KARYAWAN,
+      isActive: true,
+    });
 
     await service.update(2, { isActive: false } as any, AKTOR_ADMIN);
 
@@ -102,7 +126,11 @@ describe('UsersService.update — cabut sesi otomatis', () => {
 
   it('TIDAK mencabut sesi untuk perubahan biasa (mis. ganti nama saja)', async () => {
     const { service, prisma } = buatService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, role: UserRole.KARYAWAN, isActive: true });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 2,
+      role: UserRole.KARYAWAN,
+      isActive: true,
+    });
 
     await service.update(2, { name: 'Nama Baru' } as any, AKTOR_ADMIN);
 
@@ -115,19 +143,27 @@ describe('UsersService.cabutSesi', () => {
   it('menolak aktor yang bukan Admin/Section Head', async () => {
     const { service } = buatService();
 
-    await expect(service.cabutSesi(2, AKTOR_KARYAWAN)).rejects.toThrow(ForbiddenException);
+    await expect(service.cabutSesi(2, AKTOR_KARYAWAN)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('melempar NotFoundException kalau akun tidak ada', async () => {
     const { service, prisma } = buatService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.cabutSesi(99, AKTOR_ADMIN)).rejects.toThrow('Pengguna tidak ditemukan');
+    await expect(service.cabutSesi(99, AKTOR_ADMIN)).rejects.toThrow(
+      'Pengguna tidak ditemukan',
+    );
   });
 
   it('berhasil mencabut sesi dan mencatat audit log USER_SESI_DICABUT', async () => {
     const { service, prisma, auditLog } = buatService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 2, name: 'Budi', username: 'budi' });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 2,
+      name: 'Budi',
+      username: 'budi',
+    });
 
     const hasil = await service.cabutSesi(2, AKTOR_ADMIN);
 
@@ -136,7 +172,11 @@ describe('UsersService.cabutSesi', () => {
       data: { tokenValidAfter: expect.any(Date) },
     });
     expect(auditLog.catat).toHaveBeenCalledWith(
-      expect.objectContaining({ aksi: 'USER_SESI_DICABUT', entitas: 'User', entitasId: 2 }),
+      expect.objectContaining({
+        aksi: 'USER_SESI_DICABUT',
+        entitas: 'User',
+        entitasId: 2,
+      }),
     );
     expect(hasil.message).toMatch(/berhasil dicabut/i);
   });
@@ -190,9 +230,66 @@ describe('UsersService.create — error mapping duplikat', () => {
 
     await expect(
       service.create(
-        { name: 'Budi', username: 'dipakai', password: 'rahasia123', role: UserRole.KARYAWAN } as any,
+        {
+          name: 'Budi',
+          username: 'dipakai',
+          password: 'rahasia123',
+          role: UserRole.KARYAWAN,
+        } as any,
         AKTOR_ADMIN,
       ),
     ).rejects.toThrow('Username sudah digunakan');
+  });
+
+  it('membaca constraint email dari metadata Prisma adapter PostgreSQL', async () => {
+    const { service, prisma } = buatService();
+    (prisma.user.create as jest.Mock).mockRejectedValue(
+      prismaError('P2002', {
+        modelName: 'User',
+        driverAdapterError: {
+          cause: {
+            originalMessage:
+              'nilai kunci ganda melanggar batasan unik users_email_key',
+          },
+        },
+      }),
+    );
+
+    await expect(
+      service.create(
+        {
+          name: 'Budi',
+          username: 'budi-baru',
+          password: 'rahasia123',
+          role: UserRole.KARYAWAN,
+          email: 'dipakai@contoh.com',
+        } as any,
+        AKTOR_ADMIN,
+      ),
+    ).rejects.toThrow('Email sudah digunakan');
+  });
+
+  it('menyebut nomor telepon ketika nomor sudah dipakai akun lain', async () => {
+    const { service, prisma } = buatService();
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue({
+      username: 'akun-lain',
+      email: 'lain@contoh.com',
+      nrp: '999',
+      phoneNumber: '08123456789',
+    });
+
+    await expect(
+      service.create(
+        {
+          name: 'Budi',
+          username: 'budi-baru',
+          password: 'rahasia123',
+          role: UserRole.KARYAWAN,
+          phoneNumber: '08123456789',
+        } as any,
+        AKTOR_ADMIN,
+      ),
+    ).rejects.toThrow('Nomor telepon sudah digunakan');
+    expect(prisma.user.create).not.toHaveBeenCalled();
   });
 });

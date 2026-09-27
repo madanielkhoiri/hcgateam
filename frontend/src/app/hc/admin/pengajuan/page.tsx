@@ -97,6 +97,16 @@ type DataPengajuan = {
  diperbarui_pada: string;
 };
 
+type DataStdOtomatis = {
+ surat_tugas_id: number;
+ nomor: string;
+ tujuan_lokasi: string;
+ tanggal_mulai: string;
+ tanggal_selesai: string;
+ nama_file_std: string;
+ path_file_std: string;
+};
+
 type FormPengajuan = {
  id_pengguna: string;
  jenis_pengajuan: JenisPengajuan;
@@ -153,6 +163,8 @@ export default function HalamanPengajuanAdmin() {
  useState<FormPengajuan>(formAwal);
  const [cariKaryawan, setCariKaryawan] = useState("");
  const [dropdownKaryawanTerbuka, setDropdownKaryawanTerbuka] = useState(false);
+ const [stdOtomatis, setStdOtomatis] = useState<DataStdOtomatis | null>(null);
+ const [sedangCariStd, setSedangCariStd] = useState(false);
 
  const [formBuktiTransfer, setFormBuktiTransfer] =
  useState<FormBuktiTransfer>(formBuktiTransferAwal);
@@ -420,6 +432,100 @@ export default function HalamanPengajuanAdmin() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, []);
 
+ useEffect(() => {
+ let dibatalkan = false;
+
+ if (
+ formPengajuan.jenis_pengajuan !== "PERJALANAN_DINAS" ||
+ !formPengajuan.id_pengguna ||
+ formPengajuan.file_std
+ ) {
+ setStdOtomatis(null);
+ setSedangCariStd(false);
+ return;
+ }
+
+ const cariStd = async () => {
+ try {
+ setSedangCariStd(true);
+
+ const parameter = new URLSearchParams();
+ if (formPengajuan.tanggal_mulai && formPengajuan.tanggal_selesai) {
+ parameter.set("tanggalMulai", formPengajuan.tanggal_mulai);
+ parameter.set("tanggalSelesai", formPengajuan.tanggal_selesai);
+ }
+
+ const query = parameter.toString();
+ const response = await fetch(
+ `${apiUrl}/pengajuan/std-otomatis/${formPengajuan.id_pengguna}${query ? `?${query}` : ""}`,
+ { headers: headerAuth() as HeadersInit },
+ );
+
+ if (!response.ok) {
+ const hasil = await response.json().catch(() => null);
+ throw new Error(hasil?.message || "Gagal mencari STD otomatis.");
+ }
+
+ const data = (await response.json()) as DataStdOtomatis | null;
+ if (dibatalkan) return;
+
+ setStdOtomatis(data);
+ setFormPengajuan((sebelumnya) => {
+ if (
+ sebelumnya.id_pengguna !== formPengajuan.id_pengguna ||
+ sebelumnya.jenis_pengajuan !== "PERJALANAN_DINAS" ||
+ sebelumnya.file_std
+ ) {
+ return sebelumnya;
+ }
+
+ if (!data) {
+ return { ...sebelumnya, nomor_std: "" };
+ }
+
+ const tanggalBelumLengkap =
+ !sebelumnya.tanggal_mulai || !sebelumnya.tanggal_selesai;
+
+ return {
+ ...sebelumnya,
+ nomor_std: data.nomor,
+ tanggal_mulai: tanggalBelumLengkap
+ ? data.tanggal_mulai.slice(0, 10)
+ : sebelumnya.tanggal_mulai,
+ tanggal_selesai: tanggalBelumLengkap
+ ? data.tanggal_selesai.slice(0, 10)
+ : sebelumnya.tanggal_selesai,
+ lokasi: sebelumnya.lokasi || data.tujuan_lokasi,
+ };
+ });
+ } catch (error) {
+ if (!dibatalkan) {
+ setStdOtomatis(null);
+ setPesanError(
+ error instanceof Error ? error.message : "Gagal mencari STD otomatis.",
+ );
+ }
+ } finally {
+ if (!dibatalkan) setSedangCariStd(false);
+ }
+ };
+
+ void cariStd();
+
+ return () => {
+ dibatalkan = true;
+ };
+ // headerAuth membaca token sesi terbaru saat pencarian dijalankan.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [
+ apiUrl,
+ formPengajuan.id_pengguna,
+ formPengajuan.jenis_pengajuan,
+ formPengajuan.tanggal_mulai,
+ formPengajuan.tanggal_selesai,
+ formPengajuan.file_std,
+ ]);
+
  const daftarKaryawanAktif = useMemo(() => {
  return daftarPengguna
  .filter(
@@ -504,6 +610,7 @@ export default function HalamanPengajuanAdmin() {
  ) => {
  setFormPengajuan((sebelumnya) => {
  if (field === "jenis_pengajuan") {
+ setStdOtomatis(null);
  const inputStd = document.getElementById(
  "file_std"
  ) as HTMLInputElement | null;
@@ -543,6 +650,10 @@ export default function HalamanPengajuanAdmin() {
  [field]: null,
  }));
  return;
+ }
+
+ if (field === "file_std") {
+ setStdOtomatis(null);
  }
 
  const file = fileDipilih.type.startsWith("image/")
@@ -626,6 +737,7 @@ export default function HalamanPengajuanAdmin() {
  });
  setCariKaryawan("");
  setDropdownKaryawanTerbuka(false);
+ setStdOtomatis(null);
 
  const inputStd = document.getElementById(
  "file_std"
@@ -668,9 +780,12 @@ export default function HalamanPengajuanAdmin() {
 
  if (
  formPengajuan.jenis_pengajuan === "PERJALANAN_DINAS" &&
- !formPengajuan.file_std
+ !formPengajuan.file_std &&
+ !stdOtomatis
  ) {
- setPesanError("File STD wajib diupload untuk Perjalanan Dinas.");
+ setPesanError(
+ "STD otomatis tidak ditemukan. Pilih karyawan/tanggal yang sesuai dengan Surat Tugas Dinas yang sudah disetujui, atau upload file STD secara manual.",
+ );
  return;
  }
 
@@ -681,7 +796,8 @@ export default function HalamanPengajuanAdmin() {
 
  if (
  formPengajuan.jenis_pengajuan === "PERJALANAN_DINAS" &&
- !formPengajuan.nomor_std.trim()
+ !formPengajuan.nomor_std.trim() &&
+ !stdOtomatis
  ) {
  const hasilNomorStd = window.prompt("Masukkan Nomor STD:", "");
 
@@ -762,7 +878,7 @@ export default function HalamanPengajuanAdmin() {
  setPesanSukses(
  formPengajuan.jenis_pengajuan === "UANG_OPERASIONAL"
  ? "Pengajuan RAB Uang Operasional berhasil dibuat. Nomor RAB tersimpan."
- : "Pengajuan STD dan RAB berhasil dibuat. Notifikasi WA dikirim ke FA jika token dan nomor WA sudah tersedia."
+ : `Pengajuan STD dan RAB berhasil dibuat${stdOtomatis ? " menggunakan STD otomatis" : ""}. Notifikasi WA dikirim ke FA jika token dan nomor WA sudah tersedia.`
  );
 
  resetForm();
@@ -1129,8 +1245,8 @@ export default function HalamanPengajuanAdmin() {
  Buat Pengajuan
  </h2>
  <p className="mt-1 text-sm font-semibold text-slate-500">
- Pilih karyawan, isi informasi pengajuan, lalu upload file STD
- dan RAB.
+ Pilih karyawan dan tanggal perjalanan. File STD akan diambil
+ otomatis dari Surat Tugas Dinas yang sudah disetujui; file RAB tetap diupload.
  </p>
  </div>
 
@@ -1284,6 +1400,29 @@ export default function HalamanPengajuanAdmin() {
  File STD
  </label>
 
+ {stdOtomatis && !formPengajuan.file_std && (
+ <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+ <div className="flex items-start justify-between gap-3">
+ <div>
+ <p className="flex items-center gap-2 text-sm font-black text-emerald-800">
+ <CheckCircle2 className="h-4 w-4" />
+ Terisi otomatis dari Surat Tugas Dinas
+ </p>
+ <p className="mt-1 text-xs font-semibold text-emerald-700">
+ {stdOtomatis.nomor} · {stdOtomatis.nama_file_std}
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => bukaFile(stdOtomatis.path_file_std)}
+ className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
+ >
+ Lihat STD
+ </button>
+ </div>
+ </div>
+ )}
+
  <input
  id="file_std"
  type="file"
@@ -1293,10 +1432,16 @@ export default function HalamanPengajuanAdmin() {
  />
 
  <p className="mt-2 text-xs font-semibold text-slate-500">
- {formPengajuan.file_std
+ {sedangCariStd
+ ? "Mencari STD yang sesuai..."
+ : formPengajuan.file_std
  ? formPengajuan.file_std.name
+ : stdOtomatis
+ ? "STD otomatis siap digunakan. Upload manual di atas hanya jika ingin mengganti file."
  : formPengajuan.jenis_pengajuan === "PERJALANAN_DINAS"
- ? "Belum ada file STD."
+ ? formPengajuan.id_pengguna
+ ? "Belum ditemukan STD disetujui untuk karyawan dan tanggal tersebut. Silakan upload manual."
+ : "Pilih karyawan agar sistem mencari STD otomatis."
  : "File STD tidak wajib untuk Uang Operasional."}
  </p>
 

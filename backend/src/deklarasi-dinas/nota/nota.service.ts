@@ -4,17 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 
 import { SaldoService } from '../saldo/saldo.service';
 import { OcrSpaceService } from './ocr-space.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { wajibPenyetujuDeklarasi } from '../bantuan/deklarasi-akses.bantuan';
 import { Deklarasi, KategoriNota, Prisma, UserRole } from '@prisma/client';
-
-declare const require: any;
-const sharpModule = require('sharp');
-const sharp = sharpModule.default || sharpModule;
 
 type StatusVerifikasiNota =
   | 'BELUM_OCR'
@@ -224,69 +219,6 @@ export class NotaService {
   }
   // <--- end --->
 
-  // <--- kompres foto nota menjadi JPG kualitas 75%, jika gagal tetap pakai file asli --->
-  private async kompresFotoNota(file: Express.Multer.File) {
-    if (!file || !file.path) {
-      throw new BadRequestException('File nota wajib diunggah.');
-    }
-
-    const lokasiAsli = file.path;
-    const folderFile = path.dirname(lokasiAsli);
-    const namaFileTanpaExt = path.parse(file.filename).name;
-    const namaFileJpg = `${namaFileTanpaExt}.jpg`;
-
-    const lokasiFinal = path.join(folderFile, namaFileJpg);
-    const lokasiSementara = path.join(
-      folderFile,
-      `${namaFileTanpaExt}-compressed-${Date.now()}.jpg`,
-    );
-
-    try {
-      await sharp(lokasiAsli)
-        .rotate()
-        .resize({
-          width: 1600,
-          withoutEnlargement: true,
-        })
-        .jpeg({
-          quality: 75,
-          mozjpeg: true,
-        })
-        .toFile(lokasiSementara);
-
-      try {
-        await fs.unlink(lokasiAsli);
-      } catch {
-        // abaikan jika file asli tidak ada
-      }
-
-      await fs.rename(lokasiSementara, lokasiFinal);
-
-      file.filename = namaFileJpg;
-      file.path = lokasiFinal;
-      file.mimetype = 'image/jpeg';
-
-      console.log('Foto nota berhasil dikompres:', {
-        nama_file: file.filename,
-        path_file: file.path,
-        quality: 75,
-      });
-
-      return file;
-    } catch (error) {
-      try {
-        await fs.unlink(lokasiSementara);
-      } catch {
-        // abaikan jika file sementara tidak ada
-      }
-
-      console.error('Kompres foto nota gagal, file asli tetap dipakai:', error);
-
-      return file;
-    }
-  }
-  // <--- end --->
-
   // <--- OCR nota: dipakai saat upload baru dan saat foto nota diganti. Gagal OCR tidak melempar error, nominal diisi manual --->
   private async bacaNotaDenganOcr(lokasiFile: string) {
     let hasilOcrText = 'OCR otomatis gagal. Silakan isi nominal manual.';
@@ -385,13 +317,12 @@ export class NotaService {
     }
 
     if (file) {
-      const fileKompres = await this.kompresFotoNota(file);
       const { hasilOcrText, nominalOcr, statusVerifikasi } =
-        await this.bacaNotaDenganOcr(fileKompres.path);
+        await this.bacaNotaDenganOcr(file.path);
 
       Object.assign(dataUpdate, {
-        namaFile: fileKompres.filename,
-        pathFile: `/uploads/nota/${fileKompres.filename}`,
+        namaFile: file.filename,
+        pathFile: `/uploads/nota/${file.filename}`,
         hasilOcrText,
         nominalOcr,
         nominalFinal: nominalOcr,
@@ -455,10 +386,8 @@ export class NotaService {
       await this.hapusNotaDitolakSebagaiRevisi(idDeklarasi, idNotaRevisi);
     }
 
-    const fileKompres = await this.kompresFotoNota(file);
-
     const { hasilOcrText, nominalOcr, statusVerifikasi } =
-      await this.bacaNotaDenganOcr(fileKompres.path);
+      await this.bacaNotaDenganOcr(file.path);
 
     const notaTersimpan = await this.prisma.nota.create({
       data: {
@@ -477,8 +406,8 @@ export class NotaService {
             ? String(keteranganSettlement).trim()
             : null,
         jumlahItemSettlement: jumlahItemSettlementFinal,
-        namaFile: fileKompres.filename,
-        pathFile: `/uploads/nota/${fileKompres.filename}`,
+        namaFile: file.filename,
+        pathFile: `/uploads/nota/${file.filename}`,
         hasilOcrText: hasilOcrText,
         nominalOcr: nominalOcr,
         nominalFinal: nominalOcr,

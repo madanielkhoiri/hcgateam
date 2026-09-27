@@ -118,14 +118,24 @@ export class UsersService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
-      const target = (error.meta?.target as string[] | undefined) ?? [];
-      if (target.includes('email')) {
+      const sumber = JSON.stringify(error.meta ?? {}).toLowerCase();
+
+      if (sumber.includes('email')) {
         throw new BadRequestException('Email sudah digunakan');
       }
-      if (target.includes('nrp')) {
+      if (sumber.includes('phone_number') || sumber.includes('phonenumber')) {
+        throw new BadRequestException('Nomor telepon sudah digunakan');
+      }
+      if (sumber.includes('nrp')) {
         throw new BadRequestException('NRP sudah digunakan');
       }
-      throw new BadRequestException('Username sudah digunakan');
+      if (sumber.includes('username')) {
+        throw new BadRequestException('Username sudah digunakan');
+      }
+
+      throw new BadRequestException(
+        'Data akun yang harus unik sudah digunakan oleh akun lain',
+      );
     }
 
     if (
@@ -197,6 +207,7 @@ export class UsersService {
 
   async create(dto: CreateUserDto, actor: AdminActor) {
     this.assertAdmin(actor);
+    await this.pastikanIdentitasUnik(dto);
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const accessKeys = sanitizeAccessKeys(
       dto.accessKeys ?? this.defaultAccessKeys(dto.role),
@@ -246,12 +257,18 @@ export class UsersService {
     }
 
     if (id === actor.id && dto.isActive === false) {
-      throw new BadRequestException('Admin tidak dapat menonaktifkan akun sendiri');
+      throw new BadRequestException(
+        'Admin tidak dapat menonaktifkan akun sendiri',
+      );
     }
 
     if (id === actor.id && dto.role && dto.role !== UserRole.ADMIN) {
-      throw new BadRequestException('Admin tidak dapat mengganti role akun sendiri');
+      throw new BadRequestException(
+        'Admin tidak dapat mengganti role akun sendiri',
+      );
     }
+
+    await this.pastikanIdentitasUnik(dto, id);
 
     const nextRole = dto.role ?? current.role;
     const passwordHash = dto.password
@@ -268,7 +285,8 @@ export class UsersService {
     // sedang aktif (token lama langsung ditolak di request berikutnya, tidak
     // perlu nunggu expired 8 jam sendiri).
     const perluCabutSesi =
-      Boolean(passwordHash) || (dto.isActive === false && current.isActive !== false);
+      Boolean(passwordHash) ||
+      (dto.isActive === false && current.isActive !== false);
 
     try {
       const user = await this.prisma.user.update({
@@ -324,6 +342,69 @@ export class UsersService {
     }
   }
 
+  private async pastikanIdentitasUnik(
+    data: {
+      username?: string;
+      email?: string;
+      nrp?: string;
+      phoneNumber?: string;
+    },
+    kecualiId?: number,
+  ): Promise<void> {
+    const username = data.username?.trim();
+    const email = data.email?.trim();
+    const nrp = data.nrp?.trim();
+    const phoneNumber = data.phoneNumber?.trim();
+    const kondisi: Prisma.UserWhereInput[] = [];
+
+    if (username) {
+      kondisi.push({ username: { equals: username, mode: 'insensitive' } });
+    }
+    if (email) {
+      kondisi.push({ email: { equals: email, mode: 'insensitive' } });
+    }
+    if (nrp) kondisi.push({ nrp });
+    if (phoneNumber) kondisi.push({ phoneNumber });
+    if (kondisi.length === 0) return;
+
+    const akunSama = await this.prisma.user.findFirst({
+      where: {
+        ...(kecualiId ? { id: { not: kecualiId } } : {}),
+        OR: kondisi,
+      },
+      select: {
+        username: true,
+        email: true,
+        nrp: true,
+        phoneNumber: true,
+      },
+    });
+    if (!akunSama) return;
+
+    if (
+      username &&
+      akunSama.username?.toLocaleLowerCase() === username.toLocaleLowerCase()
+    ) {
+      throw new BadRequestException('Username sudah digunakan');
+    }
+    if (
+      email &&
+      akunSama.email?.toLocaleLowerCase() === email.toLocaleLowerCase()
+    ) {
+      throw new BadRequestException('Email sudah digunakan');
+    }
+    if (nrp && akunSama.nrp === nrp) {
+      throw new BadRequestException('NRP sudah digunakan');
+    }
+    if (phoneNumber && akunSama.phoneNumber === phoneNumber) {
+      throw new BadRequestException('Nomor telepon sudah digunakan');
+    }
+
+    throw new BadRequestException(
+      'Data akun yang harus unik sudah digunakan oleh akun lain',
+    );
+  }
+
   /** Cabut paksa semua sesi (token) yang sedang aktif milik satu akun — tanpa mengubah password/status apa pun. */
   async cabutSesi(id: number, actor: AdminActor) {
     this.assertAdmin(actor);
@@ -349,14 +430,13 @@ export class UsersService {
       detail: { name: target.name, username: target.username },
     });
 
-    return { message: 'Semua sesi akun ini berhasil dicabut. Perangkat yang masih login akan otomatis diminta login ulang.' };
+    return {
+      message:
+        'Semua sesi akun ini berhasil dicabut. Perangkat yang masih login akan otomatis diminta login ulang.',
+    };
   }
 
-  async updateAccess(
-    id: number,
-    dto: UpdateUserAccessDto,
-    actor: AdminActor,
-  ) {
+  async updateAccess(id: number, dto: UpdateUserAccessDto, actor: AdminActor) {
     this.assertAdmin(actor);
 
     try {
@@ -402,7 +482,11 @@ export class UsersService {
         aksi: 'USER_DIHAPUS',
         entitas: 'User',
         entitasId: id,
-        detail: { name: dihapus.name, username: dihapus.username, role: dihapus.role },
+        detail: {
+          name: dihapus.name,
+          username: dihapus.username,
+          role: dihapus.role,
+        },
       });
 
       return { message: 'Akun berhasil dihapus' };

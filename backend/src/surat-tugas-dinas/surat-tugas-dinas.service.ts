@@ -10,11 +10,14 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { hasilHalaman, paramHalaman } from '../common/pagination.util';
+import { sapaanKaryawan } from '../common/sapaan.util';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import {
   BuatSuratTugasDinasDto,
   TolakSuratTugasDinasDto,
@@ -31,13 +34,19 @@ const SURAT_INCLUDE = {
   dibuatOleh: { select: { id: true, name: true, role: true } },
   disetujuiShOleh: { select: { id: true, name: true, role: true } },
   disetujuiPjoOleh: { select: { id: true, name: true, role: true } },
+  suratTugasAsal: {
+    select: { id: true, nomor: true, keteranganTugas: true },
+  },
 } satisfies Prisma.SuratTugasDinasInclude;
 
 @Injectable()
 export class SuratTugasDinasService {
+  private readonly logger = new Logger(SuratTugasDinasService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdf: SuratTugasDinasPdfService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   private isAdmin(aktor: AktorSurat): boolean {
@@ -151,6 +160,84 @@ export class SuratTugasDinasService {
     return surat;
   }
 
+  async pilihanAkomodasi(cari?: string) {
+    const surat = await this.prisma.suratTugasDinas.findMany({
+      where: {
+        status: StatusSuratTugas.DISETUJUI,
+        denganAkomodasi: false,
+        ...(cari
+          ? {
+              OR: [
+                { nomor: { contains: cari, mode: 'insensitive' } },
+                {
+                  keteranganTugas: {
+                    contains: cari,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  karyawan: {
+                    some: {
+                      OR: [
+                        { nrp: { contains: cari, mode: 'insensitive' } },
+                        { nama: { contains: cari, mode: 'insensitive' } },
+                      ],
+                    },
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        nomor: true,
+        tujuanLokasi: true,
+        tanggalMulai: true,
+        tanggalSelesai: true,
+        keteranganTugas: true,
+        karyawan: {
+          orderBy: { urutan: 'asc' },
+          select: {
+            nrp: true,
+            nama: true,
+            departemen: true,
+            jabatan: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+
+    return surat
+      .flatMap((item) =>
+        item.karyawan.map((karyawan) => ({
+          suratTugasId: item.id,
+          nomorSurat: item.nomor,
+          tujuanLokasi: item.tujuanLokasi,
+          tanggalMulai: item.tanggalMulai,
+          tanggalSelesai: item.tanggalSelesai,
+          keteranganTugas: item.keteranganTugas,
+          ...karyawan,
+        })),
+      )
+      .filter((item) => {
+        if (!cari) {
+          return true;
+        }
+
+        const kata = cari.toLocaleLowerCase('id-ID');
+        return [
+          item.nrp,
+          item.nama,
+          item.keteranganTugas,
+          item.nomorSurat,
+        ].some((nilai) => nilai.toLocaleLowerCase('id-ID').includes(kata));
+      })
+      .slice(0, 20);
+  }
+
   /** Cetak ulang PDF dari data yang sudah ada, tanpa mengubah status. */
   async cetakUlangManual(id: number, aktor: AktorSurat) {
     await this.detail(id, aktor);
@@ -159,6 +246,7 @@ export class SuratTugasDinasService {
 
   async buat(dto: BuatSuratTugasDinasDto, aktor: AktorSurat) {
     const nomor = dto.nomor.trim();
+    const denganAkomodasi = dto.denganAkomodasi === true;
 
     const duplikat = await this.prisma.suratTugasDinas.findUnique({
       where: { nomor },
@@ -168,8 +256,69 @@ export class SuratTugasDinasService {
       throw new BadRequestException('Nomor surat sudah digunakan');
     }
 
-    const tanggalMulai = new Date(dto.tanggalMulai);
-    const tanggalSelesai = new Date(dto.tanggalSelesai);
+    let tujuanLokasi = dto.tujuanLokasi.trim();
+    let tanggalMulai = new Date(dto.tanggalMulai);
+    let tanggalSelesai = new Date(dto.tanggalSelesai);
+    let keteranganTugas = dto.keteranganTugas.trim();
+    let suratTugasAsalId: number | null = null;
+    let karyawanTerpilih = dto.karyawan;
+
+    if (denganAkomodasi) {
+      if (!dto.suratTugasAsalId) {
+        throw new BadRequestException(
+          'Pilih karyawan dari Surat Tugas Dinas yang sudah disetujui',
+        );
+      }
+
+      const suratAsal = await this.prisma.suratTugasDinas.findFirst({
+        where: {
+          id: dto.suratTugasAsalId,
+          denganAkomodasi: false,
+          status: StatusSuratTugas.DISETUJUI,
+        },
+        include: { karyawan: true },
+      });
+
+      if (!suratAsal) {
+        throw new BadRequestException(
+          'Surat Tugas Dinas asal tidak ditemukan atau belum disetujui penuh',
+        );
+      }
+
+      const nrpUnik = new Set(dto.karyawan.map((item) => item.nrp.trim()));
+      if (nrpUnik.size !== dto.karyawan.length) {
+        throw new BadRequestException('Karyawan pada STD Akomodasi duplikat');
+      }
+
+      const karyawanAsal = new Map(
+        suratAsal.karyawan.map((item) => [item.nrp, item]),
+      );
+      const tidakTerdaftar = [...nrpUnik].filter(
+        (nrp) => !karyawanAsal.has(nrp),
+      );
+
+      if (tidakTerdaftar.length > 0) {
+        throw new BadRequestException(
+          `Karyawan ${tidakTerdaftar.join(', ')} tidak terdaftar pada Surat Tugas Dinas asal`,
+        );
+      }
+
+      suratTugasAsalId = suratAsal.id;
+      tujuanLokasi = suratAsal.tujuanLokasi;
+      tanggalMulai = suratAsal.tanggalMulai;
+      tanggalSelesai = suratAsal.tanggalSelesai;
+      keteranganTugas = suratAsal.keteranganTugas;
+      karyawanTerpilih = dto.karyawan.map((item) => {
+        const sumber = karyawanAsal.get(item.nrp.trim())!;
+        return {
+          ...item,
+          nrp: sumber.nrp,
+          nama: sumber.nama,
+          departemen: sumber.departemen,
+          jabatan: sumber.jabatan,
+        };
+      });
+    }
 
     if (tanggalSelesai < tanggalMulai) {
       throw new BadRequestException(
@@ -177,18 +326,34 @@ export class SuratTugasDinasService {
       );
     }
 
-    const jumlahAkomodasi = dto.karyawan.reduce(
-      (total, item) =>
-        total +
-        (item.uangPerjalananNominal ?? 0) +
-        (item.akomodasiNominal ?? 0) +
-        (item.laundryNominal ?? 0),
-      0,
-    );
+    const durasiHari =
+      Math.floor(
+        (tanggalSelesai.getTime() - tanggalMulai.getTime()) /
+          (24 * 60 * 60 * 1000),
+      ) + 1;
+    const laundryTersedia = denganAkomodasi && durasiHari >= 3;
+    const jumlahAkomodasi = denganAkomodasi
+      ? karyawanTerpilih.reduce(
+          (total, item) =>
+            total +
+            (item.uangPerjalananNominal ?? 0) +
+            (item.akomodasiNominal ?? 0) +
+            (laundryTersedia ? (item.laundryNominal ?? 0) : 0),
+          0,
+        )
+      : 0;
     const totalPerKategori = (
       kategori: 'uangPerjalananNominal' | 'akomodasiNominal' | 'laundryNominal',
     ) => {
-      const total = dto.karyawan.reduce(
+      if (!denganAkomodasi) {
+        return null;
+      }
+
+      if (kategori === 'laundryNominal' && !laundryTersedia) {
+        return null;
+      }
+
+      const total = karyawanTerpilih.reduce(
         (jumlah, item) => jumlah + (item[kategori] ?? 0),
         0,
       );
@@ -198,12 +363,21 @@ export class SuratTugasDinasService {
     const dibuat = await this.prisma.suratTugasDinas.create({
       data: {
         nomor,
-        tujuanLokasi: dto.tujuanLokasi.trim(),
+        denganAkomodasi,
+        suratTugasAsalId,
+        tujuanLokasi,
         tanggalMulai,
         tanggalSelesai,
-        keteranganTugas: dto.keteranganTugas.trim(),
-        penginapanHotel: dto.penginapanHotel?.trim() || null,
-        bantuanTransportasi: dto.bantuanTransportasi?.trim() || null,
+        keteranganTugas,
+        penginapanHotel: denganAkomodasi
+          ? dto.penginapanHotel?.trim() || null
+          : null,
+        bantuanTransportasi: denganAkomodasi
+          ? dto.bantuanTransportasi?.trim() || null
+          : null,
+        rutePerjalanan: denganAkomodasi
+          ? dto.rutePerjalanan?.trim() || null
+          : null,
         uangPerjalananNominal: totalPerKategori('uangPerjalananNominal'),
         uangPerjalananKeterangan: null,
         akomodasiNominal: totalPerKategori('akomodasiNominal'),
@@ -214,19 +388,28 @@ export class SuratTugasDinasService {
         dibuatOlehId: aktor.id,
         status: StatusSuratTugas.MENUNGGU_SH,
         karyawan: {
-          create: dto.karyawan.map((item, index) => ({
+          create: karyawanTerpilih.map((item, index) => ({
             urutan: index + 1,
             nrp: item.nrp.trim(),
             nama: item.nama.trim(),
             departemen: item.departemen.trim(),
             jabatan: item.jabatan.trim(),
-            uangPerjalananNominal: item.uangPerjalananNominal ?? null,
-            uangPerjalananKeterangan:
-              item.uangPerjalananKeterangan?.trim() || null,
-            akomodasiNominal: item.akomodasiNominal ?? null,
-            akomodasiKeterangan: item.akomodasiKeterangan?.trim() || null,
-            laundryNominal: item.laundryNominal ?? null,
-            laundryKeterangan: item.laundryKeterangan?.trim() || null,
+            uangPerjalananNominal: denganAkomodasi
+              ? (item.uangPerjalananNominal ?? null)
+              : null,
+            uangPerjalananKeterangan: null,
+            akomodasiNominal: denganAkomodasi
+              ? (item.akomodasiNominal ?? null)
+              : null,
+            akomodasiKeterangan: null,
+            laundryNominal: laundryTersedia
+              ? (item.laundryNominal ?? null)
+              : null,
+            laundryKeterangan: null,
+            frekuensiMakan: denganAkomodasi ? durasiHari * 3 : null,
+            ruteTransportasiLokal: denganAkomodasi
+              ? item.ruteTransportasiLokal?.trim() || null
+              : null,
           })),
         },
       },
@@ -239,6 +422,7 @@ export class SuratTugasDinasService {
   async setujui(id: number, aktor: AktorSurat) {
     const surat = await this.ambilAtauGagal(id);
     this.wajibBolehSetujuiTahap(aktor, surat.status);
+    const persetujuanFinal = surat.status === StatusSuratTugas.MENUNGGU_PJO;
 
     if (surat.status === StatusSuratTugas.MENUNGGU_SH) {
       await this.prisma.suratTugasDinas.update({
@@ -262,7 +446,13 @@ export class SuratTugasDinasService {
       throw new BadRequestException('Surat sudah diproses sebelumnya');
     }
 
-    return this.cetakUlang(id);
+    const hasil = await this.cetakUlang(id);
+
+    if (persetujuanFinal) {
+      await this.kirimNotifikasiDisetujuiKeKaryawan(hasil);
+    }
+
+    return hasil;
   }
 
   async tolak(id: number, dto: TolakSuratTugasDinasDto, aktor: AktorSurat) {
@@ -327,5 +517,83 @@ export class SuratTugasDinasService {
       data: { filePdf },
       include: SURAT_INCLUDE,
     });
+  }
+
+  private async kirimNotifikasiDisetujuiKeKaryawan(
+    surat: Prisma.SuratTugasDinasGetPayload<{
+      include: typeof SURAT_INCLUDE;
+    }>,
+  ): Promise<void> {
+    if (!surat.karyawan?.length) {
+      return;
+    }
+
+    try {
+      const nrp = [...new Set(surat.karyawan.map((item) => item.nrp))];
+      const dataKaryawan = await this.prisma.karyawan.findMany({
+        where: { nik: { in: nrp } },
+        select: {
+          nik: true,
+          nama: true,
+          gender: true,
+          noTelepon: true,
+          akun: { select: { phoneNumber: true } },
+        },
+      });
+      const dataPerNrp = new Map(
+        dataKaryawan.map((item) => [item.nik, item] as const),
+      );
+      const formatTanggal = (tanggal: Date) =>
+        new Intl.DateTimeFormat('id-ID', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        }).format(tanggal);
+      const urlPdf = surat.filePdf
+        ? this.whatsapp.urlPublikLampiran(surat.filePdf)
+        : null;
+      const lampiran = urlPdf
+        ? {
+            url: urlPdf,
+            namaFile: `Surat Tugas Dinas ${surat.nomor}.pdf`,
+          }
+        : undefined;
+
+      await Promise.allSettled(
+        surat.karyawan.map(async (penerima) => {
+          const master = dataPerNrp.get(penerima.nrp);
+          const nomor = master?.noTelepon || master?.akun?.phoneNumber;
+
+          if (!nomor?.trim()) {
+            this.logger.warn(
+              `Notif STD ${surat.nomor} dilewati untuk NRP ${penerima.nrp}: nomor WA kosong.`,
+            );
+            return;
+          }
+
+          const pesan = [
+            '*SURAT TUGAS DINAS DISETUJUI*',
+            '',
+            `Halo ${sapaanKaryawan(master?.gender)} ${penerima.nama},`,
+            'Surat Tugas Dinas Anda telah mendapatkan persetujuan lengkap.',
+            '',
+            `Nomor: ${surat.nomor}`,
+            `Tujuan/Lokasi: ${surat.tujuanLokasi}`,
+            `Tanggal: ${formatTanggal(surat.tanggalMulai)} - ${formatTanggal(surat.tanggalSelesai)}`,
+            `Keterangan: ${surat.keteranganTugas}`,
+            '',
+            urlPdf
+              ? 'PDF Surat Tugas Dinas terlampir pada pesan ini.'
+              : 'Silakan buka Portal ONE FOR ALL untuk melihat PDF Surat Tugas Dinas.',
+          ].join('\n');
+
+          await this.whatsapp.kirim(nomor, pesan, lampiran, 'HC');
+        }),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Gagal menyiapkan notif WA STD ${surat.nomor}: ${(error as Error).message}`,
+      );
+    }
   }
 }

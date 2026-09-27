@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UploadedFiles,
@@ -204,6 +205,20 @@ export class PengajuanController {
     );
   }
   // <--- end --->
+
+  // <--- mengambil detail pengajuan --->
+  @Get('std-otomatis/:idPengguna')
+  ambilStdOtomatis(
+    @Param('idPengguna') idPengguna: string,
+    @Query('tanggalMulai') tanggalMulai?: string,
+    @Query('tanggalSelesai') tanggalSelesai?: string,
+  ) {
+    return this.pengajuanService.ambilStdOtomatis(
+      Number(idPengguna),
+      tanggalMulai,
+      tanggalSelesai,
+    );
+  }
 
   // <--- mengambil detail pengajuan --->
   @Get(':idPengajuan')
