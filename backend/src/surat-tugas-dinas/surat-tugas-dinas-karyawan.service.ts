@@ -7,6 +7,7 @@ import {
 import { StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SuratTugasDinasAdvancePdfService } from './surat-tugas-dinas-advance-pdf.service';
+import { SuratTugasDinasPdfService } from './surat-tugas-dinas-pdf.service';
 
 type AktorKaryawan = {
   id: number;
@@ -28,7 +29,27 @@ export class SuratTugasDinasKaryawanService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly advancePdf: SuratTugasDinasAdvancePdfService,
+    private readonly suratPdf: SuratTugasDinasPdfService,
   ) {}
+
+  async pdfKaryawan(id: number, aktor: AktorKaryawan) {
+    const identitas = await this.identitasAktor(aktor);
+    const item = await this.prisma.suratTugasKaryawan.findUnique({
+      where: { id },
+      include: { suratTugas: { include: { karyawan: true } } },
+    });
+    if (!item || !identitas.nrp.includes(item.nrp)) {
+      throw new ForbiddenException('Surat Tugas Dinas ini bukan milik Anda');
+    }
+    if (
+      !item.suratTugas.denganAkomodasi ||
+      item.suratTugas.status !== StatusSuratTugas.DISETUJUI
+    ) {
+      throw new BadRequestException('STD Akomodasi belum mendapatkan persetujuan lengkap');
+    }
+    const filePdf = await this.suratPdf.buatFileKaryawan(item.suratTugas, item.id);
+    return { filePdf };
+  }
 
   async daftar(aktor: AktorKaryawan) {
     const identitas = await this.identitasAktor(aktor);
