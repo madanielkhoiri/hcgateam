@@ -26,6 +26,14 @@ export class SuratTugasDinasKaryawanController {
     return this.service.daftar(request.user);
   }
 
+  @Get(':id/pdf')
+  pdfKaryawan(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthRequest,
+  ) {
+    return this.service.pdfKaryawan(id, request.user);
+  }
+
   @Patch(':id/konfirmasi-advance')
   konfirmasiAdvance(
     @Param('id', ParseIntPipe) id: number,

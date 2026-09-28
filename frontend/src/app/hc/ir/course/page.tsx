@@ -58,12 +58,15 @@ export default function IrCoursePage() {
   const [judulBaru, setJudulBaru] = useState('');
   const [deskripsiBaru, setDeskripsiBaru] = useState('');
   const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [quizBaru, setQuizBaru] = useState([{ pertanyaan: '', pilihan: ['', '', '', ''], jawabanBenar: 0 }]);
 
   const [editItem, setEditItem] = useState<IrCourseVideo | null>(null);
   const [editJudul, setEditJudul] = useState('');
   const [editDeskripsi, setEditDeskripsi] = useState('');
 
   const [videoDitonton, setVideoDitonton] = useState<IrCourseVideo | null>(null);
+  const [videoSelesai, setVideoSelesai] = useState<IrCourseVideo | null>(null);
+  const [jawabanQuiz, setJawabanQuiz] = useState<number[]>([]);
   const [penonton, setPenonton] = useState<IrCoursePenonton | null>(null);
 
   const muat = useCallback(async () => {
@@ -87,6 +90,7 @@ export default function IrCoursePage() {
     setJudulBaru('');
     setDeskripsiBaru('');
     setFileBaru(null);
+    setQuizBaru([{ pertanyaan: '', pilihan: ['', '', '', ''], jawabanBenar: 0 }]);
     setGalat(null);
     setFormTerbuka(true);
   }
@@ -105,6 +109,7 @@ export default function IrCoursePage() {
         judulBaru.trim(),
         deskripsiBaru.trim() || undefined,
         fileBaru,
+        quizBaru,
       );
       setSukses('Video berhasil diunggah');
       setFormTerbuka(false);
@@ -169,15 +174,33 @@ export default function IrCoursePage() {
 
   async function buka(item: IrCourseVideo) {
     setVideoDitonton(item);
+  }
 
-    if (!item.sudahDitonton) {
+  async function selesaiVideo() {
+    if (!videoDitonton) return;
+    if (!videoDitonton.sudahDitonton) {
       try {
-        await irApi.course.tandaiDitonton(item.id);
+        await irApi.course.tandaiDitonton(videoDitonton.id);
         await muat();
       } catch {
-        // Gagal mencatat tontonan tidak menghalangi karyawan menonton videonya.
+        setGalat('Video selesai, tetapi status tontonan gagal disimpan. Coba lagi.');
+        return;
       }
     }
+    setVideoSelesai(videoDitonton);
+    setJawabanQuiz(Array(videoDitonton.quiz.length).fill(-1));
+  }
+
+  async function kirimQuiz() {
+    if (!videoSelesai || jawabanQuiz.some((item) => item < 0)) {
+      setGalat('Semua pertanyaan quiz wajib dijawab');
+      return;
+    }
+    try {
+      const hasil = await irApi.course.jawabQuiz(videoSelesai.id, jawabanQuiz.map((pilihan) => ({ pilihan })));
+      setSukses(hasil.lulus ? `Quiz lulus (${hasil.benar}/${hasil.total})` : `Quiz belum lulus (${hasil.benar}/${hasil.total}). Silakan ulangi.`);
+      if (hasil.lulus) { setVideoSelesai(null); setVideoDitonton(null); }
+    } catch (error) { setGalat((error as Error).message); }
   }
 
   async function bukaPenonton(item: IrCourseVideo) {
@@ -385,6 +408,16 @@ export default function IrCoursePage() {
                 ) : null}
               </label>
             </div>
+            <div className={styles.formField}>
+              <label>Quiz Pilihan Ganda</label>
+              {quizBaru.map((quiz, index) => (
+                <div key={index} style={{ border: '1px solid #d9e2ec', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                  <input className={styles.formInput} placeholder={`Pertanyaan ${index + 1}`} value={quiz.pertanyaan} onChange={(event) => setQuizBaru((current) => current.map((item, idx) => idx === index ? { ...item, pertanyaan: event.target.value } : item))} />
+                  {quiz.pilihan.map((pilihan, pilihanIndex) => <div key={pilihanIndex} style={{ display: 'flex', gap: 6, marginTop: 6 }}><input className={styles.formInput} placeholder={`Pilihan ${pilihanIndex + 1}`} value={pilihan} onChange={(event) => setQuizBaru((current) => current.map((item, idx) => idx === index ? { ...item, pilihan: item.pilihan.map((value, pidx) => pidx === pilihanIndex ? event.target.value : value) } : item))} /><label style={{ whiteSpace: 'nowrap' }}><input type="radio" name={`kunci-${index}`} checked={quiz.jawabanBenar === pilihanIndex} onChange={() => setQuizBaru((current) => current.map((item, idx) => idx === index ? { ...item, jawabanBenar: pilihanIndex } : item))} /> Kunci</label></div>)}
+                </div>
+              ))}
+              <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setQuizBaru((current) => [...current, { pertanyaan: '', pilihan: ['', '', '', ''], jawabanBenar: 0 }])}>Tambah Pertanyaan</button>
+            </div>
           </div>
         </Dialog>
       )}
@@ -470,11 +503,29 @@ export default function IrCoursePage() {
                 src={urlFileIr(videoDitonton.urlVideo)}
                 controls
                 autoPlay
+                onEnded={selesaiVideo}
                 className={styles.previewVideo}
               />
             </div>
           </div>
         </div>
+      )}
+
+      {videoSelesai && (
+        <Dialog judul={`Quiz: ${videoSelesai.judul}`} keterangan="Video selesai. Quiz wajib dijawab untuk menyelesaikan course." onTutup={() => setVideoSelesai(null)} aksi={<button type="button" className={styles.btn} onClick={() => void kirimQuiz()}>Kirim Jawaban</button>}>
+          <div className={styles.formStack}>
+            {videoSelesai.quiz.map((item, index) => (
+              <div key={item.id} className={styles.formField}>
+                <label>{index + 1}. {item.pertanyaan}</label>
+                {item.pilihan.map((pilihan, pilihanIndex) => (
+                  <label key={pilihanIndex} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input type="radio" name={`quiz-${item.id}`} checked={jawabanQuiz[index] === pilihanIndex} onChange={() => setJawabanQuiz((current) => current.map((value, idx) => idx === index ? pilihanIndex : value))} /> {pilihan}
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+        </Dialog>
       )}
 
       {penonton && (
