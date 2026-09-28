@@ -44,13 +44,34 @@ const PJO_SIGNER = {
 @Injectable()
 export class SuratTugasDinasPdfService {
   async buatFile(surat: SuratLengkap): Promise<string> {
+    return this.simpanFile(surat, `surat-tugas-${surat.nomor}`);
+  }
+
+  async buatFileKaryawan(
+    surat: SuratLengkap,
+    karyawanId: number,
+  ): Promise<string> {
+    const karyawan = surat.karyawan.find((item) => item.id === karyawanId);
+    if (!karyawan) {
+      throw new Error('Karyawan pada surat tugas tidak ditemukan');
+    }
+    return this.simpanFile(
+      { ...surat, karyawan: [karyawan] },
+      `surat-tugas-${surat.nomor}-${karyawan.nrp}`,
+    );
+  }
+
+  private async simpanFile(
+    surat: SuratLengkap,
+    dasarNamaFile: string,
+  ): Promise<string> {
     const dir = join(process.cwd(), 'uploads', 'surat-tugas-dinas');
 
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
 
-    const namaFile = `surat-tugas-${surat.nomor.replace(/[\\/:*?"<>|]+/g, '-')}.pdf`;
+    const namaFile = `${dasarNamaFile.replace(/[\\/:*?"<>|]+/g, '-')}.pdf`;
     const tujuan = join(dir, namaFile);
 
     const buffer = await this.render(surat);
