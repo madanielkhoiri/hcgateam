@@ -54,9 +54,12 @@ export class IrCourseController {
     @UploadedFile() file: Express.Multer.File,
     @Body('judul') judul: string,
     @Body('deskripsi') deskripsi?: string,
+    @Body('quiz') quiz?: string,
   ) {
     this.akses.wajibKelola(aktor);
-    return this.service.unggah(judul, deskripsi, file, aktor);
+    let parsed: unknown;
+    try { parsed = JSON.parse(quiz ?? '[]'); } catch { parsed = []; }
+    return this.service.unggah(judul, deskripsi, file, aktor, parsed);
   }
 
   @Patch('video/:id')
@@ -88,5 +91,10 @@ export class IrCourseController {
   penonton(@Aktor() aktor: AktorIr, @Param('id', ParseIntPipe) id: number) {
     this.akses.wajibKelola(aktor);
     return this.service.daftarPenonton(id);
+  }
+
+  @Post('video/:id/quiz')
+  jawabQuiz(@Aktor() aktor: AktorIr, @Param('id', ParseIntPipe) id: number, @Body('jawaban') jawaban: unknown) {
+    return this.service.jawabQuiz(id, aktor, jawaban);
   }
 }
