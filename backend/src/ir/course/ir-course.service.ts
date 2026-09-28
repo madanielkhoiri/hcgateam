@@ -46,14 +46,14 @@ export class IrCourseService {
     deskripsi: string | undefined,
     file: Express.Multer.File,
     aktor: AktorIr,
-    quiz: unknown,
+    quiz?: unknown,
   ) {
     if (!judul?.trim()) {
       throw new BadRequestException('Judul video wajib diisi');
     }
 
     const urlVideo = this.file.simpanVideo(file);
-    const pertanyaan = this.validasiQuiz(quiz);
+    const pertanyaan = quiz === undefined ? [] : this.validasiQuiz(quiz);
 
     return this.prisma.irCourseVideo.create({
       data: {
