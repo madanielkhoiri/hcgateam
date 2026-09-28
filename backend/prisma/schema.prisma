@@ -142,6 +142,7 @@ model User {
   aspirasiJawabanDiberikan AspirasiJawaban[]    @relation("AspirasiJawabanUser")
   irCourseVideoDiupload    IrCourseVideo[]      @relation("IrCourseUploader")
   irCourseTontonan         IrCourseTontonan[]   @relation("IrCourseTontonanUser")
+  irCourseQuizJawaban      IrCourseQuizJawaban[] @relation("IrCourseQuizJawabanUser")
   postinganDiupload        Postingan[]          @relation("PostinganUploader")
   driveFileDiupload        DriveFile[]          @relation("DriveFileUploader")
   albumDokumentasiDibuat   AlbumDokumentasi[]   @relation("AlbumDokumentasiCreator")
@@ -2916,8 +2917,36 @@ model IrCourseVideo {
 
   uploadedBy User               @relation("IrCourseUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
   tontonan   IrCourseTontonan[]
+  quiz       IrCourseQuiz[]
 
   @@map("ir_course_video")
+}
+
+model IrCourseQuiz {
+  id             Int      @id @default(autoincrement())
+  videoId        Int      @map("video_id")
+  pertanyaan     String   @db.Text
+  pilihan        Json
+  jawabanBenar   Int      @map("jawaban_benar")
+  urutan         Int      @default(1)
+  video          IrCourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  jawaban        IrCourseQuizJawaban[]
+  @@index([videoId])
+  @@map("ir_course_quiz")
+}
+
+model IrCourseQuizJawaban {
+  id          Int      @id @default(autoincrement())
+  quizId      Int      @map("quiz_id")
+  userId      Int      @map("user_id")
+  pilihan     Int
+  benar       Boolean
+  dijawabPada DateTime @default(now()) @map("dijawab_pada")
+  quiz        IrCourseQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user        User @relation("IrCourseQuizJawabanUser", fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([quizId, userId])
+  @@index([userId])
+  @@map("ir_course_quiz_jawaban")
 }
 
 model IrCourseTontonan {
