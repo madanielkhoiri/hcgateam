@@ -81,7 +81,7 @@ function buatService(overrides: Record<string, jest.Mock> = {}) {
 }
 
 describe('SuratTugasDinasKaryawanService', () => {
-  it('hanya mengambil STD Akomodasi final milik NRP akun', async () => {
+  it('hanya mengambil STD biasa final milik NRP akun', async () => {
     const { service, findMany } = buatService();
 
     const hasil = await service.daftar({ id: 1, nrp: '123' });
@@ -91,7 +91,7 @@ describe('SuratTugasDinasKaryawanService', () => {
         where: expect.objectContaining({
           nrp: { in: ['123'] },
           suratTugas: expect.objectContaining({
-            denganAkomodasi: true,
+            denganAkomodasi: false,
             status: StatusSuratTugas.DISETUJUI,
           }),
         }),
