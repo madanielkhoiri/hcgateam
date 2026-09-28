@@ -114,7 +114,7 @@ export default function SuratTugasDinasSayaPage() {
             Belum ada Surat Tugas Dinas
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            STD Akomodasi yang sudah disetujui SH dan PJO akan muncul di sini.
+            Surat Tugas Dinas yang sudah disetujui SH dan PJO akan muncul di sini.
           </p>
         </div>
       ) : (
@@ -185,16 +185,6 @@ export default function SuratTugasDinasSayaPage() {
                       rel="noreferrer"
                     >
                       <ExternalLink size={15} /> STD
-                    </a>
-                  ) : null}
-                  {item.surat.filePdf ? (
-                    <a
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                      href={suratTugasKaryawanApi.urlPdf(item.surat.filePdf)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink size={15} /> STD Akomodasi
                     </a>
                   ) : null}
                   {item.advanceFilePdf ? (

@@ -76,6 +76,7 @@ export type IrCourseVideo = {
   totalDitonton: number;
   sudahDitonton: boolean;
   ditontonPada: string | null;
+  quiz: { id: number; pertanyaan: string; pilihan: string[]; urutan: number }[];
 };
 
 export type IrCoursePenonton = {
@@ -212,16 +213,21 @@ export const irApi = {
 
   course: {
     daftar: () => request<IrCourseVideo[]>('/course/video'),
-    unggah: (judul: string, deskripsi: string | undefined, file: File) => {
+    unggah: (judul: string, deskripsi: string | undefined, file: File, quiz: { pertanyaan: string; pilihan: string[]; jawabanBenar: number }[]) => {
       const form = new FormData();
       form.append('judul', judul);
       if (deskripsi) form.append('deskripsi', deskripsi);
       form.append('file', file);
+      form.append('quiz', JSON.stringify(quiz));
       return request<IrCourseVideo>('/course/video', {
         method: 'POST',
         body: form,
       });
     },
+    jawabQuiz: (id: number, jawaban: { pilihan: number }[]) =>
+      request<{ lulus: boolean; benar: number; total: number }>(`/course/video/${id}/quiz`, {
+        method: 'POST', body: JSON.stringify({ jawaban }),
+      }),
     ubah: (id: number, data: { judul?: string; deskripsi?: string }) =>
       request<IrCourseVideo>(`/course/video/${id}`, {
         method: 'PATCH',
