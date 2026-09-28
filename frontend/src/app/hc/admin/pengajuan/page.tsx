@@ -151,7 +151,8 @@ const formBuktiTransferAwal: FormBuktiTransfer = {
 
 export default function HalamanPengajuanAdmin() {
  const router = useRouter();
- const apiUrl = process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3011";
+ // Modul deklarasi sudah digabung ke backend utama; 3011 adalah port lama.
+ const apiUrl = process.env.NEXT_PUBLIC_DEKLARASI_API_URL || "http://localhost:3001/api";
 
  const [roleLogin, setRoleLogin] = useState<RolePengguna | null>(null);
  const [namaLogin, setNamaLogin] = useState("");
@@ -240,6 +241,19 @@ export default function HalamanPengajuanAdmin() {
  return {
  Authorization: `Bearer ${token}`,
  };
+ };
+
+ const bacaJson = async <T,>(response: Response, namaEndpoint: string): Promise<T> => {
+ const teks = await response.text();
+ if (!teks.trim()) {
+   if (response.ok) return [] as T;
+   throw new Error(`Respons ${namaEndpoint} kosong (HTTP ${response.status}).`);
+ }
+ try {
+   return JSON.parse(teks) as T;
+ } catch {
+   throw new Error(`Respons ${namaEndpoint} bukan JSON (HTTP ${response.status}).`);
+ }
  };
 
  const normalisasiAngka = (nilai: unknown) => {
@@ -390,8 +404,8 @@ export default function HalamanPengajuanAdmin() {
  throw new Error("Gagal mengambil data pengajuan.");
  }
 
- const dataPengguna = (await resPengguna.json()) as DataPengguna[];
- const dataPengajuan = (await resPengajuan.json()) as DataPengajuan[];
+ const dataPengguna = await bacaJson<DataPengguna[]>(resPengguna, "daftar karyawan");
+ const dataPengajuan = await bacaJson<DataPengajuan[]>(resPengajuan, "daftar pengajuan");
 
  setDaftarPengguna(Array.isArray(dataPengguna) ? dataPengguna : []);
  setDaftarPengajuan(Array.isArray(dataPengajuan) ? dataPengajuan : []);

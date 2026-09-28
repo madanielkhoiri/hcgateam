@@ -47,6 +47,30 @@ type PilihanKaryawanForm = {
   keteranganTugas?: string;
 };
 
+type KategoriUangMakan = "GL" | "NON_STAFF" | "MANUAL";
+
+function kategoriUangMakan(jabatan: string): KategoriUangMakan {
+  const normal = jabatan.trim().toUpperCase().replace(/[._-]+/g, " ");
+  if (/\b(GL|GROUP\s*LEADER)\b/.test(normal)) return "GL";
+  if (/\b(DEPT\s*HEAD|DEPARTMENT\s*HEAD|PJO)\b/.test(normal)) {
+    return "MANUAL";
+  }
+  return "NON_STAFF";
+}
+
+function labelKategoriUangMakan(kategori: KategoriUangMakan) {
+  if (kategori === "GL") return "GL / Group Leader";
+  if (kategori === "MANUAL") return "Dept Head / PJO (manual HC)";
+  return "Non-Staff";
+}
+
+function nominalMakanDefault(jabatan: string, frekuensi: number) {
+  const kategori = kategoriUangMakan(jabatan);
+  if (kategori === "MANUAL" || frekuensi <= 0) return "";
+  const tarif = kategori === "GL" ? 75000 : 50000;
+  return String(tarif * frekuensi);
+}
+
 export function TugasDinasBuatForm({
   withAkomodasi,
 }: {
@@ -182,6 +206,10 @@ export function TugasDinasBuatForm({
       setGalat(null);
     }
 
+    const frekuensiDariSurat = withAkomodasi && item.tanggalMulai && item.tanggalSelesai
+      ? durasiHariTugas(item.tanggalMulai.slice(0, 10), item.tanggalSelesai.slice(0, 10)) * 3
+      : frekuensiMakanOtomatis;
+
     setBaris((current) => [
       ...current,
       {
@@ -189,7 +217,10 @@ export function TugasDinasBuatForm({
         nama: item.nama,
         departemen: item.departemen,
         jabatan: item.jabatan,
-        uangPerjalananNominal: "",
+        uangPerjalananNominal: nominalMakanDefault(
+          item.jabatan,
+          frekuensiDariSurat,
+        ),
         akomodasiNominal: "",
         ruteTransportasiLokal: "",
         laundryNominal: "",
@@ -572,6 +603,12 @@ export function TugasDinasBuatForm({
                       ({row.nrp})
                     </span>
                   </strong>
+                  <div style={{ color: "#667085", fontSize: 12, marginTop: 4 }}>
+                    Kategori uang makan: {labelKategoriUangMakan(kategoriUangMakan(row.jabatan))}
+                    {kategoriUangMakan(row.jabatan) === "MANUAL"
+                      ? " — nominal wajib diisi HC"
+                      : " — nominal otomatis, dapat dikoreksi"}
+                  </div>
                   <div className={styles.formGrid} style={{ marginTop: 10 }}>
                     <Field label="Makan (Rp)">
                       <input
