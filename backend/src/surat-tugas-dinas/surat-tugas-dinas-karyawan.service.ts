@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,7 +30,7 @@ export class SuratTugasDinasKaryawanService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly advancePdf: SuratTugasDinasAdvancePdfService,
-    private readonly suratPdf: SuratTugasDinasPdfService,
+    @Optional() private readonly suratPdf?: SuratTugasDinasPdfService,
   ) {}
 
   async pdfKaryawan(id: number, aktor: AktorKaryawan) {
@@ -47,6 +48,7 @@ export class SuratTugasDinasKaryawanService {
     ) {
       throw new BadRequestException('STD Akomodasi belum mendapatkan persetujuan lengkap');
     }
+    if (!this.suratPdf) throw new BadRequestException('Layanan PDF belum tersedia');
     const filePdf = await this.suratPdf.buatFileKaryawan(item.suratTugas, item.id);
     return { filePdf };
   }
