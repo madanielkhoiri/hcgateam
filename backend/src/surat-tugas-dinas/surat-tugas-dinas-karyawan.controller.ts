@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { SuratTugasDinasKaryawanService } from './surat-tugas-dinas-karyawan.service';
 
 type AuthRequest = {
@@ -17,7 +16,6 @@ type AuthRequest = {
 
 @Controller('surat-tugas-dinas-karyawan')
 @UseGuards(JwtAuthGuard)
-@RequireAccessKey('HC_DEKLARASI')
 export class SuratTugasDinasKaryawanController {
   constructor(private readonly service: SuratTugasDinasKaryawanService) {}
 

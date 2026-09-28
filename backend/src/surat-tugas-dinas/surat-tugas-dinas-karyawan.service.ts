@@ -59,7 +59,7 @@ export class SuratTugasDinasKaryawanService {
       where: {
         nrp: { in: identitas.nrp },
         suratTugas: {
-          denganAkomodasi: true,
+          denganAkomodasi: false,
           status: StatusSuratTugas.DISETUJUI,
         },
       },
