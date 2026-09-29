@@ -55,7 +55,7 @@ export class PengaduanLayananService {
       throw new BadRequestException('Pengaduan HC tidak memiliki proses Approve, Hold, atau Reject');
     }
 
-    if (dto.status !== StatusPengaduan.DISETUJUI && !dto.catatanAdmin?.trim()) {
+    if (dto.status !== StatusPengaduan.DISETUJUI && dto.status !== StatusPengaduan.SELESAI && !dto.catatanAdmin?.trim()) {
       throw new BadRequestException('Catatan wajib diisi untuk Hold/Reject');
     }
 
@@ -63,6 +63,7 @@ export class PengaduanLayananService {
       where: { id },
       data: {
         status: dto.status,
+        progress: dto.status === StatusPengaduan.SELESAI ? 100 : (dto.progress ?? pengaduan.progress),
         catatanAdmin: dto.catatanAdmin?.trim() || null,
         diprosesOlehId: aktorId,
         diprosesPada: new Date(),
@@ -79,7 +80,7 @@ export class PengaduanLayananService {
     return hasil;
   }
 
-  async rekap(divisi: DivisiPengaduan, bulan?: number, tahun?: number) {
+  async rekap(divisi: DivisiPengaduan, bulan?: number, tahun?: number, pengirimId?: number) {
     const sekarang = new Date();
     const bulanDipilih = bulan ?? sekarang.getMonth() + 1;
     const tahunDipilih = tahun ?? sekarang.getFullYear();
@@ -88,7 +89,7 @@ export class PengaduanLayananService {
     const akhirBulan = new Date(tahunDipilih, bulanDipilih, 1);
 
     const daftarBulanIni = await this.prisma.pengaduanLayanan.findMany({
-      where: { divisi, createdAt: { gte: awalBulan, lt: akhirBulan } },
+      where: { divisi, ...(pengirimId ? { pengirimId } : {}), createdAt: { gte: awalBulan, lt: akhirBulan } },
       include: {
         pengirim: { select: { id: true, name: true } },
         foto: { select: { id: true, urlFoto: true, namaFile: true } },
@@ -134,12 +135,18 @@ export class PengaduanLayananService {
         foto: item.foto,
         lokasi: item.lokasi,
         status: item.status,
+        progress: item.progress,
         catatanAdmin: item.catatanAdmin,
         pengirim: item.pengirim.name,
         createdAt: item.createdAt,
       })),
       tren,
     };
+  }
+
+  async daftar(divisi: DivisiPengaduan, bulan?: number, tahun?: number, pengirimId?: number) {
+    const hasil = await this.rekap(divisi, bulan, tahun, pengirimId);
+    return { divisi: hasil.divisi, bulan: hasil.bulan, tahun: hasil.tahun, daftar: hasil.daftar };
   }
 
   private async hitungTrenBulanan(

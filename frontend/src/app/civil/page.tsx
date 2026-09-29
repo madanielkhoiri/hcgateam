@@ -276,3 +276,5 @@ export default function CivilPage() {
     </main>
   );
 }
+
+

@@ -73,7 +73,7 @@ export default function RekapBulananMiningPage() {
 
   return <main className={styles.recapPage}>
     <section className={styles.inputHero}>
-      <div className={styles.printBrand}><img className={styles.printLogo} src="/logos/Logo_PPA_Official_nw.png" alt="PPA" /><div><span>ORDER PACK MEAL MINING</span><h1>Rekap Bulanan</h1><p className={styles.printDescription}>Total order otomatis dikelompokkan per tanggal selama periode yang dipilih.</p></div></div>
+      <div className={styles.printBrand}><img className={styles.printLogo} src="/logos/hcga-connect.png" alt="HCGA Connect" /><div><span>ORDER PACK MEAL MINING</span><h1>Rekap Bulanan</h1><p className={styles.printDescription}>Total order otomatis dikelompokkan per tanggal selama periode yang dipilih.</p></div></div>
       <label><CalendarDays size={16}/> Periode<input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label>
     </section>
     <section className={`${styles.inputToolbar} ${styles.printControls}`}><button type="button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> Muat Ulang</button><button type="button" onClick={() => window.print()} disabled={loading || daily.length === 0}><Printer size={15}/> Cetak / Simpan PDF</button></section>
@@ -99,3 +99,4 @@ export default function RekapBulananMiningPage() {
 function MonthlyTotal({ label, value, tone }: { label: string; value: number; tone: string }) {
   return <div className={`${styles.monthlyTotalCard} ${styles[`total_${tone}`]}`}><span>{label}</span><strong>{value.toLocaleString('id-ID')} Kotak</strong></div>;
 }
+

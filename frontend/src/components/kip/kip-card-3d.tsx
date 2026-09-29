@@ -10,7 +10,7 @@ const BULAN_LABEL = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGS', 'SE
 
 // Aset statis frontend (frontend/public/logos/) — ikut ter-commit ke repo,
 // beda dari backend/uploads/ yang isinya upload runtime (tidak di-commit).
-const LOGO_PPA_URL = '/logos/Logo_PPA_Official_nw.png';
+const LOGO_PPA_URL = '/logos/hcga-connect.png';
 const LOGO_K3_URL = '/logos/k3.png';
 
 /** Preload satu gambar sekali saja, dipakai ulang tiap render kartu. */
@@ -351,3 +351,4 @@ export function KipCard3D({
     </div>
   );
 }
+
