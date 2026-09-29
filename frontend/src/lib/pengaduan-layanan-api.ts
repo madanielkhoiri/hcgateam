@@ -11,11 +11,12 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 /** Role yang boleh lihat rekap performa & kelola (approve/hold/reject) Aduan Layanan — samakan dengan backend PengaduanLayananAksesService. */
-export const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD', 'ELEKTRIK', 'KORLAP'];
+export const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
+export const ROLE_BOLEH_LIHAT_ADUAN = [...ROLE_BOLEH_LIHAT_REKAP, 'KORLAP', 'ELEKTRIK'];
 
 export type DivisiPengaduan = 'HC' | 'GA' | 'CIVIL';
 export type LokasiPengaduan = 'TAMBANG' | 'MESS';
-export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK';
+export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK' | 'SELESAI';
 
 export type BuatPengaduanInput = {
   divisi: DivisiPengaduan;
@@ -44,6 +45,7 @@ export type DetailPengaduan = {
   foto: FotoPengaduan[];
   lokasi: LokasiPengaduan | null;
   status: StatusPengaduan;
+  progress: number;
   catatanAdmin: string | null;
   pengirim: string;
   createdAt: string;
@@ -145,16 +147,26 @@ export const pengaduanLayananApi = {
     return (await response.json()) as RekapPengaduan;
   },
 
+  daftar: async (divisi: DivisiPengaduan, bulan?: number, tahun?: number): Promise<Pick<RekapPengaduan, 'divisi' | 'bulan' | 'tahun' | 'daftar'>> => {
+    const params = new URLSearchParams({ divisi });
+    if (bulan) params.set('bulan', String(bulan));
+    if (tahun) params.set('tahun', String(tahun));
+    const response = await fetch(`${API_URL}/pengaduan-layanan/daftar?${params.toString()}`, { headers: headerAuth(), cache: 'no-store' });
+    if (!response.ok) throw new PengaduanLayananApiError(await bacaError(response), response.status);
+    return (await response.json()) as Pick<RekapPengaduan, 'divisi' | 'bulan' | 'tahun' | 'daftar'>;
+  },
+
   /** Approve/Hold/Reject oleh admin — catatan wajib untuk Hold & Reject, opsional untuk Approve. */
   ubahStatus: async (
     id: number,
     status: Exclude<StatusPengaduan, 'MENUNGGU'>,
     catatanAdmin?: string,
+    progress?: number,
   ): Promise<void> => {
     const response = await fetch(`${API_URL}/pengaduan-layanan/${id}/status`, {
       method: 'PATCH',
       headers: headerAuth(),
-      body: JSON.stringify({ status, catatanAdmin }),
+      body: JSON.stringify({ status, catatanAdmin, progress }),
       cache: 'no-store',
     });
 
@@ -180,6 +192,7 @@ export const LABEL_STATUS_PENGADUAN: Record<StatusPengaduan, string> = {
   DISETUJUI: 'Disetujui',
   DITAHAN: 'Ditahan',
   DITOLAK: 'Ditolak',
+  SELESAI: 'Selesai',
 };
 
 const NAMA_BULAN = [

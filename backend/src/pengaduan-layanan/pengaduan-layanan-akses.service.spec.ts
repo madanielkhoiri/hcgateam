@@ -9,8 +9,6 @@ describe('PengaduanLayananAksesService', () => {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
     UserRole.SECTION_HEAD,
-    UserRole.ELEKTRIK,
-    UserRole.KORLAP,
   ])('mengizinkan role %s melihat rekap performa', (role) => {
     expect(() => akses.wajibBolehLihatRekap(role)).not.toThrow();
   });
@@ -26,8 +24,6 @@ describe('PengaduanLayananAksesService', () => {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
     UserRole.SECTION_HEAD,
-    UserRole.ELEKTRIK,
-    UserRole.KORLAP,
   ])('mengizinkan role %s kelola status (approve/hold/reject)', (role) => {
     expect(() => akses.wajibBolehKelolaStatus(role)).not.toThrow();
   });

@@ -155,6 +155,17 @@ export class PengaduanLayananController {
     );
   }
 
+  @Get('daftar')
+  daftar(
+    @Req() request: AuthRequest,
+    @Query('divisi') divisiRaw?: string,
+    @Query('bulan') bulanRaw?: string,
+    @Query('tahun') tahunRaw?: string,
+  ) {
+    const bolehLihatSemua = ([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.KORLAP, UserRole.ELEKTRIK] as UserRole[]).includes(request.user.role);
+    return this.service.daftar(validasiDivisi(divisiRaw), bulanRaw ? Number(bulanRaw) : undefined, tahunRaw ? Number(tahunRaw) : undefined, bolehLihatSemua ? undefined : request.user.id);
+  }
+
   @Patch(':id/status')
   ubahStatus(
     @Req() request: AuthRequest,
