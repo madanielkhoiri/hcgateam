@@ -184,7 +184,7 @@ export default function DashboardMcuPage() {
             yang berwenang melakukan override.
           </li>
           <li>
-            Seluruh biaya Follow Up mandiri, batas waktunya ditetapkan HC manual
+            Batas waktu Follow Up ditetapkan HC secara manual
             per kasus dan wajib close maksimal 2 bulan setelah MCU ulang.
           </li>
           <li>

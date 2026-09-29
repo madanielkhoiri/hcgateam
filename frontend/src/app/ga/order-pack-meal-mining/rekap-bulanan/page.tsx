@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, RefreshCw } from 'lucide-react';
+import { CalendarDays, Printer, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAccessToken } from '@/lib/access-control';
 import { type MiningApiRow } from '../mining-template';
@@ -57,8 +57,13 @@ export default function RekapBulananMiningPage() {
       current.specialSnack += final(row, 'SpecialSnack');
       grouped.set(date, current);
     });
-    return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [rows]);
+    const [year, monthNumber] = month.split('-').map(Number);
+    const jumlahHari = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    return Array.from({ length: jumlahHari }, (_, index) => {
+      const date = `${month}-${String(index + 1).padStart(2, '0')}`;
+      return [date, grouped.get(date) ?? { lunch: 0, dinner: 0, specialMeal: 0, specialSnack: 0 }] as const;
+    });
+  }, [rows, month]);
 
   const total = daily.reduce((sum, [, value]) => ({
     lunch: sum.lunch + value.lunch, dinner: sum.dinner + value.dinner,
@@ -68,10 +73,10 @@ export default function RekapBulananMiningPage() {
 
   return <main className={styles.recapPage}>
     <section className={styles.inputHero}>
-      <div><span>ORDER PACK MEAL MINING</span><h1>Rekap Bulanan</h1><p>Total order otomatis dikelompokkan per tanggal selama periode yang dipilih.</p></div>
+      <div className={styles.printBrand}><img className={styles.printLogo} src="/logos/Logo_PPA_Official_nw.png" alt="PPA" /><div><span>ORDER PACK MEAL MINING</span><h1>Rekap Bulanan</h1><p className={styles.printDescription}>Total order otomatis dikelompokkan per tanggal selama periode yang dipilih.</p></div></div>
       <label><CalendarDays size={16}/> Periode<input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label>
     </section>
-    <section className={styles.inputToolbar}><button type="button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> Muat Ulang</button></section>
+    <section className={`${styles.inputToolbar} ${styles.printControls}`}><button type="button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> Muat Ulang</button><button type="button" onClick={() => window.print()} disabled={loading || daily.length === 0}><Printer size={15}/> Cetak / Simpan PDF</button></section>
     {error && <div className={styles.error}>{error}</div>}
     <section className={styles.dailySummaryGrid}>
       <MonthlyTotal label="Makan Siang" value={total.lunch} tone="yellow" />
@@ -80,9 +85,12 @@ export default function RekapBulananMiningPage() {
       <MonthlyTotal label="Snack Spesial" value={total.specialSnack} tone="blue" />
     </section>
     <section className={styles.recapTableWrap}>
-      <table className={styles.monthTable}><thead><tr><th>Tanggal</th><th>Makan Siang</th><th>Makan Malam</th><th>Makan Spesial</th><th>Snack Spesial</th><th>Total Hari</th></tr></thead>
-        <tbody>{loading ? <tr><td colSpan={6} className={styles.empty}>Memuat rekap bulanan...</td></tr> : daily.length === 0 ? <tr><td colSpan={6} className={styles.empty}>Belum ada order pada bulan ini.</td></tr> : daily.map(([date, value]) => <tr key={date}><td>{labelDate(date)}</td><td>{value.lunch.toLocaleString('id-ID')} Kotak</td><td>{value.dinner.toLocaleString('id-ID')} Kotak</td><td>{value.specialMeal.toLocaleString('id-ID')} Kotak</td><td>{value.specialSnack.toLocaleString('id-ID')} Kotak</td><td className={styles.monthTotal}>{(value.lunch + value.dinner + value.specialMeal + value.specialSnack).toLocaleString('id-ID')} Kotak</td></tr>)}</tbody>
-        {!loading && daily.length > 0 && <tfoot><tr><th>TOTAL BULAN</th><th>{total.lunch.toLocaleString('id-ID')} Kotak</th><th>{total.dinner.toLocaleString('id-ID')} Kotak</th><th>{total.specialMeal.toLocaleString('id-ID')} Kotak</th><th>{total.specialSnack.toLocaleString('id-ID')} Kotak</th><th>{(total.lunch + total.dinner + total.specialMeal + total.specialSnack).toLocaleString('id-ID')} Kotak</th></tr></tfoot>}
+      <table className={styles.monthTable}>
+        <thead>
+          <tr><th>Tanggal</th>
+          <th>Makan Siang</th><th>Makan Malam</th><th>Makan Spesial</th><th>Snack Spesial</th><th>Total Order</th></tr></thead>
+        <tbody>{loading ? <tr><td colSpan={6} className={styles.empty}>Memuat rekap bulanan...</td></tr> : daily.map(([date, value]) => <tr key={date}><td>{labelDate(date)}</td><td>{value.lunch.toLocaleString('id-ID')} Kotak</td><td>{value.dinner.toLocaleString('id-ID')} Kotak</td><td>{value.specialMeal.toLocaleString('id-ID')} Kotak</td><td>{value.specialSnack.toLocaleString('id-ID')} Kotak</td><td className={styles.monthTotal}>{(value.lunch + value.dinner + value.specialMeal).toLocaleString('id-ID')} Kotak</td></tr>)}</tbody>
+        {!loading && <tfoot><tr><th>TOTAL ORDER BULAN</th><th>{total.lunch.toLocaleString('id-ID')} Kotak</th><th>{total.dinner.toLocaleString('id-ID')} Kotak</th><th>{total.specialMeal.toLocaleString('id-ID')} Kotak</th><th>{total.specialSnack.toLocaleString('id-ID')} Kotak</th><th>{(total.lunch + total.dinner + total.specialMeal).toLocaleString('id-ID')} Kotak</th></tr></tfoot>}
       </table>
     </section>
   </main>;

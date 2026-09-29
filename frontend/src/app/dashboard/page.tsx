@@ -556,10 +556,9 @@ export default function DashboardPage() {
        <div className={styles.headerInner}>
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
-            <img src="/logos/ppa.png" alt="PPA" />
+            <img src="/logos/hcga-connect.png" alt="HCGA Connect" />
           </div>
 
-          <span>ONE FOR ALL</span>
         </div>
 
         <div className={styles.headerRight}>

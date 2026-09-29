@@ -90,8 +90,6 @@ export default function DashboardPengaduanPage() {
   }
 
   const menunggu = rekap?.daftar.filter((item) => item.status === 'MENUNGGU').length ?? 0;
-  const ditahanDitolak =
-    rekap?.daftar.filter((item) => item.status === 'DITAHAN' || item.status === 'DITOLAK').length ?? 0;
 
   const statCards: StatCard[] = rekap
     ? [
@@ -117,13 +115,6 @@ export default function DashboardPengaduanPage() {
           initial: 'MP',
           iconBg: '#fff0f3',
           iconColor: '#b02031',
-        },
-        {
-          label: 'Ditahan / Ditolak',
-          value: ditahanDitolak,
-          initial: 'DD',
-          iconBg: '#ffe4ec',
-          iconColor: '#ef476f',
         },
       ]
     : [];

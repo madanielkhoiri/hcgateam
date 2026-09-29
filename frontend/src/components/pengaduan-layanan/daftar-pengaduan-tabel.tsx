@@ -37,6 +37,7 @@ export function DaftarPengaduanTabel({
   bulan?: number;
   tahun?: number;
 }) {
+  const bolehKelolaStatus = divisi === 'GA';
   const [rekap, setRekap] = useState<RekapPengaduan | null>(null);
   const [error, setError] = useState('');
   const [memuat, setMemuat] = useState(true);
@@ -131,7 +132,7 @@ export function DaftarPengaduanTabel({
               <th>Aduan Layanan</th>
               <th>Foto</th>
               <th>Status</th>
-              <th>Aksi</th>
+              {bolehKelolaStatus && <th>Aksi</th>}
             </tr>
           </thead>
           <tbody>
@@ -176,7 +177,7 @@ export function DaftarPengaduanTabel({
                     <div className={styles.catatanAdmin}>&ldquo;{item.catatanAdmin}&rdquo;</div>
                   )}
                 </td>
-                <td>
+                {bolehKelolaStatus && <td>
                   {item.status === 'MENUNGGU' ? (
                     <div className={styles.aksiGroup}>
                       <button
@@ -207,7 +208,7 @@ export function DaftarPengaduanTabel({
                   ) : (
                     '-'
                   )}
-                </td>
+                </td>}
               </tr>
             ))}
           </tbody>

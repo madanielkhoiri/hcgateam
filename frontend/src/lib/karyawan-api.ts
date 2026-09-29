@@ -25,6 +25,8 @@ const API_URL =
 export type RingkasanDatabaseKaryawan = {
   totalKaryawan: number;
   karyawanAktif: number;
+  karyawanDirumahkan: number;
+  karyawanResign: number;
   jumlahDepartemen: number;
   waTerdaftar: number;
 };

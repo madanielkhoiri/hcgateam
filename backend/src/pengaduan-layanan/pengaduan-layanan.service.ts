@@ -1,14 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DivisiPengaduan, StatusPengaduan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengaduanLayananDto } from './dto/create-pengaduan-layanan.dto';
 import { UbahStatusPengaduanLayananDto } from './dto/ubah-status-pengaduan-layanan.dto';
+import { WebPushService } from '../web-push/web-push.service';
 
 const JUMLAH_BULAN_TREN = 6;
 
 @Injectable()
 export class PengaduanLayananService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly webPush?: WebPushService,
+  ) {}
 
   async create(
     dto: CreatePengaduanLayananDto,
@@ -47,11 +51,15 @@ export class PengaduanLayananService {
       throw new NotFoundException('Pengaduan tidak ditemukan');
     }
 
+    if (pengaduan.divisi !== DivisiPengaduan.GA) {
+      throw new BadRequestException('Pengaduan HC tidak memiliki proses Approve, Hold, atau Reject');
+    }
+
     if (dto.status !== StatusPengaduan.DISETUJUI && !dto.catatanAdmin?.trim()) {
       throw new BadRequestException('Catatan wajib diisi untuk Hold/Reject');
     }
 
-    return this.prisma.pengaduanLayanan.update({
+    const hasil = await this.prisma.pengaduanLayanan.update({
       where: { id },
       data: {
         status: dto.status,
@@ -61,6 +69,14 @@ export class PengaduanLayananService {
       },
       include: { diprosesOleh: { select: { id: true, name: true } } },
     });
+    if (this.webPush && pengaduan.pengirimId) {
+      await this.webPush.sendToUser(pengaduan.pengirimId, {
+        title: `Pengaduan ${dto.status === StatusPengaduan.DISETUJUI ? 'disetujui' : dto.status === StatusPengaduan.DITAHAN ? 'ditahan' : 'ditolak'}`,
+        body: dto.catatanAdmin?.trim() || 'Status pengaduan layanan Anda telah diperbarui.',
+        url: '/hc/pengaduan',
+      });
+    }
+    return hasil;
   }
 
   async rekap(divisi: DivisiPengaduan, bulan?: number, tahun?: number) {

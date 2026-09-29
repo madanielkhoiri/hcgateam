@@ -323,14 +323,13 @@ export default function KaryawanMcuPage() {
           </Link>
 
           {bolehKelola ? (
-            <button
-              type="button"
+            <Link
+              href="/hc/karyawan/daftar"
               className={styles.tombol}
-              onClick={bukaTambah}
             >
               <Plus size={15} />
-              Tambah Karyawan
-            </button>
+              Tambah di Database Karyawan
+            </Link>
           ) : null}
 
           {bolehKelola ? (

@@ -31,8 +31,10 @@ import { McuRetensiService } from './retensi/mcu-retensi.service';
 import { McuSuratController } from './surat/mcu-surat.controller';
 import { McuSuratService } from './surat/mcu-surat.service';
 import { McuSchedulerService } from './scheduler/mcu-scheduler.service';
+import { WebPushModule } from '../web-push/web-push.module';
 
 @Module({
+  imports: [WebPushModule],
   controllers: [
     McuDashboardController,
     McuPeranController,

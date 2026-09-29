@@ -723,7 +723,10 @@ function GudangPageInner() {
           className={styles.ghostButton}
           onClick={() => {
             if (user?.role === 'GUDANG') {
-              router.replace('/gudang');
+              // Akun staff gudang tetap berada di halaman yang sama; reset ke
+              // menu gudang agar tombol Selesai benar-benar mengakhiri transaksi.
+              setLangkah('menu');
+              setHasil(null);
             } else {
               router.replace('/ga/inventory/barang-keluar');
             }
