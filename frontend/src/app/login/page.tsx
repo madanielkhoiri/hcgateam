@@ -86,13 +86,6 @@ export default function LoginPage() {
   return (
     <main className={`${styles.page} ${leaving ? styles.pageLeaving : ''}`}>
       <header className={styles.header}>
-        <div className={styles.brand}>
-          <div className={styles.brandLogo}>
-            <UsersRound size={23} strokeWidth={2.3} />
-          </div>
-
-          <span>ONE FOR ALL</span>
-        </div>
       </header>
 
       <section className={styles.main}>
@@ -101,11 +94,10 @@ export default function LoginPage() {
 
         <section className={styles.loginCard}>
           <div className={styles.loginIcon}>
-            <UsersRound size={34} strokeWidth={1.9} />
+            <img src="/logos/hcga-connect.png" alt="HCGA Connect" />
           </div>
 
           <h1>Selamat Datang</h1>
-          <p className={styles.subtitle}>Portal internal ONE FOR ALL</p>
 
           <div className={styles.titleLine} />
 

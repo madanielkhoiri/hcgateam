@@ -9,8 +9,8 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: 'ONE FOR ALL',
-  description: 'Portal Internal ONE FOR ALL',
+  title: 'HCGA Connect',
+  description: 'Portal Internal HCGA Connect',
 };
 
 export default function RootLayout({

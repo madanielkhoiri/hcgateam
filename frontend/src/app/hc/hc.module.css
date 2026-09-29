@@ -29,14 +29,14 @@
 }
 
 .brandLogo {
-  width: 43px;
-  height: 43px;
+  width: 170px;
+  height: 56px;
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: #ef2929;
-  border-radius: 50%;
-  box-shadow: 0 8px 20px rgba(239, 41, 41, 0.22);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .profile {
@@ -44,15 +44,22 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #f1f6ff;
+  cursor: pointer;
 }
-.brandLogo img { width: 40px; height: 40px; object-fit: contain; }
+.profile:hover { background:#eaf2ff; }
+.profileArrow { color:#607895; transition:transform .16s ease; }
+.profileArrowOpen { color:#607895; transform:rotate(90deg); transition:transform .16s ease; }
+.brandLogo img { width: 170px; height: 56px; object-fit: contain; }
 .profileDropdown {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
   z-index: 20;
   display: grid;
-  min-width: 180px;
+  min-width: 290px;
   gap: 8px;
   padding: 14px;
   border: 1px solid #d8e4f2;
@@ -62,7 +69,16 @@
   text-align: left;
 }
 .profileDropdown strong { color: #12355f; font-size: 12px; }
-.profileDropdown a, .profileDropdown button { border: 0; background: none; color: #385675; font: inherit; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
+.profileDropdownHeader { display:flex; align-items:center; gap:12px; padding:6px 0 12px; }
+.profileDropdownHeader > span:last-child { display:grid; gap:3px; }
+.profileDropdownHeader b { color:#18355e; font-size:13px; }
+.profileDropdownHeader small { color:#8190a5; font-size:10px; }
+.profileDropdownAvatar { width:38px; height:38px; display:grid; place-items:center; color:#0870e6; background:#eaf2ff; border-radius:50%; }
+.profileDivider { height:1px; margin:3px 0; background:#e2eaf3; }
+.profileDropdown a, .profileDropdown button { display:flex; align-items:center; gap:12px; border: 0; background: none; color: #385675; font: inherit; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; padding:9px 0; }
+.profileDropdown a span, .profileDropdown button span { display:grid; gap:3px; }
+.profileDropdown b { color:#18355e; font-size:12px; }
+.profileDropdown small { color:#8190a5; font-size:10px; font-weight:400; }
 .profileDropdown button { color: #b02031; }
 
 .profileIcon {

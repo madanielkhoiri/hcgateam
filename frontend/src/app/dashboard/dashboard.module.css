@@ -51,15 +51,16 @@
 }
 
 .brandLogo {
-  width: 46px;
-  height: 46px;
+  width: 180px;
+  height: 62px;
   display: grid;
   place-items: center;
   color: white;
-  background: #fff;
-  border-radius: 50%;
+  background: transparent;
+  border-radius: 0;
+  flex-shrink: 0;
 }
-.brandLogo img { width: 43px; height: 43px; object-fit: contain; }
+.brandLogo img { width: 180px; height: 62px; object-fit: contain; }
 
 .headerRight {
   display: flex;
@@ -926,8 +927,8 @@
   }
 
   .brandLogo {
-    width: 40px;
-    height: 40px;
+    width: 145px;
+    height: 52px;
   }
 
   .headerRight {

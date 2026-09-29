@@ -27,6 +27,7 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import styles from './portal-shell.module.css';
+import { WebPushPrompt } from '../web-push-prompt';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -162,6 +163,7 @@ export default function PortalShell({
   }
 
   return (
+    <>
     <div
       className={`${styles.shell} ${
         sidebarCollapsed ? styles.shellCollapsed : ''
@@ -175,11 +177,8 @@ export default function PortalShell({
         <div className={styles.sidebarHeader}>
           <Link href="/dashboard" className={styles.brand}>
             <span className={styles.brandLogo}>
-              <img src="/logos/ppa.png" alt="PPA" />
+              <img src="/logos/hcga-connect.png" alt="HCGA Connect" />
             </span>
-            {!sidebarCollapsed && (
-              <span className={styles.brandText}>ONE FOR ALL</span>
-            )}
           </Link>
 
           <button
@@ -284,6 +283,7 @@ export default function PortalShell({
               <strong>{user.name}</strong>
               <span>{user.jabatan || formatRole(user.role)}</span>
             </div>
+            <ChevronRight className={profileOpen ? styles.profileArrowOpen : styles.profileArrow} size={18} />
             {profileOpen && (
               <div className={styles.profileDropdown}>
                 <div className={styles.profileDropdownHeader}><UsersRound size={22} /><span><strong>{user.name}</strong><small>{user.jabatan || formatRole(user.role)}</small></span></div>
@@ -302,5 +302,7 @@ export default function PortalShell({
         <div className={styles.pageContent}>{children}</div>
       </section>
     </div>
+    <WebPushPrompt />
+    </>
   );
 }

@@ -5,7 +5,7 @@
 // Kanal email memakai SMTP internal/Outlook (Keputusan #8).
 // ==================================================
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
   KanalNotifikasi,
   Prisma,
@@ -14,6 +14,8 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WebPushService } from '../../web-push/web-push.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 
 export type TargetNotifikasi = {
   penerimaId?: number | null;
@@ -35,7 +37,11 @@ type KlienPrisma = Prisma.TransactionClient | PrismaService;
 export class McuNotifikasiService {
   private readonly logger = new Logger(McuNotifikasiService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly webPush?: WebPushService,
+    @Optional() private readonly whatsapp?: WhatsappService,
+  ) {}
 
   /**
    * Catat notifikasi. Kanal in-app langsung berstatus TERKIRIM,
@@ -71,6 +77,23 @@ export class McuNotifikasiService {
   ): Promise<void> {
     for (const isi of daftar) {
       await this.kirim(isi, tx);
+      if (isi.kanal === undefined || isi.kanal === KanalNotifikasi.IN_APP) {
+        if (isi.penerimaId && this.webPush) {
+          await this.webPush.sendToUser(isi.penerimaId, {
+            title: isi.judul,
+            body: isi.pesan,
+            url: '/mcu/notifikasi',
+          });
+        }
+        // Notifikasi tindak lanjut MCU juga dikirim ke WA karyawan. Reminder
+        // H-3 bulan dikecualikan karena scheduler sudah mengirimkannya langsung.
+        if (isi.penerimaId && this.whatsapp?.aktif && isi.tipe !== TipeNotifikasiMcu.REMINDER_H3_BULAN) {
+          const karyawan = await this.prisma.karyawan.findFirst({ where: { akunId: isi.penerimaId }, select: { nama: true, noTelepon: true } });
+          if (karyawan?.noTelepon) {
+            await this.whatsapp.kirim(karyawan.noTelepon, `Halo, *${karyawan.nama}* 👋\n\n*${isi.judul}*\n\n${isi.pesan}\n\nMohon diperhatikan. Terima kasih 🙏`);
+          }
+        }
+      }
     }
   }
 

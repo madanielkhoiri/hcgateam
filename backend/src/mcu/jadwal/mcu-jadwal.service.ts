@@ -487,7 +487,7 @@ export class McuJadwalService {
       }
 
       const pesan =
-        `Halo ${sapaanKaryawan(jadwal.karyawan.gender)} ${jadwal.karyawan.nama} 👋\n\n` +
+        `Halo ${sapaanKaryawan(jadwal.karyawan.gender)} *${jadwal.karyawan.nama}* 👋\n\n` +
         `*Reminder MCU Periodik* Anda\n\n` +
         `🗓️ Jadwal MCU: ${formatTanggalIndonesia(jadwal.tanggalMcu)}\n` +
         `🔒 Tinggal H-${HARI_LOCK_PENDAFTARAN} hari — jadwal ini sekarang *terkunci* dan tidak bisa diubah lagi kecuali oleh HC.\n\n` +

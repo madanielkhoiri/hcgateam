@@ -77,6 +77,20 @@ export default function DashboardKaryawanPage() {
           iconColor: '#079669',
         },
         {
+          label: 'Dirumahkan',
+          value: ringkasan.karyawanDirumahkan,
+          initial: 'DR',
+          iconBg: '#fff1e5',
+          iconColor: '#f17c16',
+        },
+        {
+          label: 'Resign',
+          value: ringkasan.karyawanResign,
+          initial: 'RS',
+          iconBg: '#eef2f7',
+          iconColor: '#64748b',
+        },
+        {
           label: 'Jumlah Departemen',
           value: ringkasan.jumlahDepartemen,
           initial: 'DP',

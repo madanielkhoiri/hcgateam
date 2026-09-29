@@ -242,6 +242,7 @@ export class TiketService {
     },
     tiket: {
       jenisTiket: JenisTiket;
+      keterangan: string | null;
       tanggalMulai: Date | null;
       jamMulai: string | null;
       tanggalSelesai: Date | null;
@@ -249,6 +250,10 @@ export class TiketService {
     },
     files: Express.Multer.File[],
   ) {
+    const teksKeterangan = tiket.keterangan?.toLowerCase() ?? '';
+    const labelTiket = teksKeterangan.includes('cuti')
+        ? 'Cuti'
+        : 'Perjalanan Dinas';
     const baris: string[] = [];
 
     if (tiket.tanggalMulai && tiket.jamMulai) {
@@ -283,8 +288,8 @@ export class TiketService {
 
       if (nomor) {
         const pesan =
-          `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
-          `*Tiket Dinas* Anda\n\n` +
+          `Halo ${sapaanKaryawan(karyawan.gender)} *${karyawan.nama}* 👋\n\n` +
+          `*Tiket ${labelTiket}* Anda\n\n` +
           `${baris.join('\n')}${keteranganMenyusulWa}\n\n` +
           `Mohon perhatikan jadwal berikut dan silakan unduh e-tiketnya di Portal ONE FOR ALL, terima kasih 🙏`;
 
@@ -298,7 +303,7 @@ export class TiketService {
       if (email) {
         await this.smtp.kirim({
           to: email,
-          subjek: 'Tiket Dinas Baru — Portal ONE FOR ALL',
+          subjek: `Tiket ${labelTiket} Baru — Portal ONE FOR ALL`,
           teks: `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama},\n\nAda tiket dinas baru untuk Anda: ${ringkasanEmail.join(', ')}.${keteranganMenyusulEmail}\n\nFile tiket terlampir pada email ini.\n\nTerima kasih.`,
           lampiran: files.map((f) => ({ namaFile: f.originalname, data: f.buffer })),
         });
@@ -481,7 +486,7 @@ export class TiketService {
     ].filter((item): item is string => Boolean(item));
 
     const pesan =
-      `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
+      `Halo ${sapaanKaryawan(karyawan.gender)} *${karyawan.nama}* 👋\n\n` +
       `*Perubahan Jadwal Tiket Dinas* Anda${alasan?.trim() ? ` (${alasan.trim()})` : ''}\n\n` +
       `${bagian.join('\n')}\n\n` +
       `Mohon perhatikan perubahan jadwal berikut dan mohon konfirmasinya jika tidak sesuai, terima kasih 🙏`;
