@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -43,7 +44,7 @@ export class WorkOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly documentNumber: DocumentNumberService,
-    private readonly webPush: WebPushService,
+    @Optional() private readonly webPush?: WebPushService,
   ) {}
 
   private isAdmin(aktor: AktorWorkOrder): boolean {
@@ -648,7 +649,7 @@ export class WorkOrdersService {
         include: PENYETUJU_INCLUDE,
       });
     });
-    await this.webPush.sendToUser(existing.createdBy, { title: 'Work Order diperbarui', body: `Status WO ${existing.workOrderNumber} sekarang ${nextStatus}.`, url: '/ga/work-orders' });
+    await this.webPush?.sendToUser(existing.createdBy, { title: 'Work Order diperbarui', body: `Status WO ${existing.workOrderNumber} sekarang ${nextStatus}.`, url: '/ga/work-orders' });
     return hasilUpdate;
   }
 
