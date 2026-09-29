@@ -38,6 +38,7 @@ const blankForm = {
   karyawanId: 0,
   namaKaryawan: '',
   jenisTiket: 'PULANG_PERGI' as JenisTiket,
+  jenisPerjalanan: 'CUTI',
   tanggalMulai: '',
   jamMulai: '',
   tanggalSelesai: '',
@@ -54,6 +55,12 @@ const blankReschedule = {
   jamSelesai: '',
   alasan: '',
 };
+
+function ucapanPerjalanan(jenis: string): string {
+  if (jenis === 'DINAS') return 'Selamat menjalankan perjalanan dinas';
+  if (jenis === 'TRAINING') return 'Selamat mengikuti training';
+  return 'Selamat Cuti';
+}
 
 export default function TiketPage() {
   const router = useRouter();
@@ -183,7 +190,7 @@ export default function TiketPage() {
           jamMulai: perluBerangkat ? form.jamMulai : undefined,
           tanggalSelesai: perluPulang ? form.tanggalSelesai : undefined,
           jamSelesai: perluPulang ? form.jamSelesai : undefined,
-          keterangan: form.keterangan || undefined,
+          keterangan: `${ucapanPerjalanan(form.jenisPerjalanan)}${form.keterangan ? ` — ${form.keterangan}` : ''}`,
         },
         files,
       );
@@ -282,7 +289,7 @@ export default function TiketPage() {
           </span>
           <div>
             <h1>Tiket Cuti Karyawan</h1>
-            <p>Kirim tiket cuti (file) ke akun karyawan — mereka bisa unduh sendiri di menu pribadinya.</p>
+            <p>Kirim tiket cuti, perjalanan dinas, atau training ke akun karyawan — mereka bisa unduh sendiri di menu pribadinya.</p>
           </div>
         </div>
         <div className={styles.heroActions}>
@@ -421,7 +428,7 @@ export default function TiketPage() {
             <header>
               <div>
                 <h2>Kirim Tiket Cuti</h2>
-                <p>Pilih karyawan, periode cuti, dan unggah file tiket (bisa lebih dari 1).</p>
+                <p>Pilih karyawan, keperluan perjalanan, periode, dan unggah file tiket (bisa lebih dari 1).</p>
               </div>
               <button type="button" onClick={() => setModal(false)}>
                 <X />
@@ -468,6 +475,18 @@ export default function TiketPage() {
                     )}
                   </div>
                 )}
+              </label>
+
+              <label style={{ gridColumn: '1/-1' }}>
+                Keperluan Perjalanan
+                <select
+                  value={form.jenisPerjalanan}
+                  onChange={(e) => setForm((cur) => ({ ...cur, jenisPerjalanan: e.target.value }))}
+                >
+                  <option value="CUTI">Cuti</option>
+                  <option value="DINAS">Perjalanan Dinas</option>
+                  <option value="TRAINING">Training</option>
+                </select>
               </label>
 
               <label style={{ gridColumn: '1/-1' }}>

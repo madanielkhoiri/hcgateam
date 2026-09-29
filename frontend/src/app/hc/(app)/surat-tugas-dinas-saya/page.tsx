@@ -32,6 +32,22 @@ export default function SuratTugasDinasSayaPage() {
   const [galat, setGalat] = useState<string | null>(null);
   const [popup, setPopup] = useState<SuratTugasKaryawanSaya | null>(null);
   const [memproses, setMemproses] = useState(false);
+  const [detikPemberitahuan, setDetikPemberitahuan] = useState(5);
+
+  useEffect(() => {
+    if (!popup) return;
+    setDetikPemberitahuan(5);
+    const timer = window.setInterval(() => {
+      setDetikPemberitahuan((nilai) => {
+        if (nilai <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return nilai - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [popup]);
 
   useEffect(() => {
     void (async () => {
@@ -84,8 +100,7 @@ export default function SuratTugasDinasSayaPage() {
               Surat Tugas Dinas Saya
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-blue-100">
-              Periksa STD yang sudah disetujui lengkap dan konfirmasikan
-              penerimaan advance Anda.
+              Periksa STD yang sudah disetujui lengkap dan konfirmasikan penerimaan advance Anda.
             </p>
           </div>
           <div className="rounded-2xl border border-white/20 bg-white/10 px-5 py-4 text-center backdrop-blur">
@@ -164,22 +179,18 @@ export default function SuratTugasDinasSayaPage() {
                   <div className="flex items-center gap-3">
                     <WalletCards className="h-6 w-6 text-blue-600" />
                     <div>
-                      <div className="text-xs font-bold text-blue-600">
-                        Total Advance Anda
-                      </div>
-                      <div className="text-xl font-black text-blue-950">
-                        {formatRupiah(item.nominalAdvance)}
-                      </div>
+                      <div className="text-xs font-bold text-blue-600">Total Advance Anda</div>
+                      <div className="text-xl font-black text-blue-950">{formatRupiah(item.nominalAdvance)}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {item.surat.suratTugasAsal?.filePdf ? (
+                  {(item.surat.suratTugasAsal?.filePdf || item.surat.filePdf) ? (
                     <a
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
                       href={suratTugasKaryawanApi.urlPdf(
-                        item.surat.suratTugasAsal.filePdf,
+                        item.surat.suratTugasAsal?.filePdf ?? item.surat.filePdf!,
                       )}
                       target="_blank"
                       rel="noreferrer"
@@ -188,21 +199,12 @@ export default function SuratTugasDinasSayaPage() {
                     </a>
                   ) : null}
                   {item.advanceFilePdf ? (
-                    <a
-                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700"
-                      href={suratTugasKaryawanApi.urlPdf(item.advanceFilePdf)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <a className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700" href={suratTugasKaryawanApi.urlPdf(item.advanceFilePdf)} target="_blank" rel="noreferrer">
                       <ExternalLink size={15} /> Berita Acara Advance
                     </a>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setPopup(item)}
-                      className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white hover:bg-amber-600"
-                    >
-                      Periksa & Setujui
+                    <button type="button" onClick={() => setPopup(item)} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white hover:bg-amber-600">
+                      Periksa &amp; Setujui
                     </button>
                   )}
                 </div>
@@ -227,6 +229,7 @@ export default function SuratTugasDinasSayaPage() {
               <button
                 type="button"
                 onClick={() => setPopup(null)}
+                disabled={detikPemberitahuan > 0 || memproses}
                 className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
                 aria-label="Tutup"
               >
@@ -271,11 +274,12 @@ export default function SuratTugasDinasSayaPage() {
               </div>
 
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-                Dengan menyetujui, saya menyatakan akan melakukan deklarasi
-                advance paling lambat 7 hari setelah kegiatan berakhir,
-                melampirkan bukti transaksi, dan bersedia mengikuti ketentuan
-                pengembalian atau pemotongan apabila kewajiban deklarasi belum
-                diselesaikan.
+                <p className="font-black">Dengan menyetujui, saya menyatakan akan melakukan deklarasi advance (Uang Muka) yang saya terima dengan ketentuan:</p>
+                <ol className="mt-2 list-decimal space-y-1 pl-5">
+                  <li>Melampirkan bukti transaksi asli atau jika tidak ada wajib membuat nota yang ditandatangani oleh pimpinan departemen.</li>
+                  <li>Deklarasi diajukan maksimal 7 hari setelah tanggal berakhir kegiatan.</li>
+                  <li>Apabila belum melakukan kewajiban deklarasi sampai batas waktu, saya bersedia dilakukan pemotongan gaji senilai nominal advance.</li>
+                </ol>
               </div>
 
               <button
@@ -287,7 +291,9 @@ export default function SuratTugasDinasSayaPage() {
                 <CheckCircle2 size={20} />
                 {memproses
                   ? "Membuat Berita Acara..."
-                  : "Saya Setujui dan Buat Berita Acara"}
+                  : detikPemberitahuan > 0
+                    ? `Baca pemberitahuan (${detikPemberitahuan})`
+                    : "Saya Setujui dan Buat Berita Acara"}
               </button>
             </div>
           </div>

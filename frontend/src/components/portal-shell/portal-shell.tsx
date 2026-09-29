@@ -6,11 +6,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
+  KeyRound,
   type LucideIcon,
   Menu,
   PanelLeftClose,
   UserCog,
   UsersRound,
+  ScrollText,
   UtensilsCrossed,
   X,
 } from 'lucide-react';
@@ -74,6 +76,7 @@ export default function PortalShell({
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<PortalUser | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -172,7 +175,7 @@ export default function PortalShell({
         <div className={styles.sidebarHeader}>
           <Link href="/dashboard" className={styles.brand}>
             <span className={styles.brandLogo}>
-              <UsersRound size={23} />
+              <img src="/logos/ppa.png" alt="PPA" />
             </span>
             {!sidebarCollapsed && (
               <span className={styles.brandText}>ONE FOR ALL</span>
@@ -273,14 +276,26 @@ export default function PortalShell({
             </div>
           </div>
 
-          <div className={styles.headerProfile}>
+          <div className={styles.headerProfile} onClick={() => setProfileOpen((open) => !open)} role="button" tabIndex={0}>
             <span className={styles.profileAvatar}>
               <UsersRound size={21} />
             </span>
             <div>
               <strong>{user.name}</strong>
-              <span>{formatRole(user.role)}</span>
+              <span>{user.jabatan || formatRole(user.role)}</span>
             </div>
+            {profileOpen && (
+              <div className={styles.profileDropdown}>
+                <div className={styles.profileDropdownHeader}><UsersRound size={22} /><span><strong>{user.name}</strong><small>{user.jabatan || formatRole(user.role)}</small></span></div>
+                <div className={styles.profileDivider} />
+                <Link href="/dashboard" onClick={() => setProfileOpen(false)}><UserCog size={18} /><span><strong>Akun Saya</strong><small>Edit nama dan username</small></span></Link>
+                {ADMIN_ONLY_ROLES.includes(user.role) && <Link href="/admin/manajemen-akun" onClick={() => setProfileOpen(false)}><UsersRound size={18} /><span><strong>Manajemen Akun</strong><small>Atur role dan akses menu akun</small></span></Link>}
+                {ADMIN_ONLY_ROLES.includes(user.role) && <Link href="/admin/audit-log" onClick={() => setProfileOpen(false)}><ScrollText size={18} /><span><strong>Audit Log</strong><small>Riwayat siapa mengubah apa</small></span></Link>}
+                <Link href="/dashboard" onClick={() => setProfileOpen(false)}><KeyRound size={18} /><span><strong>Ubah Password</strong><small>Perbarui keamanan akun</small></span></Link>
+                <div className={styles.profileDivider} />
+                <button type="button" className={styles.logoutDropdown} onClick={() => { clearSession(); router.replace('/'); }}><span><strong>Keluar</strong><small>Kembali ke halaman login</small></span></button>
+              </div>
+            )}
           </div>
         </header>
 
