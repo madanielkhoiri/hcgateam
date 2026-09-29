@@ -19,6 +19,7 @@ import {
   LABEL_DIVISI_PENGADUAN,
   LABEL_LOKASI_PENGADUAN,
   ROLE_BOLEH_LIHAT_REKAP,
+  ROLE_BOLEH_LIHAT_ADUAN,
   type DivisiPengaduan,
   type LokasiPengaduan,
 } from '@/lib/pengaduan-layanan-api';
@@ -155,13 +156,14 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   }
 
   const bolehLihatRekap = ROLE_BOLEH_LIHAT_REKAP.includes(user.role);
+  const bolehLihatAduan = ROLE_BOLEH_LIHAT_ADUAN.includes(user.role);
   const labelDivisi = LABEL_DIVISI_PENGADUAN[divisi];
 
   // Admin/Section Head/Elektrik/Korlap punya tabel kelola Aduan Layanan di
   // halaman ini juga — silang cukup tutup popup-nya, jangan dilempar keluar
   // ke menu utama divisi seperti karyawan biasa (yang memang datang dari sana).
   function tutupPopup() {
-    if (bolehLihatRekap) {
+    if (bolehLihatAduan) {
       setPopupTutup(true);
       return;
     }

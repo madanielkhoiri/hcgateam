@@ -1,0 +1,4 @@
+ALTER TYPE "StatusPengaduan" ADD VALUE 'SELESAI';
+
+ALTER TABLE "pengaduan_layanan"
+ADD COLUMN "progress" INTEGER NOT NULL DEFAULT 0;

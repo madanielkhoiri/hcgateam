@@ -9,8 +9,13 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: 'HCGA Connect',
-  description: 'Portal Internal HCGA Connect',
+  title: 'HCGA CONNECT',
+  description: 'HCGA CONNECT',
+  icons: {
+    icon: '/logos/Logo_PPA_Official_nw.png',
+    shortcut: '/logos/Logo_PPA_Official_nw.png',
+    apple: '/logos/Logo_PPA_Official_nw.png',
+  },
 };
 
 export default function RootLayout({
@@ -24,3 +29,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+

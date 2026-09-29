@@ -12,17 +12,26 @@ const ROLE_BOLEH_LIHAT_REKAP: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
-  UserRole.ELEKTRIK,
+];
+const ROLE_BOLEH_LIHAT_ADUAN: UserRole[] = [
+  ...ROLE_BOLEH_LIHAT_REKAP,
   UserRole.KORLAP,
+  UserRole.ELEKTRIK,
 ];
 
-const PESAN_TOLAK = 'Rekap performa hanya dapat diakses Admin/Super Admin/Section Head/Elektrik/Korlap';
+const PESAN_TOLAK = 'Rekap performa hanya dapat diakses Admin, Section Head, dan Admin HC';
 
 @Injectable()
 export class PengaduanLayananAksesService {
   wajibBolehLihatRekap(role: UserRole): void {
     if (!ROLE_BOLEH_LIHAT_REKAP.includes(role)) {
       throw new ForbiddenException(PESAN_TOLAK);
+    }
+  }
+
+  wajibBolehLihatDaftar(role: UserRole): void {
+    if (!ROLE_BOLEH_LIHAT_ADUAN.includes(role)) {
+      throw new ForbiddenException('Daftar aduan layanan hanya dapat diakses Admin, Admin HC, Section Head, Korlap, dan Elektrik');
     }
   }
 
