@@ -299,7 +299,7 @@ export class McuFollowUpService {
         judul: 'Batas waktu Follow Up telah ditetapkan',
         pesan:
           `HC menetapkan batas waktu Follow Up sampai ${formatTanggalIndonesia(batas)}. ` +
-          'Silakan pilih tanggal pelaksanaan FU. Seluruh biaya FU ditanggung mandiri.',
+          'Silakan pilih tanggal pelaksanaan FU.',
         penerimaId: diperbarui.karyawan.akunId,
         penerimaEmail: diperbarui.karyawan.email,
       }),

@@ -325,7 +325,7 @@ export class TravelService {
       },
     });
 
-    await this.notifikasiPenumpangBaru(karyawanIds, dto.tujuan.trim(), waktu);
+    await this.notifikasiPenumpangBaru(karyawanIds, dto.armada.trim(), dto.tujuan.trim(), waktu, dto.catatan);
 
     return this.jadwalAtauThrow(jadwal.id);
   }
@@ -333,8 +333,10 @@ export class TravelService {
   /** Notifikasi WA ke akun tiap karyawan penumpang, pakai nomor dari data akunnya. */
   private async notifikasiPenumpangBaru(
     karyawanIds: number[],
+    armada: string,
     tujuan: string,
     waktu: Date,
+    catatan?: string,
   ) {
     if (!this.whatsapp.aktif) {
       return;
@@ -347,6 +349,7 @@ export class TravelService {
 
     const tanggalText = formatTanggalWita(waktu);
     const jamText = formatJamWita(waktu);
+    const jenis = /cuti/i.test(catatan ?? '') ? 'Cuti' : 'Perjalanan Dinas';
 
     for (const karyawan of daftarKaryawan) {
       const nomor = karyawan.akun?.phoneNumber || karyawan.noTelepon;
@@ -356,8 +359,10 @@ export class TravelService {
       }
 
       const pesan =
-        `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
-        `*Jadwal Travel* Anda\n\n` +
+        `Halo ${sapaanKaryawan(karyawan.gender)} *${karyawan.nama}* 👋\n\n` +
+        `*Jadwal Travel ${jenis}* Anda\n\n` +
+        `Armada : ${armada}\n` +
+        `Keterangan : ${catatan || jenis}\n` +
         `📍 Tujuan : ${tujuan}\n` +
         `🗓️ Jadwal : ${tanggalText}\n` +
         `🕐 Jam    : ${jamText} WITA\n\n` +
@@ -489,7 +494,7 @@ export class TravelService {
       }
 
       const pesan =
-        `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
+        `Halo ${sapaanKaryawan(karyawan.gender)} *${karyawan.nama}* 👋\n\n` +
         `*Perubahan Jadwal Travel* Anda${alasan?.trim() ? ` (${alasan.trim()})` : ''}\n\n` +
         `📍 Tujuan     : ${jadwal.tujuan}\n` +
         `🕐 Jadwal Lama: ${formatWaktuWita(waktuLama)} WITA\n` +

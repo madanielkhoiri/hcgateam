@@ -52,3 +52,42 @@
 .monthlyTotalCard strong { text-align:right; }
 .monthTable { width:100%; border-collapse:collapse; font-size:12px; }.monthTable th,.monthTable td { padding:8px 10px; border:1px solid #d9dee5; text-align:left; }.monthTable thead th { background:#b94338; color:#fff; }.monthTable tbody tr:nth-child(even) td { background:#f1f3f5; }.monthTable tbody td:not(:first-child),.monthTable tfoot th:not(:first-child) { text-align:right; }.monthTable tfoot th { background:#e8edf2; font-weight:900; }.monthTotal { font-weight:900; }
 @media(max-width:800px){.dailySummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.monthTable{font-size:10px}}
+
+@media print {
+  .recapPage, .recapPage * { font-family: Arial, Helvetica, sans-serif!important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .printControls { display:none!important; }
+  .recapPage { position:fixed; inset:0; z-index:99999; overflow:hidden; padding:0; background:#fff; }
+  .inputHero { color:#111; background:#fff; border:0; border-bottom:1px solid #333; border-radius:0; padding:3px 0 6px; min-height:0; }
+  .inputHero p { color:#333; }
+  .printBrand { display:flex; align-items:center; gap:10px; }
+  .printLogo { display:block; width:48px; height:48px; object-fit:contain; }
+  .inputHero h1 { margin:1px 0; font-size:17px; }
+  .printDescription { display:none; }
+  .inputHero label { font-size:9px; }
+  .inputHero label svg, .periodLabel { display:none; }
+  .inputHero label input { border:0; padding:0; min-width:0; font:inherit; font-weight:700; color:#111; }
+  .dailySummaryGrid { margin-top:5px; gap:4px; }
+  .monthlyTotalCard { padding:3px 5px; font-size:8px; border-radius:3px; font-weight:700; color:#111; border:1px solid #111; }
+  .monthlyTotalCard:nth-child(1) { background:#fff2b8!important; }
+  .monthlyTotalCard:nth-child(2) { background:#ffd6d6!important; }
+  .monthlyTotalCard:nth-child(3) { background:#d9f0d8!important; }
+  .monthlyTotalCard:nth-child(4) { background:#d6e4ff!important; }
+  .recapTableWrap { overflow:visible; }
+  .monthTable { min-width:0; width:100%; table-layout:fixed; font-size:8.5px; line-height:1.05; border:1px solid #111; font-weight:700; color:#111; }
+  .monthTable th,.monthTable td { padding:2px 2px; height:0; text-align:center!important; white-space:nowrap; border:1px solid #111!important; color:#111!important; font-weight:700!important; }
+  .monthTable thead th { background:#dbeafe!important; color:#111!important; }
+  .monthTable thead th:nth-child(2) { background:#fff2b8!important; }
+  .monthTable thead th:nth-child(3) { background:#ffd6d6!important; }
+  .monthTable thead th:nth-child(4) { background:#d9f0d8!important; }
+  .monthTable thead th:nth-child(5) { background:#d6e4ff!important; }
+  .monthTable thead th:nth-child(6) { background:#e5e7eb!important; }
+  .monthTable tfoot th { background:#cbd5e1!important; color:#111!important; }
+  .monthTable th:first-child,.monthTable td:first-child { width:27%; }
+  .monthTable th:not(:first-child),.monthTable td:not(:first-child) { width:14.6%; }
+  .monthTable tfoot th { font-weight:900; }
+  @page { size:A4 portrait; margin:6mm; }
+}
+
+.printBrand { display:flex; align-items:center; gap:10px; }
+.printLogo { display:none; }
+@media print { .printLogo { display:block; } }

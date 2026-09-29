@@ -16,10 +16,12 @@ export class DatabaseKaryawanDashboardService {
 
   /** Angka ringkas untuk kartu dashboard Database Karyawan. */
   async ringkasan() {
-    const [totalKaryawan, karyawanAktif, departemen, waTerdaftar] =
+    const [totalKaryawan, karyawanAktif, karyawanDirumahkan, karyawanResign, departemen, waTerdaftar] =
       await Promise.all([
         this.prisma.karyawan.count(),
         this.prisma.karyawan.count({ where: { statusKerja: StatusKerja.AKTIF } }),
+        this.prisma.karyawan.count({ where: { statusKerja: StatusKerja.DIRUMAHKAN } }),
+        this.prisma.karyawan.count({ where: { statusKerja: StatusKerja.RESIGN } }),
         this.prisma.karyawan.findMany({
           select: { departemenId: true },
           distinct: ['departemenId'],
@@ -30,6 +32,8 @@ export class DatabaseKaryawanDashboardService {
     return {
       totalKaryawan,
       karyawanAktif,
+      karyawanDirumahkan,
+      karyawanResign,
       jumlahDepartemen: departemen.length,
       waTerdaftar,
     };
