@@ -3179,6 +3179,7 @@ enum StatusPengaduan {
   DISETUJUI
   DITAHAN
   DITOLAK
+  SELESAI
 }
 
 model PengaduanLayanan {
@@ -3195,6 +3196,7 @@ model PengaduanLayanan {
   deskripsiAduan String?          @map("deskripsi_aduan") @db.Text
   lokasi         LokasiPengaduan?
   status         StatusPengaduan  @default(MENUNGGU)
+  progress       Int              @default(0)
   catatanAdmin   String?          @map("catatan_admin") @db.Text
   pengirimId     Int              @map("pengirim_id")
   pengirim       User             @relation("PengaduanPengirim", fields: [pengirimId], references: [id])

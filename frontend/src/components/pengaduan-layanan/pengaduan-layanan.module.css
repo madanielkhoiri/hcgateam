@@ -675,3 +675,8 @@
     height: auto;
   }
 }
+.progressCell { display: flex; align-items: center; gap: 7px; min-width: 100px; color: #1c5ea8; font-size: 11px; }
+.progressBar { width: 64px; height: 7px; overflow: hidden; border-radius: 999px; background: #e4edf7; }
+.progressBar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0868f6, #16a36a); }
+.tombolSelesai { color: #087848; border-color: #b9e1cd; background: #f1fff8; }
+.tombolProgress { color: #1c5ea8; border-color: #c8dcf4; background: #f4f9ff; }

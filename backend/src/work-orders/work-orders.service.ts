@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   Prisma,
@@ -17,6 +18,7 @@ import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { TolakWorkOrderDto } from './dto/tolak-work-order.dto';
 import { DocumentNumberService } from './document-number.service';
+import { WebPushService } from '../web-push/web-push.service';
 
 type AktorWorkOrder = {
   id: number;
@@ -42,6 +44,7 @@ export class WorkOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly documentNumber: DocumentNumberService,
+    @Optional() private readonly webPush?: WebPushService,
   ) {}
 
   private isAdmin(aktor: AktorWorkOrder): boolean {
@@ -371,6 +374,7 @@ export class WorkOrdersService {
     };
   }
   async findAll(filter: {
+    createdBy?: number;
     cari?: string;
     status?: WorkOrderStatus;
     priority?: WorkOrderPriority;
@@ -403,6 +407,7 @@ export class WorkOrdersService {
     ] as const;
 
     const where = {
+      ...(filter.createdBy ? { createdBy: filter.createdBy } : {}),
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.priority ? { priority: filter.priority } : {}),
       ...(rentangTanggal ? { requestedAt: rentangTanggal } : {}),
@@ -482,7 +487,7 @@ export class WorkOrdersService {
 
     const requestedAt = this.parseDate(dto.requestedAt);
 
-    return this.prisma.$transaction(async (tx) => {
+    const hasil = await this.prisma.$transaction(async (tx) => {
       const nextNumber = await this.documentNumber.nextWorkOrderNumber(
         tx,
         requestedAt,
@@ -529,6 +534,7 @@ export class WorkOrdersService {
         include: PENYETUJU_INCLUDE,
       });
     });
+    return hasil;
   }
 
   async update(id: number, dto: UpdateWorkOrderDto, updatedBy: number) {
@@ -538,7 +544,7 @@ export class WorkOrdersService {
 
     this.wajibStatusApprovalUntukStatus(nextStatus, existing.statusApproval);
 
-    return this.prisma.$transaction(async (tx) => {
+    const hasilUpdate = await this.prisma.$transaction(async (tx) => {
       const becomesClosed =
         existing.status !== WorkOrderStatus.CLOSE &&
         nextStatus === WorkOrderStatus.CLOSE;
@@ -643,6 +649,8 @@ export class WorkOrdersService {
         include: PENYETUJU_INCLUDE,
       });
     });
+    await this.webPush?.sendToUser(existing.createdBy, { title: 'Work Order diperbarui', body: `Status WO ${existing.workOrderNumber} sekarang ${nextStatus}.`, url: '/ga/work-orders' });
+    return hasilUpdate;
   }
 
   async remove(id: number) {
