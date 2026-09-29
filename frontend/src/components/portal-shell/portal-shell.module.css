@@ -53,11 +53,11 @@
   place-items: center;
   flex-shrink: 0;
   color: #fff;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 8px 20px rgba(239, 41, 41, 0.22);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
-.brandLogo img { width: 40px; height: 40px; object-fit: contain; }
+.brandLogo img { width: 150px; height: 54px; object-fit: contain; }
 .brandText {
   overflow: hidden;
   font-size: 19px;
@@ -158,8 +158,11 @@
 .topHeaderLeft span { color: #8392a8; font-size: 10px; font-weight: 700; }
 .topHeaderLeft strong { color: #15335c; font-size: 17px; }
 .mobileMenuButton { display: none; }
-.headerProfile { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.profileDropdown { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; display: grid; min-width: 325px; padding: 14px 18px; border: 1px solid #d8e4f2; border-radius: 18px; background: #fff; box-shadow: 0 18px 38px rgba(15,35,70,.16); }
+.headerProfile { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border:0; border-radius: 14px; background:#f1f6ff; cursor: pointer; }
+.headerProfile:hover { background:#eaf2ff; }
+.profileArrow { color:#607895; transition:transform .16s ease; }
+.profileArrowOpen { color:#607895; transform:rotate(90deg); transition:transform .16s ease; }
+.profileDropdown { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; display: grid; min-width: 290px; padding: 14px 18px; border: 1px solid #d8e4f2; border-radius: 18px; background: #fff; box-shadow: 0 18px 38px rgba(15,35,70,.16); }
 .profileDropdownHeader { display: flex; align-items: center; gap: 12px; padding: 8px 2px 12px; color: #0868f6; }
 .profileDropdownHeader span, .profileDropdown a span, .profileDropdown button span { display: grid; gap: 3px; }
 .profileDropdownHeader strong, .profileDropdown a strong, .profileDropdown button strong { color: #18355e; font-size: 13px; }

@@ -314,6 +314,22 @@ export default function GaPage() {
     [user],
   );
 
+  // Admin Departemen hanya mengelola order pack meal umum. Modul mining dan
+  // rekap bulanannya khusus tim GA yang mengelola operasional tambang.
+  const menuGa = useMemo(() => {
+    if (user?.role !== 'ADMIN_DEPT') return gaTree;
+    const sembunyikan = new Set([
+      'GA_ORDER_PACK_MEAL_MINING',
+      'GA_ORDER_PACK_MEAL_MINING_MONTHLY',
+    ]);
+    const filterNode = (node: MenuTreeNode): MenuTreeNode | null => {
+      if (sembunyikan.has(node.key)) return null;
+      const children = node.children?.map(filterNode).filter((item): item is MenuTreeNode => item !== null);
+      return children ? { ...node, children } : node;
+    };
+    return gaTree.map(filterNode).filter((item): item is MenuTreeNode => item !== null);
+  }, [user?.role]);
+
   if (!user) {
     return <main className={styles.page}>Memuat pilihan GA...</main>;
   }
@@ -323,9 +339,8 @@ export default function GaPage() {
       <header className={styles.header}>
         <Link href="/dashboard" className={styles.brand}>
           <span className={styles.brandLogo}>
-            <UsersRound size={24} />
+            <img src="/logos/hcga-connect.png" alt="HCGA Connect" />
           </span>
-          <strong>ONE FOR ALL</strong>
         </Link>
 
         <div className={styles.profile}>
@@ -356,7 +371,7 @@ export default function GaPage() {
             </div>
           </div>
 
-          <MenuTree nodes={gaTree} bolehLihat={bolehLihat} />
+          <MenuTree nodes={menuGa} bolehLihat={bolehLihat} />
         </div>
       </section>
 

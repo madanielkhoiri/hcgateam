@@ -104,6 +104,7 @@ model User {
   hasilFollowUp      HasilFollowUp[]    @relation("PengunggahHasilFollowUp")
   induksiUlangPic    InduksiUlang[]     @relation("PicSheInduksi")
   notifikasiMcu      LogNotifikasiMcu[] @relation("PenerimaNotifikasiMcu")
+  webPushSubscriptions WebPushSubscription[]
 
   tiketHelpdeskDibuat   TiketHelpdesk[] @relation("PembuatTiketHelpdesk")
   tiketHelpdeskDiproses TiketHelpdesk[] @relation("PicTiketHelpdesk")
@@ -149,6 +150,20 @@ model User {
   laporanTps3rDibuat       LaporanTps3r[]       @relation("LaporanTps3rCreator")
 
   @@map("users")
+}
+
+model WebPushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("web_push_subscriptions")
 }
 
 // ==================================================

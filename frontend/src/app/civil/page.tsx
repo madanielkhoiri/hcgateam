@@ -150,17 +150,6 @@ function buatCivilTree(approval: RingkasanApproval | null): MenuTreeNode[] {
       },
     ],
   },
-  {
-    key: 'CIVIL_PENGADUAN',
-    title: 'Pengaduan Layanan',
-    description: 'Beri rating dan masukan atas pelayanan tim Civil.',
-    status: 'Tersedia',
-    href: '/civil/pengaduan',
-    icon: MessageSquareText,
-    accessKey: ACCESS_KEYS.CIVIL,
-    accent: '#ef476f',
-    soft: '#ffe4ec',
-  },
   ];
 }
 
@@ -241,9 +230,8 @@ export default function CivilPage() {
       <header className={styles.header}>
         <Link href="/dashboard" className={styles.brand}>
           <span className={styles.brandLogo}>
-            <UsersRound size={24} />
+            <img src="/logos/hcga-connect.png" alt="HCGA Connect" />
           </span>
-          <strong>ONE FOR ALL</strong>
         </Link>
 
         <div className={styles.profile}>

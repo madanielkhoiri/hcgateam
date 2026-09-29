@@ -53,15 +53,22 @@
 }
 
 .brandLogo {
-  width: 43px;
+  width: 160px;
   height: 43px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
   color: #ffffff;
-  background: #ef2929;
-  border-radius: 50%;
-  box-shadow: 0 8px 20px rgba(239, 41, 41, 0.25);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.brandLogo img {
+  width: 160px;
+  height: 54px;
+  object-fit: contain;
+  display: block;
 }
 
 /* ==================================================
@@ -136,14 +143,20 @@
 }
 
 .loginIcon {
-  width: 66px;
-  height: 66px;
+  width: 190px;
+  height: 82px;
   display: grid;
   place-items: center;
   margin: 0 auto 18px;
   color: var(--primary);
-  background: var(--primary-soft);
-  border-radius: 50%;
+  background: transparent;
+  border-radius: 0;
+}
+
+.loginIcon img {
+  width: 190px;
+  height: 82px;
+  object-fit: contain;
 }
 
 .loginCard h1 {
@@ -661,7 +674,7 @@
   }
 
   .brandLogo {
-    width: 40px;
+    width: 120px;
     height: 40px;
   }
 
