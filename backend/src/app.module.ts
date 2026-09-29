@@ -23,6 +23,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { ApprovalSummaryModule } from './approval-summary/approval-summary.module';
 import { PengaduanLayananModule } from './pengaduan-layanan/pengaduan-layanan.module';
+import { WebPushModule } from './web-push/web-push.module';
 
 // ==================================================
 // APP MODULE
@@ -134,6 +135,7 @@ import { KipModule } from './kip/kip.module';
     KipModule,
     ApprovalSummaryModule,
     PengaduanLayananModule,
+    WebPushModule,
   ],
   controllers: [AppController],
   providers: [

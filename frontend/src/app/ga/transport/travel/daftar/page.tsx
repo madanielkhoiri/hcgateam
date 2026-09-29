@@ -32,6 +32,7 @@ const blankDriverForm = { nama: '', noTelepon: '', username: '', password: '' };
 const blankJadwalForm = {
   armada: '',
   driverId: 0,
+  jenisPerjalanan: 'DINAS',
   asal: '',
   tujuan: '',
   tanggalBerangkat: '',
@@ -215,6 +216,7 @@ export default function TravelPage() {
       setFormJadwal({
         armada: detail.armada,
         driverId: detail.driverId,
+        jenisPerjalanan: /cuti/i.test(detail.catatan ?? '') ? 'CUTI' : 'DINAS',
         asal: detail.asal ?? '',
         tujuan: detail.tujuan,
         tanggalBerangkat: `${waktu.getFullYear()}-${pad(waktu.getMonth() + 1)}-${pad(waktu.getDate())}`,
@@ -246,8 +248,10 @@ export default function TravelPage() {
     event.preventDefault();
     setJadwalError('');
 
-    if (!formJadwal.driverId) {
-      setJadwalError('Pilih driver terlebih dahulu');
+    const driverOtomatis = formJadwal.driverId || driverList.find((driver) => driver.statusAktif)?.id || driverList[0]?.id || 0;
+
+    if (!driverOtomatis) {
+      setJadwalError('Driver otomatis belum tersedia');
       return;
     }
 
@@ -275,22 +279,22 @@ export default function TravelPage() {
 
         await transportApi.travel.ubahJadwal(editJadwal.id, {
           armada: formJadwal.armada,
-          ...(formJadwal.driverId !== editJadwal.driverId ? { driverId: formJadwal.driverId } : {}),
+          ...(driverOtomatis !== editJadwal.driverId ? { driverId: driverOtomatis } : {}),
           asal: formJadwal.asal,
           tujuan: formJadwal.tujuan,
           waktuBerangkatRencana,
-          catatan: formJadwal.catatan,
+        catatan: `${formJadwal.jenisPerjalanan}: ${formJadwal.catatan}`.trim(),
           // Kirim penumpang hanya bila berubah (backend mengganti seluruh daftar).
           ...(penumpangBerubah ? { karyawanIds } : {}),
         });
       } else {
         await transportApi.travel.buatJadwal({
           armada: formJadwal.armada,
-          driverId: formJadwal.driverId,
+          driverId: driverOtomatis,
           asal: formJadwal.asal || undefined,
           tujuan: formJadwal.tujuan,
           waktuBerangkatRencana,
-          catatan: formJadwal.catatan || undefined,
+        catatan: `${formJadwal.jenisPerjalanan}: ${formJadwal.catatan}`.trim() || undefined,
           karyawanIds,
         });
       }
@@ -363,15 +367,11 @@ export default function TravelPage() {
             <Bus />
           </span>
           <div>
-            <h1>Travel & Driver</h1>
-            <p>Kelola profil Driver dan jadwal Travel karyawan.</p>
+          <h1>Travel</h1>
+            <p>Kelola jadwal perjalanan karyawan.</p>
           </div>
         </div>
         <div className={styles.heroActions}>
-          <button className={styles.importButton} onClick={() => bukaModalDriver()}>
-            <UserRound />
-            Tambah Driver
-          </button>
           <button className={styles.primary} onClick={bukaModalJadwal}>
             <Plus />
             Buat Jadwal
@@ -381,7 +381,7 @@ export default function TravelPage() {
 
       {error && <p className={styles.pageError}>{error}</p>}
 
-      <div className={styles.tablePanel} style={{ marginBottom: 18 }}>
+      {false && <div className={styles.tablePanel} style={{ marginBottom: 18 }}>
         <div className={styles.tableTitle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <h3>Driver</h3>
@@ -447,7 +447,7 @@ export default function TravelPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       <div className={styles.tablePanel}>
         <div
@@ -518,7 +518,6 @@ export default function TravelPage() {
               <tr>
                 <th>No</th>
                 <th>Armada</th>
-                <th>Driver</th>
                 <th>Tujuan</th>
                 <th>Waktu Berangkat</th>
                 <th>Penumpang</th>
@@ -533,7 +532,6 @@ export default function TravelPage() {
                   <td>
                     <b>{j.armada}</b>
                   </td>
-                  <td>{j.driver?.nama}</td>
                   <td>{j.tujuan}</td>
                   <td>{formatWaktu(j.waktuBerangkatRencana)}</td>
                   <td>{j._count?.penumpang ?? 0} orang</td>
@@ -568,7 +566,7 @@ export default function TravelPage() {
               ))}
               {!jadwalList.length && (
                 <tr>
-                  <td colSpan={8} className={styles.empty}>
+                  <td colSpan={7} className={styles.empty}>
                     Belum ada jadwal Travel.
                   </td>
                 </tr>
@@ -672,23 +670,6 @@ export default function TravelPage() {
                 />
               </label>
               <label>
-                Driver
-                <select
-                  required
-                  value={formJadwal.driverId || ''}
-                  onChange={(e) => setFormJadwal((cur) => ({ ...cur, driverId: Number(e.target.value) }))}
-                >
-                  <option value="">Pilih driver...</option>
-                  {driverList
-                    .filter((d) => d.statusAktif || d.id === formJadwal.driverId)
-                    .map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nama}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label>
                 Asal (opsional)
                 <input value={formJadwal.asal} onChange={(e) => setFormJadwal((cur) => ({ ...cur, asal: e.target.value }))} />
               </label>
@@ -745,6 +726,13 @@ export default function TravelPage() {
                     ))}
                   </select>
                 </div>
+              </label>
+              <label>
+                Jenis Perjalanan
+                <select value={formJadwal.jenisPerjalanan} onChange={(e) => setFormJadwal((cur) => ({ ...cur, jenisPerjalanan: e.target.value }))}>
+                  <option value="CUTI">Cuti</option>
+                  <option value="DINAS">Perjalanan Dinas</option>
+                </select>
               </label>
               <label>
                 Catatan (opsional)

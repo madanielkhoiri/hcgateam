@@ -58,7 +58,7 @@ const blankReschedule = {
 
 function ucapanPerjalanan(jenis: string): string {
   if (jenis === 'DINAS') return 'Selamat menjalankan perjalanan dinas';
-  if (jenis === 'TRAINING') return 'Selamat mengikuti training';
+  if (jenis === 'DINAS' || jenis === 'TRAINING') return 'Selamat menjalankan perjalanan dinas';
   return 'Selamat Cuti';
 }
 
@@ -485,7 +485,6 @@ export default function TiketPage() {
                 >
                   <option value="CUTI">Cuti</option>
                   <option value="DINAS">Perjalanan Dinas</option>
-                  <option value="TRAINING">Training</option>
                 </select>
               </label>
 
