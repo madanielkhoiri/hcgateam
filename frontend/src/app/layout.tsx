@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Nunito } from 'next/font/google';
 import './globals.css';
 
@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: 'HCGA CONNECT',
   description: 'HCGA CONNECT',
   icons: {
-    icon: '/logos/Logo%20PPA%20Official.png',
-    shortcut: '/logos/Logo%20PPA%20Official.png',
-    apple: '/logos/Logo%20PPA%20Official.png',
+    icon: '/logos/ppa.png',
+    shortcut: '/logos/ppa.png',
+    apple: '/logos/ppa.png',
   },
 };
 
@@ -29,6 +29,7 @@ export default function RootLayout({
     </html>
   );
 }
+
 
 
 
