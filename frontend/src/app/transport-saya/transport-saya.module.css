@@ -38,6 +38,21 @@
   padding: 20px 16px 60px;
 }
 
+.pageWrap { display: grid; gap: 18px; }
+.hero { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 26px 28px; border-radius: 24px; color: #fff; background: linear-gradient(135deg, #12355f, #087b68); box-shadow: 0 18px 36px rgba(18,53,95,.16); }
+.hero h2 { margin: 5px 0 4px; color: #fff; font-size: 25px; letter-spacing: -.02em; }
+.hero p { margin: 0; color: rgba(255,255,255,.78); font-size: 13px; }
+.eyebrow, .cardLabel { font-size: 10px; font-weight: 900; letter-spacing: .16em; }
+.eyebrow { color: #a9f0d0; }
+.heroIcon { display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border: 1px solid rgba(255,255,255,.25); border-radius: 18px; background: rgba(255,255,255,.14); }
+.summaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.summaryCard { display: flex; align-items: center; gap: 13px; padding: 18px; border: 1px solid #d8e4f1; border-radius: 18px; background: #fff; box-shadow: 0 10px 26px rgba(34,75,116,.06); }
+.summaryIcon, .summaryIconBlue { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 13px; color: #087848; background: #e6f9ef; }
+.summaryIconBlue { color: #1c5ea8; background: #e8f2ff; }
+.summaryCard span, .summaryCard small { display: block; color: #71839d; font-size: 11px; font-weight: 700; }
+.summaryCard strong { display: block; margin: 2px 0; color: #12355f; font-size: 22px; }
+.summaryCard small { font-size: 10px; font-weight: 600; }
+
 .landingGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -90,6 +105,12 @@
   color: #12355f;
   font-size: 15px;
 }
+.cardLabel { margin-bottom: 5px; color: #087848; }
+.dateLine { color: #385675 !important; font-weight: 700; }
+.description { margin-top: 8px !important; }
+.description span { display: block; margin-bottom: 2px; color: #9aaabd; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.daysBadge { min-width: 66px; padding: 9px 10px; border-radius: 14px; color: #087848; background: #e6f9ef; font-size: 20px; font-weight: 900; text-align: center; }
+.daysBadge span { display: block; margin-top: 1px; color: #4c806b; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 
 .card p {
   margin: 0;
@@ -251,4 +272,7 @@
   .landingGrid {
     grid-template-columns: 1fr;
   }
+  .summaryGrid { grid-template-columns: 1fr; }
+  .hero { padding: 22px 20px; }
+  .hero h2 { font-size: 21px; }
 }

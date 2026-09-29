@@ -70,7 +70,7 @@ export default function TransportSayaLayout({ children }: { children: ReactNode 
         <Link href={user?.role === 'DRIVER' ? '/transport-saya/driver' : '/dashboard'}>
           <ChevronLeft size={16} /> {user?.role === 'DRIVER' ? 'Trip Saya' : 'Dashboard'}
         </Link>
-        <h1>Tiket & Travel Saya</h1>
+        <h1>Tiket Saya</h1>
         <button
           type="button"
           onClick={logout}

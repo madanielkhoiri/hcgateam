@@ -4,6 +4,7 @@ export type PortalUser = {
   username: string;
   nrp?: string | null;
   role: string;
+  jabatan?: string | null;
   accessKeys?: string[];
   isActive?: boolean;
   vendorId?: number | null;
@@ -207,6 +208,10 @@ export function formatRole(role?: string): string {
 
   if (role === 'OWNER') {
     return 'Owner';
+  }
+
+  if (role === 'KARYAWAN') {
+    return 'Jabatan';
   }
 
   if (role === 'VENDOR') {

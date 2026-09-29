@@ -53,10 +53,11 @@
   place-items: center;
   flex-shrink: 0;
   color: #fff;
-  background: #ef2929;
+  background: #fff;
   border-radius: 50%;
   box-shadow: 0 8px 20px rgba(239, 41, 41, 0.22);
 }
+.brandLogo img { width: 40px; height: 40px; object-fit: contain; }
 .brandText {
   overflow: hidden;
   font-size: 19px;
@@ -157,7 +158,15 @@
 .topHeaderLeft span { color: #8392a8; font-size: 10px; font-weight: 700; }
 .topHeaderLeft strong { color: #15335c; font-size: 17px; }
 .mobileMenuButton { display: none; }
-.headerProfile { display: flex; align-items: center; gap: 10px; }
+.headerProfile { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.profileDropdown { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; display: grid; min-width: 325px; padding: 14px 18px; border: 1px solid #d8e4f2; border-radius: 18px; background: #fff; box-shadow: 0 18px 38px rgba(15,35,70,.16); }
+.profileDropdownHeader { display: flex; align-items: center; gap: 12px; padding: 8px 2px 12px; color: #0868f6; }
+.profileDropdownHeader span, .profileDropdown a span, .profileDropdown button span { display: grid; gap: 3px; }
+.profileDropdownHeader strong, .profileDropdown a strong, .profileDropdown button strong { color: #18355e; font-size: 13px; }
+.profileDropdownHeader small, .profileDropdown a small, .profileDropdown button small { color: #8190a5; font-size: 10px; }
+.profileDivider { height: 1px; margin: 4px 0; background: #e2eaf3; }
+.profileDropdown a, .profileDropdown button { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border: 0; background: none; color: #0868f6; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.profileDropdown .logoutDropdown { color: #e32635; }
 .profileAvatar {
   width: 41px;
   height: 41px;
@@ -241,7 +250,7 @@
 }
 
 @media (max-width: 520px) {
-  .headerProfile > div { display: none; }
+  .headerProfile > div:not(.profileDropdown) { display: none; }
   .topHeaderLeft strong { font-size: 15px; }
   .pageContent { padding: 12px; }
 }
