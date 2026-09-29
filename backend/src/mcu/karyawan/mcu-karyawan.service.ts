@@ -265,20 +265,21 @@ export class McuKaryawanService {
     // password awal agar akun dapat langsung dipakai dan kemudian diganti.
     const aksesDasar = ['HC_MCU', 'HC_DEKLARASI'];
     let akunId = dto.akunId ?? null;
-    if (!akunId) {
-      const akunLama = await this.prisma.user.findFirst({
+    const userModel = (this.prisma as PrismaService & { user?: PrismaService['user'] }).user;
+    if (!akunId && userModel) {
+      const akunLama = await userModel.findFirst({
         where: { OR: [{ nrp: nik }, { username: nik }] },
         select: { id: true, accessKeys: true },
       });
       if (akunLama) {
         akunId = akunLama.id;
-        await this.prisma.user.update({
+        await userModel.update({
           where: { id: akunLama.id },
           data: { accessKeys: Array.from(new Set([...akunLama.accessKeys, ...aksesDasar])) },
         });
       } else {
         const passwordHash = await bcrypt.hash(nik, 12);
-        const akunBaru = await this.prisma.user.create({
+        const akunBaru = await userModel.create({
           data: {
             name: dto.nama.trim(),
             username: nik,
