@@ -40,10 +40,30 @@
 }
 
 .profile {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
 }
+.brandLogo img { width: 40px; height: 40px; object-fit: contain; }
+.profileDropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 180px;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #d8e4f2;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(15, 35, 70, .14);
+  text-align: left;
+}
+.profileDropdown strong { color: #12355f; font-size: 12px; }
+.profileDropdown a, .profileDropdown button { border: 0; background: none; color: #385675; font: inherit; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
+.profileDropdown button { color: #b02031; }
 
 .profileIcon {
   width: 42px;

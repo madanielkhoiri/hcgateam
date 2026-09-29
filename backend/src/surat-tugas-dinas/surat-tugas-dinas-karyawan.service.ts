@@ -15,6 +15,12 @@ type AktorKaryawan = {
   nrp?: string | null;
 };
 
+const SECTION_HEAD_DEFAULT = {
+  name: 'SINGGIEH PRANANDA',
+  role: UserRole.SECTION_HEAD,
+  isActive: true,
+};
+
 const INCLUDE_DATA_KARYAWAN = {
   suratTugas: {
     include: {
@@ -42,11 +48,8 @@ export class SuratTugasDinasKaryawanService {
     if (!item || !identitas.nrp.includes(item.nrp)) {
       throw new ForbiddenException('Surat Tugas Dinas ini bukan milik Anda');
     }
-    if (
-      !item.suratTugas.denganAkomodasi ||
-      item.suratTugas.status !== StatusSuratTugas.DISETUJUI
-    ) {
-      throw new BadRequestException('STD Akomodasi belum mendapatkan persetujuan lengkap');
+    if (item.suratTugas.status !== StatusSuratTugas.DISETUJUI) {
+      throw new BadRequestException('Surat Tugas Dinas belum mendapatkan persetujuan lengkap dari SH dan PJO');
     }
     if (!this.suratPdf) throw new BadRequestException('Layanan PDF belum tersedia');
     const filePdf = await this.suratPdf.buatFileKaryawan(item.suratTugas, item.id);
@@ -83,12 +86,9 @@ export class SuratTugasDinasKaryawanService {
     if (!identitas.nrp.includes(item.nrp)) {
       throw new ForbiddenException('Surat Tugas Dinas ini bukan milik Anda');
     }
-    if (
-      !item.suratTugas.denganAkomodasi ||
-      item.suratTugas.status !== StatusSuratTugas.DISETUJUI
-    ) {
+    if (item.suratTugas.status !== StatusSuratTugas.DISETUJUI) {
       throw new BadRequestException(
-        'STD Akomodasi belum mendapatkan persetujuan lengkap',
+        'Surat Tugas Dinas belum mendapatkan persetujuan lengkap dari SH dan PJO',
       );
     }
     if (item.advanceDikonfirmasiPada) {
@@ -111,11 +111,9 @@ export class SuratTugasDinasKaryawanService {
       master.departemen.namaDepartemen,
       master.departemen.adminAkun,
     );
-    if (!sh) {
-      throw new BadRequestException(
-        `Section Head departemen ${master.departemen.namaDepartemen} belum dikonfigurasi`,
-      );
-    }
+    // Gunakan penanda tangan Section Head default bila akun SH departemen
+    // belum dipetakan. Status STD tetap divalidasi DISETUJUI oleh PJO.
+    const sectionHead = sh ?? SECTION_HEAD_DEFAULT;
 
     const nominalAdvance =
       (item.uangPerjalananNominal ?? 0) +
@@ -130,7 +128,7 @@ export class SuratTugasDinasKaryawanService {
       nominalAdvance,
       tanggalBerakhir: item.suratTugas.tanggalSelesai,
       pembuatNama,
-      shNama: sh.name,
+      shNama: sectionHead.name,
       shJabatan,
     });
 
@@ -140,7 +138,7 @@ export class SuratTugasDinasKaryawanService {
         advanceDikonfirmasiPada: new Date(),
         advanceDikonfirmasiOlehId: aktor.id,
         advancePembuatNama: pembuatNama,
-        advanceShNama: sh.name,
+        advanceShNama: sectionHead.name,
         advanceShJabatan: shJabatan,
         advanceFilePdf,
       },
