@@ -51,7 +51,7 @@ export class PengaduanLayananService {
       throw new NotFoundException('Pengaduan tidak ditemukan');
     }
 
-    if (pengaduan.divisi !== DivisiPengaduan.GA) {
+    if (pengaduan.divisi && pengaduan.divisi !== DivisiPengaduan.GA) {
       throw new BadRequestException('Pengaduan HC tidak memiliki proses Approve, Hold, atau Reject');
     }
 
