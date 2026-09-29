@@ -24,6 +24,7 @@ type DataPenggunaTersimpan = {
  nama: string;
  email: string | null;
  nomor_telepon: string | null;
+ jabatan?: string | null;
  role: "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
  aktif?: boolean;
  kode_tiket?: string | null;
@@ -317,6 +318,10 @@ function headerAuth(): Record<string, string> {
  );
  const [pesanError, setPesanError] = useState("");
  const [pesanSukses, setPesanSukses] = useState("");
+ const [pemberitahuanDeklarasi, setPemberitahuanDeklarasi] =
+ useState<DataSaldo | null>(null);
+ const [detikPemberitahuanDeklarasi, setDetikPemberitahuanDeklarasi] =
+ useState(5);
  const [saldoDipilih, setSaldoDipilih] = useState<DataSaldo | null>(null);
  const [kategoriDipilih, setKategoriDipilih] = useState<KategoriNota | "">("");
 const [fileNota, setFileNota] = useState<File | null>(null);
@@ -408,6 +413,13 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  month: "short",
  year: "numeric",
  }).format(hasil);
+ };
+ const tanggalBatasDeklarasi = (tanggalMulai: string | null | undefined) => {
+ if (!tanggalMulai) return null;
+ const batas = new Date(`${tanggalMulai.slice(0, 10)}T00:00:00`);
+ if (Number.isNaN(batas.getTime())) return null;
+ batas.setDate(batas.getDate() + 7);
+ return batas;
  };
 
  const durasiPerjalanan = (saldo: DataSaldo) => {
@@ -522,6 +534,16 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  const dataSaldo: DataSaldo[] = await responseSaldo.json();
  setDaftarDeklarasi(Array.isArray(dataDeklarasi) ? dataDeklarasi : []);
  setDaftarSaldoAktif(Array.isArray(dataSaldo) ? dataSaldo : []);
+ const saldoBelumAjukan = (Array.isArray(dataSaldo) ? dataSaldo : []).find(
+ (saldo) =>
+ saldo.jenis_saldo === "PERJALANAN_DINAS" &&
+ saldo.status_saldo !== "SELESAI" &&
+ !!saldo.tanggal_mulai &&
+ (!saldo.status_deklarasi_aktif ||
+ saldo.status_deklarasi_aktif === "DRAFT" ||
+ saldo.status_deklarasi_aktif === "DITOLAK")
+ );
+ setPemberitahuanDeklarasi(saldoBelumAjukan ?? null);
  const mapNota: Record<number, DataNota[]> = {};
  await Promise.all(
  (Array.isArray(dataSaldo) ? dataSaldo : [])
@@ -588,7 +610,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  }
  let penggunaTersimpan: DataPenggunaTersimpan;
  try {
- penggunaTersimpan = ((p: any) => ({...p, nama: p.nama || p.name, nrp: p.nrp || p.username}))(JSON.parse(dataPengguna));
+ penggunaTersimpan = ((p: any) => ({...p, nama: p.nama || p.name, nrp: p.nrp || p.username, jabatan: p.jabatan || p.position || null}))(JSON.parse(dataPengguna));
  } catch {
  localStorage.removeItem("hcga_access_token");
  localStorage.removeItem("hcga_user");
@@ -603,6 +625,20 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  ambilDataDashboard(penggunaTersimpan.id);
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [apiUrl, router]);
+ useEffect(() => {
+ if (!pemberitahuanDeklarasi) return;
+ setDetikPemberitahuanDeklarasi(5);
+ const timer = window.setInterval(() => {
+ setDetikPemberitahuanDeklarasi((nilai) => {
+ if (nilai <= 1) {
+ window.clearInterval(timer);
+ return 0;
+ }
+ return nilai - 1;
+ });
+ }, 1000);
+ return () => window.clearInterval(timer);
+ }, [pemberitahuanDeklarasi]);
  const totalSisaSaldoAktif = useMemo(() => {
  return daftarSaldoAktif.reduce((total, saldo) => {
  const sisa = normalisasiAngka(saldo.sisa_saldo);
@@ -1626,7 +1662,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/85 md:text-sm">
  <span>NRP {pengguna?.nrp || "-"}</span>
  <span className="text-white/50">•</span>
- <span>{pengguna?.role || "-"}</span>
+ <span>Jabatan: {pengguna?.jabatan || "-"}</span>
  </div>
  </div>
  </div>
@@ -1707,10 +1743,6 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  <div className="text-2xl font-black text-slate-900">
  Saldo Aktif
  </div>
- <div className="mt-1 text-sm font-semibold text-slate-500">
- Saldo aktif hanya menghitung status AKTIF dan ADA_SISA yang
- belum disetujui admin.
- </div>
  </div>
  <div className="grid gap-4">
  <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
@@ -1726,9 +1758,13 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  {formatRupiah(totalSisaSaldoAktif)}
  </div>
  <div className="mt-2 text-xs font-bold leading-5 text-slate-500">
- Tidak menghitung saldo yang status deklarasinya sudah
- DISETUJUI. Jika masih ada sisa, masuk ke Wajib
- Dikembalikan.
+ {daftarSaldoAktif.some(
+ (saldo) =>
+ saldo.jenis_saldo === "PERJALANAN_DINAS" &&
+ (durasiPerjalanan(saldo) ?? 0) >= 3
+ )
+ ? "Makan, Transportasi dan Laundry"
+ : "Makan dan Transportasi"}
  </div>
  </div>
  </div>
@@ -2937,6 +2973,41 @@ const indexNotaRevisiDipilih =
  </button>
  </div>
  </form>
+ </div>
+ </div>
+ )}
+ {pemberitahuanDeklarasi && (
+ <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm">
+ <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
+ <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+ <ShieldCheck className="h-4 w-4" />
+ Pemberitahuan Deklarasi Dinas
+ </div>
+ <h2 className="text-2xl font-black text-slate-950">Segera ajukan deklarasi</h2>
+ <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+ Anda memiliki perjalanan dinas mulai {formatTanggal(pemberitahuanDeklarasi.tanggal_mulai)}.
+ Pengajuan deklarasi wajib diselesaikan paling lambat {formatTanggal(
+ tanggalBatasDeklarasi(pemberitahuanDeklarasi.tanggal_mulai)?.toISOString()
+ )}.
+ </p>
+ <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
+ Dengan menyetujui, saya menyatakan akan melakukan deklarasi advance (Uang Muka) yang saya terima dengan ketentuan:
+ <ol className="mt-2 list-decimal space-y-1 pl-5">
+ <li>Melampirkan bukti transaksi asli atau jika tidak ada wajib membuat nota yang ditandatangani oleh pimpinan departemen.</li>
+ <li>Deklarasi diajukan maksimal 7 hari sejak tanggal mulai kegiatan dinas.</li>
+ <li>Apabila belum melakukan kewajiban deklarasi sampai batas waktu, saya bersedia dilakukan pemotongan gaji senilai nominal advance.</li>
+ </ol>
+ </div>
+ <button
+ type="button"
+ disabled={detikPemberitahuanDeklarasi > 0}
+ onClick={() => setPemberitahuanDeklarasi(null)}
+ className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[#0868f6] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0758cf] disabled:cursor-not-allowed disabled:opacity-50"
+ >
+ {detikPemberitahuanDeklarasi > 0
+ ? `Saya memahami (${detikPemberitahuanDeklarasi})`
+ : "Saya memahami dan akan mengajukan deklarasi"}
+ </button>
  </div>
  </div>
  )}

@@ -2099,7 +2099,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => cetakPdfFinal("FORM_SETTLEMENT")}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-blue-900/20 transition hover:bg-emerald-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-700"
  >
  <Printer className="h-4 w-4" />
  Cetak Form Settlement
@@ -2108,7 +2108,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => cetakDatabaseSettlementFixScopeSekarang()}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-700 shadow-lg shadow-blue-900/20 transition hover:bg-blue-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-700"
  >
  <Printer className="h-4 w-4" />
  Cetak Database Settlement
@@ -2118,7 +2118,7 @@ export default function HalamanDetailDeklarasi() {
  <button
  type="button"
  onClick={() => cetakPdfFinal()}
- className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-emerald-700 shadow-lg shadow-blue-900/20 transition hover:bg-emerald-50"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-700"
  >
  <Printer className="h-4 w-4" />
  Cetak PDF Final

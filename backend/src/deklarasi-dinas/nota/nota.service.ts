@@ -78,7 +78,7 @@ export class NotaService {
 
   // <--- memastikan deklarasi bisa dikoreksi admin / FA --->
   private pastikanDeklarasiBisaDikoreksi(deklarasi: Deklarasi) {
-    if (!['DIAJUKAN', 'DIVERIFIKASI', 'DITOLAK'].includes(deklarasi.status)) {
+    if (!['DIAJUKAN', 'DIVERIFIKASI', 'MENUNGGU_FA', 'DITOLAK'].includes(deklarasi.status)) {
       throw new BadRequestException(
         'Nota hanya dapat dikoreksi ketika deklarasi sudah diajukan.',
       );
@@ -536,7 +536,8 @@ export class NotaService {
     }
 
     if (statusFinal === 'DIVERIFIKASI') {
-      if (Number(nota.nominalFinal || 0) <= 0) {
+      const nominalFinal = Number(nota.nominalFinal || nota.nominalOcr || 0);
+      if (nominalFinal <= 0) {
         throw new BadRequestException(
           'Nota belum memiliki nominal final. Koreksi nominal terlebih dahulu.',
         );
@@ -544,6 +545,9 @@ export class NotaService {
 
       updateData.statusVerifikasi = 'DIVERIFIKASI';
       updateData.alasanKoreksi = null;
+      if (nota.nominalFinal == null || Number(nota.nominalFinal) <= 0) {
+        updateData.nominalFinal = nominalFinal;
+      }
     }
 
     if (statusFinal === 'OCR_SELESAI') {

@@ -252,6 +252,7 @@ function buatHcTree(approval: RingkasanApproval | null, mcuRingkasan: RingkasanM
 
 export default function HcPage() {
   const router = useRouter();
+  const [profilTerbuka, setProfilTerbuka] = useState(false);
   const [user, setUser] = useState<PortalUser | null>(null);
   const [approval, setApproval] = useState<RingkasanApproval | null>(null);
   const [mcuRingkasan, setMcuRingkasan] = useState<RingkasanMcu | null>(null);
@@ -329,12 +330,12 @@ export default function HcPage() {
       <header className={styles.header}>
         <Link href="/dashboard" className={styles.brand}>
           <span className={styles.brandLogo}>
-            <UsersRound size={24} />
+            <img src="/logos/ppa.png" alt="PPA" />
           </span>
           <strong>ONE FOR ALL</strong>
         </Link>
 
-        <div className={styles.profile}>
+        <div className={styles.profile} onClick={() => setProfilTerbuka((terbuka) => !terbuka)} role="button" tabIndex={0}>
           <span className={styles.profileIcon}>
             <UsersRound size={22} />
           </span>
@@ -342,6 +343,16 @@ export default function HcPage() {
             <strong>{user.name}</strong>
             <span>{formatRole(user.role)}</span>
           </div>
+          {profilTerbuka && (
+            <span className={styles.profileDropdown}>
+              <strong>{user.jabatan || formatRole(user.role)}</strong>
+              <Link href="/hc/akun" onClick={() => setProfilTerbuka(false)}>Akun Saya</Link>
+              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && <Link href="/admin/manajemen-akun" onClick={() => setProfilTerbuka(false)}>Manajemen Akun</Link>}
+              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && <Link href="/admin/audit-log" onClick={() => setProfilTerbuka(false)}>Audit Log</Link>}
+              <Link href="/dashboard" onClick={() => setProfilTerbuka(false)}>Ubah Password</Link>
+              <button type="button" onClick={() => { clearSession(); router.replace('/'); }}>Keluar</button>
+            </span>
+          )}
         </div>
       </header>
 
