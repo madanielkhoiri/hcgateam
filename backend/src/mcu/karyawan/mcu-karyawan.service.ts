@@ -350,7 +350,7 @@ export class McuKaryawanService {
           : null
         : undefined;
 
-    return this.prisma.karyawan.update({
+    const hasil = await this.prisma.karyawan.update({
       where: { id },
       data: {
         ...(dto.nik !== undefined ? { nik: dto.nik.trim() } : {}),
@@ -400,6 +400,11 @@ export class McuKaryawanService {
       },
       include: KARYAWAN_INCLUDE,
     });
+
+    if (dto.statusKerja !== undefined && karyawan.akunId) {
+      await this.sinkronkanStatusAkun(karyawan.akunId, dto.statusKerja);
+    }
+    return hasil;
   }
 
   async hapusKaryawan(id: number) {
@@ -453,7 +458,7 @@ export class McuKaryawanService {
       );
     }
 
-    return this.prisma.karyawan.update({
+    const hasil = await this.prisma.karyawan.update({
       where: { id },
       data: {
         statusKerja: dto.statusKerja,
@@ -463,6 +468,17 @@ export class McuKaryawanService {
             : null,
       },
       include: KARYAWAN_INCLUDE,
+    });
+    if (karyawan.akunId) {
+      await this.sinkronkanStatusAkun(karyawan.akunId, dto.statusKerja);
+    }
+    return hasil;
+  }
+
+  private async sinkronkanStatusAkun(akunId: number, statusKerja: StatusKerja) {
+    await this.prisma.user.update({
+      where: { id: akunId },
+      data: { isActive: statusKerja !== StatusKerja.RESIGN },
     });
   }
 
@@ -611,7 +627,7 @@ export class McuKaryawanService {
     }
 
     const pesan =
-      `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama} 👋\n\n` +
+      `Halo ${sapaanKaryawan(karyawan.gender)} *${karyawan.nama}* 👋\n\n` +
       `*Reminder MCU Periodik* Anda\n\n${isiUtama}\n\n` +
       'Terima kasih 🙏';
 

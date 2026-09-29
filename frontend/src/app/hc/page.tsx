@@ -4,17 +4,22 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  ChevronRight,
   Database,
   FileText,
   FileX2,
   GraduationCap,
   HeartHandshake,
   HeartPulse,
+  KeyRound,
   LifeBuoy,
+  LogOut,
   Mail,
   MessageSquareText,
   Plane,
   Scale,
+  ScrollText,
+  UserCog,
   UsersRound,
   UserCircle2,
   Video,
@@ -330,9 +335,8 @@ export default function HcPage() {
       <header className={styles.header}>
         <Link href="/dashboard" className={styles.brand}>
           <span className={styles.brandLogo}>
-            <img src="/logos/ppa.png" alt="PPA" />
+            <img src="/logos/hcga-connect.png" alt="HCGA Connect" />
           </span>
-          <strong>ONE FOR ALL</strong>
         </Link>
 
         <div className={styles.profile} onClick={() => setProfilTerbuka((terbuka) => !terbuka)} role="button" tabIndex={0}>
@@ -343,14 +347,17 @@ export default function HcPage() {
             <strong>{user.name}</strong>
             <span>{formatRole(user.role)}</span>
           </div>
+          <ChevronRight size={18} className={profilTerbuka ? styles.profileArrowOpen : styles.profileArrow} />
           {profilTerbuka && (
             <span className={styles.profileDropdown}>
-              <strong>{user.jabatan || formatRole(user.role)}</strong>
-              <Link href="/hc/akun" onClick={() => setProfilTerbuka(false)}>Akun Saya</Link>
-              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && <Link href="/admin/manajemen-akun" onClick={() => setProfilTerbuka(false)}>Manajemen Akun</Link>}
-              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && <Link href="/admin/audit-log" onClick={() => setProfilTerbuka(false)}>Audit Log</Link>}
-              <Link href="/dashboard" onClick={() => setProfilTerbuka(false)}>Ubah Password</Link>
-              <button type="button" onClick={() => { clearSession(); router.replace('/'); }}>Keluar</button>
+              <span className={styles.profileDropdownHeader}><span className={styles.profileDropdownAvatar}><UsersRound size={22}/></span><span><b>{user.name}</b><small>{user.jabatan || formatRole(user.role)}</small></span></span>
+              <span className={styles.profileDivider} />
+              <Link href="/hc/akun" onClick={() => setProfilTerbuka(false)}><UserCog size={18}/><span><b>Akun Saya</b><small>Edit nama dan username</small></span></Link>
+              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && <Link href="/admin/manajemen-akun" onClick={() => setProfilTerbuka(false)}><UsersRound size={18}/><span><b>Manajemen Akun</b><small>Atur role dan akses menu akun</small></span></Link>}
+              {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'SECTION_HEAD') && <Link href="/admin/audit-log" onClick={() => setProfilTerbuka(false)}><ScrollText size={18}/><span><b>Audit Log</b><small>Riwayat siapa mengubah apa</small></span></Link>}
+              <Link href="/dashboard" onClick={() => setProfilTerbuka(false)}><KeyRound size={18}/><span><b>Ubah Password</b><small>Perbarui keamanan akun</small></span></Link>
+              <span className={styles.profileDivider} />
+              <button type="button" onClick={() => { clearSession(); router.replace('/'); }}><LogOut size={18}/><span><b>Keluar</b><small>Kembali ke halaman login</small></span></button>
             </span>
           )}
         </div>

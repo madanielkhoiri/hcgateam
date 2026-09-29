@@ -269,7 +269,7 @@ export default function FollowUpPage() {
           <div>
             <h1>Follow Up (FU)</h1>
             <p>
-              Seluruh biaya FU ditanggung mandiri. HC menetapkan batas waktu
+              HC menetapkan batas waktu
               manual per kasus, maksimal 2 bulan setelah MCU ulang. Bila batas
               terlewat tanpa close, HC me-reminder Admin Dept untuk penjadwalan
               ulang sampai FIT tercapai.
