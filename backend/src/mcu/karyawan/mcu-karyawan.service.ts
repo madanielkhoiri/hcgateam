@@ -17,6 +17,7 @@ import {
   TipeNotifikasiMcu,
   UserRole,
 } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import { sapaanKaryawan } from '../../common/sapaan.util';
@@ -259,6 +260,43 @@ export class McuKaryawanService {
       ? tanggalSaja(dto.tanggalMcuExpired)
       : null;
 
+    // Setiap karyawan baru langsung memiliki akun portal dengan akses dasar
+    // MCU dan Deklarasi Dinas. NIK dipakai sebagai username sekaligus
+    // password awal agar akun dapat langsung dipakai dan kemudian diganti.
+    const aksesDasar = ['HC_MCU', 'HC_DEKLARASI'];
+    let akunId = dto.akunId ?? null;
+    const userModel = (this.prisma as PrismaService & { user?: PrismaService['user'] }).user;
+    if (!akunId && userModel) {
+      const akunLama = await userModel.findFirst({
+        where: { OR: [{ nrp: nik }, { username: nik }] },
+        select: { id: true, accessKeys: true },
+      });
+      if (akunLama) {
+        akunId = akunLama.id;
+        await userModel.update({
+          where: { id: akunLama.id },
+          data: { accessKeys: Array.from(new Set([...akunLama.accessKeys, ...aksesDasar])) },
+        });
+      } else {
+        const passwordHash = await bcrypt.hash(nik, 12);
+        const akunBaru = await userModel.create({
+          data: {
+            name: dto.nama.trim(),
+            username: nik,
+            nrp: nik,
+            passwordHash,
+            role: UserRole.KARYAWAN,
+            accessKeys: aksesDasar,
+            email: dto.email?.trim() || null,
+            phoneNumber: dto.noTelepon?.trim() || null,
+            jabatan: dto.jabatan?.trim() || null,
+          },
+          select: { id: true },
+        });
+        akunId = akunBaru.id;
+      }
+    }
+
     return this.prisma.karyawan.create({
       data: {
         nik,
@@ -278,7 +316,7 @@ export class McuKaryawanService {
           : null,
         statusKerja: dto.statusKerja ?? StatusKerja.AKTIF,
         statusKesehatanDirumahkan: dto.statusKesehatanDirumahkan ?? null,
-        akunId: dto.akunId ?? null,
+        akunId,
       },
       include: KARYAWAN_INCLUDE,
     });

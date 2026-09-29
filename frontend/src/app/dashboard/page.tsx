@@ -56,6 +56,7 @@ interface LoginUser {
   name: string;
   username: string;
   role: string;
+  jabatan?: string | null;
   accessKeys?: string[];
 }
 
@@ -340,6 +341,10 @@ export default function DashboardPage() {
       return '';
     }
 
+    if (role === 'KARYAWAN') {
+      return 'Jabatan';
+    }
+
     return role
       .toLowerCase()
       .split('_')
@@ -551,7 +556,7 @@ export default function DashboardPage() {
        <div className={styles.headerInner}>
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
-            <UsersRound size={24} />
+            <img src="/logos/ppa.png" alt="PPA" />
           </div>
 
           <span>ONE FOR ALL</span>
@@ -584,7 +589,7 @@ export default function DashboardPage() {
 
               <div className={styles.profileIdentity}>
                 <strong>{user.name}</strong>
-                <span>{formatRole(user.role)}</span>
+                <span>{user.jabatan || formatRole(user.role)}</span>
               </div>
 
               <ChevronRight
@@ -613,7 +618,7 @@ export default function DashboardPage() {
 
                     <div>
                       <strong>{user.name}</strong>
-                      <span>{formatRole(user.role)}</span>
+                      <span>{user.jabatan || formatRole(user.role)}</span>
                     </div>
                   </div>
 
