@@ -101,6 +101,7 @@ export class WorkOrdersController {
   }
   @Get()
   findAll(
+    @Req() request: AuthenticatedRequest,
     @Query('cari') cari?: string,
     @Query('status') status?: WorkOrderStatus,
     @Query('priority') priority?: WorkOrderPriority,
@@ -109,7 +110,9 @@ export class WorkOrdersController {
     @Query('halaman') halaman?: string,
     @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
+    const bolehLihatSemua = ([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.KORLAP, UserRole.ELEKTRIK] as UserRole[]).includes(request.user.role);
     return this.service.findAll({
+      ...(bolehLihatSemua ? {} : { createdBy: request.user.id }),
       cari,
       status,
       priority,
