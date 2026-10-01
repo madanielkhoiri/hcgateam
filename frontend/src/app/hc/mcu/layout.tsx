@@ -45,7 +45,7 @@ const MENU_MCU: ItemMenuMcu[] = [
   { label: 'Surat Pengantar', href: '/hc/mcu/surat-pengantar', initial: 'SP', peran: ['HC'] },
   { label: 'Klinik', href: '/hc/mcu/klinik', initial: 'KL', peran: ['HC'] },
   { label: 'History', href: '/hc/mcu/history', initial: 'HS', peran: ['HC'] },
-  { label: 'Notifikasi', href: '/hc/mcu/notifikasi', initial: 'NT', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'SHE', 'KLINIK', 'KARYAWAN'] },
+  { label: 'Notifikasi', href: '/hc/mcu/notifikasi', initial: 'NT', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'SHE', 'KLINIK'] },
   { label: 'Retensi', href: '/hc/mcu/retensi', initial: 'RT', peran: ['HC'] },
   { label: 'Karyawan', href: '/hc/mcu/karyawan', initial: 'KR', peran: ['HC'] },
 ];
