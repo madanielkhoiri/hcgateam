@@ -153,7 +153,7 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
           <span>
             <UsersRound size={24} />
           </span>
-          {!collapsed && <strong>ONE FOR ALL</strong>}
+          {!collapsed && <strong>HCGA CONNECT</strong>}
           <button
             className={styles.closeMobile}
             onClick={() => setMobileOpen(false)}
