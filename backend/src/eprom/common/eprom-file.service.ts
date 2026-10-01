@@ -17,36 +17,12 @@ const EKSTENSI_PER_TIPE: Record<TipeFileEprom, string[]> = {
   FOTO: ['.jpg', '.jpeg', '.png', '.webp'],
 };
 
-const SEMUA_EKSTENSI_DIIZINKAN = Array.from(
-  new Set(Object.values(EKSTENSI_PER_TIPE).flat()),
-);
-
 /**
  * Ekstensi dokumen umum yang aman untuk lampiran bebas-tipe (mis. File Kontrak) —
  * mencakup dokumen kantor, gambar, arsip, dan CAD, TIDAK termasuk tipe yang bisa
  * dieksekusi/berisi script (html, svg, js, exe, dst.) untuk mencegah stored XSS
  * atau distribusi malware lewat file yang disajikan statis di /api/uploads/.
  */
-const EKSTENSI_DOKUMEN_UMUM = [
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.xls',
-  '.xlsx',
-  '.csv',
-  '.ppt',
-  '.pptx',
-  '.txt',
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.dwg',
-  '.dxf',
-  '.zip',
-  '.rar',
-];
-
 @Injectable()
 export class EpromFileService {
   private readonly rootDir = join(process.cwd(), 'uploads', 'eprom');
@@ -91,17 +67,7 @@ export class EpromFileService {
 
     const ekstensi = extname(file.originalname || '').toLowerCase();
 
-    if (!SEMUA_EKSTENSI_DIIZINKAN.includes(ekstensi)) {
-      throw new BadRequestException('Format file tidak didukung');
-    }
-
-    if (!EKSTENSI_PER_TIPE[tipe].includes(ekstensi)) {
-      throw new BadRequestException(
-        `Format file tidak sesuai untuk tipe ${tipe}`,
-      );
-    }
-
-    const namaFile = `${Date.now()}-${randomUUID()}${ekstensi}`;
+    const namaFile = `${Date.now()}-${randomUUID()}${ekstensi || '.bin'}`;
     const tujuan = join(this.direktori(scope), namaFile);
 
     writeFileSync(tujuan, file.buffer);
@@ -117,11 +83,7 @@ export class EpromFileService {
 
     const ekstensi = extname(file.originalname || '').toLowerCase();
 
-    if (!EKSTENSI_DOKUMEN_UMUM.includes(ekstensi)) {
-      throw new BadRequestException('Format file tidak didukung');
-    }
-
-    const namaFile = `${Date.now()}-${randomUUID()}${ekstensi}`;
+    const namaFile = `${Date.now()}-${randomUUID()}${ekstensi || '.bin'}`;
     const tujuan = join(this.direktori(scope), namaFile);
 
     writeFileSync(tujuan, file.buffer);

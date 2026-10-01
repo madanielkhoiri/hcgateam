@@ -161,7 +161,7 @@ export default function DokumenDetailPage() {
               File
               <input
                 type="file"
-                accept={ACCEPT_DOKUMEN}
+                accept="*/*"
                 onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
               />
             </label>
