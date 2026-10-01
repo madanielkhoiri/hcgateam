@@ -372,7 +372,7 @@ export default function DokumenIrPage() {
       {formTerbuka && (
         <Dialog
           judul="Upload Dokumen"
-          keterangan="Pilih kategori, isi judul, dan unggah file (PDF/JPG/PNG, maks 15 MB)."
+          keterangan="Pilih kategori, isi judul, dan unggah file dokumen."
           onTutup={() => setFormTerbuka(false)}
           aksi={
             <>
@@ -447,7 +447,7 @@ export default function DokumenIrPage() {
                 <span className={styles.dropzoneText}>
                   Klik untuk pilih file
                 </span>
-                <span className={styles.dropzoneHint}>PDF, JPG, PNG - maks 15 MB</span>
+                <span className={styles.dropzoneHint}>PDF, JPG, PNG</span>
                 {fileBaru ? (
                   <span className={styles.dropzoneFile}>{fileBaru.name}</span>
                 ) : null}

@@ -340,7 +340,7 @@ export default function IrCoursePage() {
       {formTerbuka && (
         <Dialog
           judul="Upload Video IR Course"
-          keterangan="Format MP4/WEBM/MOV, maksimal 300 MB."
+          keterangan="Format MP4/WEBM/MOV."
           onTutup={() => setFormTerbuka(false)}
           aksi={
             <>
@@ -402,7 +402,7 @@ export default function IrCoursePage() {
                 />
                 <UploadCloud size={26} className={styles.dropzoneIcon} />
                 <span className={styles.dropzoneText}>Klik untuk pilih video</span>
-                <span className={styles.dropzoneHint}>MP4, WEBM, MOV - maks 300 MB</span>
+                <span className={styles.dropzoneHint}>MP4, WEBM, MOV</span>
                 {fileBaru ? (
                   <span className={styles.dropzoneFile}>{fileBaru.name}</span>
                 ) : null}
