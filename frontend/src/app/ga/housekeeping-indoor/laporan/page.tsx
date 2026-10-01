@@ -611,7 +611,7 @@ export default function LaporanHousekeepingIndoorPage() {
         <div className={styles.cetakArea}>
           <div className={styles.cetakHeader}>
             <h1>Laporan Kebersihan — Housekeeping Indoor</h1>
-            <span>ONE FOR ALL · dicetak {formatWaktu(new Date().toISOString())}</span>
+            <span>HCGA CONNECT · dicetak {formatWaktu(new Date().toISOString())}</span>
           </div>
           <div className={styles.cetakInfo}>
             <div>

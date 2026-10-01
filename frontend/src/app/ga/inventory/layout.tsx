@@ -460,7 +460,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             </span>
 
             {!sidebarCollapsed && (
-              <span className={styles.brandText}>ONE FOR ALL</span>
+              <span className={styles.brandText}>HCGA CONNECT</span>
             )}
           </Link>
 

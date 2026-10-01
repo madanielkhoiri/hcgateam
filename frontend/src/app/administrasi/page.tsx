@@ -159,7 +159,7 @@ export default function AdministrasiPage() {
           <span className={styles.brandLogo}>
             <UsersRound size={24} />
           </span>
-          <strong>ONE FOR ALL</strong>
+          <strong>HCGA CONNECT</strong>
         </Link>
 
         <div className={styles.profile}>
