@@ -9,10 +9,8 @@ import { extname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const EKSTENSI_DOKUMEN = ['.pdf', '.jpg', '.jpeg', '.png', '.webp'];
-const UKURAN_DOKUMEN_MAKS_BYTE = 15 * 1024 * 1024;
 
 const EKSTENSI_VIDEO = ['.mp4', '.webm', '.mov'];
-const UKURAN_VIDEO_MAKS_BYTE = 300 * 1024 * 1024;
 
 @Injectable()
 export class IrFileService {
@@ -33,10 +31,6 @@ export class IrFileService {
       throw new BadRequestException('File dokumen wajib diunggah');
     }
 
-    if (file.size > UKURAN_DOKUMEN_MAKS_BYTE) {
-      throw new BadRequestException('Ukuran file maksimal 15 MB');
-    }
-
     const ekstensi = extname(file.originalname || '').toLowerCase();
 
     if (!EKSTENSI_DOKUMEN.includes(ekstensi)) {
@@ -54,10 +48,6 @@ export class IrFileService {
   simpanVideo(file: Express.Multer.File): string {
     if (!file?.buffer?.length) {
       throw new BadRequestException('File video wajib diunggah');
-    }
-
-    if (file.size > UKURAN_VIDEO_MAKS_BYTE) {
-      throw new BadRequestException('Ukuran video maksimal 300 MB');
     }
 
     const ekstensi = extname(file.originalname || '').toLowerCase();
