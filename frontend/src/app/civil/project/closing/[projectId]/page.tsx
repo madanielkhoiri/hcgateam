@@ -187,7 +187,7 @@ function ClosingTab({
               type="file"
               key={inputKey}
               multiple
-              accept={ACCEPT_DOKUMEN}
+              accept="*/*"
               onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
             />
             {fileBaru.length > 0 && (
