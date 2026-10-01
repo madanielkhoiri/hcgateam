@@ -211,7 +211,7 @@ export function formatRole(role?: string): string {
   }
 
   if (role === 'KARYAWAN') {
-    return 'Jabatan';
+    return 'Karyawan';
   }
 
   if (role === 'VENDOR') {
