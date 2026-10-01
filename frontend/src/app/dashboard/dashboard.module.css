@@ -223,12 +223,15 @@
   transform: rotate(3deg);
 }
 
-.screenMockup > strong {
+.screenMockup > strong,
+.screenMockup > img {
   display: block;
   margin-bottom: 20px;
   text-align: center;
   font-size: 13px;
 }
+
+.screenMockup > img { display: block; width: 170px !important; height: 42px !important; max-width: 170px; max-height: 42px; object-fit: contain; margin: 0 auto 20px; }
 
 .screenMockup > div {
   display: grid;

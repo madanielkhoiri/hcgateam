@@ -29,15 +29,17 @@
 }
 
 .brandLogo {
-  width: 43px;
-  height: 43px;
+  width: 170px;
+  height: 56px;
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: #ef2929;
-  border-radius: 50%;
-  box-shadow: 0 8px 20px rgba(239, 41, 41, 0.22);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
+
+.brandLogo img { width: 170px; height: 56px; object-fit: contain; }
 
 .profile {
   display: flex;

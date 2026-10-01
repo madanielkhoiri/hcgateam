@@ -2,7 +2,7 @@
 
 // ==================================================
 // FILE: frontend/src/app/dashboard/page.tsx
-// FUNGSI: Dashboard awal portal ONE FOR ALL
+// FUNGSI: Dashboard awal portal HCGA CONNECT
 // ==================================================
 
 import {
@@ -76,7 +76,7 @@ const slides = [
     subtitle: 'Seluruh kebutuhan HCGA dalam satu portal.',
   },
   {
-    label: 'ONE FOR ALL',
+    label: 'HCGA CONNECT',
     title: 'Kolaborasi Menjadi Lebih Mudah.',
     subtitle: 'Terhubung bersama HC, GA, CIVIL, dan Administrasi.',
   },
@@ -736,8 +736,6 @@ export default function DashboardPage() {
 
           <div className={styles.heroVisual}>
             <div className={styles.screenMockup}>
-              <strong>ONE FOR ALL</strong>
-
               <div>
                 <span className={styles.visualHc}>
                   <UsersRound size={22} />
