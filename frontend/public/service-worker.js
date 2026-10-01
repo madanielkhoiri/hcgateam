@@ -1,6 +1,6 @@
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  event.waitUntil(self.registration.showNotification(data.title || 'ONE FOR ALL', {
+  event.waitUntil(self.registration.showNotification(data.title || 'HCGA CONNECT', {
     body: data.body || 'Ada informasi baru.',
     icon: '/logos/ppa.png',
     data: { url: data.url || '/' },

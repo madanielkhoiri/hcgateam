@@ -157,9 +157,8 @@ export default function AdministrasiPage() {
       <header className={styles.header}>
         <Link href="/dashboard" className={styles.brand}>
           <span className={styles.brandLogo}>
-            <UsersRound size={24} />
+            <img src="/logos/hcga-connect.png" alt="HCGA CONNECT" />
           </span>
-          <strong>HCGA CONNECT</strong>
         </Link>
 
         <div className={styles.profile}>

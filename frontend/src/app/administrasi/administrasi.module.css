@@ -39,6 +39,8 @@
   box-shadow: 0 8px 20px rgba(239, 41, 41, 0.22);
 }
 
+.brandLogo img { width: 170px; height: 56px; object-fit: contain; }
+
 .profile {
   display: flex;
   align-items: center;
