@@ -736,8 +736,6 @@ export default function DashboardPage() {
 
           <div className={styles.heroVisual}>
             <div className={styles.screenMockup}>
-              <img src="/logos/hcga-connect.png" alt="HCGA CONNECT" />
-
               <div>
                 <span className={styles.visualHc}>
                   <UsersRound size={22} />
