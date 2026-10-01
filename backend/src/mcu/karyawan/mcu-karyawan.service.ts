@@ -23,6 +23,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import { sapaanKaryawan } from '../../common/sapaan.util';
 import { hasilHalaman, paramHalaman } from '../../common/pagination.util';
+import { sanitizeAccessKeys } from '../../access/access.constants';
 import {
   BULAN_MASA_BERLAKU_MCU,
   BULAN_REMINDER_KEDUA_SEBELUM_EXPIRED,
@@ -122,12 +123,13 @@ export class McuKaryawanService {
         const email = clean(at(r, 'EMAIL')) || null;
         const noTelepon = clean(at(r, 'NO HP')) || null;
         const statusKerja = status(at(r, 'STATUS'));
+        const aksesDasar = sanitizeAccessKeys(['HC_MCU', 'HC_DEKLARASI']);
         const akunLama = await tx.user.findFirst({ where: { OR: [{ nrp: nik }, { username: nik }] }, select: { id: true, accessKeys: true } });
         const nomorDipakai = noTelepon ? await tx.user.findFirst({ where: { phoneNumber: noTelepon, ...(akunLama ? { NOT: { id: akunLama.id } } : {}) }, select: { id: true } }) : null;
         const emailDipakai = email ? await tx.user.findFirst({ where: { email, ...(akunLama ? { NOT: { id: akunLama.id } } : {}) }, select: { id: true } }) : null;
         const akun = akunLama
-          ? await tx.user.update({ where: { id: akunLama.id }, data: { name: nama, nrp: nik, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN, accessKeys: Array.from(new Set([...akunLama.accessKeys, 'HC_MCU', 'HC_DEKLARASI'])) } })
-          : await tx.user.create({ data: { name: nama, username: nik, nrp: nik, passwordHash: await bcrypt.hash(nik, 12), role: UserRole.KARYAWAN, accessKeys: ['HC_MCU', 'HC_DEKLARASI'], email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN } });
+          ? await tx.user.update({ where: { id: akunLama.id }, data: { name: nama, nrp: nik, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN, accessKeys: sanitizeAccessKeys([...akunLama.accessKeys, ...aksesDasar]) } })
+          : await tx.user.create({ data: { name: nama, username: nik, nrp: nik, passwordHash: await bcrypt.hash(nik, 12), role: UserRole.KARYAWAN, accessKeys: aksesDasar, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN } });
         const payload = { nik, nama, gender: gender(at(r, 'GENDER')), departemenId: map.get(dept(at(r, 'DEPT.'))!)!, jabatan, email, noTelepon, statusKerja, akunId: akun.id };
         await tx.karyawan.upsert({ where: { nik }, update: payload, create: payload });
         inserted++;
@@ -336,7 +338,7 @@ export class McuKaryawanService {
     // Setiap karyawan baru langsung memiliki akun portal dengan akses dasar
     // MCU dan Deklarasi Dinas. NIK dipakai sebagai username sekaligus
     // password awal agar akun dapat langsung dipakai dan kemudian diganti.
-    const aksesDasar = ['HC_MCU', 'HC_DEKLARASI'];
+    const aksesDasar = sanitizeAccessKeys(['HC_MCU', 'HC_DEKLARASI']);
     let akunId = dto.akunId ?? null;
     const userModel = (this.prisma as PrismaService & { user?: PrismaService['user'] }).user;
     if (!akunId && userModel) {
@@ -348,7 +350,7 @@ export class McuKaryawanService {
         akunId = akunLama.id;
         await userModel.update({
           where: { id: akunLama.id },
-          data: { accessKeys: Array.from(new Set([...akunLama.accessKeys, ...aksesDasar])) },
+          data: { accessKeys: sanitizeAccessKeys([...akunLama.accessKeys, ...aksesDasar]) },
         });
       } else {
         const passwordHash = await bcrypt.hash(nik, 12);
