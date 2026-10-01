@@ -838,7 +838,7 @@ export default function OrderPackMealPage() {
             <span className={styles.brandLogo}>
               <UsersRound size={23} />
             </span>
-            <strong>ONE FOR ALL</strong>
+            <strong>HCGA CONNECT</strong>
           </div>
 
           <div className={styles.guestProfile}>
@@ -912,7 +912,7 @@ export default function OrderPackMealPage() {
           <span className={styles.brandLogo}>
             <UsersRound size={23} />
           </span>
-          <strong>ONE FOR ALL</strong>
+          <strong>HCGA CONNECT</strong>
         </Link>
 
         <div className={styles.staffProfile}>
