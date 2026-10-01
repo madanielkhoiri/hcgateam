@@ -25,6 +25,7 @@ import {
   type GenderKaryawan,
   type HasilHalaman,
   type Karyawan,
+  type StatusKerja,
 } from '@/lib/karyawan-api';
 import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useKaryawan } from '../layout';
@@ -40,6 +41,7 @@ type FormKaryawan = {
   jabatan: string;
   email: string;
   noTelepon: string;
+  statusKerja: StatusKerja;
 };
 
 const formKosong: FormKaryawan = {
@@ -50,6 +52,7 @@ const formKosong: FormKaryawan = {
   jabatan: '',
   email: '',
   noTelepon: '',
+  statusKerja: 'AKTIF',
 };
 
 const LABEL_GENDER: Record<GenderKaryawan, string> = {
@@ -215,6 +218,7 @@ export default function DaftarKaryawanPage() {
       jabatan: item.jabatan ?? '',
       email: item.email ?? '',
       noTelepon: item.noTelepon ?? '',
+      statusKerja: item.statusKerja,
     });
     setDialogTerbuka(true);
   }
@@ -231,6 +235,7 @@ export default function DaftarKaryawanPage() {
       jabatan: form.jabatan.trim() || undefined,
       email: form.email.trim() || undefined,
       noTelepon: form.noTelepon.trim() || undefined,
+      statusKerja: form.statusKerja,
     };
 
     try {
@@ -362,6 +367,7 @@ export default function DaftarKaryawanPage() {
                   <th>Departemen</th>
                   <th>Jabatan</th>
                   <th>No. Telepon</th>
+                  <th>Status Karyawan</th>
                   <th>Status WA</th>
                   <th>Email</th>
                   <th>Aksi</th>
@@ -382,6 +388,8 @@ export default function DaftarKaryawanPage() {
                     <td>{item.departemen.namaDepartemen}</td>
                     <td>{item.jabatan ?? '-'}</td>
                     <td>{item.noTelepon ?? '-'}</td>
+
+                    <td>{item.statusKerja === 'AKTIF' ? 'Aktif' : item.statusKerja === 'DIRUMAHKAN' ? 'Dirumahkan' : 'Resign'}</td>
 
                     <td>
                       <div className={styles.statusWa}>
@@ -563,6 +571,20 @@ export default function DaftarKaryawanPage() {
                   }
                   placeholder="08xxxxxxxxxx"
                 />
+              </Field>
+
+              <Field label="Status Karyawan">
+                <select
+                  className={styles.select}
+                  value={form.statusKerja}
+                  onChange={(event) =>
+                    setForm({ ...form, statusKerja: event.target.value as StatusKerja })
+                  }
+                >
+                  <option value="AKTIF">Aktif</option>
+                  <option value="DIRUMAHKAN">Dirumahkan</option>
+                  <option value="RESIGN">Resign</option>
+                </select>
               </Field>
 
               <Field label="Email">

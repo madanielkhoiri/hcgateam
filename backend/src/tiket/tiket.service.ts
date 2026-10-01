@@ -291,7 +291,7 @@ export class TiketService {
           `Halo ${sapaanKaryawan(karyawan.gender)} *${karyawan.nama}* 👋\n\n` +
           `*Tiket ${labelTiket}* Anda\n\n` +
           `${baris.join('\n')}${keteranganMenyusulWa}\n\n` +
-          `Mohon perhatikan jadwal berikut dan silakan unduh e-tiketnya di Portal ONE FOR ALL, terima kasih 🙏`;
+          `Mohon perhatikan jadwal berikut dan silakan unduh e-tiketnya di HCGA CONNECT, terima kasih 🙏`;
 
         await this.whatsapp.kirim(nomor, pesan);
       }
@@ -303,7 +303,7 @@ export class TiketService {
       if (email) {
         await this.smtp.kirim({
           to: email,
-          subjek: `Tiket ${labelTiket} Baru — Portal ONE FOR ALL`,
+          subjek: `Tiket ${labelTiket} Baru — HCGA CONNECT`,
           teks: `Halo ${sapaanKaryawan(karyawan.gender)} ${karyawan.nama},\n\nAda tiket dinas baru untuk Anda: ${ringkasanEmail.join(', ')}.${keteranganMenyusulEmail}\n\nFile tiket terlampir pada email ini.\n\nTerima kasih.`,
           lampiran: files.map((f) => ({ namaFile: f.originalname, data: f.buffer })),
         });
@@ -495,7 +495,7 @@ export class TiketService {
 
     await this.whatsapp.kirim(
       nomor,
-      urlLampiran ? pesan : `${pesan} Silakan cek e-tiket terbaru di Portal ONE FOR ALL.`,
+      urlLampiran ? pesan : `${pesan} Silakan cek e-tiket terbaru di HCGA CONNECT.`,
       urlLampiran && fileLampiran ? { url: urlLampiran, namaFile: fileLampiran.namaFile } : undefined,
     );
   }
