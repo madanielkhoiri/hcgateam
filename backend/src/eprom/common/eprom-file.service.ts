@@ -47,8 +47,6 @@ const EKSTENSI_DOKUMEN_UMUM = [
   '.rar',
 ];
 
-const UKURAN_MAKS_BYTE = 25 * 1024 * 1024;
-
 @Injectable()
 export class EpromFileService {
   private readonly rootDir = join(process.cwd(), 'uploads', 'eprom');
@@ -91,10 +89,6 @@ export class EpromFileService {
       throw new BadRequestException('File wajib diunggah');
     }
 
-    if (file.size > UKURAN_MAKS_BYTE) {
-      throw new BadRequestException('Ukuran file maksimal 25 MB');
-    }
-
     const ekstensi = extname(file.originalname || '').toLowerCase();
 
     if (!SEMUA_EKSTENSI_DIIZINKAN.includes(ekstensi)) {
@@ -119,10 +113,6 @@ export class EpromFileService {
   simpanDokumen(file: Express.Multer.File, scope: string): string {
     if (!file?.buffer?.length) {
       throw new BadRequestException('File wajib diunggah');
-    }
-
-    if (file.size > UKURAN_MAKS_BYTE) {
-      throw new BadRequestException('Ukuran file maksimal 25 MB');
     }
 
     const ekstensi = extname(file.originalname || '').toLowerCase();

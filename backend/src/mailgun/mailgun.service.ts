@@ -64,7 +64,7 @@ export class MailgunService {
   private get alamatPengirim(): string {
     return (
       process.env.MAILGUN_FROM?.trim() ||
-      `Portal ONE FOR ALL <postmaster@${this.domain}>`
+      `HCGA CONNECT <postmaster@${this.domain}>`
     );
   }
 

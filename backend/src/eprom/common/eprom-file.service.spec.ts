@@ -50,9 +50,11 @@ describe('EpromFileService', () => {
       expect(() => service.simpan(file, 'tender', TipeFileEprom.PDF)).toThrow(BadRequestException);
     });
 
-    it('menolak file lebih dari 25 MB', () => {
+    it('menerima file besar tanpa batas ukuran aplikasi', () => {
       const file = buatFilePalsu(26 * 1024 * 1024, 'a.pdf');
-      expect(() => service.simpan(file, 'tender', TipeFileEprom.PDF)).toThrow('Ukuran file maksimal 25 MB');
+      expect(service.simpan(file, 'tender', TipeFileEprom.PDF)).toMatch(
+        /^eprom\/tender\/\d+-[0-9a-f-]+\.pdf$/,
+      );
     });
 
     it('menolak ekstensi yang sama sekali tidak didukung', () => {

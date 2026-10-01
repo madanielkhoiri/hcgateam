@@ -7,6 +7,7 @@
 // ==================================================
 
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -17,7 +18,11 @@ import {
   Post,
   Query,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { StatusKerja, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../auth/require-access-key.decorator';
@@ -73,6 +78,14 @@ export class DatabaseKaryawanController {
   async kirimReminder(@Aktor() aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.HC);
     return this.service.jalankanReminderJatuhTempo();
+  }
+
+  @Post('import-excel')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  async importExcel(@Aktor() aktor: AktorMcu, @UploadedFile() file?: Express.Multer.File) {
+    this.akses.wajibPeran(aktor, UserRole.HC);
+    if (!file?.buffer) throw new BadRequestException('File Excel wajib dipilih');
+    return this.service.importMasterExcel(file.buffer, true);
   }
 
   @Get(':id')
