@@ -172,7 +172,7 @@ function SafetyMeetingFileTab({
               key={inputKey}
               type="file"
               multiple
-              accept={ACCEPT_DOKUMEN}
+              accept="*/*"
               onChange={(event) =>
                 setFiles(Array.from(event.target.files ?? []))
               }
