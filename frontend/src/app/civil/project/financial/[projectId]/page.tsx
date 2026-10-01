@@ -171,7 +171,7 @@ export default function FinancialDetailPage() {
               File Pendukung
               <input
                 type="file"
-                accept={ACCEPT_DOKUMEN}
+                accept="*/*"
                 onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
               />
             </label>
