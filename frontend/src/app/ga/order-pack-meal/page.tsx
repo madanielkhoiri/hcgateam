@@ -873,7 +873,7 @@ export default function OrderPackMealPage() {
         </section>
 
         <footer className={styles.footer}>
-          © 2026 ONE FOR ALL · Portal Internal
+          © 2026 HCGA CONNECT · Portal Internal
         </footer>
 
         {successPopup && (
@@ -1159,7 +1159,7 @@ export default function OrderPackMealPage() {
       </section>
 
       <footer className={styles.footer}>
-        © 2026 ONE FOR ALL · Portal Internal
+        © 2026 HCGA CONNECT · Portal Internal
       </footer>
 
       {modalOpen && (

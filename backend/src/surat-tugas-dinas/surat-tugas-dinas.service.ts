@@ -584,7 +584,7 @@ export class SuratTugasDinasService {
             '',
             urlPdf
               ? 'PDF Surat Tugas Dinas terlampir pada pesan ini.'
-              : 'Silakan buka Portal ONE FOR ALL untuk melihat PDF Surat Tugas Dinas.',
+              : 'Silakan buka HCGA CONNECT untuk melihat PDF Surat Tugas Dinas.',
           ].join('\n');
 
           await this.whatsapp.kirim(nomor, pesan, lampiran, 'HC');

@@ -195,7 +195,7 @@ export default function AdministrasiPage() {
       </section>
 
       <footer className={styles.footer}>
-        <span>© 2026 ONE FOR ALL. Semua hak dilindungi.</span>
+        <span>© 2026 HCGA CONNECT. Semua hak dilindungi.</span>
         <span>|</span>
         <span>Portal Internal</span>
         <span>|</span>
