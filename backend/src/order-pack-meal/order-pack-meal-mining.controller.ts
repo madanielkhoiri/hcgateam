@@ -19,7 +19,7 @@ import { OrderPackMealMiningService } from './order-pack-meal-mining.service';
 
 type MiningRequest = { user: { id: number; role: UserRole } };
 
-const ROLE_MINING = new Set([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD]);
+const ROLE_MINING = new Set<UserRole>([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD]);
 
 @Controller('order-pack-meal-mining')
 @UseGuards(JwtAuthGuard)
