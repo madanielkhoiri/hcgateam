@@ -43,10 +43,6 @@ export class IrCourseController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      // Video tidak dikompres di frontend (beda dari foto) — batas ukuran
-      // wajib di sini supaya upload video tidak bisa jadi vektor DoS
-      // (memoryStorage menyimpan seluruh file di RAM server).
-      limits: { fileSize: 100 * 1024 * 1024 },
     }),
   )
   unggah(
