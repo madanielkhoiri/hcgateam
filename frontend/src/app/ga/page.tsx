@@ -213,17 +213,6 @@ const gaTree: MenuTreeNode[] = [
                 accent: '#0f766e',
                 soft: '#e6fffb',
               },
-              {
-                key: 'GA_ORDER_PACK_MEAL_MINING_MONTHLY',
-                title: 'Rekap Bulanan Mining',
-                description: 'Rekap total pack meal per tanggal selama satu bulan.',
-                status: 'Tersedia',
-                href: '/ga/order-pack-meal-mining/rekap-bulanan',
-                icon: UtensilsCrossed,
-                accessKey: ACCESS_KEYS.GA_ORDER_PACK_MEAL,
-                accent: '#155e75',
-                soft: '#e0f2fe',
-              },
             ],
           },
           {
@@ -317,13 +306,13 @@ export default function GaPage() {
   // Admin Departemen hanya mengelola order pack meal umum. Modul mining dan
   // rekap bulanannya khusus tim GA yang mengelola operasional tambang.
   const menuGa = useMemo(() => {
-    if (user?.role !== 'ADMIN_DEPT') return gaTree;
+    const bolehAksesMining = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'].includes(user?.role ?? '');
     const sembunyikan = new Set([
       'GA_ORDER_PACK_MEAL_MINING',
       'GA_ORDER_PACK_MEAL_MINING_MONTHLY',
     ]);
     const filterNode = (node: MenuTreeNode): MenuTreeNode | null => {
-      if (sembunyikan.has(node.key)) return null;
+      if (!bolehAksesMining && sembunyikan.has(node.key)) return null;
       const children = node.children?.map(filterNode).filter((item): item is MenuTreeNode => item !== null);
       return children ? { ...node, children } : node;
     };
