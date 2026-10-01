@@ -18,6 +18,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as XLSX from 'xlsx';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import { sapaanKaryawan } from '../../common/sapaan.util';
@@ -63,6 +64,78 @@ export class McuKaryawanService {
     private readonly notifikasi: McuNotifikasiService,
     private readonly whatsapp: WhatsappService,
   ) {}
+
+  async importMasterExcel(buffer: Buffer, replace = false) {
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
+    const sheet = workbook.Sheets['PPA ADW'];
+    if (!sheet) throw new BadRequestException('Sheet PPA ADW tidak ditemukan');
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: null });
+    const header = rows.findIndex((r) => r.some((v) => String(v ?? '').trim().toUpperCase() === 'NRP'));
+    if (header < 0) throw new BadRequestException('Header NRP tidak ditemukan');
+    const clean = (v: unknown) => String(v ?? '').trim();
+    const headers = new Map(rows[header].map((v, i) => [String(v ?? '').trim().toUpperCase(), i]));
+    const at = (r: unknown[], name: string) => r[headers.get(name) ?? -1];
+    const norm = (v: unknown) => clean(v).toUpperCase().replace(/\s+/g, ' ');
+    const dept = (v: unknown) => {
+      const s = norm(v);
+      if (s.includes('SCM') || s.includes('FAW')) return 'SCM - FAW';
+      if (s === 'MNG' || s.includes('MANAGEMENT')) return 'MANAGEMENT';
+      if (s === 'ENG' || s === 'ENGINEER') return 'ENGINEER';
+      if (s === 'PLT' || s === 'PLANT') return 'PLANT';
+      if (s === 'PRO' || s.includes('PRODUKSI')) return 'PRODUKSI';
+      if (s === 'HCG' || s === 'HCGA') return 'HCGA';
+      if (s.includes('ICT') || s === 'MD') return 'ICT MD';
+      if (s.includes('HCGA') || s === 'HC' || s === 'GA') return 'HCGA';
+      if (s.includes('PRODUKSI')) return 'PRODUKSI';
+      if (s.includes('SHE')) return 'SHE';
+      if (s.includes('ENGINEER')) return 'ENGINEER';
+      if (s.includes('PLANT')) return 'PLANT';
+      return null;
+    };
+    const status = (v: unknown): StatusKerja => {
+      const s = norm(v);
+      if (s.includes('RESIGN') || s.includes('OUT') || s.includes('MUTASI')) return StatusKerja.RESIGN;
+      if (s.includes('DIRUMAH') || s.includes('NON AKTIF')) return StatusKerja.DIRUMAHKAN;
+      return StatusKerja.AKTIF;
+    };
+    const gender = (v: unknown): GenderKaryawan | null => {
+      const s = norm(v);
+      return s === 'L' || s === 'MALE' || s.includes('LAKI') ? GenderKaryawan.LAKI_LAKI : s === 'P' || s === 'FEMALE' || s.includes('PEREMPUAN') ? GenderKaryawan.PEREMPUAN : null;
+    };
+    const data = rows.slice(header + 1).filter((r) => clean(at(r, 'NRP')) && clean(at(r, 'NAMA')));
+    if (!data.length) throw new BadRequestException('Sheet PPA ADW tidak memiliki data karyawan');
+    const unknown = [...new Set(data.map((r) => clean(at(r, 'DEPT.'))).filter((v) => v && !dept(v)))];
+    if (unknown.length) throw new BadRequestException(`Departemen belum dimapping: ${unknown.join(', ')}`);
+    const result = await this.prisma.$transaction(async (tx) => {
+      const names = ['ICT MD', 'HCGA', 'MANAGEMENT', 'PRODUKSI', 'SHE', 'ENGINEER', 'PLANT', 'SCM - FAW'];
+      const map = new Map<string, number>();
+      for (const name of names) {
+        const row = await tx.departemen.upsert({ where: { namaDepartemen: name }, update: { aktif: true }, create: { namaDepartemen: name, aktif: true } });
+        map.set(name, row.id);
+      }
+      if (replace) await tx.karyawan.deleteMany({});
+      let inserted = 0;
+      for (const r of data) {
+        const nik = clean(at(r, 'NRP'));
+        const nama = clean(at(r, 'NAMA'));
+        const jabatan = clean(at(r, 'JABATAN')) || null;
+        const email = clean(at(r, 'EMAIL')) || null;
+        const noTelepon = clean(at(r, 'NO HP')) || null;
+        const statusKerja = status(at(r, 'STATUS'));
+        const akunLama = await tx.user.findFirst({ where: { OR: [{ nrp: nik }, { username: nik }] }, select: { id: true, accessKeys: true } });
+        const nomorDipakai = noTelepon ? await tx.user.findFirst({ where: { phoneNumber: noTelepon, ...(akunLama ? { NOT: { id: akunLama.id } } : {}) }, select: { id: true } }) : null;
+        const emailDipakai = email ? await tx.user.findFirst({ where: { email, ...(akunLama ? { NOT: { id: akunLama.id } } : {}) }, select: { id: true } }) : null;
+        const akun = akunLama
+          ? await tx.user.update({ where: { id: akunLama.id }, data: { name: nama, nrp: nik, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN, accessKeys: Array.from(new Set([...akunLama.accessKeys, 'HC_MCU', 'HC_DEKLARASI'])) } })
+          : await tx.user.create({ data: { name: nama, username: nik, nrp: nik, passwordHash: await bcrypt.hash(nik, 12), role: UserRole.KARYAWAN, accessKeys: ['HC_MCU', 'HC_DEKLARASI'], email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN } });
+        const payload = { nik, nama, gender: gender(at(r, 'GENDER')), departemenId: map.get(dept(at(r, 'DEPT.'))!)!, jabatan, email, noTelepon, statusKerja, akunId: akun.id };
+        await tx.karyawan.upsert({ where: { nik }, update: payload, create: payload });
+        inserted++;
+      }
+      return { inserted, departments: names };
+    }, { maxWait: 30000, timeout: 600000 });
+    return result;
+  }
 
   // ==================================================
   // DEPARTEMEN
