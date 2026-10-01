@@ -107,4 +107,14 @@ export const karyawanApi = {
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
 
   hapus: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  importExcel: async (file: File) => {
+    const token = getAccessToken();
+    const body = new FormData();
+    body.append('file', file);
+    const response = await fetch(`${API_URL}/database-karyawan/import-excel`, {
+      method: 'POST', body, headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new KaryawanApiError(await bacaError(response), response.status);
+    return response.json() as Promise<{ inserted: number }>;
+  },
 };
