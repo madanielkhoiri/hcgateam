@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: 'HCGA CONNECT',
   description: 'HCGA CONNECT',
   icons: {
-    icon: '/logos/Logo_PPA_Official_nw.png',
-    shortcut: '/logos/Logo_PPA_Official_nw.png',
-    apple: '/logos/Logo_PPA_Official_nw.png',
+    icon: '/logos/ppa.png',
+    shortcut: '/logos/ppa.png',
+    apple: '/logos/ppa.png',
   },
 };
 
@@ -29,5 +29,7 @@ export default function RootLayout({
     </html>
   );
 }
+
+
 
 
