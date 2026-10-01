@@ -151,9 +151,8 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
       >
         <div className={styles.brand}>
           <span>
-            <UsersRound size={24} />
+            <img src="/logos/hcga-connect.png" alt="HCGA CONNECT" />
           </span>
-          {!collapsed && <strong>ONE FOR ALL</strong>}
           <button
             className={styles.closeMobile}
             onClick={() => setMobileOpen(false)}

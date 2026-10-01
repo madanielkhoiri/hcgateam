@@ -456,12 +456,8 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             aria-label="Kembali ke Dashboard"
           >
             <span className={styles.brandLogo}>
-              <UsersRound size={23} />
+              <img src="/logos/hcga-connect.png" alt="HCGA CONNECT" />
             </span>
-
-            {!sidebarCollapsed && (
-              <span className={styles.brandText}>ONE FOR ALL</span>
-            )}
           </Link>
 
           <button
