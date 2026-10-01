@@ -17,11 +17,6 @@ export default function OrderPackMealMiningLayout({
       requiredAccessKey={ACCESS_KEYS.GA_ORDER_PACK_MEAL}
       menuItems={[
         {
-          label: 'Order Spesial',
-          href: '/ga/order-pack-meal',
-          icon: 'utensils-crossed',
-        },
-        {
           label: 'Order Pack Meal Mining',
           href: '/ga/order-pack-meal-mining',
           icon: 'utensils-crossed',
