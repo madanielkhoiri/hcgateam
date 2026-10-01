@@ -57,15 +57,17 @@ describe('EpromFileService', () => {
       );
     });
 
-    it('menolak ekstensi yang sama sekali tidak didukung', () => {
+    it('menerima ekstensi apa pun', () => {
       const file = buatFilePalsu(1024, 'a.exe');
-      expect(() => service.simpan(file, 'tender', TipeFileEprom.PDF)).toThrow('Format file tidak didukung');
+      expect(service.simpan(file, 'tender', TipeFileEprom.PDF)).toMatch(
+        /^eprom\/tender\/\d+-[0-9a-f-]+\.exe$/,
+      );
     });
 
-    it('menolak ekstensi valid tapi tidak cocok dengan tipe yang diminta (mis. .xlsx untuk tipe FOTO)', () => {
+    it('menerima ekstensi meskipun berbeda dari tipe dokumen', () => {
       const file = buatFilePalsu(1024, 'a.xlsx');
-      expect(() => service.simpan(file, 'tender', TipeFileEprom.FOTO)).toThrow(
-        `Format file tidak sesuai untuk tipe ${TipeFileEprom.FOTO}`,
+      expect(service.simpan(file, 'tender', TipeFileEprom.FOTO)).toMatch(
+        /^eprom\/tender\/\d+-[0-9a-f-]+\.xlsx$/,
       );
     });
 
@@ -89,9 +91,11 @@ describe('EpromFileService', () => {
       expect(path).toMatch(/^eprom\/kontrak\/\d+-[0-9a-f-]+\.docx$/);
     });
 
-    it('menolak ekstensi berbahaya (mis. .html) walau ada di kategori dokumen', () => {
+    it('menerima ekstensi apa pun pada dokumen bebas', () => {
       const file = buatFilePalsu(1024, 'a.html');
-      expect(() => service.simpanDokumen(file, 'kontrak')).toThrow('Format file tidak didukung');
+      expect(service.simpanDokumen(file, 'kontrak')).toMatch(
+        /^eprom\/kontrak\/\d+-[0-9a-f-]+\.html$/,
+      );
     });
   });
 

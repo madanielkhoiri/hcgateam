@@ -234,7 +234,7 @@ export default function KontrakPage() {
               File Kontrak
               <input
                 type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp,.dwg,.dxf,.zip,.rar"
+                accept="*/*"
                 onChange={(e) => setFileKontrakBaru(e.target.files?.[0] ?? null)}
               />
             </label>
@@ -286,7 +286,7 @@ export default function KontrakPage() {
                       <td>
                         <input
                           type="file"
-                          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp,.dwg,.dxf,.zip,.rar"
+                          accept="*/*"
                           onChange={(e) => setEditFile(e.target.files?.[0] ?? null)}
                         />
                       </td>
