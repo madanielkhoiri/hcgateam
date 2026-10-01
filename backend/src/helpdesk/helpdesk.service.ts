@@ -180,7 +180,7 @@ export class HelpdeskService {
       `Kategori: ${tiket.kategori} - ${tiket.subKategori}${tiket.masalah ? ` - ${tiket.masalah}` : ''}`,
       `Deskripsi: ${tiket.deskripsi}`,
       '',
-      'Silakan cek dan proses tiket ini di Portal ONE FOR ALL.',
+      'Silakan cek dan proses tiket ini di HCGA CONNECT.',
     ].join('\n');
 
     await this.whatsapp.kirim(nomorComben, pesan, undefined, 'HC');

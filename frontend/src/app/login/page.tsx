@@ -266,7 +266,7 @@ export default function LoginPage() {
       </section>
 
       <footer className={styles.footer}>
-        <span>© 2026 ONE FOR ALL. Semua hak dilindungi.</span>
+        <span>© 2026 HCGA CONNECT. Semua hak dilindungi.</span>
         <span className={styles.separator}>|</span>
 
         <span className={styles.footerItem}>

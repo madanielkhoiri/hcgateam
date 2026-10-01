@@ -16,6 +16,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -25,6 +26,7 @@ import {
   type GenderKaryawan,
   type HasilHalaman,
   type Karyawan,
+  type StatusKerja,
 } from '@/lib/karyawan-api';
 import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import { useKaryawan } from '../layout';
@@ -40,6 +42,7 @@ type FormKaryawan = {
   jabatan: string;
   email: string;
   noTelepon: string;
+  statusKerja: StatusKerja;
 };
 
 const formKosong: FormKaryawan = {
@@ -50,6 +53,7 @@ const formKosong: FormKaryawan = {
   jabatan: '',
   email: '',
   noTelepon: '',
+  statusKerja: 'AKTIF',
 };
 
 const LABEL_GENDER: Record<GenderKaryawan, string> = {
@@ -110,6 +114,7 @@ export default function DaftarKaryawanPage() {
   const [proses, setProses] = useState(false);
   const [idCekWa, setIdCekWa] = useState<number | null>(null);
   const [errorCekWa, setErrorCekWa] = useState<Record<number, string>>({});
+  const [fileImport, setFileImport] = useState<HTMLInputElement | null>(null);
 
   const [cari, setCari] = useState('');
   const [filterDept, setFilterDept] = useState('');
@@ -205,6 +210,14 @@ export default function DaftarKaryawanPage() {
     setDialogTerbuka(true);
   }
 
+  async function importExcel(file: File) {
+    if (!confirm('Import Excel akan mengganti data karyawan saat ini. Lanjutkan?')) return;
+    setProses(true); setGalat(null); setSukses(null);
+    try { const hasil = await karyawanApi.importExcel(file); setSukses(`${hasil.inserted} data karyawan berhasil diimport`); await muat(); }
+    catch (error) { setGalat((error as Error).message); }
+    finally { setProses(false); }
+  }
+
   function bukaEdit(item: Karyawan) {
     setIdDiedit(item.id);
     setForm({
@@ -215,6 +228,7 @@ export default function DaftarKaryawanPage() {
       jabatan: item.jabatan ?? '',
       email: item.email ?? '',
       noTelepon: item.noTelepon ?? '',
+      statusKerja: item.statusKerja,
     });
     setDialogTerbuka(true);
   }
@@ -231,6 +245,7 @@ export default function DaftarKaryawanPage() {
       jabatan: form.jabatan.trim() || undefined,
       email: form.email.trim() || undefined,
       noTelepon: form.noTelepon.trim() || undefined,
+      statusKerja: form.statusKerja,
     };
 
     try {
@@ -295,6 +310,12 @@ export default function DaftarKaryawanPage() {
         </div>
 
         <div className={styles.headActions}>
+          {bolehKelola ? <>
+            <input ref={setFileImport} type="file" accept=".xlsx,.xls" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void importExcel(f); e.currentTarget.value = ''; }} />
+            <button type="button" className={`${styles.tombol} ${styles.tombolLembut}`} onClick={() => fileImport?.click()} disabled={proses}>
+              <Upload size={15} /> Import Excel
+            </button>
+          </> : null}
           {bolehKelola ? (
             <button
               type="button"
@@ -362,6 +383,7 @@ export default function DaftarKaryawanPage() {
                   <th>Departemen</th>
                   <th>Jabatan</th>
                   <th>No. Telepon</th>
+                  <th>Status Karyawan</th>
                   <th>Status WA</th>
                   <th>Email</th>
                   <th>Aksi</th>
@@ -382,6 +404,8 @@ export default function DaftarKaryawanPage() {
                     <td>{item.departemen.namaDepartemen}</td>
                     <td>{item.jabatan ?? '-'}</td>
                     <td>{item.noTelepon ?? '-'}</td>
+
+                    <td>{item.statusKerja === 'AKTIF' ? 'Aktif' : item.statusKerja === 'DIRUMAHKAN' ? 'Dirumahkan' : 'Resign'}</td>
 
                     <td>
                       <div className={styles.statusWa}>
@@ -563,6 +587,20 @@ export default function DaftarKaryawanPage() {
                   }
                   placeholder="08xxxxxxxxxx"
                 />
+              </Field>
+
+              <Field label="Status Karyawan">
+                <select
+                  className={styles.select}
+                  value={form.statusKerja}
+                  onChange={(event) =>
+                    setForm({ ...form, statusKerja: event.target.value as StatusKerja })
+                  }
+                >
+                  <option value="AKTIF">Aktif</option>
+                  <option value="DIRUMAHKAN">Dirumahkan</option>
+                  <option value="RESIGN">Resign</option>
+                </select>
               </Field>
 
               <Field label="Email">

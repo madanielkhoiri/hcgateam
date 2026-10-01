@@ -44,7 +44,7 @@ export class SmtpService {
   }
 
   private get alamatPengirim(): string {
-    return process.env.SMTP_FROM?.trim() || `Portal ONE FOR ALL <${this.user}>`;
+    return process.env.SMTP_FROM?.trim() || `HCGA CONNECT <${this.user}>`;
   }
 
   /** Kirim satu email. Tidak pernah melempar error — kegagalan cuma dicatat di log. */
