@@ -258,7 +258,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             File
             <input
               type="file"
-              accept={ACCEPT_DOKUMEN}
+              accept="*/*"
               onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
             />
           </label>
@@ -520,7 +520,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             File {mingguan && "(opsional)"}
             <input
               type="file"
-              accept={ACCEPT_DOKUMEN}
+              accept="*/*"
               onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
               disabled={terkunci}
             />
@@ -731,7 +731,7 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             File
             <input
               type="file"
-              accept={ACCEPT_DOKUMEN}
+              accept="*/*"
               onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
             />
           </label>
@@ -850,7 +850,7 @@ function SosialisasiTab({ projectId, boleh, vendorSaya }: TabProps) {
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
                 <input
                   type="file"
-                  accept={ACCEPT_DOKUMEN}
+                  accept="*/*"
                   disabled={uploadingId === jsa.id}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
