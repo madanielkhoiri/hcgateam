@@ -36,9 +36,9 @@ describe('IrFileService', () => {
       expect(() => service.simpanDokumen(file)).toThrow(BadRequestException);
     });
 
-    it('menolak dokumen lebih dari 15 MB', () => {
+    it('menerima dokumen besar tanpa batas ukuran aplikasi', () => {
       const file = buatFilePalsu(16 * 1024 * 1024, 'a.pdf');
-      expect(() => service.simpanDokumen(file)).toThrow('Ukuran file maksimal 15 MB');
+      expect(service.simpanDokumen(file)).toMatch(/^ir\/dokumen\/\d+-[0-9a-f-]+\.pdf$/);
     });
 
     it('menolak format selain PDF/JPG/PNG/WEBP', () => {
@@ -60,9 +60,9 @@ describe('IrFileService', () => {
       expect(() => service.simpanVideo(file)).toThrow(BadRequestException);
     });
 
-    it('menolak video lebih dari 300 MB', () => {
+    it('menerima video besar tanpa batas ukuran aplikasi', () => {
       const file = buatFilePalsu(301 * 1024 * 1024, 'a.mp4');
-      expect(() => service.simpanVideo(file)).toThrow('Ukuran video maksimal 300 MB');
+      expect(service.simpanVideo(file)).toMatch(/^ir\/course\/\d+-[0-9a-f-]+\.mp4$/);
     });
 
     it('menolak format selain MP4/WEBM/MOV', () => {
