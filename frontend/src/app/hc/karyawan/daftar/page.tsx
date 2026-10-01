@@ -16,6 +16,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -113,6 +114,7 @@ export default function DaftarKaryawanPage() {
   const [proses, setProses] = useState(false);
   const [idCekWa, setIdCekWa] = useState<number | null>(null);
   const [errorCekWa, setErrorCekWa] = useState<Record<number, string>>({});
+  const [fileImport, setFileImport] = useState<HTMLInputElement | null>(null);
 
   const [cari, setCari] = useState('');
   const [filterDept, setFilterDept] = useState('');
@@ -208,6 +210,14 @@ export default function DaftarKaryawanPage() {
     setDialogTerbuka(true);
   }
 
+  async function importExcel(file: File) {
+    if (!confirm('Import Excel akan mengganti data karyawan saat ini. Lanjutkan?')) return;
+    setProses(true); setGalat(null); setSukses(null);
+    try { const hasil = await karyawanApi.importExcel(file); setSukses(`${hasil.inserted} data karyawan berhasil diimport`); await muat(); }
+    catch (error) { setGalat((error as Error).message); }
+    finally { setProses(false); }
+  }
+
   function bukaEdit(item: Karyawan) {
     setIdDiedit(item.id);
     setForm({
@@ -300,6 +310,12 @@ export default function DaftarKaryawanPage() {
         </div>
 
         <div className={styles.headActions}>
+          {bolehKelola ? <>
+            <input ref={setFileImport} type="file" accept=".xlsx,.xls" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void importExcel(f); e.currentTarget.value = ''; }} />
+            <button type="button" className={`${styles.tombol} ${styles.tombolLembut}`} onClick={() => fileImport?.click()} disabled={proses}>
+              <Upload size={15} /> Import Excel
+            </button>
+          </> : null}
           {bolehKelola ? (
             <button
               type="button"
