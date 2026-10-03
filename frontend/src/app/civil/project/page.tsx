@@ -43,8 +43,8 @@ const quickActions = [
   { label: "Material Approval", href: "/civil/project/engineer", icon: FileText, accent: "#07984c", soft: "#e4f7ec" },
   { label: "Checklist Pekerjaan", href: "/civil/project/konstruksi", icon: ClipboardCheck, accent: "#7a4ce0", soft: "#f0ebff" },
   { label: "Inspeksi Area", href: "/civil/project/konstruksi", icon: Eye, accent: "#ef7100", soft: "#fff2df" },
-  { label: "Progress Harian", href: "/civil/project/konstruksi", icon: CalendarDays, accent: "#0aa3a3", soft: "#e4f7f7" },
-  { label: "Progress Mingguan", href: "/civil/project/konstruksi", icon: CalendarRange, accent: "#0868f6", soft: "#eaf2ff" },
+  { label: "Laporan Harian", href: "/civil/project/konstruksi", icon: CalendarDays, accent: "#0aa3a3", soft: "#e4f7f7" },
+  { label: "Laporan Mingguan", href: "/civil/project/konstruksi", icon: CalendarRange, accent: "#0868f6", soft: "#eaf2ff" },
   { label: "Opname Pekerjaan", href: "/civil/project/financial", icon: Percent, accent: "#d53535", soft: "#ffeded" },
   { label: "Dokumen", href: "/civil/project/dokumen", icon: FileStack, accent: "#7a4ce0", soft: "#f0ebff" },
 ];
@@ -230,7 +230,7 @@ export default function CivilProjectDashboardPage() {
         ringkasan?.progressFisikRataRata !== null && ringkasan?.progressFisikRataRata !== undefined
           ? `${ringkasan.progressFisikRataRata}%`
           : "-",
-      sub: "Rata-rata Actual Progress Mingguan",
+      sub: "Rata-rata Actual Laporan Mingguan",
       icon: TrendingUp,
       accent: "#7a4ce0",
       soft: "#f0ebff",
@@ -305,7 +305,7 @@ export default function CivilProjectDashboardPage() {
               <ProgressTrendChart seri={trendTertampil} />
             ) : (
               <p className={styles.emptyText} style={{ margin: 0 }}>
-                Belum ada data Progress Mingguan untuk ditampilkan.
+                Belum ada data Laporan Mingguan untuk ditampilkan.
               </p>
             )}
           </div>
@@ -320,7 +320,7 @@ export default function CivilProjectDashboardPage() {
           {error && <p className={styles.errorText}>{error}</p>}
 
           {!error && (ringkasan?.progressPerProject.length ?? 0) === 0 && (
-            <p className={styles.emptyText}>Belum ada data Progress Mingguan.</p>
+            <p className={styles.emptyText}>Belum ada data Laporan Mingguan.</p>
           )}
 
           <ul className={styles.progressList}>
@@ -455,7 +455,7 @@ export default function CivilProjectDashboardPage() {
 
         <div className={styles.areaCard}>
           <div className={styles.miniCardHeader}>
-            <strong>Progress Mingguan</strong>
+            <strong>Laporan Mingguan</strong>
             {ringkasan && ringkasan.progressPerProject.length > 0 && (
               <select
                 value={projectDeviasiId ?? ""}
@@ -473,7 +473,7 @@ export default function CivilProjectDashboardPage() {
           {deviasiError && <p className={styles.errorText}>{deviasiError}</p>}
           {deviasiLoading && <p className={styles.emptyText}>Memuat...</p>}
           {!deviasiLoading && deviasiItems.length === 0 && (
-            <p className={styles.emptyText}>Belum ada data Progress Mingguan untuk project ini.</p>
+            <p className={styles.emptyText}>Belum ada data Laporan Mingguan untuk project ini.</p>
           )}
 
           {deviasiItems.length > 0 && (

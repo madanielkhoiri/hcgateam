@@ -18,7 +18,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -122,16 +122,16 @@ export class EpromTenderController {
   }
 
   @Post(':id/sph/:vendorId')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   async buatRoundSph(
     @Aktor() aktor: AktorEprom,
     @Param('id', ParseIntPipe) id: number,
     @Param('vendorId', ParseIntPipe) vendorId: number,
     @Body('hargaPenawaran') hargaPenawaranRaw: string | undefined,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     await this.akses.wajibVendorSendiri(aktor, vendorId);
-    return this.service.buatRoundSph(aktor, id, vendorId, file, parseHarga(hargaPenawaranRaw));
+    return this.service.buatRoundSph(aktor, id, vendorId, files ?? [], parseHarga(hargaPenawaranRaw));
   }
 
   @Patch(':id/sph/:vendorId/:roundId')

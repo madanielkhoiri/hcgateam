@@ -60,7 +60,7 @@ export class AnakMagangController {
 
   @Post()
   buat(@Aktor() aktor: AktorMcu, @Body() dto: BuatAnakMagangDto) {
-    this.akses.wajibPeran(aktor, UserRole.HC);
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.GRUP_LEADER_RND);
     return this.service.buat(dto);
   }
 
@@ -70,13 +70,13 @@ export class AnakMagangController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UbahAnakMagangDto,
   ) {
-    this.akses.wajibPeran(aktor, UserRole.HC);
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.GRUP_LEADER_RND);
     return this.service.ubah(id, dto);
   }
 
   @Delete(':id')
   hapus(@Aktor() aktor: AktorMcu, @Param('id', ParseIntPipe) id: number) {
-    this.akses.wajibPeran(aktor, UserRole.HC);
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.GRUP_LEADER_RND);
     return this.service.hapus(id);
   }
 }

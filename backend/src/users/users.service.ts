@@ -110,6 +110,15 @@ export class UsersService {
       return [...DEFAULT_GUEST_ACCESS_KEYS];
     }
 
+    if (([
+      UserRole.GRUP_LEADER_IR,
+      UserRole.GRUP_LEADER_COMBEN,
+      UserRole.GRUP_LEADER_GA,
+      UserRole.GRUP_LEADER_RND,
+    ] as UserRole[]).includes(role)) {
+      return [...ALL_ACCESS_KEYS];
+    }
+
     return [];
   }
 

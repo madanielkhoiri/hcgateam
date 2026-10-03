@@ -12,6 +12,11 @@ enum UserRole {
   FA
   SECTION_HEAD
   GRUP_LEADER
+  // Group Leader khusus domain agar akses dapat dibatasi per card.
+  GRUP_LEADER_IR
+  GRUP_LEADER_COMBEN
+  GRUP_LEADER_GA
+  GRUP_LEADER_RND
   KARYAWAN
   VENDOR
   TAMU
@@ -43,6 +48,26 @@ enum UserRole {
   // Koordinator Lapangan — ikut boleh kelola (approve/hold/reject) Aduan
   // Layanan bersama Admin/Section Head/Elektrik.
   KORLAP
+}
+
+enum StatusKwitansiObat {
+  DISETUJUI
+  DITRANSFER
+  DITOLAK
+}
+
+model KwitansiObatNotifikasi {
+  id          Int                @id @default(autoincrement())
+  karyawanId  Int
+  status      StatusKwitansiObat
+  nominal     Decimal?           @db.Decimal(15, 2)
+  alasan      String?            @db.Text
+  dibuatOlehId Int
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([karyawanId, createdAt])
+  @@index([status, createdAt])
 }
 
 model User {
@@ -1961,6 +1986,7 @@ model TenderSPH {
   vendorId       Int      @map("vendor_id")
   roundKe        Int      @map("round_ke")
   fileSph        String?  @map("file_sph")
+  fileSphFiles   String[] @default([]) @map("file_sph_files")
   hargaPenawaran Decimal? @map("harga_penawaran") @db.Decimal(18, 2)
   isFinal        Boolean  @default(false) @map("is_final")
   statusPemenang Boolean  @default(false) @map("status_pemenang")

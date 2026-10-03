@@ -132,7 +132,7 @@ const departmentCards: Array<{
   },
   {
     key: 'ADMINISTRASI',
-    title: 'ADMIN',
+    title: 'ADM',
     description: 'Dokumentasi, form & CSR',
     href: '/administrasi',
     icon: BookOpen,

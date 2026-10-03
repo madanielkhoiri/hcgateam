@@ -260,8 +260,8 @@ function MeetingTab({
           <label>
             Sumber Data
             <select value={tipeLink} onChange={(e) => setTipeLink(e.target.value as TipeLinkMeeting)}>
-              <option value="MINGGUAN">Progress Mingguan</option>
-              <option value="BULANAN">Progress Bulanan</option>
+              <option value="MINGGUAN">Laporan Mingguan</option>
+              <option value="BULANAN">Laporan Bulanan</option>
             </select>
           </label>
           <label>
@@ -347,8 +347,8 @@ function MeetingTab({
                 value={editTipeLink}
                 onChange={(e) => setEditTipeLink(e.target.value as TipeLinkMeeting)}
               >
-                <option value="MINGGUAN">Progress Mingguan</option>
-                <option value="BULANAN">Progress Bulanan</option>
+                <option value="MINGGUAN">Laporan Mingguan</option>
+                <option value="BULANAN">Laporan Bulanan</option>
               </select>
             </label>
             <label>
