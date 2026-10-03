@@ -10,7 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ModuleShell,
   type ModuleShellMenuItem,
@@ -37,6 +37,19 @@ type LayoutKaryawanProps = {
 export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("hcga_user") || sessionStorage.getItem("hcga_user");
+    if (raw) {
+      try { setRole(JSON.parse(raw).role ?? null); } catch { setRole(null); }
+    }
+  }, []);
+
+  const isEmployee = role === "KARYAWAN";
+  const menuDeklarasi = isEmployee
+    ? MENU_DEKLARASI_DINAS.filter((item) => !["Buat Deklarasi", "Akun Saya"].includes(item.label))
+    : MENU_DEKLARASI_DINAS;
 
   const handleKeluar = () => {
     localStorage.removeItem("hcga_access_token");
@@ -62,22 +75,22 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
       aktif: apakahAktif("/hc/deklarasi-dinas"),
       aksi: () => router.push("/hc/deklarasi-dinas"),
     },
-    {
+    ...(!isEmployee ? [{
       judul: "Buat",
       path: "/hc/deklarasi/buat",
       icon: <PlusCircle className="h-5 w-5" />,
       aktif: apakahAktif("/hc/deklarasi/buat"),
       aksi: () => router.push("/hc/deklarasi/buat"),
-    },
-    {
+    }] : []),
+    ...(!isEmployee ? [{
       judul: "Deklarasi",
       path: "/hc/deklarasi/buat",
       icon: <FileText className="h-7 w-7" />,
       aktif: apakahAktif("/hc/deklarasi/buat"),
       aksi: () => router.push("/hc/deklarasi/buat"),
       tengah: true,
-    },
-    {
+    }] : []),
+    ...(!isEmployee ? [{
       judul: "Riwayat",
       path: "/hc/riwayat",
       icon: <History className="h-5 w-5" />,
@@ -90,7 +103,7 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
       icon: <UserRound className="h-5 w-5" />,
       aktif: apakahAktif("/hc/akun"),
       aksi: () => router.push("/hc/akun"),
-    },
+    }] : []),
   ];
 
   return (
@@ -99,7 +112,7 @@ export default function LayoutKaryawan({ children }: LayoutKaryawanProps) {
         title="Deklarasi Dinas"
         subtitle="Human Capital"
         deptBadge={{ text: "HC", color: "#0868f6", soft: "#eaf2ff" }}
-        menuItems={MENU_DEKLARASI_DINAS}
+        menuItems={menuDeklarasi}
         backHref="/hc"
         backLabel="Kembali ke HC"
         hideMobileNav
