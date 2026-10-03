@@ -13,6 +13,10 @@ import { AktorMcu } from './mcu-aktor';
 const ROLE_PORTAL_SUPER: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
+  UserRole.GRUP_LEADER_IR,
+  UserRole.GRUP_LEADER_COMBEN,
+  UserRole.GRUP_LEADER_GA,
+  UserRole.GRUP_LEADER_RND,
 ];
 
 /** Enam kategori akun MCU sesuai Bagian 2 dokumen alur (di luar admin portal). */
