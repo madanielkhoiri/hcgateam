@@ -9,11 +9,10 @@ import { TipePengunggah, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AktorMcu } from './mcu-aktor';
 
-/** Admin portal & Section Head otomatis punya akses penuh ke seluruh peran MCU. */
+/** Hanya Admin dan Admin Utama yang punya akses penuh ke seluruh peran MCU. */
 const ROLE_PORTAL_SUPER: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
-  UserRole.SECTION_HEAD,
 ];
 
 /** Enam kategori akun MCU sesuai Bagian 2 dokumen alur (di luar admin portal). */
@@ -52,6 +51,12 @@ export class McuAksesService {
   peranAktor(aktor: AktorMcu): UserRole[] {
     if (this.superAdmin(aktor)) {
       return ROLE_MCU;
+    }
+
+    // Section Head dan Group Leader memakai alur mandiri yang sama dengan
+    // Karyawan; keduanya tidak mendapatkan fungsi administratif MCU.
+    if (aktor.role === UserRole.SECTION_HEAD || aktor.role === UserRole.GRUP_LEADER) {
+      return [UserRole.KARYAWAN];
     }
 
     return [aktor.role];

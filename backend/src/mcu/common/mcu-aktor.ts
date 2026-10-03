@@ -17,6 +17,12 @@ export const Aktor = createParamDecorator(
   (_data: unknown, context: ExecutionContext): AktorMcu => {
     const request = context.switchToHttp().getRequest<{ user: AktorMcu }>();
 
-    return request.user;
+    const user = request.user;
+    // Di modul MCU, Section Head dan Group Leader mengikuti alur mandiri
+    // yang sama seperti Karyawan (bukan peran administratif MCU).
+    if (user.role === UserRole.SECTION_HEAD || user.role === UserRole.GRUP_LEADER) {
+      return { ...user, role: UserRole.KARYAWAN };
+    }
+    return user;
   },
 );
