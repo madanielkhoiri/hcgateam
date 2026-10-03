@@ -116,9 +116,9 @@ const TAB_ENGINEER: { tab: TipeEngineer; label: string; icon: React.ElementType 
 const TAB_KONSTRUKSI: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: "checklist-tahapan", label: "Checklist Tahapan Pekerjaan", icon: ClipboardCheck },
   { tab: "inspeksi-area", label: "Inspeksi Area Pekerjaan", icon: Eye },
-  { tab: "progress-harian", label: "Progress Harian", icon: CalendarDays },
-  { tab: "progress-mingguan", label: "Progress Mingguan", icon: CalendarRange },
-  { tab: "progress-bulanan", label: "Progress Bulanan", icon: CalendarCheck },
+  { tab: "progress-harian", label: "Laporan Harian", icon: CalendarDays },
+  { tab: "progress-mingguan", label: "Laporan Mingguan", icon: CalendarRange },
+  { tab: "progress-bulanan", label: "Laporan Bulanan", icon: CalendarCheck },
   { tab: "inspeksi-peralatan", label: "Inspeksi Peralatan", icon: Cog },
   { tab: "tta", label: "TTA", icon: AlertTriangle },
   { tab: "kta", label: "KTA", icon: ShieldAlert },
@@ -256,7 +256,9 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       ...(boleh
         ? [{ label: "Pembuatan Kontrak", href: "/civil/project/kontrak", icon: FileSignature }]
         : []),
-      { label: "Legalitas Vendor", href: "/civil/project/kontrak/legalitas", icon: ShieldCheck },
+      ...(vendorSaya
+        ? []
+        : [{ label: "Legalitas Vendor", href: "/civil/project/kontrak/legalitas", icon: ShieldCheck }]),
     ],
   };
 
@@ -403,7 +405,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const bottomNavItems = [
     ...(boleh ? [{ label: dashboardItem.label, href: dashboardItem.href }] : []),
     ...(boleh ? navGroups.map((g) => ({ label: g.label, href: g.items[0]?.href })) : []),
-    ...(boleh || vendorSaya ? [{ label: kontrakGroup.label, href: kontrakGroup.items[0]?.href }] : []),
+    ...(boleh ? [{ label: kontrakGroup.label, href: kontrakGroup.items[0]?.href }] : []),
     ...projectAreaGroups.map((g) => ({ label: g.label, href: g.items[0]?.href })),
   ]
     .filter((item): item is { label: string; href: string } => Boolean(item.href))
@@ -744,7 +746,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
 
           {boleh && navGroups.map(renderGroup)}
 
-          {(boleh || vendorSaya) && renderGroup(kontrakGroup)}
+          {boleh && renderGroup(kontrakGroup)}
 
           <div className={styles.navLabel}>PROJECT AREA</div>
 

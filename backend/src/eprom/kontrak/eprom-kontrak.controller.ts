@@ -40,12 +40,14 @@ export class EpromKontrakController {
   ) {}
 
   @Get()
-  daftar() {
+  daftar(@Aktor() aktor: AktorEprom) {
+    this.akses.wajibOwner(aktor);
     return this.service.daftar();
   }
 
   @Get(':id')
-  detail(@Param('id', ParseIntPipe) id: number) {
+  detail(@Aktor() aktor: AktorEprom, @Param('id', ParseIntPipe) id: number) {
+    this.akses.wajibOwner(aktor);
     return this.service.detail(id);
   }
 

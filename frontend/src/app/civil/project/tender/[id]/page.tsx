@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, MessageCircle, Pencil, Plus, Printer, Trash2, Trophy } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
+import { urlUploads } from "@/lib/uploads-url";
 import {
   epromApi,
   formatRupiah,
@@ -66,7 +67,7 @@ export default function TenderDetailPage() {
   const [filesPerVendor, setFilesPerVendor] = useState<Record<number, File[]>>({});
   const [submitting, setSubmitting] = useState(false);
   const [sphFormOpen, setSphFormOpen] = useState<Record<number, boolean>>({});
-  const [sphFile, setSphFile] = useState<Record<number, File | null>>({});
+  const [sphFile, setSphFile] = useState<Record<number, File[]>>({});
   const [sphHarga, setSphHarga] = useState<Record<number, string>>({});
   const [editingRoundId, setEditingRoundId] = useState<number | null>(null);
   const [editRoundFile, setEditRoundFile] = useState<File | null>(null);
@@ -183,7 +184,7 @@ export default function TenderDetailPage() {
   }
 
   async function tambahSph(vendorId: number) {
-    const file = sphFile[vendorId] ?? undefined;
+    const file = sphFile[vendorId] ?? [];
     const hargaRaw = sphHarga[vendorId]?.trim();
     const harga = hargaRaw ? Number(hargaRaw) : undefined;
 
@@ -197,7 +198,7 @@ export default function TenderDetailPage() {
     try {
       await epromApi.tender.buatRoundSph(tenderId, vendorId, file, harga);
       setSphFormOpen((cur) => ({ ...cur, [vendorId]: false }));
-      setSphFile((cur) => ({ ...cur, [vendorId]: null }));
+      setSphFile((cur) => ({ ...cur, [vendorId]: [] }));
       setSphHarga((cur) => ({ ...cur, [vendorId]: "" }));
       muatUlang();
     } catch (err) {
@@ -383,8 +384,7 @@ export default function TenderDetailPage() {
                         <label className={styles.vendorPickerLampiranTombol}>
                           <Plus size={12} /> Lampiran
                           <input
-                            type="file"
-                            multiple
+                            type="file" multiple
                             hidden
                             onChange={(e) => {
                               const dipilihFile = Array.from(e.target.files ?? []);
@@ -513,7 +513,7 @@ export default function TenderDetailPage() {
                         <div className={styles.inlineForm} key={round.id}>
                           <strong>SPH {round.roundKe}</strong>
                           <input
-                            type="file"
+                            type="file" multiple
                             onChange={(e) => setEditRoundFile(e.target.files?.[0] ?? null)}
                           />
                           <input
@@ -546,6 +546,13 @@ export default function TenderDetailPage() {
                       <div className={styles.roundRow} key={round.id}>
                         <strong>SPH {round.roundKe}</strong>
                         <span>{round.hargaPenawaran ? formatRupiah(round.hargaPenawaran) : "Belum ada harga"}</span>
+                        {(round.fileSphFiles?.length || round.fileSph) ? (
+                          <span className={styles.roundFiles}>
+                            {(round.fileSphFiles?.length ? round.fileSphFiles : [round.fileSph]).map((file, index) => file && (
+                              <a key={`${file}-${index}`} href={urlUploads(file)} target="_blank" rel="noreferrer">Lihat File {index + 1}</a>
+                            ))}
+                          </span>
+                        ) : null}
                         {round.isFinal && <span className={styles.roundFinalBadge}>FINAL</span>}
 
                         {!round.isFinal && bisaUbahRound && (
@@ -578,11 +585,11 @@ export default function TenderDetailPage() {
                     (sphFormOpen[undangan.vendorId] ? (
                       <div className={styles.inlineForm}>
                         <input
-                          type="file"
+                          type="file" multiple
                           onChange={(e) =>
                             setSphFile((cur) => ({
                               ...cur,
-                              [undangan.vendorId]: e.target.files?.[0] ?? null,
+                              [undangan.vendorId]: Array.from(e.target.files ?? []),
                             }))
                           }
                         />
@@ -921,3 +928,8 @@ export default function TenderDetailPage() {
     </div>
   );
 }
+
+
+
+
+

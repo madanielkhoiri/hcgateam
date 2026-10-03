@@ -12,6 +12,7 @@ const ROLE_KELOLA_IR: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
+  UserRole.GRUP_LEADER_IR,
 ];
 
 @Injectable()
