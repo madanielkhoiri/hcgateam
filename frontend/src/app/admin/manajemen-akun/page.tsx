@@ -929,7 +929,10 @@ export default function AccountManagementPage() {
                   >
                     <option value="KARYAWAN">Karyawan</option>
                     <option value="SECTION_HEAD">Section Head</option>
-                    <option value="GRUP_LEADER">Group Leader</option>
+                    <option value="GRUP_LEADER_IR">Group Leader IR</option>
+                    <option value="GRUP_LEADER_COMBEN">Group Leader Comben &amp; Benefit</option>
+                    <option value="GRUP_LEADER_GA">Group Leader GA</option>
+                    <option value="GRUP_LEADER_RND">Group Leader R &amp; D</option>
                     <option value="FA">FA</option>
                     <option value="ADMIN_DEPT">Admin Departemen</option>
                     <option value="HC">HC</option>

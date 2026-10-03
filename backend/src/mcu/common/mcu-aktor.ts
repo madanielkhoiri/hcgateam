@@ -23,6 +23,9 @@ export const Aktor = createParamDecorator(
     if (user.role === UserRole.SECTION_HEAD || user.role === UserRole.GRUP_LEADER) {
       return { ...user, role: UserRole.KARYAWAN };
     }
+    if (user.role === UserRole.GRUP_LEADER_COMBEN) {
+      return { ...user, role: UserRole.HC };
+    }
     return user;
   },
 );

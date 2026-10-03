@@ -47,7 +47,7 @@ export default function KonstruksiProjectListPage() {
         <div>
           <h1>Konstruksi</h1>
           <p>
-            Checklist Tahapan Pekerjaan, Inspeksi Area/Peralatan, Progress Harian/Mingguan/Bulanan,
+            Checklist Tahapan Pekerjaan, Inspeksi Area/Peralatan, Laporan Harian/Mingguan/Bulanan,
             TTA, KTA, IBPR, JSA, dan Sosialisasi JSA. Pilih project untuk mulai mengelola.
           </p>
         </div>

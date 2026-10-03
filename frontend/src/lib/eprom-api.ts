@@ -44,6 +44,7 @@ export type TenderSPH = {
   vendorId: number;
   roundKe: number;
   fileSph: string | null;
+  fileSphFiles?: string[];
   hargaPenawaran: string | null;
   isFinal: boolean;
   statusPemenang: boolean;
@@ -715,11 +716,11 @@ export const epromApi = {
     buatRoundSph: (
       tenderId: number,
       vendorId: number,
-      file?: File | null,
+      file?: File | File[] | null,
       hargaPenawaran?: number,
     ) => {
       const form = new FormData();
-      if (file) form.append('file', file);
+      for (const item of (Array.isArray(file) ? file : file ? [file] : [])) form.append('file', item);
       if (hargaPenawaran !== undefined) form.append('hargaPenawaran', String(hargaPenawaran));
       return request<TenderSPH>(`/tender/${tenderId}/sph/${vendorId}`, {
         method: 'POST',
@@ -730,11 +731,11 @@ export const epromApi = {
       tenderId: number,
       vendorId: number,
       roundId: number,
-      file?: File | null,
+      file?: File | File[] | null,
       hargaPenawaran?: number,
     ) => {
       const form = new FormData();
-      if (file) form.append('file', file);
+      for (const item of (Array.isArray(file) ? file : file ? [file] : [])) form.append('file', item);
       if (hargaPenawaran !== undefined) form.append('hargaPenawaran', String(hargaPenawaran));
       return request<TenderSPH>(`/tender/${tenderId}/sph/${vendorId}/${roundId}`, {
         method: 'PATCH',
@@ -1153,9 +1154,9 @@ export const LABEL_TIPE_KONSTRUKSI: Record<TipeKonstruksi, string> = {
 export const LABEL_TIPE_PROGRESS: Record<TipeProgress, string> = {
   'inspeksi-area': 'Inspeksi Area Pekerjaan',
   'inspeksi-peralatan': 'Inspeksi Peralatan',
-  'progress-harian': 'Progress Harian',
-  'progress-mingguan': 'Progress Mingguan',
-  'progress-bulanan': 'Progress Bulanan',
+  'progress-harian': 'Laporan Harian',
+  'progress-mingguan': 'Laporan Mingguan',
+  'progress-bulanan': 'Laporan Bulanan',
   tta: 'Tindakan Tidak Aman (TTA)',
   kta: 'Kondisi Tidak Aman (KTA)',
 };
@@ -1173,8 +1174,8 @@ export const LABEL_STATUS_APPROVAL: Record<StatusApprovalEprom, string> = {
 };
 
 export const LABEL_TIPE_LINK_MEETING: Record<TipeLinkMeeting, string> = {
-  MINGGUAN: 'Progress Mingguan',
-  BULANAN: 'Progress Bulanan',
+  MINGGUAN: 'Laporan Mingguan',
+  BULANAN: 'Laporan Bulanan',
 };
 
 export const LABEL_TIPE_DOKUMEN_SURAT: Record<TipeDokumenSurat, string> = {
