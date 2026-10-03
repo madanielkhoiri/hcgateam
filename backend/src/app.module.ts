@@ -66,6 +66,7 @@ import { CivilTps3rModule } from './civil-tps3r/civil-tps3r.module';
 import { DriveModule } from './drive/drive.module';
 import { AlbumModule } from './album/album.module';
 import { KipModule } from './kip/kip.module';
+import { KwitansiObatModule } from './kwitansi-obat/kwitansi-obat.module';
 
 @Module({
   imports: [
@@ -133,6 +134,7 @@ import { KipModule } from './kip/kip.module';
     DriveModule,
     AlbumModule,
     KipModule,
+    KwitansiObatModule,
     ApprovalSummaryModule,
     PengaduanLayananModule,
     WebPushModule,

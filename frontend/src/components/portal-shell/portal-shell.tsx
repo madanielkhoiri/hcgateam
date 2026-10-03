@@ -32,7 +32,10 @@ import { WebPushPrompt } from '../web-push-prompt';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-const ADMIN_ONLY_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
+const ADMIN_ONLY_ROLES = [
+  'ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD',
+  'GRUP_LEADER_IR', 'GRUP_LEADER_COMBEN', 'GRUP_LEADER_GA', 'GRUP_LEADER_RND',
+];
 
 function bolehAksesAdminOnly(role?: string): boolean {
   return Boolean(role && ADMIN_ONLY_ROLES.includes(role));

@@ -23,6 +23,7 @@ export const ACCESS_KEYS = {
   HC_COMBEN: 'HC_COMBEN',
   HC_MCU: 'HC_MCU',
   HC_HELPDESK: 'HC_HELPDESK',
+  HC_KWITANSI_OBAT: 'HC_KWITANSI_OBAT',
   HC_KARYAWAN: 'HC_KARYAWAN',
 
   // GA
@@ -161,10 +162,26 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
+  // Admin Departemen hanya boleh memakai Order Pack Meal Spesial.
+  if (user.role === 'ADMIN_DEPT') {
+    return accessKey === ACCESS_KEYS.GA_ORDER_PACK_MEAL;
+  }
+
+  // Karyawan tidak boleh masuk e-ProM/Civil Project maupun Inventory.
+  if (user.role === 'KARYAWAN') {
+    if (accessKey === ACCESS_KEYS.GA_INVENTORY || accessKey.startsWith('CIVIL_INVENTORY') || accessKey.startsWith('CIVIL_PROJECT')) {
+      return false;
+    }
+  }
+
   if (
     user.role === 'ADMIN' ||
     user.role === 'SUPER_ADMIN' ||
-    user.role === 'SECTION_HEAD'
+    user.role === 'SECTION_HEAD' ||
+    user.role === 'GRUP_LEADER_IR' ||
+    user.role === 'GRUP_LEADER_COMBEN' ||
+    user.role === 'GRUP_LEADER_GA' ||
+    user.role === 'GRUP_LEADER_RND'
   ) {
     return true;
   }
@@ -181,6 +198,10 @@ export function formatRole(role?: string): string {
   if (role === 'GRUP_LEADER') {
     return 'Group Leader';
   }
+  if (role === 'GRUP_LEADER_IR') return 'Group Leader IR';
+  if (role === 'GRUP_LEADER_COMBEN') return 'Group Leader Comben & Benefit';
+  if (role === 'GRUP_LEADER_GA') return 'Group Leader GA';
+  if (role === 'GRUP_LEADER_RND') return 'Group Leader R & D';
 
   if (role === 'FA') {
     return 'FA';
