@@ -261,7 +261,7 @@ export class EpromTenderService {
     aktor: AktorEprom,
     tenderId: number,
     vendorId: number,
-    file?: Express.Multer.File,
+    files: Express.Multer.File[] = [],
     hargaPenawaran?: number,
   ) {
     const undangan = await this.prisma.tenderUndangan.findUnique({
@@ -282,12 +282,11 @@ export class EpromTenderService {
     }
 
     const roundKe = (roundTerakhir?.roundKe ?? 0) + 1;
-    const fileSph = file
-      ? this.file.simpan(file, `tender/${tenderId}/sph`, this.file.tebakTipe(file.originalname))
-      : null;
+    const fileSphFiles = files.map((file) => this.file.simpanDokumen(file, `tender/${tenderId}/sph`));
+    const fileSph = fileSphFiles[0] ?? null;
 
     const round = await this.prisma.tenderSPH.create({
-      data: { tenderId, vendorId, roundKe, fileSph, hargaPenawaran },
+      data: { tenderId, vendorId, roundKe, fileSph, fileSphFiles, hargaPenawaran },
     });
 
     await this.prisma.tenderProcess.updateMany({

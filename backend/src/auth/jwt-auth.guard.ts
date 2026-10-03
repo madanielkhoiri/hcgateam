@@ -73,7 +73,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       !user ||
       user.role === UserRole.ADMIN ||
       user.role === UserRole.SUPER_ADMIN ||
-      user.role === UserRole.SECTION_HEAD
+      user.role === UserRole.SECTION_HEAD ||
+      user.role === UserRole.GRUP_LEADER_IR ||
+      user.role === UserRole.GRUP_LEADER_COMBEN ||
+      user.role === UserRole.GRUP_LEADER_GA ||
+      user.role === UserRole.GRUP_LEADER_RND
     ) {
       return true;
     }
@@ -88,6 +92,20 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     )?.accessKey;
 
     const requiredAccessKeys = requiredFromDecorator ?? requiredFromScope;
+
+    // Admin Departemen hanya diperbolehkan memakai Order Pack Meal Spesial.
+    if (user?.role === UserRole.ADMIN_DEPT) {
+      if (!requiredAccessKeys?.includes('GA_ORDER_PACK_MEAL')) {
+        throw new ForbiddenException('Admin Departemen hanya memiliki akses Order Pack Meal Spesial');
+      }
+    }
+
+    // Akun karyawan tidak boleh membuka e-ProM maupun Inventory.
+    if (user?.role === UserRole.KARYAWAN && requiredAccessKeys?.some((key) =>
+      key === 'GA_INVENTORY' || key.startsWith('CIVIL_INVENTORY') || key.startsWith('CIVIL_PROJECT'),
+    )) {
+      throw new ForbiddenException('Karyawan tidak memiliki akses ke modul ini');
+    }
 
     if (!requiredAccessKeys || requiredAccessKeys.length === 0) {
       return true;

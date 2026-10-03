@@ -111,6 +111,16 @@ export class McuKaryawanController {
     return this.service.detailKaryawan(id);
   }
 
+  /** Cek nomor WhatsApp karyawan langsung ke Fonnte. */
+  @Post('karyawan/:id/cek-wa')
+  async cekStatusWa(
+    @Aktor() aktor: AktorMcu,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    this.akses.wajibPeran(aktor, UserRole.HC);
+    return this.service.cekStatusWa(id);
+  }
+
   @Post('karyawan')
   async buatKaryawan(@Aktor() aktor: AktorMcu, @Body() dto: BuatKaryawanDto) {
     this.akses.wajibPeran(aktor, UserRole.HC);

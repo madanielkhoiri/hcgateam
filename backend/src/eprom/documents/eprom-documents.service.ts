@@ -5,7 +5,7 @@
 // Referensi: alur-workflow-tender-kontrak-project-area.md bagian 4.1.1 & 4.2.2
 // ==================================================
 
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ScopeDocumentFolder, TipeFileEprom } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -46,6 +46,13 @@ export class EpromDocumentsService {
     aktor: AktorEprom,
     folder: { scope: ScopeDocumentFolder; tenderId: number | null; vendorId: number | null },
   ): Promise<void> {
+    if (
+      folder.scope === ScopeDocumentFolder.LEGALITAS_VENDOR &&
+      aktor.role === 'VENDOR'
+    ) {
+      throw new ForbiddenException('Akun Vendor tidak memiliki akses Legalitas Vendor');
+    }
+
     if (folder.scope === ScopeDocumentFolder.TENDER_DOKUMEN) {
       this.akses.wajibOwner(aktor);
       return;

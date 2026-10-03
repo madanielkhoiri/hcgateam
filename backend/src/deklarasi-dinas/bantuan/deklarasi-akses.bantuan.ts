@@ -14,6 +14,7 @@ export const ROLE_PENYETUJU_DEKLARASI: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.HC,
+  UserRole.GRUP_LEADER_RND,
   UserRole.SECTION_HEAD,
   UserRole.FA,
 ];
