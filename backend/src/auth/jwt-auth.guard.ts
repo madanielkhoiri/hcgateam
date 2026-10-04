@@ -106,7 +106,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     const ownedAccessKeys = user.accessKeys ?? [];
 
-    if (!requiredAccessKeys.some((key) => ownedAccessKeys.includes(key))) {
+    const punyaAkses = requiredAccessKeys.some((key) =>
+      ownedAccessKeys.includes(key) ||
+      (['HC', 'GA', 'CIVIL', 'ADMINISTRASI'].includes(key) &&
+        ownedAccessKeys.some((owned) => owned.startsWith(`${key}_`))),
+    );
+
+    if (!punyaAkses) {
       throw new ForbiddenException(
         'Akses modul untuk akun ini sedang dinonaktifkan',
       );

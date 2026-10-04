@@ -185,7 +185,12 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
   }
 
   const keys = user.accessKeys ?? [];
-  return keys.includes(accessKey) || keys.includes('ALL');
+  if (keys.includes(accessKey) || keys.includes('ALL')) return true;
+  // A child permission also opens its department card (e.g. HC_MCU -> HC).
+  if (['HC', 'GA', 'CIVIL', 'ADMINISTRASI'].includes(accessKey)) {
+    return keys.some((key) => key.startsWith(`${accessKey}_`));
+  }
+  return false;
 }
 
 export function formatRole(role?: string): string {
