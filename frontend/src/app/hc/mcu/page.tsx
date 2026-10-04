@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 // ==================================================
 // FILE: frontend/src/app/hc/mcu/page.tsx
 // FUNGSI: Root modul MCU - redirect ke halaman pertama yang relevan
 // untuk role akun ini. Dashboard cuma masuk akal untuk role yang
-// mengelola lintas karyawan (HC/Admin Dept/Dokter) — role lain
+// mengelola lintas karyawan (HC/Admin Dept/Dokter) â€” role lain
 // (Karyawan/SHE/Klinik) diarahkan ke menu utamanya sendiri, karena
 // Dashboard sekarang ditolak backend untuk role tersebut.
 // ==================================================
@@ -18,8 +18,10 @@ export default function McuRootPage() {
   const { punyaPeran } = useMcu();
 
   useEffect(() => {
-    if (punyaPeran('HC', 'ADMIN_DEPT', 'DOKTER')) {
+    if (punyaPeran('HC', 'DOKTER')) {
       router.replace('/hc/mcu/dashboard');
+    } else if (punyaPeran('ADMIN_DEPT')) {
+      router.replace('/hc/mcu/jadwal');
     } else if (punyaPeran('KARYAWAN')) {
       router.replace('/hc/mcu/jadwal');
     } else if (punyaPeran('SHE')) {
@@ -33,3 +35,4 @@ export default function McuRootPage() {
 
   return null;
 }
+
