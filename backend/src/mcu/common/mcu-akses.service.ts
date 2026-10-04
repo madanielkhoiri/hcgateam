@@ -57,9 +57,11 @@ export class McuAksesService {
       return ROLE_MCU;
     }
 
-    // Section Head dan Group Leader memakai alur mandiri yang sama dengan
-    // Karyawan; keduanya tidak mendapatkan fungsi administratif MCU.
-    if (aktor.role === UserRole.SECTION_HEAD || aktor.role === UserRole.GRUP_LEADER) {
+    // Section Head memakai akses penuh pada alur MCU sesuai peran portal.
+    if (aktor.role === UserRole.SECTION_HEAD) {
+      return ROLE_MCU;
+    }
+    if (aktor.role === UserRole.GRUP_LEADER) {
       return [UserRole.KARYAWAN];
     }
 

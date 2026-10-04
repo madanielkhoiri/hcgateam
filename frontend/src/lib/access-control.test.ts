@@ -161,7 +161,7 @@ describe("formatRole", () => {
  expect(formatRole("SUPER_ADMIN")).toBe("Admin HC");
  expect(formatRole("SHE")).toBe("SHE (K3)");
  expect(formatRole("KLINIK")).toBe("Klinik Provider");
- expect(formatRole("GRUP_LEADER")).toBe("Group Leader");
+  expect(formatRole("GRUP_LEADER")).toBe("Grup Leader");
  });
 
  it("role tak dikenal di-title-case otomatis dari snake_case", () => {
