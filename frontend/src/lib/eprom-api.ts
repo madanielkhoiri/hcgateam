@@ -658,7 +658,7 @@ export function picuUnduhan(blob: Blob, namaFile: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** URL file yang disimpan lewat EpromFileService (mis. fileKontrak) — wajib login, lihat uploads-url.ts. */
+/** URL file yang disimpan lewat EpromFileService (mis. fileKontrak) â€” wajib login, lihat uploads-url.ts. */
 export function urlFileEprom(pathRelatif: string): string {
   return urlUploads(pathRelatif);
 }
@@ -697,7 +697,7 @@ export const epromApi = {
       request<TenderProcess>('/tender', { method: 'POST', body: JSON.stringify(data) }),
     ubah: (id: number, data: Partial<{ namaTender: string; tanggalMulai: string; tanggalSelesai: string }>) =>
       request<TenderProcess>(`/tender/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    /** Kirim undangan ke beberapa vendor sekaligus — file lampiran per vendor berbeda-beda. */
+    /** Kirim undangan ke beberapa vendor sekaligus â€” file lampiran per vendor berbeda-beda. */
     kirimUndangan: (id: number, vendorIds: number[], filesPerVendor: Record<number, File[]> = {}) => {
       const form = new FormData();
       form.append('vendorIds', vendorIds.join(','));
@@ -763,7 +763,7 @@ export const epromApi = {
           body: JSON.stringify(data),
         }),
     },
-    /** Chat undangan tender (khusus Owner) — vendor tetap balas lewat email biasa. */
+    /** Chat undangan tender (khusus Owner) â€” vendor tetap balas lewat email biasa. */
     pesan: {
       daftar: (tenderId: number, vendorId: number) =>
         request<DaftarPesanTender>(`/tender/${tenderId}/undangan/${vendorId}/pesan`),
@@ -969,7 +969,7 @@ export const epromApi = {
       tipe: TipeProgress,
       projectId: number,
       file: File | null,
-      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number },
+      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number; tanggal?: string },
     ) => {
       const form = new FormData();
       if (file) form.append('file', file);
@@ -977,6 +977,7 @@ export const epromApi = {
         form.append('namaPekerjaan', dataMingguan.namaPekerjaan);
         form.append('planned', String(dataMingguan.planned));
         form.append('actual', String(dataMingguan.actual));
+        if (dataMingguan.tanggal) form.append('tanggal', dataMingguan.tanggal);
       }
       return request<ProgressItem>(`/progress/${tipe}?projectId=${projectId}`, {
         method: 'POST',
@@ -985,6 +986,22 @@ export const epromApi = {
     },
     hapus: (tipe: TipeProgress, id: number) =>
       request<{ message: string }>(`/progress/${tipe}/${id}`, { method: 'DELETE' }),
+    ubah: (
+      tipe: TipeProgress,
+      id: number,
+      file: File | null,
+      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number; tanggal?: string },
+    ) => {
+      const form = new FormData();
+      if (file) form.append('file', file);
+      if (dataMingguan) {
+        form.append('namaPekerjaan', dataMingguan.namaPekerjaan);
+        form.append('planned', String(dataMingguan.planned));
+        form.append('actual', String(dataMingguan.actual));
+        if (dataMingguan.tanggal) form.append('tanggal', dataMingguan.tanggal);
+      }
+      return request<ProgressItem>(`/progress/${tipe}/${id}`, { method: 'PATCH', body: form });
+    },
     jamUpload: (tipe: TipeProgress) => request<JamUploadInfo>(`/progress/${tipe}/jam`),
     performa: (tipe: 'tta' | 'kta', projectId: number) =>
       request<PerformaBulanIni>(`/progress/${tipe}/performa/${projectId}`),
@@ -1233,21 +1250,21 @@ export function formatBulanLabel(bulan: string | null | undefined): string {
   return `${NAMA_BULAN[bulanAngka - 1]} ${tahun}`;
 }
 
-/** Versi singkat "Agu 2026" dari string "YYYY-MM" — dipakai untuk label sumbu grafik. */
+/** Versi singkat "Agu 2026" dari string "YYYY-MM" â€” dipakai untuk label sumbu grafik. */
 export function formatBulanSingkat(bulan: string | null | undefined): string {
   if (!bulan) {
     return '-';
   }
 
-  const [tahun, bulanAngka] = bulan.split('-').map(Number);
+  const [tahun, bulanAngka, hari] = bulan.split('-').map(Number);
   if (!tahun || !bulanAngka || bulanAngka < 1 || bulanAngka > 12) {
     return bulan;
   }
 
-  return `${NAMA_BULAN[bulanAngka - 1].slice(0, 3)} ${String(tahun).slice(2)}`;
+  return hari ? `${String(hari).padStart(2, '0')} ${NAMA_BULAN[bulanAngka - 1].slice(0, 3)}` : `${NAMA_BULAN[bulanAngka - 1].slice(0, 3)} ${String(tahun).slice(2)}`;
 }
 
-/** Format tanggal+jam dalam WITA (UTC+8) — konsisten dengan aturan jam buka/tutup upload (bagian 3.3). */
+/** Format tanggal+jam dalam WITA (UTC+8) â€” konsisten dengan aturan jam buka/tutup upload (bagian 3.3). */
 export function formatWaktuWITA(nilai: string | null | undefined): string {
   if (!nilai) {
     return '-';
