@@ -387,6 +387,8 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [namaPekerjaan, setNamaPekerjaan] = useState("");
   const [planned, setPlanned] = useState("");
   const [actual, setActual] = useState("");
+  const [tanggalUpload, setTanggalUpload] = useState(() => new Date().toISOString().slice(0, 10));
+  const [editProgressId, setEditProgressId] = useState<number | null>(null);
 
   const muat = useCallback(() => {
     setLoading(true);
@@ -405,6 +407,8 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setNamaPekerjaan("");
     setPlanned("");
     setActual("");
+    setTanggalUpload(new Date().toISOString().slice(0, 10));
+    setEditProgressId(null);
   }, [muat]);
 
   const terkunci = jam ? jam.dibatasi && !jam.bukaSekarang : false;
@@ -417,7 +421,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
         setError("Nama Pekerjaan, Planned, dan Actual wajib diisi");
         return;
       }
-    } else if (!fileBaru) {
+    } else if (!fileBaru && editProgressId === null) {
       setError("Pilih file terlebih dahulu");
       return;
     }
@@ -425,24 +429,33 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.progress.buat(
-        tipe,
-        projectId,
-        fileBaru,
-        mingguan
-          ? { namaPekerjaan: namaPekerjaan.trim(), planned: Number(planned), actual: Number(actual) }
-          : undefined,
-      );
+      const data = mingguan
+          ? { namaPekerjaan: namaPekerjaan.trim(), planned: Number(planned), actual: Number(actual), tanggal: tanggalUpload }
+          : { namaPekerjaan: "", planned: 0, actual: 0, tanggal: tanggalUpload };
+      if (editProgressId !== null) await epromApi.progress.ubah(tipe, editProgressId, fileBaru, data);
+      else await epromApi.progress.buat(tipe, projectId, fileBaru, data);
       setFileBaru(null);
       setNamaPekerjaan("");
       setPlanned("");
       setActual("");
+      setTanggalUpload(new Date().toISOString().slice(0, 10));
+      setEditProgressId(null);
       muat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengunggah");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function mulaiEdit(item: ProgressItem) {
+    setEditProgressId(item.id);
+    setNamaPekerjaan(item.namaPekerjaan ?? "");
+    setPlanned(item.planned === undefined ? "" : String(item.planned));
+    setActual(item.actual === undefined ? "" : String(item.actual));
+    setTanggalUpload((item.uploadedAt ?? item.tanggal ?? new Date().toISOString()).slice(0, 10));
+    setFileBaru(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function hapus(item: ProgressItem) {
@@ -517,6 +530,10 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             </>
           )}
           <label>
+            Tanggal Upload
+            <input type="date" value={tanggalUpload} onChange={(e) => setTanggalUpload(e.target.value)} disabled={terkunci} required />
+          </label>
+          <label>
             File {mingguan && "(opsional)"}
             <input
               type="file"
@@ -526,8 +543,13 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             />
           </label>
           <button type="submit" className={engineerStyles.primaryButton} disabled={submitting || terkunci}>
-            {submitting ? "Menyimpan..." : mingguan ? "Simpan Update" : "Unggah"}
+            {submitting ? "Menyimpan..." : editProgressId !== null ? "Simpan Perubahan" : mingguan ? "Simpan Update" : "Unggah"}
           </button>
+          {editProgressId !== null && (
+            <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setEditProgressId(null); setNamaPekerjaan(""); setPlanned(""); setActual(""); setFileBaru(null); }}>
+              Batal Edit
+            </button>
+          )}
         </form>
       )}
 
@@ -589,6 +611,9 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
                   </td>
                   {(boleh || vendorSaya) && (
                     <td>
+                      <button type="button" className={engineerStyles.iconButton} onClick={() => mulaiEdit(item)} title="Edit">
+                        <Pencil size={13} />
+                      </button>
                       <button
                         type="button"
                         className={engineerStyles.iconButtonDanger}
@@ -625,15 +650,14 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
               </div>
 
               {(boleh || vendorSaya) && (
-                <button
-                  type="button"
-                  className={engineerStyles.iconButtonDanger}
-                  onClick={() => hapus(item)}
-                  title="Hapus"
-                  style={{ marginTop: 10 }}
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button type="button" className={engineerStyles.iconButton} onClick={() => mulaiEdit(item)} title="Edit">
+                    <Pencil size={13} />
+                  </button>
+                  <button type="button" className={engineerStyles.iconButtonDanger} onClick={() => hapus(item)} title="Hapus">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
