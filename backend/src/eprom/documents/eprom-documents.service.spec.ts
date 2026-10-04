@@ -93,23 +93,21 @@ describe('EpromDocumentsService.isiFolder — akses per scope', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
-  it('LEGALITAS_VENDOR dengan vendorId menolak Vendor lain', async () => {
+  it('LEGALITAS_VENDOR menolak semua akun Vendor', async () => {
     const { service } = buatService();
 
     await expect(
       service.isiFolder(aktor(UserRole.VENDOR, { vendorId: 1 }), { scope: ScopeDocumentFolder.LEGALITAS_VENDOR, vendorId: 9 }),
-    ).rejects.toThrow('Akun Vendor hanya dapat mengelola datanya sendiri');
+    ).rejects.toThrow('Akun Vendor tidak memiliki akses Legalitas Vendor');
   });
 
-  it('LEGALITAS_VENDOR mengizinkan Vendor pemilik vendorId tersebut', async () => {
+  it('LEGALITAS_VENDOR tetap menolak Vendor pemilik folder', async () => {
     const { service } = buatService({ folderFindMany: [folderVendorFixture()] });
 
-    const hasil = await service.isiFolder(aktor(UserRole.VENDOR, { vendorId: 9 }), {
+    await expect(service.isiFolder(aktor(UserRole.VENDOR, { vendorId: 9 }), {
       scope: ScopeDocumentFolder.LEGALITAS_VENDOR,
       vendorId: 9,
-    });
-
-    expect(hasil.folders).toEqual([folderVendorFixture()]);
+    })).rejects.toThrow('Akun Vendor tidak memiliki akses Legalitas Vendor');
   });
 
   it('menyertakan daftar file hanya kalau parentFolderId diberikan', async () => {
@@ -217,16 +215,12 @@ describe('EpromDocumentsService.unggahFile', () => {
     );
   });
 
-  it('menyimpan file ke folder vendor/<vendorId> untuk scope LEGALITAS_VENDOR', async () => {
+  it('menolak Vendor mengunggah legalitas vendor', async () => {
     const { service, file, fileUploadCreate } = buatService({ folder: folderVendorFixture({ vendorId: 9 }) });
     const dummyFile = { originalname: 'a.pdf' } as Express.Multer.File;
 
-    await service.unggahFile(aktor(UserRole.VENDOR, { vendorId: 9 }), 2, dummyFile);
-
-    expect(file.simpan).toHaveBeenCalledWith(dummyFile, 'vendor/9', TipeFileEprom.PDF);
-    expect(fileUploadCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ folderId: 2, uploadedById: 1 }) }),
-    );
+    await expect(service.unggahFile(aktor(UserRole.VENDOR, { vendorId: 9 }), 2, dummyFile))
+      .rejects.toThrow('Akun Vendor tidak memiliki akses Legalitas Vendor');
   });
 });
 
