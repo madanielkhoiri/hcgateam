@@ -208,7 +208,7 @@ export class EpromProgressService {
     }
 
     return items.map((item: { planned: number | string; actual: number | string }) => {
-      const deviasi = Number(item.actual) - Number(item.planned);
+      const deviasi = Math.round((Number(item.actual) - Number(item.planned)) * 100) / 100;
       return { ...item, deviasi, status: statusDeviasi(deviasi) };
     });
   }
@@ -385,7 +385,7 @@ export class EpromProgressService {
     }
 
     return [...terbaruPerPekerjaan.values()].map((item) => {
-      const deviasi = Number(item.actual) - Number(item.planned);
+      const deviasi = Math.round((Number(item.actual) - Number(item.planned)) * 100) / 100;
       return { ...item, deviasi, status: statusDeviasi(deviasi) };
     });
   }
