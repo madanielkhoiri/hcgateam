@@ -162,6 +162,10 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
+  if (user.role === 'ADMIN_DEPT' && accessKey === ACCESS_KEYS.HC_KWITANSI_OBAT) {
+    return false;
+  }
+
   // Admin Departemen mengikuti akses yang diberikan di Manajemen Akun.
   // Pembatasan per fitur tetap diberlakukan oleh layout dan backend.
 
