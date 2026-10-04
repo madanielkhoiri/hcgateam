@@ -162,10 +162,8 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
-  // Admin Departemen hanya boleh memakai Order Pack Meal Spesial.
-  if (user.role === 'ADMIN_DEPT') {
-    return accessKey === ACCESS_KEYS.GA_ORDER_PACK_MEAL;
-  }
+  // Admin Departemen mengikuti akses yang diberikan di Manajemen Akun.
+  // Pembatasan per fitur tetap diberlakukan oleh layout dan backend.
 
   // Karyawan tidak boleh masuk e-ProM/Civil Project maupun Inventory.
   if (user.role === 'KARYAWAN') {
