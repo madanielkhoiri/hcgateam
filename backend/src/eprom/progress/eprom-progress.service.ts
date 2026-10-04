@@ -335,42 +335,34 @@ export class EpromProgressService {
       select: { namaPekerjaan: true, actual: true },
     });
 
-    const terbaruPerPekerjaan = new Map<string, number>();
-    for (const b of baris) {
-      if (!terbaruPerPekerjaan.has(b.namaPekerjaan)) {
-        terbaruPerPekerjaan.set(b.namaPekerjaan, Number(b.actual));
-      }
-    }
-
-    if (terbaruPerPekerjaan.size === 0) {
+    if (baris.length === 0) {
       return null;
     }
-
-    const totalActual = [...terbaruPerPekerjaan.values()].reduce((a, b) => a + b, 0);
-    return Math.round(totalActual * 10) / 10;
+    // Format "LAPORAN WEEK n" adalah snapshot kumulatif project.
+    if (baris.every((b) => /^laporan\s+week\s+/i.test(b.namaPekerjaan))) {
+      return Math.round(Number(baris[0].actual) * 10) / 10;
+    }
+    const terbaruPerPekerjaan = new Map<string, number>();
+    for (const b of baris) if (!terbaruPerPekerjaan.has(b.namaPekerjaan)) terbaruPerPekerjaan.set(b.namaPekerjaan, Number(b.actual));
+    return Math.round([...terbaruPerPekerjaan.values()].reduce((a, b) => a + b, 0) * 10) / 10;
   }
 
-  /** Tren upload Actual% berdasarkan tanggal agar kenaikan antar-upload terlihat vertikal. */
+  /** Kurva-S mingguan: planned dan actual kumulatif per tanggal upload. */
   async trendMingguan(projectId: number) {
     const baris = await this.prisma.progressMingguan.findMany({
       where: { projectId },
-      select: { uploadedAt: true, actual: true },
+      orderBy: [{ uploadedAt: 'asc' }, { mingguKe: 'asc' }, { id: 'asc' }],
+      select: { uploadedAt: true, namaPekerjaan: true, planned: true, actual: true },
     });
 
-    const perBulan = new Map<string, number[]>();
-    for (const b of baris) {
-      const tanggal = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt);
-      const arr = perBulan.get(tanggal) ?? [];
-      arr.push(Number(b.actual));
-      perBulan.set(tanggal, arr);
-    }
-
-    return [...perBulan.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([bulan, nilai]) => ({
-        bulan,
-        actual: Math.round((nilai.reduce((a, n) => a + n, 0) / nilai.length) * 10) / 10,
-      }));
+    const urut = baris.slice().sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime());
+    const tanggal = [...new Set(urut.map((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt)))].sort();
+    return tanggal.map((hari) => {
+      const snapshot = urut.filter((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt) === hari).at(-1);
+      const planned = Number(snapshot?.planned ?? 0);
+      const actual = Number(snapshot?.actual ?? 0);
+      return { bulan: hari, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
+    });
   }
 
   /**
