@@ -350,27 +350,22 @@ export class EpromProgressService {
     return Math.round(totalActual * 10) / 10;
   }
 
-  /** Tren upload Actual% berdasarkan tanggal agar kenaikan antar-upload terlihat vertikal. */
+  /** Kurva-S mingguan: planned dan actual kumulatif per tanggal upload. */
   async trendMingguan(projectId: number) {
     const baris = await this.prisma.progressMingguan.findMany({
       where: { projectId },
-      select: { uploadedAt: true, actual: true },
+      orderBy: [{ uploadedAt: 'asc' }, { mingguKe: 'asc' }, { id: 'asc' }],
+      select: { uploadedAt: true, namaPekerjaan: true, planned: true, actual: true },
     });
 
-    const perBulan = new Map<string, number[]>();
-    for (const b of baris) {
-      const tanggal = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt);
-      const arr = perBulan.get(tanggal) ?? [];
-      arr.push(Number(b.actual));
-      perBulan.set(tanggal, arr);
-    }
-
-    return [...perBulan.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([bulan, nilai]) => ({
-        bulan,
-        actual: Math.round((nilai.reduce((a, n) => a + n, 0) / nilai.length) * 10) / 10,
-      }));
+    const tanggal = [...new Set(baris.map((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt)))].sort();
+    return tanggal.map((hari) => {
+      const terbaru = new Map<string, { planned: number; actual: number }>();
+      for (const b of baris) { const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt); if (t > hari) break; terbaru.set(b.namaPekerjaan, { planned: Number(b.planned), actual: Number(b.actual) }); }
+      const planned = [...terbaru.values()].reduce((sum, b) => sum + b.planned, 0);
+      const actual = [...terbaru.values()].reduce((sum, b) => sum + b.actual, 0);
+      return { bulan: hari, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
+    });
   }
 
   /**
