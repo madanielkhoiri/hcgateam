@@ -246,7 +246,7 @@ function buatHcTree(approval: RingkasanApproval | null, mcuRingkasan: RingkasanM
         status: 'Tersedia',
         href: '/hc/kwitansi-obat',
         icon: FileText,
-        accessKey: ACCESS_KEYS.HC_COMBEN,
+        accessKey: ACCESS_KEYS.HC_KWITANSI_OBAT,
         accent: '#07984c',
         soft: '#e4f7ec',
       },
