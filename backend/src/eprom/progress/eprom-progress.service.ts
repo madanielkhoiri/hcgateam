@@ -335,19 +335,16 @@ export class EpromProgressService {
       select: { namaPekerjaan: true, actual: true },
     });
 
-    const terbaruPerPekerjaan = new Map<string, number>();
-    for (const b of baris) {
-      if (!terbaruPerPekerjaan.has(b.namaPekerjaan)) {
-        terbaruPerPekerjaan.set(b.namaPekerjaan, Number(b.actual));
-      }
-    }
-
-    if (terbaruPerPekerjaan.size === 0) {
+    if (baris.length === 0) {
       return null;
     }
-
-    const totalActual = [...terbaruPerPekerjaan.values()].reduce((a, b) => a + b, 0);
-    return Math.round(totalActual * 10) / 10;
+    // Format "LAPORAN WEEK n" adalah snapshot kumulatif project.
+    if (baris.every((b) => /^laporan\s+week\s+/i.test(b.namaPekerjaan))) {
+      return Math.round(Number(baris[0].actual) * 10) / 10;
+    }
+    const terbaruPerPekerjaan = new Map<string, number>();
+    for (const b of baris) if (!terbaruPerPekerjaan.has(b.namaPekerjaan)) terbaruPerPekerjaan.set(b.namaPekerjaan, Number(b.actual));
+    return Math.round([...terbaruPerPekerjaan.values()].reduce((a, b) => a + b, 0) * 10) / 10;
   }
 
   /** Kurva-S mingguan: planned dan actual kumulatif per tanggal upload. */
@@ -361,10 +358,9 @@ export class EpromProgressService {
     const urut = baris.slice().sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime());
     const tanggal = [...new Set(urut.map((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt)))].sort();
     return tanggal.map((hari) => {
-      const terbaru = new Map<string, { planned: number; actual: number }>();
-      for (const b of urut) { const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt); if (t > hari) break; terbaru.set(b.namaPekerjaan, { planned: Number(b.planned), actual: Number(b.actual) }); }
-      const planned = [...terbaru.values()].reduce((sum, b) => sum + b.planned, 0);
-      const actual = [...terbaru.values()].reduce((sum, b) => sum + b.actual, 0);
+      const snapshot = urut.filter((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt) === hari).at(-1);
+      const planned = Number(snapshot?.planned ?? 0);
+      const actual = Number(snapshot?.actual ?? 0);
       return { bulan: hari, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
     });
   }
