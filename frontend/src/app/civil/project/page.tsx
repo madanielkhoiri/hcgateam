@@ -334,8 +334,8 @@ export default function CivilProjectDashboardPage() {
                 namaProject={item.namaProject}
                 href={`/civil/project/konstruksi/${item.id}?tab=progress-mingguan`}
                 persen={item.progressPersen}
-                planned={item.plannedPersen}
-                deviasi={item.deviasiPersen}
+                planned={item.plannedPersen ?? item.progressPersen}
+                deviasi={item.deviasiPersen ?? 0}
               />
             ))}
           </ul>
