@@ -162,10 +162,12 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
-  // Admin Departemen hanya boleh memakai Order Pack Meal Spesial.
-  if (user.role === 'ADMIN_DEPT') {
-    return accessKey === ACCESS_KEYS.GA_ORDER_PACK_MEAL;
+  if (user.role === 'ADMIN_DEPT' && accessKey === ACCESS_KEYS.HC_KWITANSI_OBAT) {
+    return false;
   }
+
+  // Admin Departemen mengikuti akses yang diberikan di Manajemen Akun.
+  // Pembatasan per fitur tetap diberlakukan oleh layout dan backend.
 
   // Karyawan tidak boleh masuk e-ProM/Civil Project maupun Inventory.
   if (user.role === 'KARYAWAN') {
@@ -187,7 +189,12 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
   }
 
   const keys = user.accessKeys ?? [];
-  return keys.includes(accessKey) || keys.includes('ALL');
+  if (keys.includes(accessKey) || keys.includes('ALL')) return true;
+  // A child permission also opens its department card (e.g. HC_MCU -> HC).
+  if (['HC', 'GA', 'CIVIL', 'ADMINISTRASI'].includes(accessKey)) {
+    return keys.some((key) => key.startsWith(`${accessKey}_`));
+  }
+  return false;
 }
 
 export function formatRole(role?: string): string {
@@ -195,9 +202,6 @@ export function formatRole(role?: string): string {
     return '';
   }
 
-  if (role === 'GRUP_LEADER') {
-    return 'Group Leader';
-  }
   if (role === 'GRUP_LEADER_IR') return 'Group Leader IR';
   if (role === 'GRUP_LEADER_COMBEN') return 'Group Leader Comben & Benefit';
   if (role === 'GRUP_LEADER_GA') return 'Group Leader GA';

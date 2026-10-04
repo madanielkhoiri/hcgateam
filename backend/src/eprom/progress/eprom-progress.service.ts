@@ -25,6 +25,9 @@ function statusDeviasi(deviasi: number): StatusDeviasi {
 export class BuatProgressDto {
   @IsOptional()
   @IsString()
+  tanggal?: string;
+  @IsOptional()
+  @IsString()
   namaPekerjaan?: string;
 
   @IsOptional()
@@ -66,7 +69,7 @@ const LABEL_TIPE: Record<TipeProgress, string> = {
 
 type JamWITA = { buka: string; tutup: string } | null;
 
-/** Batas waktu upload zona WITA — di luar jam ini, upload dikunci (bagian 3.3). */
+/** Batas waktu upload zona WITA ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â di luar jam ini, upload dikunci (bagian 3.3). */
 const JAM_WITA: Record<TipeProgress, JamWITA> = {
   'inspeksi-area': { buka: '08:00', tutup: '12:00' },
   'inspeksi-peralatan': { buka: '08:00', tutup: '10:00' },
@@ -117,7 +120,7 @@ function bulanIniWITA(): string {
   return bulanDariTanggalWITA(new Date());
 }
 
-/** Format "YYYY-MM" (WITA) dari tanggal manapun — dipakai untuk mengelompokkan tren per bulan. */
+/** Format "YYYY-MM" (WITA) dari tanggal manapun ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dipakai untuk mengelompokkan tren per bulan. */
 function bulanDariTanggalWITA(tanggal: Date): string {
   const wita = new Date(tanggal.getTime() + 8 * 60 * 60 * 1000);
   return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -153,7 +156,7 @@ export class EpromProgressService {
   }
 
   /**
-   * Dispatcher generik — di-tipe `any` dengan sengaja, sama seperti
+   * Dispatcher generik ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â di-tipe `any` dengan sengaja, sama seperti
    * EpromEngineerService/EpromKonstruksiService (7 delegate model berbeda).
    */
   private delegate(tipe: TipeProgress): any {
@@ -177,7 +180,7 @@ export class EpromProgressService {
 
   /**
    * Info jam buka/tutup WITA untuk tombol upload di frontend.
-   * Owner/admin utama bebas jam — batasan hanya berlaku untuk Vendor.
+   * Owner/admin utama bebas jam ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â batasan hanya berlaku untuk Vendor.
    */
   jamUpload(aktor: AktorEprom, tipe: TipeProgress) {
     const jam = JAM_WITA[tipe];
@@ -237,20 +240,25 @@ export class EpromProgressService {
       );
     }
 
+    const tanggalDipilih = dto.tanggal ? new Date(`${dto.tanggal}T12:00:00.000Z`) : new Date();
+    if (Number.isNaN(tanggalDipilih.getTime())) throw new BadRequestException('Tanggal upload tidak valid');
+
     const fileUrl = file
       ? this.file.simpanDokumen(file, `project/${projectId}/progress/${tipe}`)
       : null;
 
     const dataEkstra: Record<string, unknown> = {};
+    if (tipe !== 'tta' && tipe !== 'kta') dataEkstra.uploadedAt = tanggalDipilih;
     if (tipe === 'progress-harian') {
-      dataEkstra.tanggal = tanggalHariIniWITA();
+      dataEkstra.tanggal = tanggalDipilih;
     } else if (tipe === 'progress-mingguan') {
       dataEkstra.mingguKe = mingguIniWITA();
       dataEkstra.namaPekerjaan = dto.namaPekerjaan!.trim();
       dataEkstra.planned = dto.planned;
       dataEkstra.actual = dto.actual;
     } else if (tipe === 'progress-bulanan' || tipe === 'tta' || tipe === 'kta') {
-      dataEkstra.bulan = bulanIniWITA();
+      dataEkstra.bulan = dto.tanggal ? dto.tanggal.slice(0, 7) : bulanIniWITA();
+      if (tipe === 'tta' || tipe === 'kta') dataEkstra.tanggalUpload = tanggalDipilih;
     }
 
     return this.delegate(tipe).create({
@@ -275,11 +283,48 @@ export class EpromProgressService {
     return { message: 'Item berhasil dihapus' };
   }
 
+  async ubah(
+    aktor: AktorEprom,
+    tipe: TipeProgress,
+    id: number,
+    dto: BuatProgressDto,
+    file?: Express.Multer.File,
+  ) {
+    const item = await this.delegate(tipe).findUnique({ where: { id } });
+    if (!item) throw new NotFoundException(`${LABEL_TIPE[tipe]} tidak ditemukan`);
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+    if (tipe === 'progress-mingguan') {
+      if (!dto.namaPekerjaan?.trim()) throw new BadRequestException('Nama Pekerjaan wajib diisi');
+      if (dto.planned === undefined || dto.actual === undefined) {
+        throw new BadRequestException('Planned dan Actual wajib diisi');
+      }
+    }
+    const data: Record<string, unknown> = {};
+    if (dto.tanggal) {
+      const tanggalDipilih = new Date(`${dto.tanggal}T12:00:00.000Z`);
+      if (Number.isNaN(tanggalDipilih.getTime())) throw new BadRequestException('Tanggal upload tidak valid');
+      if (tipe !== 'tta' && tipe !== 'kta') data.uploadedAt = tanggalDipilih;
+      if (tipe === 'progress-harian') data.tanggal = tanggalDipilih;
+      if (tipe === 'progress-bulanan') data.bulan = dto.tanggal.slice(0, 7);
+      if (tipe === 'tta' || tipe === 'kta') data.tanggalUpload = tanggalDipilih;
+    }
+    if (file) {
+      data.fileUrl = this.file.simpanDokumen(file, `project/${item.projectId}/progress/${tipe}`);
+      if (item.fileUrl) this.file.hapus(item.fileUrl);
+    }
+    if (tipe === 'progress-mingguan') {
+      data.namaPekerjaan = dto.namaPekerjaan!.trim();
+      data.planned = dto.planned;
+      data.actual = dto.actual;
+    }
+    return this.delegate(tipe).update({ where: { id }, data });
+  }
+
   /**
    * Progress Fisik project = jumlah (bukan rata-rata) Actual% terbaru dari
    * tiap nama Pekerjaan (baris terbaru per nama dipilih berdasarkan
    * minggu_ke, lalu id). Planned/Actual per pekerjaan sudah merupakan bobot
-   * kontribusinya ke total project (kurva-S), jadi cukup dijumlahkan —
+   * kontribusinya ke total project (kurva-S), jadi cukup dijumlahkan ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
    * pekerjaan baru yang baru mulai (kecil) TIDAK menurunkan total, hanya
    * menambah. Dipakai baik oleh tab Progress Mingguan maupun Dashboard utama.
    */
@@ -305,7 +350,7 @@ export class EpromProgressService {
     return Math.round(totalActual * 10) / 10;
   }
 
-  /** Tren rata-rata Actual% per bulan (untuk grafik "Progress Proyek" di Dashboard). */
+  /** Tren upload Actual% berdasarkan tanggal agar kenaikan antar-upload terlihat vertikal. */
   async trendMingguan(projectId: number) {
     const baris = await this.prisma.progressMingguan.findMany({
       where: { projectId },
@@ -314,10 +359,10 @@ export class EpromProgressService {
 
     const perBulan = new Map<string, number[]>();
     for (const b of baris) {
-      const bulan = bulanDariTanggalWITA(b.uploadedAt);
-      const arr = perBulan.get(bulan) ?? [];
+      const tanggal = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt);
+      const arr = perBulan.get(tanggal) ?? [];
       arr.push(Number(b.actual));
-      perBulan.set(bulan, arr);
+      perBulan.set(tanggal, arr);
     }
 
     return [...perBulan.entries()]
@@ -330,7 +375,7 @@ export class EpromProgressService {
 
   /**
    * Baris Planned/Actual/Deviasi terbaru per nama Pekerjaan (bukan seluruh histori)
-   * — dipakai widget "Progress Mingguan" per-project di Dashboard.
+   * ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dipakai widget "Progress Mingguan" per-project di Dashboard.
    */
   async progresMingguanTerbaru(aktor: AktorEprom, projectId: number) {
     await this.akses.wajibAksesProject(aktor, projectId);
@@ -353,7 +398,7 @@ export class EpromProgressService {
     });
   }
 
-  /** Persen performa bulan berjalan untuk TTA/KTA — target 8 upload/bulan (bagian 3.4). */
+  /** Persen performa bulan berjalan untuk TTA/KTA ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â target 8 upload/bulan (bagian 3.4). */
   async performaBulanIni(aktor: AktorEprom, tipe: 'tta' | 'kta', projectId: number) {
     await this.akses.wajibAksesProject(aktor, projectId);
 

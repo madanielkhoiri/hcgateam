@@ -21,7 +21,7 @@ import type { AktorMcu } from '../common/mcu-aktor';
 import { McuDashboardService } from './mcu-dashboard.service';
 
 /** Ringkasan/tren/history lintas karyawan — bukan konsumsi Karyawan/SHE/Klinik. */
-const PERAN_DASHBOARD = [UserRole.HC, UserRole.ADMIN_DEPT, UserRole.DOKTER];
+const PERAN_DASHBOARD = [UserRole.HC, UserRole.DOKTER];
 
 @Controller('mcu')
 @UseGuards(JwtAuthGuard)

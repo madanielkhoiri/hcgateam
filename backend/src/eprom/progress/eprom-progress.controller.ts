@@ -11,6 +11,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -83,5 +84,17 @@ export class EpromProgressController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     return this.service.hapus(aktor, this.service.validasiTipe(tipeRaw), id);
+  }
+
+  @Patch(':tipe/:id')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  ubah(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: BuatProgressDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.service.ubah(aktor, this.service.validasiTipe(tipeRaw), id, dto, file);
   }
 }

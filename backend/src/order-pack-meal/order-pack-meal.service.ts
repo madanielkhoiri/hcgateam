@@ -25,7 +25,6 @@ type OrderItemInput = {
 
 const staffRoles = new Set<UserRole>([
   UserRole.ADMIN,
-  UserRole.GRUP_LEADER,
   UserRole.SECTION_HEAD,
 ]);
 
