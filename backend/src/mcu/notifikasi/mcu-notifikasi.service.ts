@@ -90,7 +90,7 @@ export class McuNotifikasiService {
         if (isi.penerimaId && this.whatsapp?.aktif && isi.tipe !== TipeNotifikasiMcu.REMINDER_H3_BULAN) {
           const karyawan = await this.prisma.karyawan.findFirst({ where: { akunId: isi.penerimaId }, select: { nama: true, noTelepon: true } });
           if (karyawan?.noTelepon) {
-            await this.whatsapp.kirim(karyawan.noTelepon, `Halo, *${karyawan.nama}* 👋\n\n*${isi.judul}*\n\n${isi.pesan}\n\nMohon diperhatikan. Terima kasih 🙏`);
+            await this.whatsapp.kirim(karyawan.noTelepon, `Halo, *${karyawan.nama}* 👋\n\n*${isi.judul}*\n\n${isi.pesan}\n\nMohon diperhatikan. Terima kasih 🙏`, undefined, 'HC');
           }
         }
       }

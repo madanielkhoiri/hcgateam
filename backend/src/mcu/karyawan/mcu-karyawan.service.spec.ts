@@ -379,6 +379,8 @@ describe('McuKaryawanService.jalankanReminderJatuhTempo', () => {
     expect(whatsapp.kirim).toHaveBeenCalledWith(
       '0812',
       expect.stringContaining('Reminder MCU Periodik'),
+      undefined,
+      'HC',
     );
   });
 
@@ -435,6 +437,8 @@ describe('McuKaryawanService.karyawanSisaSatuBulan / jalankanReminderSisaSatuBul
     expect(whatsapp.kirim).toHaveBeenCalledWith(
       '0812',
       expect.stringContaining('belum ada jadwal'),
+      undefined,
+      'HC',
     );
   });
 

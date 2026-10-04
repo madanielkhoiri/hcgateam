@@ -72,16 +72,24 @@ export class EpromDashboardService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const trendByProject = new Map<number, Awaited<ReturnType<EpromProgressService['trendMingguan']>>>();
     const progressPerProjectMentah = await Promise.all(
-      daftarProject.map(async (p) => ({
-        id: p.id,
-        namaProject: p.namaProject,
-        progressPersen: await this.progress.progresFisikProject(p.id),
-      })),
+      daftarProject.map(async (p) => {
+        const trend = await this.progress.trendMingguan(p.id);
+        trendByProject.set(p.id, trend);
+        const terakhir = trend.at(-1);
+        const actual = await this.progress.progresFisikProject(p.id);
+        return {
+          id: p.id,
+          namaProject: p.namaProject,
+          progressPersen: actual,
+          ...(terakhir ? { plannedPersen: terakhir.planned ?? actual, deviasiPersen: terakhir.deviasi ?? 0 } : {}),
+        };
+      }),
     );
 
     const progressPerProject = progressPerProjectMentah.filter(
-      (p): p is { id: number; namaProject: string; progressPersen: number } =>
+      (p): p is { id: number; namaProject: string; progressPersen: number; plannedPersen?: number; deviasiPersen?: number } =>
         p.progressPersen !== null,
     );
 
@@ -98,7 +106,7 @@ export class EpromDashboardService {
       daftarProject.map(async (p) => ({
         id: p.id,
         namaProject: p.namaProject,
-        data: await this.progress.trendMingguan(p.id),
+        data: trendByProject.get(p.id) ?? [],
       })),
     );
 

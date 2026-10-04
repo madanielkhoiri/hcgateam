@@ -223,11 +223,11 @@ export type DashboardRingkasanEprom = {
   approvalPending: number;
   progressFisikRataRata: number | null;
   progressKeuanganRataRata: number | null;
-  progressPerProject: { id: number; namaProject: string; progressPersen: number }[];
+  progressPerProject: { id: number; namaProject: string; progressPersen: number; plannedPersen?: number; deviasiPersen?: number }[];
   progressTrend: {
     id: number;
     namaProject: string;
-    data: { bulan: string; actual: number }[];
+    data: { bulan: string; planned: number; actual: number; deviasi: number }[];
   }[];
   aktivitasTerbaru: { pesan: string; waktu: string }[];
 };
