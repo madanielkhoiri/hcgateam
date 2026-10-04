@@ -195,9 +195,6 @@ export function formatRole(role?: string): string {
     return '';
   }
 
-  if (role === 'GRUP_LEADER') {
-    return 'Group Leader';
-  }
   if (role === 'GRUP_LEADER_IR') return 'Group Leader IR';
   if (role === 'GRUP_LEADER_COMBEN') return 'Group Leader Comben & Benefit';
   if (role === 'GRUP_LEADER_GA') return 'Group Leader GA';
