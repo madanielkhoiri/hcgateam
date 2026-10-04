@@ -270,21 +270,21 @@ describe('EpromProgressService.progresFisikProject', () => {
 });
 
 describe('EpromProgressService.trendMingguan', () => {
-  it('mengelompokkan rata-rata actual per tanggal upload, terurut menaik', async () => {
+  it('menghasilkan kurva planned dan actual kumulatif per tanggal upload', async () => {
     const { service } = buatService({
       progressMingguan: [
-        { uploadedAt: new Date('2026-02-01T01:00:00Z'), actual: 50 },
-        { uploadedAt: new Date('2026-01-15T01:00:00Z'), actual: 20 },
-        { uploadedAt: new Date('2026-01-20T01:00:00Z'), actual: 30 },
+        { uploadedAt: new Date('2026-02-01T01:00:00Z'), namaPekerjaan: 'A', planned: 60, actual: 50 },
+        { uploadedAt: new Date('2026-01-15T01:00:00Z'), namaPekerjaan: 'A', planned: 20, actual: 20 },
+        { uploadedAt: new Date('2026-01-20T01:00:00Z'), namaPekerjaan: 'A', planned: 40, actual: 30 },
       ],
     });
 
     const hasil = await service.trendMingguan(1);
 
     expect(hasil).toEqual([
-      { bulan: '2026-01-15', actual: 20 },
-      { bulan: '2026-01-20', actual: 30 },
-      { bulan: '2026-02-01', actual: 50 },
+      { bulan: '2026-01-15', planned: 20, actual: 20, deviasi: 0 },
+      { bulan: '2026-01-20', planned: 40, actual: 30, deviasi: -10 },
+      { bulan: '2026-02-01', planned: 60, actual: 50, deviasi: -10 },
     ]);
   });
 });

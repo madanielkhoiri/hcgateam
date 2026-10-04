@@ -358,10 +358,11 @@ export class EpromProgressService {
       select: { uploadedAt: true, namaPekerjaan: true, planned: true, actual: true },
     });
 
-    const tanggal = [...new Set(baris.map((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt)))].sort();
+    const urut = baris.slice().sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime());
+    const tanggal = [...new Set(urut.map((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt)))].sort();
     return tanggal.map((hari) => {
       const terbaru = new Map<string, { planned: number; actual: number }>();
-      for (const b of baris) { const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt); if (t > hari) break; terbaru.set(b.namaPekerjaan, { planned: Number(b.planned), actual: Number(b.actual) }); }
+      for (const b of urut) { const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt); if (t > hari) break; terbaru.set(b.namaPekerjaan, { planned: Number(b.planned), actual: Number(b.actual) }); }
       const planned = [...terbaru.values()].reduce((sum, b) => sum + b.planned, 0);
       const actual = [...terbaru.values()].reduce((sum, b) => sum + b.actual, 0);
       return { bulan: hari, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
