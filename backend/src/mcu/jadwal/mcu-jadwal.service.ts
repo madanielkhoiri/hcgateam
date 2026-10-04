@@ -494,7 +494,7 @@ export class McuJadwalService {
         'Mohon pastikan hadir sesuai jadwal, terima kasih 🙏';
 
       // Pakai device WA GA (default) dulu - device HC masih paket terbatas.
-      await this.whatsapp.kirim(nomor, pesan);
+      await this.whatsapp.kirim(nomor, pesan, undefined, 'HC');
     }
   }
 
