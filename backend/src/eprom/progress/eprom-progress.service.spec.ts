@@ -194,7 +194,7 @@ describe('EpromProgressService.buat', () => {
     await service.buat(aktor(UserRole.OWNER), 'progress-harian', 1, {} as any, file);
 
     expect(sharedModel.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ tanggal: new Date('2026-01-05T00:00:00Z') }),
+      data: expect.objectContaining({ tanggal: new Date('2026-01-05T01:00:00Z') }),
     });
   });
 
@@ -270,7 +270,7 @@ describe('EpromProgressService.progresFisikProject', () => {
 });
 
 describe('EpromProgressService.trendMingguan', () => {
-  it('mengelompokkan rata-rata actual per bulan WITA, terurut menaik', async () => {
+  it('mengelompokkan rata-rata actual per tanggal upload, terurut menaik', async () => {
     const { service } = buatService({
       progressMingguan: [
         { uploadedAt: new Date('2026-02-01T01:00:00Z'), actual: 50 },
@@ -282,8 +282,9 @@ describe('EpromProgressService.trendMingguan', () => {
     const hasil = await service.trendMingguan(1);
 
     expect(hasil).toEqual([
-      { bulan: '2026-01', actual: 25 },
-      { bulan: '2026-02', actual: 50 },
+      { bulan: '2026-01-15', actual: 20 },
+      { bulan: '2026-01-20', actual: 30 },
+      { bulan: '2026-02-01', actual: 50 },
     ]);
   });
 });

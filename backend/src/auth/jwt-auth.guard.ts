@@ -93,13 +93,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     const requiredAccessKeys = requiredFromDecorator ?? requiredFromScope;
 
-    // Admin Departemen hanya diperbolehkan memakai Order Pack Meal Spesial.
-    if (user?.role === UserRole.ADMIN_DEPT) {
-      if (!requiredAccessKeys?.includes('GA_ORDER_PACK_MEAL')) {
-        throw new ForbiddenException('Admin Departemen hanya memiliki akses Order Pack Meal Spesial');
-      }
-    }
-
     // Akun karyawan tidak boleh membuka e-ProM maupun Inventory.
     if (user?.role === UserRole.KARYAWAN && requiredAccessKeys?.some((key) =>
       key === 'GA_INVENTORY' || key.startsWith('CIVIL_INVENTORY') || key.startsWith('CIVIL_PROJECT'),
@@ -113,7 +106,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     const ownedAccessKeys = user.accessKeys ?? [];
 
-    if (!requiredAccessKeys.some((key) => ownedAccessKeys.includes(key))) {
+    const punyaAkses = requiredAccessKeys.some((key) =>
+      ownedAccessKeys.includes(key) ||
+      (['HC', 'GA', 'CIVIL', 'ADMINISTRASI'].includes(key) &&
+        ownedAccessKeys.some((owned) => owned.startsWith(`${key}_`))),
+    );
+
+    if (!punyaAkses) {
       throw new ForbiddenException(
         'Akses modul untuk akun ini sedang dinonaktifkan',
       );

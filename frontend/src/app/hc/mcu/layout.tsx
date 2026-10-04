@@ -36,16 +36,16 @@ type ItemMenuMcu = ModuleShellMenuItem & { peran: PeranMcu[] };
 // /hasil/saya). Menu murni administratif (Surat Pengantar, Klinik, dst)
 // tetap disembunyikan karena endpoint-nya memang menolak role Karyawan.
 const MENU_MCU: ItemMenuMcu[] = [
-  { label: 'Dashboard', href: '/hc/mcu/dashboard', initial: 'DB', peran: ['HC', 'ADMIN_DEPT', 'DOKTER'] },
+  { label: 'Dashboard', href: '/hc/mcu/dashboard', initial: 'DB', peran: ['HC', 'DOKTER'] },
   { label: 'Jadwal', href: '/hc/mcu/jadwal', initial: 'JD', peran: ['HC', 'ADMIN_DEPT', 'KARYAWAN'] },
-  { label: 'Hasil MCU', href: '/hc/mcu/hasil', initial: 'HM', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'KLINIK', 'KARYAWAN'] },
-  { label: 'Follow Up', href: '/hc/mcu/follow-up', initial: 'FU', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'KARYAWAN', 'KLINIK'] },
-  { label: 'Rekomendasi', href: '/hc/mcu/rekomendasi', initial: 'RK', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'KARYAWAN'] },
-  { label: 'Induksi Ulang', href: '/hc/mcu/induksi-ulang', initial: 'IU', peran: ['HC', 'ADMIN_DEPT', 'SHE'] },
+  { label: 'Hasil MCU', href: '/hc/mcu/hasil', initial: 'HM', peran: ['HC', 'DOKTER', 'KLINIK', 'KARYAWAN'] },
+  { label: 'Follow Up', href: '/hc/mcu/follow-up', initial: 'FU', peran: ['HC', 'DOKTER', 'KARYAWAN', 'KLINIK'] },
+  { label: 'Rekomendasi', href: '/hc/mcu/rekomendasi', initial: 'RK', peran: ['HC', 'DOKTER', 'KARYAWAN'] },
+  { label: 'Induksi Ulang', href: '/hc/mcu/induksi-ulang', initial: 'IU', peran: ['HC', 'SHE'] },
   { label: 'Surat Pengantar', href: '/hc/mcu/surat-pengantar', initial: 'SP', peran: ['HC'] },
   { label: 'Klinik', href: '/hc/mcu/klinik', initial: 'KL', peran: ['HC'] },
   { label: 'History', href: '/hc/mcu/history', initial: 'HS', peran: ['HC'] },
-  { label: 'Notifikasi', href: '/hc/mcu/notifikasi', initial: 'NT', peran: ['HC', 'ADMIN_DEPT', 'DOKTER', 'SHE', 'KLINIK'] },
+  { label: 'Notifikasi', href: '/hc/mcu/notifikasi', initial: 'NT', peran: ['HC', 'DOKTER', 'SHE', 'KLINIK'] },
   { label: 'Retensi', href: '/hc/mcu/retensi', initial: 'RT', peran: ['HC'] },
   { label: 'Karyawan', href: '/hc/mcu/karyawan', initial: 'KR', peran: ['HC'] },
 ];
