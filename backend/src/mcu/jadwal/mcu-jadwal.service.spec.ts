@@ -397,7 +397,7 @@ describe('McuJadwalService.kunciJadwalJatuhTempo', () => {
     await service.kunciJadwalJatuhTempo();
 
     expect(whatsappKirim).toHaveBeenCalledTimes(1);
-    expect(whatsappKirim).toHaveBeenCalledWith('0812', expect.stringContaining('Reminder MCU'));
+    expect(whatsappKirim).toHaveBeenCalledWith('0812', expect.stringContaining('Reminder MCU'), undefined, 'HC');
   });
 
   it('tidak kirim WA sama sekali kalau whatsapp tidak aktif', async () => {

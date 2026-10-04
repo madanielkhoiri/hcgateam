@@ -707,7 +707,7 @@ export class McuKaryawanService {
       'Terima kasih 🙏';
 
     // Pakai device WA GA (default) dulu - device HC masih paket terbatas.
-    return this.whatsapp.kirim(karyawan.noTelepon, pesan);
+    return this.whatsapp.kirim(karyawan.noTelepon, pesan, undefined, 'HC');
   }
 
   /**
