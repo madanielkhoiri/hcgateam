@@ -383,6 +383,7 @@ export class EpromEngineerService {
         orderBy: { approvedAt: 'desc' },
       });
     const sourceFilePath = approvalTerakhir?.signedFilePath ?? item.fileUrl;
+    const revision = (await this.prisma.engineerDocumentApproval.count({ where: { documentType, documentId: id } })) + 1;
     const tanggalApproval = new Date();
     const signedFilePath = await this.signing.buatPdfSigned(
       sourceFilePath,
@@ -391,6 +392,7 @@ export class EpromEngineerService {
       tanggalApproval,
       dto.annotations ?? [],
       dto.textAnnotations ?? [],
+      revision,
     );
     const penempatanPertama = dto.placements[0];
     const penempatanAudit = dto.placements.map((placement) => ({
