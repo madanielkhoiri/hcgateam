@@ -669,10 +669,6 @@ export function EngineerDocumentApproval({
             <button type="button" className={styles.secondaryButton} onClick={() => setEraserMode((value) => !value)}>{eraserMode ? "Selesai Hapus" : "Penghapus"}</button>
             <button type="button" className={styles.secondaryButton} onClick={() => setInkStrokes((items) => items.filter((item) => item.page !== page))}>Reset Coretan</button>
             <button type="button" className={styles.secondaryButton} onClick={tambahTeks}>Tambah Teks</button>
-            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, size: Math.min(72, item.size + 2) } : item))}>Teks +</button>
-            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, size: Math.max(8, item.size - 2) } : item))}>Teks −</button>
-            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, rotation: item.rotation - 15 } : item))}>Putar kiri</button>
-            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, rotation: item.rotation + 15 } : item))}>Putar kanan</button>
             <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => { setTextAnnotations((items) => items.filter((item) => item.id !== selectedTextId)); setSelectedTextId(null); }}>Hapus Teks</button>
             <label>
               Pilih Tanda Tangan
