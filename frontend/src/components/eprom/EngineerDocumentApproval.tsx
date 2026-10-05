@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import {
@@ -70,6 +70,7 @@ export function EngineerDocumentApproval({
   );
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(0);
+  const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(true);
   const [rendering, setRendering] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -144,7 +145,7 @@ export function EngineerDocumentApproval({
     async function renderPage() {
       setRendering(true);
       const pdfPage = await activePdf.getPage(page);
-      const viewport = pdfPage.getViewport({ scale: 1.5 });
+      const viewport = pdfPage.getViewport({ scale: 1.5 * zoom });
       const context = activeCanvas.getContext("2d");
       if (!context || !active) return;
       activeCanvas.width = viewport.width;
@@ -168,7 +169,7 @@ export function EngineerDocumentApproval({
       active = false;
       renderTask?.cancel?.();
     };
-  }, [page, pageCount]);
+  }, [page, pageCount, zoom]);
 
   function tempatkanTandaTangan() {
     if (!signatureFile) return;
@@ -524,6 +525,10 @@ export function EngineerDocumentApproval({
               >
                 <ChevronRight size={16} />
               </button>
+              <button type="button" onClick={() => setZoom((value) => Math.max(0.5, +(value - 0.25).toFixed(2)))} disabled={zoom <= 0.5} title="Perkecil"><Minus size={16} /></button>
+              <span>{Math.round(zoom * 100)}%</span>
+              <button type="button" onClick={() => setZoom((value) => Math.min(2.5, +(value + 0.25).toFixed(2)))} disabled={zoom >= 2.5} title="Perbesar"><Plus size={16} /></button>
+              <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} title="Reset zoom"><RotateCcw size={14} /></button>
               {rendering && <small>Memuat halaman...</small>}
             </div>
 
