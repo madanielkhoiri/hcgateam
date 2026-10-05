@@ -23,6 +23,7 @@ type Placement = {
   width: number;
   height: number;
 };
+type InkStroke = { id: string; page: number; color: string; points: string };
 
 const DEFAULT_PLACEMENT: Pick<Placement, "x" | "y" | "width" | "height"> = {
   x: 0.64,
@@ -71,6 +72,10 @@ export function EngineerDocumentApproval({
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [inkMode, setInkMode] = useState(false);
+  const [inkColor, setInkColor] = useState("#e53935");
+  const [inkStrokes, setInkStrokes] = useState<InkStroke[]>([]);
+  const inkRef = useRef<InkStroke | null>(null);
   const [loading, setLoading] = useState(true);
   const [rendering, setRendering] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -223,6 +228,28 @@ export function EngineerDocumentApproval({
     setPlacements([]);
     setSelectedPlacementId(null);
   }
+
+  function mulaiCoret(event: React.PointerEvent<SVGSVGElement>) {
+    if (!inkMode || event.button !== 0 || !surfaceRef.current) return;
+    event.preventDefault();
+    const rect = surfaceRef.current.getBoundingClientRect();
+    const point = `${((event.clientX - rect.left) / rect.width) * 100},${((event.clientY - rect.top) / rect.height) * 100}`;
+    inkRef.current = { id: idPlacement(), page, color: inkColor, points: point };
+    (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
+    setInkStrokes((items) => [...items, inkRef.current!]);
+  }
+
+  function lanjutCoret(event: React.PointerEvent<SVGSVGElement>) {
+    const stroke = inkRef.current;
+    if (!stroke || !surfaceRef.current) return;
+    const rect = surfaceRef.current.getBoundingClientRect();
+    const point = `${((event.clientX - rect.left) / rect.width) * 100},${((event.clientY - rect.top) / rect.height) * 100}`;
+    const next = { ...stroke, points: `${stroke.points} ${point}` };
+    inkRef.current = next;
+    setInkStrokes((items) => items.map((item) => item.id === stroke.id ? next : item));
+  }
+
+  function selesaiCoret() { inkRef.current = null; }
 
   function samakanUkuranSemua() {
     const selected = placements.find(
@@ -544,6 +571,9 @@ export function EngineerDocumentApproval({
                 }
               >
                 <canvas ref={canvasRef} className={styles.canvas} />
+                <svg style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
+                  {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth="0.35" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+                </svg>
                 {placements
                   .filter((placement) => placement.page === page)
                   .map((placement) => {
@@ -593,6 +623,8 @@ export function EngineerDocumentApproval({
           </section>
 
           <section className={styles.controls}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setInkMode((value) => !value)}>{inkMode ? "Selesai Coret" : "Coret PDF"}</button>
+            <label className={styles.colorControl}>Warna Coretan<input type="color" value={inkColor} onChange={(event) => setInkColor(event.target.value)} /></label>
             <label>
               Pilih Tanda Tangan
               <select
@@ -686,3 +718,4 @@ export function EngineerDocumentApproval({
     </div>
   );
 }
+
