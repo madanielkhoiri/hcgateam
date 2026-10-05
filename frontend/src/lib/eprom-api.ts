@@ -360,6 +360,7 @@ export type EngineerSignaturePosition = {
   signatureWidthRatio: number;
   signatureHeightRatio: number;
 };
+export type EngineerInkAnnotation = { page: number; color: string; width: number; points: string };
 
 export type RingkasanPendingEngineer = Record<TipeEngineer, number>;
 
@@ -915,7 +916,7 @@ export const epromApi = {
     approveDenganTandaTangan: (
       tipe: TipeEngineer,
       id: number,
-      payload: { placements: EngineerSignaturePosition[] },
+      payload: { placements: EngineerSignaturePosition[]; annotations?: EngineerInkAnnotation[] },
     ) =>
       request<EngineerItem>(`/engineer/${tipe}/${id}/approve`, {
         method: 'POST',

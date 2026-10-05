@@ -117,12 +117,33 @@ export class EngineerSignaturePlacementDto {
   signatureHeightRatio: number;
 }
 
+export class EngineerInkAnnotationDto {
+  @IsInt()
+  @Min(1)
+  page: number;
+
+  @IsString()
+  color: string;
+
+  @IsNumber()
+  width: number;
+
+  @IsString()
+  points: string;
+}
+
 export class ApproveEngineerDto {
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => EngineerSignaturePlacementDto)
   placements: EngineerSignaturePlacementDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EngineerInkAnnotationDto)
+  annotations?: EngineerInkAnnotationDto[];
 }
 
 @Injectable()
@@ -347,6 +368,7 @@ export class EpromEngineerService {
       dto.placements,
       `project/${item.projectId}/engineer/${tipe}`,
       tanggalApproval,
+      dto.annotations ?? [],
     );
     const penempatanPertama = dto.placements[0];
     const penempatanAudit = dto.placements.map((placement) => ({
