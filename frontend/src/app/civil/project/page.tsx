@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -306,7 +306,7 @@ export default function CivilProjectDashboardPage() {
           </div>
           <div className={styles.chartBody}>
             {trendTertampil.length > 0 ? (
-              <ProgressTrendChart seri={trendTertampil} />
+              <ProgressTrendChart seri={trendTertampil} detail={filterChartId !== "semua"} />
             ) : (
               <p className={styles.emptyText} style={{ margin: 0 }}>
                 Belum ada data Laporan Mingguan untuk ditampilkan.
@@ -534,3 +534,4 @@ export default function CivilProjectDashboardPage() {
     </div>
   );
 }
+
