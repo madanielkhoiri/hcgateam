@@ -21,6 +21,7 @@ export type PosisiTandaTangan = {
   signatureHeightRatio: number;
 };
 export type AnotasiCoretan = { page: number; color: string; width: number; points: string };
+export type AnotasiTeks = { page: number; text: string; x: number; y: number; rotation: number; size: number };
 
 const BUKAN_TANDA_TANGAN = new Set([
   'bg-transparan.png',
@@ -71,6 +72,7 @@ export class EpromEngineerSigningService {
     scope: string,
     tanggalApproval: Date = new Date(),
     annotations: AnotasiCoretan[] = [],
+    textAnnotations: AnotasiTeks[] = [],
   ): Promise<string> {
     if (placements.length < 1) {
       throw new BadRequestException('Minimal satu tanda tangan diperlukan.');
@@ -127,6 +129,12 @@ export class EpromEngineerSigningService {
           if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
           page.drawLine({ start: { x: (x1 / 100) * pageWidth, y: pageHeight - (y1 / 100) * pageHeight }, end: { x: (x2 / 100) * pageWidth, y: pageHeight - (y2 / 100) * pageHeight }, thickness: Math.max(1, anotasi.width * 3), color, opacity: anotasi.width >= 1 ? 0.35 : 1 });
         }
+      }
+      for (const anotasi of textAnnotations) {
+        const target = pages[anotasi.page - 1];
+        if (!target || !anotasi.text?.trim()) continue;
+        const { width: pageWidth, height: pageHeight } = target.getSize();
+        target.drawText(anotasi.text, { x: (anotasi.x / 1) * pageWidth, y: pageHeight - (anotasi.y / 1) * pageHeight, size: Math.max(6, Math.min(72, anotasi.size)), font, rotate: { type: 'degrees', angle: anotasi.rotation }, color: rgb(0.05, 0.05, 0.05) });
       }
 
       const font = await pdf.embedFont(StandardFonts.Helvetica);
