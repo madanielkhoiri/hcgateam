@@ -487,6 +487,19 @@ export function EngineerDocumentApproval({
     }
   }
 
+  async function reject() {
+    const komentar = window.prompt("Alasan revisi / penolakan:");
+    if (!komentar?.trim()) return;
+    setSubmitting(true); setError(null);
+    try {
+      await epromApi.engineer.reject(tipe, documentId, komentar.trim());
+      window.dispatchEvent(new Event("eprom-engineer-updated"));
+      router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.refresh();
+    } catch (err) { setError(err instanceof Error ? err.message : "Dokumen gagal ditolak"); }
+    finally { setSubmitting(false); }
+  }
+
   async function approveTanpaTtd() {
     if (!confirm("Approve dokumen ini tanpa menempel tanda tangan?")) return;
     setSubmitting(true);
@@ -756,6 +769,14 @@ export function EngineerDocumentApproval({
         <Link href={backUrl} className={styles.secondaryButton}>
           Kembali
         </Link>
+        <button
+          type="button"
+          className={styles.dangerButton}
+          onClick={reject}
+          disabled={submitting || detail.item.status !== "PENDING"}
+        >
+          {submitting ? "Memproses..." : "Reject / Minta Revisi"}
+        </button>
         <button
           type="button"
           className={styles.secondaryButton}
