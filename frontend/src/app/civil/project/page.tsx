@@ -132,7 +132,7 @@ function ProgressPerProjectRow({
           </span>
           <Link href={href}>{namaProject}</Link>
         </span>
-        <span style={{ display: "flex", gap: 10, fontSize: 12 }}><b style={{ color: "#ef7100" }}>Planned {planned.toFixed(1)}%</b><b style={{ color: "#0868f6" }}>Actual {persen.toFixed(1)}%</b><b style={{ color: deviasi >= 0 ? "#07984c" : "#d53535" }}>Deviasi {deviasi >= 0 ? "+" : ""}{deviasi.toFixed(1)}%</b></span>
+        <span style={{ display: "flex", gap: 10, fontSize: 12 }}><b style={{ color: "#ef7100" }}>Planned {planned.toFixed(1)}%</b><b style={{ color: "#0868f6" }}>Actual {persen.toFixed(1)}%</b><b style={{ color: "#d53535" }}>Deviasi {deviasi >= 0 ? "+" : ""}{deviasi.toFixed(1)}%</b></span>
       </div>
       <div className={styles.progressBarTrack}>
         <div className={styles.progressBarFill} style={{ width: `${persenTampil}%` }} />
@@ -534,4 +534,5 @@ export default function CivilProjectDashboardPage() {
     </div>
   );
 }
+
 
