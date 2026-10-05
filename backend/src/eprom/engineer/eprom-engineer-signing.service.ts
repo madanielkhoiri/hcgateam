@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PDFDocument, PDFImage, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFImage, StandardFonts, rgb } from 'pdf-lib';
 import sharp from 'sharp';
 import {
   existsSync,
@@ -20,6 +20,7 @@ export type PosisiTandaTangan = {
   signatureWidthRatio: number;
   signatureHeightRatio: number;
 };
+export type AnotasiCoretan = { page: number; color: string; width: number; points: string };
 
 const BUKAN_TANDA_TANGAN = new Set([
   'bg-transparan.png',
@@ -69,6 +70,7 @@ export class EpromEngineerSigningService {
     placements: PosisiTandaTangan[],
     scope: string,
     tanggalApproval: Date = new Date(),
+    annotations: AnotasiCoretan[] = [],
   ): Promise<string> {
     if (placements.length < 1) {
       throw new BadRequestException('Minimal satu tanda tangan diperlukan.');
@@ -109,6 +111,21 @@ export class EpromEngineerSigningService {
           throw new BadRequestException(
             `Halaman tanda tangan ${posisi.signaturePage} tidak tersedia pada PDF.`,
           );
+        }
+      }
+
+      for (const anotasi of annotations) {
+        const page = pages[anotasi.page - 1];
+        if (!page) continue;
+        const { width: pageWidth, height: pageHeight } = page.getSize();
+        const values = anotasi.points.trim().split(/\s+/).map((point) => point.split(',').map(Number));
+        const hex = anotasi.color.replace('#', '');
+        const color = hex.length === 6 ? rgb(parseInt(hex.slice(0, 2), 16) / 255, parseInt(hex.slice(2, 4), 16) / 255, parseInt(hex.slice(4, 6), 16) / 255) : rgb(0.9, 0.1, 0.1);
+        for (let index = 1; index < values.length; index += 1) {
+          const [x1, y1] = values[index - 1];
+          const [x2, y2] = values[index];
+          if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
+          page.drawLine({ start: { x: (x1 / 100) * pageWidth, y: pageHeight - (y1 / 100) * pageHeight }, end: { x: (x2 / 100) * pageWidth, y: pageHeight - (y2 / 100) * pageHeight }, thickness: Math.max(1, anotasi.width * 3), color, opacity: anotasi.width >= 1 ? 0.35 : 1 });
         }
       }
 
