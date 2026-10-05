@@ -25,6 +25,7 @@ type Placement = {
   height: number;
 };
 type InkStroke = { id: string; page: number; color: string; width: number; points: string };
+type TextAnnotation = { id: string; page: number; text: string; x: number; y: number; rotation: number; size: number };
 
 const DEFAULT_PLACEMENT: Pick<Placement, "x" | "y" | "width" | "height"> = {
   x: 0.64,
@@ -78,6 +79,7 @@ export function EngineerDocumentApproval({
   const [inkWidth, setInkWidth] = useState(0.35);
   const [eraserMode, setEraserMode] = useState(false);
   const [inkStrokes, setInkStrokes] = useState<InkStroke[]>([]);
+  const [textAnnotations, setTextAnnotations] = useState<TextAnnotation[]>([]);
   const inkRef = useRef<InkStroke | null>(null);
   const [loading, setLoading] = useState(true);
   const [rendering, setRendering] = useState(false);
@@ -261,6 +263,12 @@ export function EngineerDocumentApproval({
   }
 
   function selesaiCoret() { inkRef.current = null; }
+
+  function tambahTeks() {
+    const text = window.prompt("Tulis komentar pada PDF:");
+    if (!text?.trim()) return;
+    setTextAnnotations((items) => [...items, { id: idPlacement(), page, text: text.trim(), x: 0.12, y: 0.18, rotation: 0, size: 16 }]);
+  }
 
   function samakanUkuranSemua() {
     const selected = placements.find(
@@ -586,6 +594,7 @@ export function EngineerDocumentApproval({
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
                   {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth={stroke.width} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
+                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={styles.textAnnotation} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}>{item.text}</div>)}
                 {placements
                   .filter((placement) => placement.page === page)
                   .map((placement) => {
@@ -640,6 +649,7 @@ export function EngineerDocumentApproval({
             <label className={styles.brushControl}>Jenis Pena<select value={inkWidth} onChange={(event) => setInkWidth(Number(event.target.value))}><option value={0.2}>Tipis</option><option value={0.35}>Sedang</option><option value={0.6}>Tebal</option><option value={1}>Stabilo</option></select></label>
             <button type="button" className={styles.secondaryButton} onClick={() => setEraserMode((value) => !value)}>{eraserMode ? "Selesai Hapus" : "Penghapus"}</button>
             <button type="button" className={styles.secondaryButton} onClick={() => setInkStrokes((items) => items.filter((item) => item.page !== page))}>Reset Coretan</button>
+            <button type="button" className={styles.secondaryButton} onClick={tambahTeks}>Tambah Teks</button>
             <label>
               Pilih Tanda Tangan
               <select
