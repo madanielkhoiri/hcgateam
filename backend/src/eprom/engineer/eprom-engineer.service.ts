@@ -391,9 +391,11 @@ export class EpromEngineerService {
         })
       : [];
     const documentIds = [id, ...itemLama.map((row: any) => row.id)];
-    const jumlahApprovalSebelumnya = await this.prisma.engineerDocumentApproval.count({
-      where: { documentType, projectId: item.projectId, documentId: { in: documentIds } },
-    });
+    const jumlahApprovalSebelumnya = this.prisma.engineerDocumentApproval.count
+      ? await this.prisma.engineerDocumentApproval.count({
+          where: { documentType, projectId: item.projectId, documentId: { in: documentIds } },
+        })
+      : 0;
     const revision = jumlahApprovalSebelumnya;
     const tanggalApproval = new Date();
     const signedFilePath = await this.signing.buatPdfSigned(
