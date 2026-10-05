@@ -153,6 +153,7 @@
 }
 .inkLayer:has(polyline) { pointer-events: auto; }
 .textAnnotation { position: absolute; z-index: 6; max-width: 38%; padding: 4px 7px; color: #111; background: rgb(255 255 170 / 90%); border: 1px dashed #b08b00; cursor: move; white-space: pre-wrap; user-select: none; }
+.textAnnotationActive { border: 2px solid #ef7100; box-shadow: 0 0 0 2px rgb(239 113 0 / 20%); }
 .colorControl { flex: 0 0 auto !important; align-items: center; }
 .colorControl input { width: 38px; height: 30px; padding: 0; border: 0; background: transparent; }
 .brushControl { flex: 0 0 120px !important; }
