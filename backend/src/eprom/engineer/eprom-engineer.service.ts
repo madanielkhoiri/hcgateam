@@ -131,6 +131,14 @@ export class EngineerInkAnnotationDto {
   @IsString()
   points: string;
 }
+export class EngineerTextAnnotationDto {
+  @IsInt() @Min(1) page: number;
+  @IsString() text: string;
+  @IsNumber() x: number;
+  @IsNumber() y: number;
+  @IsNumber() rotation: number;
+  @IsNumber() size: number;
+}
 
 export class ApproveEngineerDto {
   @IsArray()
@@ -144,6 +152,11 @@ export class ApproveEngineerDto {
   @ValidateNested({ each: true })
   @Type(() => EngineerInkAnnotationDto)
   annotations?: EngineerInkAnnotationDto[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EngineerTextAnnotationDto)
+  textAnnotations?: EngineerTextAnnotationDto[];
 }
 
 @Injectable()
@@ -369,6 +382,7 @@ export class EpromEngineerService {
       `project/${item.projectId}/engineer/${tipe}`,
       tanggalApproval,
       dto.annotations ?? [],
+      dto.textAnnotations ?? [],
     );
     const penempatanPertama = dto.placements[0];
     const penempatanAudit = dto.placements.map((placement) => ({
