@@ -41,7 +41,10 @@ function namaPekerjaan(detail: EngineerApprovalDetail): string {
 }
 
 function idPlacement(): string {
-  return globalThis.crypto.randomUUID();
+  const cryptoApi = globalThis.crypto as Crypto & {
+    randomUUID?: () => string;
+  };
+  return cryptoApi.randomUUID?.() ?? `placement-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function EngineerDocumentApproval({
