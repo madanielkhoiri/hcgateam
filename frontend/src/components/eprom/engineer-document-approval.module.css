@@ -228,7 +228,8 @@
   font-size: 11px;
 }
 .secondaryButton,
-.approveButton {
+.approveButton,
+.dangerButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -251,8 +252,10 @@
   background: #07984c;
   border: 1px solid #07984c;
 }
+.dangerButton { color: #fff; background: #d53535; border: 1px solid #d53535; }
 .secondaryButton:disabled,
-.approveButton:disabled {
+.approveButton:disabled,
+.dangerButton:disabled {
   opacity: 0.45;
   cursor: default;
 }
