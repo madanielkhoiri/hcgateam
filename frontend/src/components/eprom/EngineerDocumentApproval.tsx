@@ -571,7 +571,7 @@ export function EngineerDocumentApproval({
                 }
               >
                 <canvas ref={canvasRef} className={styles.canvas} />
-                <svg style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
                   {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth="0.35" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
                 </svg>
                 {placements
@@ -718,4 +718,5 @@ export function EngineerDocumentApproval({
     </div>
   );
 }
+
 
