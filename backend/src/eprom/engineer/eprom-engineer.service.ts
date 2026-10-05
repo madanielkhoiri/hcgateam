@@ -94,6 +94,9 @@ export class ReviewEngineerDto {
 
   @IsString()
   komentar: string;
+
+  @IsOptional() @IsArray() annotations?: unknown[];
+  @IsOptional() @IsArray() textAnnotations?: unknown[];
 }
 
 export class EngineerSignaturePlacementDto {
@@ -308,11 +311,16 @@ export class EpromEngineerService {
       throw new BadRequestException('Alasan penolakan wajib diisi');
     }
 
+    let reviewedFilePath: string | undefined;
+    if (item.fileUrl?.toLowerCase().endsWith('.pdf') && (dto.annotations?.length || dto.textAnnotations?.length)) {
+      reviewedFilePath = await this.signing.buatPdfReview(item.fileUrl, (dto.annotations ?? []) as any, (dto.textAnnotations ?? []) as any, `project/${item.projectId}/engineer/${tipe}`);
+    }
     return this.delegate(tipe).update({
       where: { id },
       data: {
         status: StatusApprovalEprom.REJECTED,
         komentar: dto.komentar.trim(),
+        ...(reviewedFilePath ? { fileUrl: reviewedFilePath } : {}),
       },
     });
   }

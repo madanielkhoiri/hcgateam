@@ -41,6 +41,20 @@ export class EpromEngineerSigningService {
 
   constructor(private readonly file: EpromFileService) {}
 
+  async buatPdfReview(sourceFilePath: string, annotations: AnotasiCoretan[] = [], textAnnotations: AnotasiTeks[] = [], scope: string): Promise<string> {
+    const sourcePath = this.file.resolveAbsolut(sourceFilePath);
+    const pdf = await PDFDocument.load(readFileSync(sourcePath));
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    for (const anotasi of annotations) {
+      const page = pdf.getPages()[anotasi.page - 1]; if (!page) continue;
+      const { width, height } = page.getSize(); const values = anotasi.points.trim().split(/\s+/).map((p) => p.split(',').map(Number));
+      const hex = anotasi.color.replace('#', ''); const color = hex.length === 6 ? rgb(parseInt(hex.slice(0,2),16)/255, parseInt(hex.slice(2,4),16)/255, parseInt(hex.slice(4,6),16)/255) : rgb(0.9,0.1,0.1);
+      for (let i = 1; i < values.length; i++) { const [x1,y1]=values[i-1]; const [x2,y2]=values[i]; page.drawLine({start:{x:x1/100*width,y:height-y1/100*height},end:{x:x2/100*width,y:height-y2/100*height},thickness:Math.max(1,anotasi.width*3),color,opacity:anotasi.width>=1?.35:1}); }
+    }
+    for (const anotasi of textAnnotations) { const page=pdf.getPages()[anotasi.page-1]; if(!page||!anotasi.text?.trim()) continue; const {width,height}=page.getSize(); page.drawText(anotasi.text,{x:anotasi.x*width,y:height-anotasi.y*height,size:Math.max(6,Math.min(72,anotasi.size)),font,rotate:degrees(anotasi.rotation),color:rgb(.05,.05,.05)}); }
+    const targetDir=join(process.cwd(),'uploads','eprom',scope,'reviewed'); mkdirSync(targetDir,{recursive:true}); const targetName=`review-${Date.now()}-${randomUUID()}.pdf`; writeFileSync(join(targetDir,targetName),await pdf.save()); return `eprom/${scope}/reviewed/${targetName}`;
+  }
+
   daftarTandaTangan() {
     if (!existsSync(this.signatureDir)) {
       return [];
