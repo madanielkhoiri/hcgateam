@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PDFDocument, PDFImage, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFImage, StandardFonts, degrees, rgb } from 'pdf-lib';
 import sharp from 'sharp';
 import {
   existsSync,
@@ -130,14 +130,14 @@ export class EpromEngineerSigningService {
           page.drawLine({ start: { x: (x1 / 100) * pageWidth, y: pageHeight - (y1 / 100) * pageHeight }, end: { x: (x2 / 100) * pageWidth, y: pageHeight - (y2 / 100) * pageHeight }, thickness: Math.max(1, anotasi.width * 3), color, opacity: anotasi.width >= 1 ? 0.35 : 1 });
         }
       }
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
       for (const anotasi of textAnnotations) {
         const target = pages[anotasi.page - 1];
         if (!target || !anotasi.text?.trim()) continue;
         const { width: pageWidth, height: pageHeight } = target.getSize();
-        target.drawText(anotasi.text, { x: (anotasi.x / 1) * pageWidth, y: pageHeight - (anotasi.y / 1) * pageHeight, size: Math.max(6, Math.min(72, anotasi.size)), font, rotate: { type: 'degrees', angle: anotasi.rotation }, color: rgb(0.05, 0.05, 0.05) });
+        target.drawText(anotasi.text, { x: anotasi.x * pageWidth, y: pageHeight - anotasi.y * pageHeight, size: Math.max(6, Math.min(72, anotasi.size)), font, rotate: degrees(anotasi.rotation), color: rgb(0.05, 0.05, 0.05) });
       }
 
-      const font = await pdf.embedFont(StandardFonts.Helvetica);
       const teksTanggal = `Disetujui: ${tanggalApproval.toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'long',
@@ -284,3 +284,5 @@ export class EpromEngineerSigningService {
     }
   }
 }
+
+
