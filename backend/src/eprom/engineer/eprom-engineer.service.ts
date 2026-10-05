@@ -383,7 +383,9 @@ export class EpromEngineerService {
         orderBy: { approvedAt: 'desc' },
       });
     const sourceFilePath = approvalTerakhir?.signedFilePath ?? item.fileUrl;
-    const revision = (await this.prisma.engineerDocumentApproval.count({ where: { documentType, documentId: id } })) + 1;
+    // Approval pertama tidak diberi label revisi. Label dimulai setelah
+    // dokumen ditolak lalu diunggah/diroute kembali untuk approval berikutnya.
+    const revision = await this.prisma.engineerDocumentApproval.count({ where: { documentType, documentId: id } });
     const tanggalApproval = new Date();
     const signedFilePath = await this.signing.buatPdfSigned(
       sourceFilePath,
