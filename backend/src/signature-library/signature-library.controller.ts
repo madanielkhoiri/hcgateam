@@ -56,6 +56,10 @@ export class SignatureLibraryController {
         name: 'Arief Rahman',
         filename: 'arief-rahman.png',
       },
+      {
+        name: 'Angga Dwi Cahyanto',
+        filename: 'Angga Dwi Cahyanto.png',
+      },
     ];
 
     return items
