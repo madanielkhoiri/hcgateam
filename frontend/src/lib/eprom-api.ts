@@ -905,10 +905,10 @@ export const epromApi = {
       if (file) form.append('file', file);
       return request<EngineerItem>(`/engineer/${tipe}`, { method: 'POST', body: form });
     },
-    reject: (tipe: TipeEngineer, id: number, komentar: string) =>
+    reject: (tipe: TipeEngineer, id: number, komentar: string, annotations?: EngineerInkAnnotation[], textAnnotations?: EngineerTextAnnotation[]) =>
       request<EngineerItem>(`/engineer/${tipe}/${id}/review`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'REJECTED', komentar }),
+        body: JSON.stringify({ status: 'REJECTED', komentar, annotations, textAnnotations }),
       }),
     detailApproval: (tipe: TipeEngineer, id: number) =>
       request<EngineerApprovalDetail>(`/engineer/${tipe}/${id}/approval`),
