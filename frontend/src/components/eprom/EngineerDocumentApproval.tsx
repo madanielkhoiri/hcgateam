@@ -80,6 +80,7 @@ export function EngineerDocumentApproval({
   const [eraserMode, setEraserMode] = useState(false);
   const [inkStrokes, setInkStrokes] = useState<InkStroke[]>([]);
   const [textAnnotations, setTextAnnotations] = useState<TextAnnotation[]>([]);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const inkRef = useRef<InkStroke | null>(null);
   const [loading, setLoading] = useState(true);
   const [rendering, setRendering] = useState(false);
@@ -274,6 +275,7 @@ export function EngineerDocumentApproval({
     if (!surfaceRef.current) return;
     event.preventDefault();
     event.stopPropagation();
+    setSelectedTextId(id);
     const rect = surfaceRef.current.getBoundingClientRect();
     const startX = event.clientX;
     const startY = event.clientY;
@@ -611,7 +613,7 @@ export function EngineerDocumentApproval({
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
                   {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth={stroke.width} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
-                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={styles.textAnnotation} onPointerDown={(event) => geserTeks(event, item.id)} onDoubleClick={() => { const text = window.prompt("Edit komentar:", item.text); if (text?.trim()) setTextAnnotations((items) => items.map((current) => current.id === item.id ? { ...current, text: text.trim() } : current)); }} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}>{item.text}</div>)}
+                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={`${styles.textAnnotation} ${selectedTextId === item.id ? styles.textAnnotationActive : ""}`} onPointerDown={(event) => geserTeks(event, item.id)} onDoubleClick={() => { const text = window.prompt("Edit komentar:", item.text); if (text?.trim()) setTextAnnotations((items) => items.map((current) => current.id === item.id ? { ...current, text: text.trim() } : current)); }} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}>{item.text}</div>)}
                 {placements
                   .filter((placement) => placement.page === page)
                   .map((placement) => {
@@ -667,6 +669,11 @@ export function EngineerDocumentApproval({
             <button type="button" className={styles.secondaryButton} onClick={() => setEraserMode((value) => !value)}>{eraserMode ? "Selesai Hapus" : "Penghapus"}</button>
             <button type="button" className={styles.secondaryButton} onClick={() => setInkStrokes((items) => items.filter((item) => item.page !== page))}>Reset Coretan</button>
             <button type="button" className={styles.secondaryButton} onClick={tambahTeks}>Tambah Teks</button>
+            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, size: Math.min(72, item.size + 2) } : item))}>Teks +</button>
+            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, size: Math.max(8, item.size - 2) } : item))}>Teks −</button>
+            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, rotation: item.rotation - 15 } : item))}>Putar kiri</button>
+            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => setTextAnnotations((items) => items.map((item) => item.id === selectedTextId ? { ...item, rotation: item.rotation + 15 } : item))}>Putar kanan</button>
+            <button type="button" className={styles.secondaryButton} disabled={!selectedTextId} onClick={() => { setTextAnnotations((items) => items.filter((item) => item.id !== selectedTextId)); setSelectedTextId(null); }}>Hapus Teks</button>
             <label>
               Pilih Tanda Tangan
               <select
