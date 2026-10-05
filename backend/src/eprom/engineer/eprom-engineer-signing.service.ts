@@ -87,6 +87,7 @@ export class EpromEngineerSigningService {
     tanggalApproval: Date = new Date(),
     annotations: AnotasiCoretan[] = [],
     textAnnotations: AnotasiTeks[] = [],
+    revision = 1,
   ): Promise<string> {
     if (placements.length < 1) {
       throw new BadRequestException('Minimal satu tanda tangan diperlukan.');
@@ -158,6 +159,7 @@ export class EpromEngineerSigningService {
         year: 'numeric',
       })}`;
       const ukuranFontTanggal = 8;
+      const teksRevisi = `Revisi ${revision}`;
 
       const gambarTandaTangan = new Map<string, PDFImage>();
       for (const namaFile of namaTandaTangan) {
@@ -216,6 +218,7 @@ export class EpromEngineerSigningService {
           size: ukuranFontTanggal,
           font,
         });
+        page.drawText(teksRevisi, { x: boxX + (boxWidth - font.widthOfTextAtSize(teksRevisi, ukuranFontTanggal)) / 2, y: Math.max(4, boxY - ukuranFontTanggal * 2 - 4), size: ukuranFontTanggal, font });
       }
 
       const targetDir = join(
