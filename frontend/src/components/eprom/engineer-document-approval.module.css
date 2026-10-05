@@ -177,16 +177,17 @@
 }
 .signatureOverlay button {
   position: absolute;
-  right: -7px;
-  bottom: -7px;
-  width: 15px;
-  height: 15px;
+  right: -11px;
+  bottom: -11px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   touch-action: none;
   cursor: nwse-resize;
   background: #ef7100;
   border: 2px solid #fff;
   border-radius: 50%;
+  z-index: 5;
 }
 .controls {
   display: flex;
