@@ -10,6 +10,7 @@ import {
   urlFileEprom,
   type EngineerApprovalDetail,
   type EngineerSignature,
+  type EngineerInkAnnotation,
   type TipeEngineer,
 } from "@/lib/eprom-api";
 import styles from "./engineer-document-approval.module.css";
@@ -429,6 +430,7 @@ export function EngineerDocumentApproval({
           signatureWidthRatio: placement.width,
           signatureHeightRatio: placement.height,
         })),
+        annotations: inkStrokes,
       });
       window.dispatchEvent(new Event("eprom-engineer-updated"));
       router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
