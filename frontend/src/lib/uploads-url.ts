@@ -14,10 +14,15 @@ const API_URL =
 
 /** `pathRelatif` adalah path relatif terhadap folder uploads/, mis. "drive/abc.pdf" atau "items/xyz.jpg". */
 export function urlUploads(pathRelatif: string): string {
+  if (/^https?:\/\//i.test(pathRelatif)) return pathRelatif;
+  const normalized = pathRelatif
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/^uploads\//i, '');
   const token = getAccessToken();
   const query = token ? `?token=${encodeURIComponent(token)}` : '';
 
-  return `${API_URL}/uploads/${pathRelatif}${query}`;
+  return `${API_URL}/uploads/${normalized}${query}`;
 }
 
 /**
