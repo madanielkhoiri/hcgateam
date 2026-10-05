@@ -154,6 +154,7 @@
 .inkLayer:has(polyline) { pointer-events: auto; }
 .colorControl { flex: 0 0 auto !important; align-items: center; }
 .colorControl input { width: 38px; height: 30px; padding: 0; border: 0; background: transparent; }
+.brushControl { flex: 0 0 120px !important; }
 .signatureOverlay {
   position: absolute;
   z-index: 2;
