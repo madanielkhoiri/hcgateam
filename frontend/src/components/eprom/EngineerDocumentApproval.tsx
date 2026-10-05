@@ -289,6 +289,22 @@ export function EngineerDocumentApproval({
     window.addEventListener("pointerup", up);
   }
 
+  function ubahTeks(event: React.PointerEvent<HTMLSpanElement>, id: string, mode: "resize" | "rotate") {
+    event.preventDefault(); event.stopPropagation();
+    const item = textAnnotations.find((value) => value.id === id); const surface = surfaceRef.current;
+    if (!item || !surface) return;
+    const rect = surface.getBoundingClientRect(); const startX = event.clientX; const startY = event.clientY;
+    const move = (pointer: PointerEvent) => setTextAnnotations((items) => items.map((value) => {
+      if (value.id !== id) return value;
+      if (mode === "resize") return { ...value, size: Math.max(8, Math.min(72, item.size + (pointer.clientX - startX) * 0.12)) };
+      const cx = rect.left + item.x * rect.width; const cy = rect.top + item.y * rect.height;
+      const startAngle = Math.atan2(startY - cy, startX - cx); const angle = Math.atan2(pointer.clientY - cy, pointer.clientX - cx);
+      return { ...value, rotation: item.rotation + ((angle - startAngle) * 180) / Math.PI };
+    }));
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  }
+
   function samakanUkuranSemua() {
     const selected = placements.find(
       (item) => item.id === selectedPlacementId,
@@ -613,7 +629,7 @@ export function EngineerDocumentApproval({
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
                   {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth={stroke.width} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
-                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={`${styles.textAnnotation} ${selectedTextId === item.id ? styles.textAnnotationActive : ""}`} onPointerDown={(event) => geserTeks(event, item.id)} onDoubleClick={() => { const text = window.prompt("Edit komentar:", item.text); if (text?.trim()) setTextAnnotations((items) => items.map((current) => current.id === item.id ? { ...current, text: text.trim() } : current)); }} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}>{item.text}</div>)}
+                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={`${styles.textAnnotation} ${selectedTextId === item.id ? styles.textAnnotationActive : ""}`} onPointerDown={(event) => geserTeks(event, item.id)} onDoubleClick={() => { const text = window.prompt("Edit komentar:", item.text); if (text?.trim()) setTextAnnotations((items) => items.map((current) => current.id === item.id ? { ...current, text: text.trim() } : current)); }} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}><span>{item.text}</span>{selectedTextId === item.id && <><span className={styles.textRotateHandle} onPointerDown={(event) => ubahTeks(event, item.id, "rotate")} /> <span className={styles.textResizeHandle} onPointerDown={(event) => ubahTeks(event, item.id, "resize")} /></>}</div>)}
                 {placements
                   .filter((placement) => placement.page === page)
                   .map((placement) => {
