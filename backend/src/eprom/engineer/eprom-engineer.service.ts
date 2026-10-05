@@ -303,10 +303,6 @@ export class EpromEngineerService {
 
     const item = await this.itemAtauThrow(tipe, id);
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item ini sudah direview sebelumnya');
-    }
-
     if (!dto.komentar?.trim()) {
       throw new BadRequestException('Alasan penolakan wajib diisi');
     }
@@ -366,10 +362,6 @@ export class EpromEngineerService {
 
     const item = await this.itemAtauThrow(tipe, id);
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item ini sudah direview sebelumnya');
-    }
-
     if (!item.fileUrl || extname(item.fileUrl).toLowerCase() !== '.pdf') {
       throw new BadRequestException(
         'Tanda tangan hanya dapat ditempatkan pada dokumen PDF.',
@@ -425,12 +417,7 @@ export class EpromEngineerService {
           where: { id },
         });
 
-        if (
-          !itemSekarang ||
-          itemSekarang.status !== StatusApprovalEprom.PENDING
-        ) {
-          throw new BadRequestException('Item ini sudah direview sebelumnya');
-        }
+        if (!itemSekarang) throw new BadRequestException('Item tidak ditemukan');
 
         const approval = await tx.engineerDocumentApproval.create({
           data: {
@@ -479,10 +466,6 @@ export class EpromEngineerService {
 
     const item = await this.itemAtauThrow(tipe, id);
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item ini sudah direview sebelumnya');
-    }
-
     if (!item.fileUrl) {
       throw new BadRequestException('Dokumen belum diunggah');
     }
@@ -494,9 +477,7 @@ export class EpromEngineerService {
         where: { id },
       });
 
-      if (!itemSekarang || itemSekarang.status !== StatusApprovalEprom.PENDING) {
-        throw new BadRequestException('Item ini sudah direview sebelumnya');
-      }
+      if (!itemSekarang) throw new BadRequestException('Item tidak ditemukan');
 
       const approval = await tx.engineerDocumentApproval.create({
         data: {
@@ -538,10 +519,6 @@ export class EpromEngineerService {
       throw new BadRequestException(`${LABEL_TIPE[tipe]} tidak memiliki data yang dapat diubah`);
     }
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item yang sudah direview tidak dapat diubah');
-    }
-
     const nama = dto.nama?.trim();
 
     if (!nama) {
@@ -556,12 +533,6 @@ export class EpromEngineerService {
     const item = await this.itemAtauThrow(tipe, id);
 
     await this.akses.wajibAksesProject(aktor, item.projectId);
-
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException(
-        'Item yang sudah direview tidak dapat dihapus',
-      );
-    }
 
     await this.delegate(tipe).delete({ where: { id } });
 
