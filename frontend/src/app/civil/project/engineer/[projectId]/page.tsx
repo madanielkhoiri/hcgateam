@@ -358,7 +358,7 @@ export default function EngineerDetailPage() {
                   </p>
                 )}
 
-              {(boleh || (vendorSaya && item.status === "PENDING")) && (
+              {item.status === "PENDING" && (boleh || vendorSaya) && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   {namaField && item.status === "PENDING" && (
                     <button
