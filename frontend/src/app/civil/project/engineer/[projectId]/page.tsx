@@ -319,7 +319,7 @@ export default function EngineerDetailPage() {
                 </div>
               )}
 
-              {boleh && item.status === "PENDING" && (
+              {boleh && (
                 <div className={styles.inlineForm} style={{ marginTop: 10 }}>
                   {item.fileUrl?.toLowerCase().endsWith(".pdf") ? (
                     <Link
@@ -351,14 +351,13 @@ export default function EngineerDetailPage() {
               )}
 
               {boleh &&
-                item.status === "PENDING" &&
                 !item.fileUrl?.toLowerCase().endsWith(".pdf") && (
                   <p className={styles.signingHint}>
                     Tanda tangan hanya dapat ditempatkan pada dokumen PDF.
                   </p>
                 )}
 
-              {item.status === "PENDING" && (boleh || vendorSaya) && (
+              {(boleh || (vendorSaya && item.status === "PENDING")) && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   {namaField && (
                     <button

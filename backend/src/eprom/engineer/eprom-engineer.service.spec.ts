@@ -195,12 +195,10 @@ describe('EpromEngineerService.review', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('menolak review ulang item yang sudah tidak PENDING', async () => {
+  it('mengizinkan owner meminta revisi ulang item yang sudah approved', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(
-      service.review(aktor(UserRole.OWNER), 'shop-drawing', 1, { status: 'REJECTED', komentar: 'x' } as any),
-    ).rejects.toThrow('sudah direview sebelumnya');
+    await expect(service.review(aktor(UserRole.OWNER), 'shop-drawing', 1, { status: 'REJECTED', komentar: 'x' } as any)).resolves.toBeDefined();
   });
 
   it('menolak kalau komentar kosong', async () => {
@@ -254,12 +252,11 @@ describe('EpromEngineerService.detailApproval', () => {
 });
 
 describe('EpromEngineerService.approveDenganTandaTangan', () => {
-  it('menolak item yang sudah tidak PENDING', async () => {
+  it('mengizinkan approval ulang item yang sudah direview', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(
-      service.approveDenganTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1, { placements: [{}] } as any),
-    ).rejects.toThrow('sudah direview sebelumnya');
+    const dto = { placements: [{ signatureFile: '/tmp/ttd.png', signaturePage: 1, signatureXRatio: 0.1, signatureYRatio: 0.1, signatureWidthRatio: 0.2, signatureHeightRatio: 0.1 }] };
+    await expect(service.approveDenganTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1, dto as any)).resolves.toBeDefined();
   });
 
   it('menolak dokumen non-PDF', async () => {
@@ -288,10 +285,8 @@ describe('EpromEngineerService.approveDenganTandaTangan', () => {
       .mockResolvedValueOnce(itemFixture({ status: StatusApprovalEprom.APPROVED }));
     const dto = { placements: [{ signatureFile: '/tmp/ttd.png', signaturePage: 1, signatureXRatio: 0.1, signatureYRatio: 0.1, signatureWidthRatio: 0.2, signatureHeightRatio: 0.1 }] };
 
-    await expect(service.approveDenganTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1, dto as any)).rejects.toThrow(
-      'sudah direview sebelumnya',
-    );
-    expect(file.hapus).toHaveBeenCalledWith('eprom/project/1/engineer/shop-drawing/signed.pdf');
+    await expect(service.approveDenganTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1, dto as any)).resolves.toBeDefined();
+    expect(file.hapus).not.toHaveBeenCalled();
   });
 });
 
@@ -299,9 +294,7 @@ describe('EpromEngineerService.approveTanpaTandaTangan', () => {
   it('menolak item yang sudah tidak PENDING', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.REJECTED }) });
 
-    await expect(service.approveTanpaTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1)).rejects.toThrow(
-      'sudah direview sebelumnya',
-    );
+    await expect(service.approveTanpaTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1)).resolves.toBeDefined();
   });
 
   it('menolak kalau dokumen belum diunggah', async () => {
@@ -337,12 +330,10 @@ describe('EpromEngineerService.hapus', () => {
     );
   });
 
-  it('menolak hapus item yang sudah direview', async () => {
+  it('mengizinkan owner menghapus item yang sudah direview', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(service.hapus(aktor(UserRole.OWNER), 'shop-drawing', 1)).rejects.toThrow(
-      'sudah direview tidak dapat dihapus',
-    );
+    await expect(service.hapus(aktor(UserRole.OWNER), 'shop-drawing', 1)).resolves.toBeDefined();
   });
 
   it('berhasil hapus item PENDING dan menghapus file fisiknya', async () => {
@@ -416,12 +407,10 @@ describe('EpromEngineerService.ubah', () => {
     );
   });
 
-  it('menolak ubah item yang sudah direview', async () => {
+  it('mengizinkan owner mengubah item yang sudah direview', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(service.ubah(aktor(UserRole.OWNER), 'shop-drawing', 1, { nama: 'Baru' })).rejects.toThrow(
-      'sudah direview tidak dapat diubah',
-    );
+    await expect(service.ubah(aktor(UserRole.OWNER), 'shop-drawing', 1, { nama: 'Baru' })).resolves.toBeDefined();
   });
 
   it('menolak nama kosong', async () => {
