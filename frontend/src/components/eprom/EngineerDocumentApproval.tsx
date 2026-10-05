@@ -492,7 +492,7 @@ export function EngineerDocumentApproval({
     if (!komentar?.trim()) return;
     setSubmitting(true); setError(null);
     try {
-      await epromApi.engineer.reject(tipe, documentId, komentar.trim());
+      await epromApi.engineer.reject(tipe, documentId, komentar.trim(), inkStrokes, textAnnotations);
       window.dispatchEvent(new Event("eprom-engineer-updated"));
       router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
