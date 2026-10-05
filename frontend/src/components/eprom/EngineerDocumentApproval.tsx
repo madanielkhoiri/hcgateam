@@ -23,7 +23,7 @@ type Placement = {
   width: number;
   height: number;
 };
-type InkStroke = { id: string; page: number; color: string; points: string };
+type InkStroke = { id: string; page: number; color: string; width: number; points: string };
 
 const DEFAULT_PLACEMENT: Pick<Placement, "x" | "y" | "width" | "height"> = {
   x: 0.64,
@@ -74,6 +74,8 @@ export function EngineerDocumentApproval({
   const [zoom, setZoom] = useState(1);
   const [inkMode, setInkMode] = useState(false);
   const [inkColor, setInkColor] = useState("#e53935");
+  const [inkWidth, setInkWidth] = useState(0.35);
+  const [eraserMode, setEraserMode] = useState(false);
   const [inkStrokes, setInkStrokes] = useState<InkStroke[]>([]);
   const inkRef = useRef<InkStroke | null>(null);
   const [loading, setLoading] = useState(true);
@@ -232,9 +234,17 @@ export function EngineerDocumentApproval({
   function mulaiCoret(event: React.PointerEvent<SVGSVGElement>) {
     if (!inkMode || event.button !== 0 || !surfaceRef.current) return;
     event.preventDefault();
+    if (eraserMode) {
+      setInkStrokes((items) => {
+        const current = items.filter((item) => item.page === page);
+        const target = current[current.length - 1];
+        return target ? items.filter((item) => item.id !== target.id) : items;
+      });
+      return;
+    }
     const rect = surfaceRef.current.getBoundingClientRect();
     const point = `${((event.clientX - rect.left) / rect.width) * 100},${((event.clientY - rect.top) / rect.height) * 100}`;
-    inkRef.current = { id: idPlacement(), page, color: inkColor, points: point };
+    inkRef.current = { id: idPlacement(), page, color: inkColor, width: inkWidth, points: point };
     (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
     setInkStrokes((items) => [...items, inkRef.current!]);
   }
@@ -572,7 +582,7 @@ export function EngineerDocumentApproval({
               >
                 <canvas ref={canvasRef} className={styles.canvas} />
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
-                  {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth="0.35" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+                  {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth={stroke.width} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
                 {placements
                   .filter((placement) => placement.page === page)
@@ -625,6 +635,9 @@ export function EngineerDocumentApproval({
           <section className={styles.controls}>
             <button type="button" className={styles.secondaryButton} onClick={() => setInkMode((value) => !value)}>{inkMode ? "Selesai Coret" : "Coret PDF"}</button>
             <label className={styles.colorControl}>Warna Coretan<input type="color" value={inkColor} onChange={(event) => setInkColor(event.target.value)} /></label>
+            <label className={styles.brushControl}>Jenis Pena<select value={inkWidth} onChange={(event) => setInkWidth(Number(event.target.value))}><option value={0.2}>Tipis</option><option value={0.35}>Sedang</option><option value={0.6}>Tebal</option><option value={1}>Stabilo</option></select></label>
+            <button type="button" className={styles.secondaryButton} onClick={() => setEraserMode((value) => !value)}>{eraserMode ? "Selesai Hapus" : "Penghapus"}</button>
+            <button type="button" className={styles.secondaryButton} onClick={() => setInkStrokes((items) => items.filter((item) => item.page !== page))}>Reset Coretan</button>
             <label>
               Pilih Tanda Tangan
               <select
