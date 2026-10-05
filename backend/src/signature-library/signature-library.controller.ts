@@ -58,7 +58,7 @@ export class SignatureLibraryController {
       },
       {
         name: 'Angga Dwi Cahyanto',
-        filename: 'Angga Dwi Cahyanto.png',
+        filename: 'angga-dwi-cahyanto.png',
       },
     ];
 
