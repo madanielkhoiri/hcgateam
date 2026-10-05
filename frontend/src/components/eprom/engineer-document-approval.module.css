@@ -143,6 +143,17 @@
   max-width: none;
   height: auto;
 }
+.inkLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.inkLayer:has(polyline) { pointer-events: auto; }
+.colorControl { flex: 0 0 auto !important; align-items: center; }
+.colorControl input { width: 38px; height: 30px; padding: 0; border: 0; background: transparent; }
 .signatureOverlay {
   position: absolute;
   z-index: 2;
