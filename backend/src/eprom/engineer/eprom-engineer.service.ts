@@ -383,9 +383,26 @@ export class EpromEngineerService {
         orderBy: { approvedAt: 'desc' },
       });
     const sourceFilePath = approvalTerakhir?.signedFilePath ?? item.fileUrl;
-    // Approval pertama tidak diberi label revisi. Label dimulai setelah
-    // dokumen ditolak lalu diunggah/diroute kembali untuk approval berikutnya.
-    const revision = await this.prisma.engineerDocumentApproval.count({ where: { documentType, documentId: id } });
+    // Approval pertama tidak diberi label. Untuk upload ulang setelah reject,
+    // cari dokumen lama dengan pekerjaan/nama yang sama agar label revisinya
+    // tetap berlanjut walaupun upload vendor membuat record baru.
+    const namaField = FIELD_NAMA[tipe];
+    const itemLama = namaField
+      ? await this.delegate(tipe).findMany({
+          where: {
+            projectId: item.projectId,
+            status: StatusApprovalEprom.REJECTED,
+            [namaField]: (item as any)[namaField],
+            id: { not: id },
+          },
+          select: { id: true },
+        })
+      : [];
+    const documentIds = [id, ...itemLama.map((row: any) => row.id)];
+    const jumlahApprovalSebelumnya = await this.prisma.engineerDocumentApproval.count({
+      where: { documentType, projectId: item.projectId, documentId: { in: documentIds } },
+    });
+    const revision = jumlahApprovalSebelumnya;
     const tanggalApproval = new Date();
     const signedFilePath = await this.signing.buatPdfSigned(
       sourceFilePath,
