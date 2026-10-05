@@ -773,7 +773,7 @@ export function EngineerDocumentApproval({
           type="button"
           className={styles.dangerButton}
           onClick={reject}
-          disabled={submitting || detail.item.status !== "PENDING"}
+          disabled={submitting}
         >
           {submitting ? "Memproses..." : "Reject / Minta Revisi"}
         </button>
@@ -781,7 +781,7 @@ export function EngineerDocumentApproval({
           type="button"
           className={styles.secondaryButton}
           onClick={approveTanpaTtd}
-          disabled={submitting || detail.item.status !== "PENDING"}
+          disabled={submitting}
         >
           {submitting ? "Memproses..." : "Approve Tanpa Tanda Tangan"}
         </button>
@@ -793,7 +793,7 @@ export function EngineerDocumentApproval({
             !detail.canSign ||
             placements.length === 0 ||
             submitting ||
-            detail.item.status !== "PENDING"
+            false
           }
         >
           {submitting ? "Memproses PDF..." : "Approve & Tanda Tangani"}
