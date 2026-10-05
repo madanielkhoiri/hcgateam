@@ -270,6 +270,23 @@ export function EngineerDocumentApproval({
     setTextAnnotations((items) => [...items, { id: idPlacement(), page, text: text.trim(), x: 0.12, y: 0.18, rotation: 0, size: 16 }]);
   }
 
+  function geserTeks(event: React.PointerEvent<HTMLDivElement>, id: string) {
+    if (!surfaceRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = surfaceRef.current.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const original = textAnnotations.find((item) => item.id === id);
+    if (!original) return;
+    const move = (pointer: PointerEvent) => {
+      setTextAnnotations((items) => items.map((item) => item.id === id ? { ...item, x: Math.max(0, Math.min(0.85, original.x + (pointer.clientX - startX) / rect.width)), y: Math.max(0, Math.min(0.95, original.y + (pointer.clientY - startY) / rect.height)) } : item));
+    };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
   function samakanUkuranSemua() {
     const selected = placements.find(
       (item) => item.id === selectedPlacementId,
@@ -594,7 +611,7 @@ export function EngineerDocumentApproval({
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
                   {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth={stroke.width} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
-                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={styles.textAnnotation} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}>{item.text}</div>)}
+                {textAnnotations.filter((item) => item.page === page).map((item) => <div key={item.id} className={styles.textAnnotation} onPointerDown={(event) => geserTeks(event, item.id)} onDoubleClick={() => { const text = window.prompt("Edit komentar:", item.text); if (text?.trim()) setTextAnnotations((items) => items.map((current) => current.id === item.id ? { ...current, text: text.trim() } : current)); }} style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, fontSize: item.size, transform: `rotate(${item.rotation}deg)` }}>{item.text}</div>)}
                 {placements
                   .filter((placement) => placement.page === page)
                   .map((placement) => {
