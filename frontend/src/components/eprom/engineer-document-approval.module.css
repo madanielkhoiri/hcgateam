@@ -131,7 +131,7 @@
 }
 .pageSurface {
   position: relative;
-  width: min(100%, 900px);
+  width: fit-content;
   flex: 0 0 auto;
   align-self: flex-start;
   background: #fff;
@@ -139,7 +139,8 @@
 }
 .canvas {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: none;
   height: auto;
 }
 .signatureOverlay {
