@@ -139,6 +139,12 @@ function mingguIniWITA(): number {
   return 1 + Math.round((tanggal.getTime() - kamisPertama.getTime()) / (7 * 86400000));
 }
 
+/** Laporan mingguan memakai nomor Week yang tertulis pada nama laporan. */
+function mingguDariNamaLaporan(nama: string): number | null {
+  const cocok = nama.trim().match(/^laporan\s+week\s+(\d+)$/i);
+  return cocok ? Number(cocok[1]) : null;
+}
+
 @Injectable()
 export class EpromProgressService {
   constructor(
@@ -252,8 +258,8 @@ export class EpromProgressService {
     if (tipe === 'progress-harian') {
       dataEkstra.tanggal = tanggalDipilih;
     } else if (tipe === 'progress-mingguan') {
-      dataEkstra.mingguKe = mingguIniWITA();
       dataEkstra.namaPekerjaan = dto.namaPekerjaan!.trim();
+      dataEkstra.mingguKe = mingguDariNamaLaporan(dataEkstra.namaPekerjaan as string) ?? mingguIniWITA();
       dataEkstra.planned = dto.planned;
       dataEkstra.actual = dto.actual;
     } else if (tipe === 'progress-bulanan' || tipe === 'tta' || tipe === 'kta') {

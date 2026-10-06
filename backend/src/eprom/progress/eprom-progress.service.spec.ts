@@ -217,6 +217,20 @@ describe('EpromProgressService.buat', () => {
       data: expect.objectContaining({ namaPekerjaan: 'Pekerjaan A', planned: 40, actual: 35, mingguKe: expect.any(Number) }),
     });
   });
+
+  it('progress-mingguan mengikuti nomor Week pada nama laporan mingguan', async () => {
+    const { service, sharedModel } = buatService();
+
+    await service.buat(aktor(UserRole.OWNER), 'progress-mingguan', 1, {
+      namaPekerjaan: '  LAPORAN WEEK 13  ',
+      planned: 48,
+      actual: 42,
+    } as any);
+
+    expect(sharedModel.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ namaPekerjaan: 'LAPORAN WEEK 13', mingguKe: 13 }),
+    });
+  });
 });
 
 describe('EpromProgressService.hapus', () => {
