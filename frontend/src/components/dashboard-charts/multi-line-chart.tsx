@@ -20,8 +20,8 @@ export default function MultiLineChart({
   const graphWidth = 784;
   const graphHeight = 185;
   const maksimum = Math.max(1, ...series.flatMap((item) => item.values));
-  const titik = (values: number[]) => values.map((value, index) => ({
-    x: left + (index / Math.max(1, labels.length - 1)) * graphWidth,
+  const titik = (values: number[], offsetX = 0) => values.map((value, index) => ({
+    x: left + (index / Math.max(1, labels.length - 1)) * graphWidth + offsetX,
     y: top + graphHeight - (value / maksimum) * graphHeight,
     value,
   }));
@@ -38,8 +38,9 @@ export default function MultiLineChart({
       <div style={{ overflowX: 'auto', padding: '2px 12px 8px' }}>
         <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', minWidth: 680, height: 320, display: 'block' }} role="img" aria-label={title}>
           {[0, 1, 2, 3, 4].map((row) => { const y=top+row*(graphHeight/4); const nilai=Math.round(maksimum*(4-row)/4); return <g key={row}><line x1={left} x2={left + graphWidth} y1={y} y2={y} stroke="#dbe6f2" strokeDasharray="5 7"/><text x={left-9} y={y+4} textAnchor="end" fontSize="11" fill="#607a99">{nilai}</text></g>})}
-          {series.map((item) => {
-            const points = titik(item.values);
+          {series.map((item, seriesIndex) => {
+            const offsetX = (seriesIndex - (series.length - 1) / 2) * 3;
+            const points = titik(item.values, offsetX);
             return <g key={item.label}>
               <path d={points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ')} fill="none" stroke={item.color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
               {points.map((point, index) => <g key={index}><circle cx={point.x} cy={point.y} r="5" fill={item.color} stroke="#fff" strokeWidth="2"><title>{item.label} {labels[index]}: {point.value} kg</title></circle><text x={point.x} y={point.y-9} textAnchor="middle" fontSize="9" fontWeight="700" fill={item.color}>{point.value}</text></g>)}
