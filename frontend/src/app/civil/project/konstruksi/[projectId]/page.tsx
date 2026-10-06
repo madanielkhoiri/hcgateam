@@ -304,7 +304,10 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             {boleh && item.status === "PENDING" && tipe === "checklist-tahapan" && item.fileUrl?.toLowerCase().endsWith(".pdf") && (
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
                 <Link className={engineerStyles.secondaryButton} href={`/civil/project/konstruksi/${projectId}/approval/checklist-tahapan/${item.id}`}>
-                  Review &amp; Approval
+                  Approve
+                </Link>
+                <Link className={engineerStyles.dangerButton} href={`/civil/project/konstruksi/${projectId}/approval/checklist-tahapan/${item.id}`}>
+                  Reject
                 </Link>
               </div>
             )}
