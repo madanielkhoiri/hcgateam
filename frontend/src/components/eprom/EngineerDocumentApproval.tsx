@@ -462,12 +462,18 @@ export function EngineerDocumentApproval({
   }
 
   async function approve() {
-    if (placements.length < 1) return;
+    if (!signatureFile) return;
+    const penempatanEfektif = placements.length > 0 ? placements : [{
+      id: idPlacement(),
+      signatureFile,
+      page,
+      ...DEFAULT_PLACEMENT,
+    }];
     setSubmitting(true);
     setError(null);
     try {
       await epromApi.engineer.approveDenganTandaTangan(tipe, documentId, {
-        placements: placements.map((placement) => ({
+        placements: penempatanEfektif.map((placement) => ({
           signatureFile: placement.signatureFile,
           signaturePage: placement.page,
           signatureXRatio: placement.x,
@@ -794,12 +800,12 @@ export function EngineerDocumentApproval({
           onClick={approve}
           disabled={
             !detail.canSign ||
-            placements.length === 0 ||
+            !signatureFile ||
             submitting ||
             false
           }
         >
-          {submitting ? "Memproses PDF..." : "Approve & Tanda Tangani"}
+          {submitting ? "Memproses PDF..." : detail.item.status === "APPROVED" ? "Simpan Tanda Tangan" : "Approve & Tanda Tangani"}
         </button>
       </footer>
     </div>
