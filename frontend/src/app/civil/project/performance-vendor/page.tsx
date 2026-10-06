@@ -11,11 +11,6 @@ import {
 } from "@/lib/eprom-api";
 import styles from "./performance-vendor.module.css";
 
-function bulanSekarang(): string {
-  const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
 const TAMPILAN_STATUS: Record<
   StatusKewajibanUpload,
   { label: string; className: string }
@@ -37,7 +32,6 @@ function StatusUpload({ item }: { item: KewajibanUploadVendor }) {
 }
 
 export default function PerformanceVendorPage() {
-  const [bulan, setBulan] = useState(bulanSekarang);
   const [items, setItems] = useState<PerformanceVendorItem[]>([]);
   const [projectId, setProjectId] = useState<number | null>(null);
   const [detail, setDetail] = useState<PerformanceVendorItem | null>(null);
@@ -49,7 +43,7 @@ export default function PerformanceVendorPage() {
   useEffect(() => {
     let active = true;
     epromApi.performanceVendor
-      .daftar(bulan)
+      .daftar()
       .then((response) => {
         if (!active) return;
         setItems(response.items);
@@ -65,13 +59,13 @@ export default function PerformanceVendorPage() {
     return () => {
       active = false;
     };
-  }, [bulan]);
+  }, []);
 
   useEffect(() => {
     if (!projectId) return;
     let active = true;
     epromApi.performanceVendor
-      .detail(projectId, bulan)
+      .detail(projectId)
       .then((response) => active && setDetail(response))
       .catch((err: unknown) => {
         if (active) setError(err instanceof Error ? err.message : "Gagal memuat rincian performance");
@@ -80,7 +74,7 @@ export default function PerformanceVendorPage() {
     return () => {
       active = false;
     };
-  }, [projectId, bulan]);
+  }, [projectId]);
 
   const pilihan = useMemo(
     () => items.map((item) => ({
@@ -100,28 +94,13 @@ export default function PerformanceVendorPage() {
       <div className={styles.header}>
         <div>
           <h1>Performance Vendor</h1>
-          <p>Penilaian objektif per tender berdasarkan bukti aktivitas pada sistem.</p>
+          <p>Penilaian objektif vendor selama seluruh periode proyek berdasarkan bukti aktivitas pada sistem.</p>
         </div>
       </div>
 
       <div className={styles.selectorCard}>
         <label className={styles.field}>
-          Periode penilaian
-          <input
-            type="month"
-            className={styles.monthInput}
-            value={bulan}
-            onChange={(event) => {
-              setLoading(true);
-              setLoadingDetail(false);
-              setDetail(null);
-              setError(null);
-              setBulan(event.target.value);
-            }}
-          />
-        </label>
-        <label className={styles.field}>
-          Tender / vendor
+          Proyek / vendor
           <select
             className={styles.select}
             value={projectId ?? ""}
@@ -158,7 +137,7 @@ export default function PerformanceVendorPage() {
                 <span>Periode kontrak</span>
                 <strong>{formatTanggal(detail.project.kontrak.tanggalMulai)} – {formatTanggal(detail.project.kontrak.tanggalSelesai)}</strong>
               </div>
-              <div><span>Periode nilai</span><strong>{detail.bulan}</strong></div>
+              <div><span>Periode penilaian proyek</span><strong>{formatTanggal(detail.periodeMulai)} – {formatTanggal(detail.periodeSelesai)}</strong></div>
             </div>
           </section>
 
@@ -228,7 +207,7 @@ export default function PerformanceVendorPage() {
                     </tr>
                   ))}
                   {kewajibanTampil.length === 0 && (
-                    <tr><td colSpan={6} className={styles.empty}>Tidak ada kewajiban upload pada periode ini.</td></tr>
+                    <tr><td colSpan={6} className={styles.empty}>Tidak ada kewajiban upload pada periode proyek ini.</td></tr>
                   )}
                 </tbody>
               </table>

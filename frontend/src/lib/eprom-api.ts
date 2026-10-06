@@ -541,7 +541,8 @@ export type KomponenPerformanceVendor = {
 };
 
 export type PerformanceVendorItem = {
-  bulan: string;
+  periodeMulai: string;
+  periodeSelesai: string;
   project: {
     id: number;
     namaProject: string;
@@ -1151,14 +1152,10 @@ export const epromApi = {
   },
 
   performanceVendor: {
-    daftar: (bulan: string) =>
-      request<{ bulan: string; items: PerformanceVendorItem[] }>(
-        `/performance-vendor?bulan=${encodeURIComponent(bulan)}`,
-      ),
-    detail: (projectId: number, bulan: string) =>
-      request<PerformanceVendorItem>(
-        `/performance-vendor/${projectId}?bulan=${encodeURIComponent(bulan)}`,
-      ),
+    daftar: () =>
+      request<{ items: PerformanceVendorItem[] }>('/performance-vendor'),
+    detail: (projectId: number) =>
+      request<PerformanceVendorItem>(`/performance-vendor/${projectId}`),
   },
 };
 
