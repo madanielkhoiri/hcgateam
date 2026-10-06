@@ -8,6 +8,7 @@
 import { getAccessToken } from './access-control';
 export type { HasilHalaman } from './pagination';
 import type { HasilHalaman } from './pagination';
+import { urlUploads } from './uploads-url';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -19,7 +20,6 @@ export type LaporanTps3r = {
   beratReuse: number;
   beratRecycle: number;
   beratResidu: number;
-  sampahTerkelola: number;
   createdBy: { id: number; name: string; nrp: string | null };
   createdAt: string;
 };
@@ -30,7 +30,10 @@ export type RingkasanTps3r = {
   totalReuse: number;
   totalRecycle: number;
   totalResidu: number;
-  totalTerkelola: number;
+  terkelolaOrganik: number;
+  terkelolaReuse: number;
+  terkelolaRecycle: number;
+  terkelolaResidu: number;
 };
 
 export type TrenBulananTps3r = {
@@ -39,7 +42,6 @@ export type TrenBulananTps3r = {
   reuse: number;
   recycle: number;
   residu: number;
-  terkelola: number;
 };
 
 export class Tps3rApiError extends Error {
@@ -94,8 +96,10 @@ export type LaporanTps3rInput = {
   beratReuse: number;
   beratRecycle: number;
   beratResidu: number;
-  sampahTerkelola: number;
 };
+
+export type SampahTerkelolaTps3r = LaporanTps3rInput & { id: number; createdAt: string };
+export type FotoPenyerahanTps3r = { id: number; tanggal: string; urlFoto: string; createdAt: string };
 
 export const tps3rApi = {
   daftar: (bulan?: number, tahun?: number, halaman?: number, ukuranHalaman?: number) => {
@@ -120,4 +124,18 @@ export const tps3rApi = {
   ubah: (id: number, data: Partial<LaporanTps3rInput>) =>
     request<LaporanTps3r>(`/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
+  daftarTerkelola: () => request<SampahTerkelolaTps3r[]>('/terkelola'),
+  buatTerkelola: (data: LaporanTps3rInput) => request<SampahTerkelolaTps3r>('/terkelola', { method: 'POST', body: JSON.stringify(data) }),
+  ubahTerkelola: (id: number, data: Partial<LaporanTps3rInput>) => request<SampahTerkelolaTps3r>(`/terkelola/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  hapusTerkelola: (id: number) => request<{ message: string }>(`/terkelola/${id}`, { method: 'DELETE' }),
+  daftarFoto: () => request<FotoPenyerahanTps3r[]>('/foto-penyerahan'),
+  tambahFoto: async (tanggal: string, foto: File) => {
+    const form = new FormData(); form.append('tanggal', tanggal); form.append('foto', foto);
+    const response = await fetch(`${API_URL}/civil-tps3r/foto-penyerahan`, { method: 'POST', headers: headerAuth(), body: form });
+    if (!response.ok) throw new Tps3rApiError(await bacaError(response), response.status);
+    return response.json() as Promise<FotoPenyerahanTps3r>;
+  },
+  hapusFoto: (id: number) => request<{ message: string }>(`/foto-penyerahan/${id}`, { method: 'DELETE' }),
 };
+
+export function urlFotoTps3r(path: string) { return urlUploads(path); }
