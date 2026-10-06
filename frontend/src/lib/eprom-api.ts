@@ -293,7 +293,8 @@ export type TipeEngineer =
   | 'metode-pekerjaan'
   | 'sertifikasi-pekerjaan'
   | 'peralatan-list'
-  | 'komisioning-alat-berat';
+  | 'komisioning-alat-berat'
+  | 'checklist-tahapan';
 
 export type StatusApprovalEprom = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -310,6 +311,8 @@ export type EngineerItem = {
   namaPekerjaan?: string;
   namaMaterial?: string;
   namaMetode?: string;
+  namaTahap?: string;
+  revision?: number;
   latestApproval: EngineerDocumentApproval | null;
 };
 
@@ -322,7 +325,8 @@ export type EngineerDocumentApproval = {
     | 'METODE_PEKERJAAN'
     | 'SERTIFIKASI_PEKERJAAN'
     | 'DAFTAR_PERALATAN'
-    | 'KOMISIONING_ALAT_BERAT';
+    | 'KOMISIONING_ALAT_BERAT'
+    | 'CHECKLIST_TAHAPAN';
   approvedAt: string;
   adaTandaTangan: boolean;
   signatureFile: string | null;
@@ -371,6 +375,9 @@ export type KonstruksiItem = {
   id: number;
   projectId: number;
   fileUrl: string | null;
+  originalFileName?: string | null;
+  effectiveFileUrl?: string | null;
+  revision?: number;
   status: StatusApprovalEprom;
   komentar: string | null;
   createdAt: string;
@@ -1162,6 +1169,7 @@ export const LABEL_TIPE_ENGINEER: Record<TipeEngineer, string> = {
   'sertifikasi-pekerjaan': 'Sertifikasi Pekerjaan',
   'peralatan-list': 'Daftar Peralatan',
   'komisioning-alat-berat': 'Komisioning Alat Berat',
+  'checklist-tahapan': 'Checklist Tahapan Pekerjaan',
 };
 
 export const LABEL_TIPE_KONSTRUKSI: Record<TipeKonstruksi, string> = {

@@ -344,7 +344,7 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     key: 'CIVIL_TPS3R',
     title: 'TPS 3R',
     description:
-      'Laporan timbangan sampah Organik, Non Organik, Guna Ulang/Reuse, Daur Ulang/Recycle, dan Residu (kg).',
+      'Laporan timbangan sampah Organik, Daur Ulang/Recycle, Guna Ulang/Reuse, Residu, dan Sampah Terkelola (kg).',
     parentKey: 'CIVIL_INFRAS',
     level: 'section',
   },
