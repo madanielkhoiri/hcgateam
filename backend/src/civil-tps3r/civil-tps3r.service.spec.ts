@@ -24,10 +24,10 @@ function buatService(overrides: {
     jest.fn().mockResolvedValue({
       _sum: {
         beratOrganik: null,
-        beratNonOrganik: null,
         beratReuse: null,
         beratRecycle: null,
         beratResidu: null,
+        sampahTerkelola: null,
       },
       _count: { _all: 0 },
     });
@@ -104,10 +104,10 @@ describe('CivilTps3rService.ringkasan', () => {
     expect(hasil).toEqual({
       totalLaporan: 0,
       totalOrganik: 0,
-      totalNonOrganik: 0,
       totalReuse: 0,
       totalRecycle: 0,
       totalResidu: 0,
+      totalTerkelola: 0,
     });
   });
 
@@ -115,10 +115,10 @@ describe('CivilTps3rService.ringkasan', () => {
     const aggregate = jest.fn().mockResolvedValue({
       _sum: {
         beratOrganik: 10,
-        beratNonOrganik: 20,
         beratReuse: 5,
         beratRecycle: 3,
         beratResidu: 2,
+        sampahTerkelola: 8,
       },
       _count: { _all: 4 },
     });
@@ -129,10 +129,10 @@ describe('CivilTps3rService.ringkasan', () => {
     expect(hasil).toEqual({
       totalLaporan: 4,
       totalOrganik: 10,
-      totalNonOrganik: 20,
       totalReuse: 5,
       totalRecycle: 3,
       totalResidu: 2,
+      totalTerkelola: 8,
     });
   });
 });
@@ -143,26 +143,26 @@ describe('CivilTps3rService.trenBulanan', () => {
       {
         tanggal: new Date(Date.UTC(2026, 0, 5)),
         beratOrganik: 1,
-        beratNonOrganik: 1,
         beratReuse: 1,
         beratRecycle: 1,
         beratResidu: 1,
+        sampahTerkelola: 4,
       },
       {
         tanggal: new Date(Date.UTC(2026, 0, 20)),
         beratOrganik: 2,
-        beratNonOrganik: 0,
         beratReuse: 0,
         beratRecycle: 0,
         beratResidu: 0,
+        sampahTerkelola: 2,
       },
       {
         tanggal: new Date(Date.UTC(2026, 5, 1)),
         beratOrganik: 10,
-        beratNonOrganik: 0,
         beratReuse: 0,
         beratRecycle: 0,
         beratResidu: 0,
+        sampahTerkelola: 5,
       },
     ]);
     const { service } = buatService({ findManyTren });
@@ -170,9 +170,9 @@ describe('CivilTps3rService.trenBulanan', () => {
     const hasil = await service.trenBulanan(2026);
 
     expect(hasil).toHaveLength(12);
-    expect(hasil[0]).toEqual({ bulan: 1, totalKg: 7 });
-    expect(hasil[5]).toEqual({ bulan: 6, totalKg: 10 });
-    expect(hasil[1]).toEqual({ bulan: 2, totalKg: 0 });
+    expect(hasil[0]).toEqual({ bulan: 1, organik: 3, reuse: 1, recycle: 1, residu: 1, terkelola: 6 });
+    expect(hasil[5]).toEqual({ bulan: 6, organik: 10, reuse: 0, recycle: 0, residu: 0, terkelola: 5 });
+    expect(hasil[1]).toEqual({ bulan: 2, organik: 0, reuse: 0, recycle: 0, residu: 0, terkelola: 0 });
   });
 
   it('mengambil rentang satu tahun penuh (UTC)', async () => {
@@ -200,10 +200,10 @@ describe('CivilTps3rService.buat', () => {
     await service.buat({ id: 9 } as any, {
       tanggal: '2026-03-10',
       beratOrganik: 1,
-      beratNonOrganik: 2,
       beratReuse: 3,
       beratRecycle: 4,
       beratResidu: 5,
+      sampahTerkelola: 6,
     });
 
     expect(create).toHaveBeenCalledWith(
@@ -211,10 +211,11 @@ describe('CivilTps3rService.buat', () => {
         data: expect.objectContaining({
           tanggal: new Date('2026-03-10T00:00:00.000Z'),
           beratOrganik: 1,
-          beratNonOrganik: 2,
+          beratNonOrganik: 0,
           beratReuse: 3,
           beratRecycle: 4,
           beratResidu: 5,
+          sampahTerkelola: 6,
           createdById: 9,
         }),
       }),

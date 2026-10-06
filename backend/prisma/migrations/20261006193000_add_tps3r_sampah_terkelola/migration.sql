@@ -1,0 +1,2 @@
+ALTER TABLE "civil_laporan_tps3r"
+ADD COLUMN IF NOT EXISTS "sampah_terkelola" DOUBLE PRECISION NOT NULL DEFAULT 0;
