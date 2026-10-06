@@ -41,6 +41,7 @@ export const TIPE_ENGINEER = [
   'sertifikasi-pekerjaan',
   'peralatan-list',
   'komisioning-alat-berat',
+  'checklist-tahapan',
 ] as const;
 
 export type TipeEngineer = (typeof TIPE_ENGINEER)[number];
@@ -53,6 +54,7 @@ const FIELD_NAMA: Record<TipeEngineer, string | null> = {
   'sertifikasi-pekerjaan': null,
   'peralatan-list': null,
   'komisioning-alat-berat': null,
+  'checklist-tahapan': 'namaTahap',
 };
 
 const LABEL_TIPE: Record<TipeEngineer, string> = {
@@ -62,6 +64,7 @@ const LABEL_TIPE: Record<TipeEngineer, string> = {
   'sertifikasi-pekerjaan': 'Sertifikasi Pekerjaan',
   'peralatan-list': 'Daftar Peralatan',
   'komisioning-alat-berat': 'Komisioning Alat Berat',
+  'checklist-tahapan': 'Checklist Tahapan Pekerjaan',
 };
 
 const DOCUMENT_TYPE: Record<TipeEngineer, EngineerDocumentType> = {
@@ -71,6 +74,7 @@ const DOCUMENT_TYPE: Record<TipeEngineer, EngineerDocumentType> = {
   'sertifikasi-pekerjaan': EngineerDocumentType.SERTIFIKASI_PEKERJAAN,
   'peralatan-list': EngineerDocumentType.DAFTAR_PERALATAN,
   'komisioning-alat-berat': EngineerDocumentType.KOMISIONING_ALAT_BERAT,
+  'checklist-tahapan': EngineerDocumentType.CHECKLIST_TAHAPAN,
 };
 
 export class BuatEngineerDto {
@@ -201,6 +205,8 @@ export class EpromEngineerService {
         return client.peralatanList;
       case 'komisioning-alat-berat':
         return client.komisioningAlatBerat;
+      case 'checklist-tahapan':
+        return client.checklistKonstruksi;
     }
   }
 
@@ -245,6 +251,13 @@ export class EpromEngineerService {
       );
     }
 
+    const nama = namaField ? dto.nama!.trim() : null;
+    const revisiSebelumnya = namaField && nama
+      ? await this.delegate(tipe).count({ where: { projectId, [namaField]: nama } })
+      : 0;
+    const originalFileName = file?.originalname
+      ? this.namaFileRevisi(file.originalname, revisiSebelumnya)
+      : null;
     const fileUrl = file
       ? this.file.simpanDokumen(file, `project/${projectId}/engineer/${tipe}`)
       : null;
@@ -253,14 +266,21 @@ export class EpromEngineerService {
       data: {
         projectId,
         fileUrl,
-        originalFileName: file?.originalname || null,
-        ...(namaField ? { [namaField]: dto.nama!.trim() } : {}),
+        originalFileName,
+        ...(namaField ? { [namaField]: nama } : {}),
       },
     });
 
     await this.notifikasiUpload(tipe, projectId, aktor.id);
 
     return hasil;
+  }
+
+  private namaFileRevisi(namaFile: string, revisi: number): string {
+    if (revisi < 1) return namaFile;
+    const ekstensi = extname(namaFile);
+    const dasar = namaFile.slice(0, namaFile.length - ekstensi.length).replace(/-R\d+$/i, '');
+    return `${dasar}-R${String(revisi).padStart(2, '0')}${ekstensi}`;
   }
 
   /** Notifikasi WA ke Owner setiap ada upload baru di salah satu sub-menu Engineer. */
@@ -550,7 +570,7 @@ export class EpromEngineerService {
   async ringkasanPending(aktor: AktorEprom, projectId: number) {
     await this.akses.wajibAksesProject(aktor, projectId);
 
-    const hasil: Record<TipeEngineer, number> = {
+    const hasil: Record<string, number> = {
       'shop-drawing': 0,
       'material-approval': 0,
       'metode-pekerjaan': 0,
@@ -560,7 +580,7 @@ export class EpromEngineerService {
     };
 
     await Promise.all(
-      TIPE_ENGINEER.map(async (tipe) => {
+      TIPE_ENGINEER.filter((tipe) => tipe !== 'checklist-tahapan').map(async (tipe) => {
         hasil[tipe] = await this.delegate(tipe).count({
           where: { projectId, status: StatusApprovalEprom.PENDING },
         });

@@ -164,8 +164,10 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
   const muatItems = useCallback(() => {
     setLoading(true);
-    epromApi.konstruksi
-      .daftar(tipe, projectId)
+    const permintaan = tipe === "checklist-tahapan"
+      ? epromApi.engineer.daftar("checklist-tahapan", projectId) as unknown as Promise<KonstruksiItem[]>
+      : epromApi.konstruksi.daftar(tipe, projectId);
+    permintaan
       .then(setItems)
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Gagal memuat data"))
       .finally(() => setLoading(false));
@@ -182,7 +184,11 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.konstruksi.buat(tipe, projectId, namaBaru || undefined, fileBaru);
+      if (tipe === "checklist-tahapan") {
+        await epromApi.engineer.buat("checklist-tahapan", projectId, namaBaru || undefined, fileBaru);
+      } else {
+        await epromApi.konstruksi.buat(tipe, projectId, namaBaru || undefined, fileBaru);
+      }
       setNamaBaru("");
       setFileBaru(null);
       muatItems();
@@ -283,10 +289,10 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             </div>
 
             <div className={engineerStyles.itemRowMeta}>
-              {item.fileUrl ? (
-                <a href={urlFileEprom(item.fileUrl)} target="_blank" rel="noreferrer">
+              {(item.effectiveFileUrl ?? item.fileUrl) ? (
+                <a href={urlFileEprom(item.effectiveFileUrl ?? item.fileUrl!)} target="_blank" rel="noreferrer">
                   <FileText size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />
-                  Lihat File
+                  {item.originalFileName ?? "Lihat File"}
                 </a>
               ) : (
                 <span>Belum ada file</span>
@@ -295,7 +301,15 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
             {item.komentar && <div className={engineerStyles.komentarBox}>&ldquo;{item.komentar}&rdquo;</div>}
 
-            {boleh && item.status === "PENDING" && (
+            {boleh && item.status === "PENDING" && tipe === "checklist-tahapan" && item.fileUrl?.toLowerCase().endsWith(".pdf") && (
+              <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
+                <Link className={engineerStyles.secondaryButton} href={`/civil/project/konstruksi/${projectId}/approval/checklist-tahapan/${item.id}`}>
+                  Review &amp; Approval
+                </Link>
+              </div>
+            )}
+
+            {boleh && item.status === "PENDING" && tipe !== "checklist-tahapan" && (
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
                 <input
                   placeholder="Komentar (opsional)"
@@ -346,11 +360,15 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
             {boleh && item.status !== "PENDING" && (
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                {item.fileUrl && (
+                {item.fileUrl && tipe === "checklist-tahapan" ? (
+                  <Link className={engineerStyles.secondaryButton} href={`/civil/project/konstruksi/${projectId}/approval/checklist-tahapan/${item.id}`}>
+                    Edit Status
+                  </Link>
+                ) : item.fileUrl ? (
                   <button type="button" className={engineerStyles.secondaryButton} onClick={() => review(item, item.status === "APPROVED" ? "REJECTED" : "APPROVED")}>
                     Ubah Status
                   </button>
-                )}
+                ) : null}
                 <button type="button" className={engineerStyles.iconButtonDanger} onClick={() => hapus(item)} title="Hapus">
                   <Trash2 size={13} />
                 </button>
