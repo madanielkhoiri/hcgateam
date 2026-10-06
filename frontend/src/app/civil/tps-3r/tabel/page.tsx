@@ -41,7 +41,6 @@ const FORM_KOSONG: LaporanTps3rInput = {
   beratReuse: 0,
   beratRecycle: 0,
   beratResidu: 0,
-  sampahTerkelola: 0,
 };
 
 export default function Tps3rTabelPage() {
@@ -97,7 +96,6 @@ export default function Tps3rTabelPage() {
       beratReuse: item.beratReuse,
       beratRecycle: item.beratRecycle,
       beratResidu: item.beratResidu,
-      sampahTerkelola: item.sampahTerkelola,
     });
     setFormOpen(true);
   }
@@ -189,7 +187,6 @@ export default function Tps3rTabelPage() {
                 <th style={{ textAlign: 'center' }}>Reuse</th>
                 <th style={{ textAlign: 'center' }}>Recycle</th>
                 <th style={{ textAlign: 'center' }}>Residu</th>
-                <th style={{ textAlign: 'center' }}>Sampah Terkelola</th>
                 <th style={{ textAlign: 'center' }}>Dilaporkan Oleh</th>
                 <th style={{ textAlign: 'center' }}>Aksi</th>
               </tr>
@@ -202,7 +199,6 @@ export default function Tps3rTabelPage() {
                   <td style={{ textAlign: 'center' }}>{formatKg(item.beratReuse)}</td>
                   <td style={{ textAlign: 'center' }}>{formatKg(item.beratRecycle)}</td>
                   <td style={{ textAlign: 'center' }}>{formatKg(item.beratResidu)}</td>
-                  <td style={{ textAlign: 'center' }}>{formatKg(item.sampahTerkelola)}</td>
                   <td style={{ textAlign: 'center' }}>
                     {item.createdBy.name}
                     {item.createdBy.nrp ? <small>{item.createdBy.nrp}</small> : null}
@@ -247,7 +243,6 @@ export default function Tps3rTabelPage() {
             <FieldBerat label="Guna Ulang / Reuse (kg)" value={form.beratReuse} onChange={(v) => setForm((cur) => ({ ...cur, beratReuse: v }))} />
             <FieldBerat label="Daur Ulang / Recycle (kg)" value={form.beratRecycle} onChange={(v) => setForm((cur) => ({ ...cur, beratRecycle: v }))} />
             <FieldBerat label="Residu (kg)" value={form.beratResidu} onChange={(v) => setForm((cur) => ({ ...cur, beratResidu: v }))} />
-            <FieldBerat label="Sampah Terkelola (kg)" value={form.sampahTerkelola} onChange={(v) => setForm((cur) => ({ ...cur, sampahTerkelola: v }))} />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button type="button" className={styles.secondaryButton} onClick={() => setFormOpen(false)} disabled={submitting}>
