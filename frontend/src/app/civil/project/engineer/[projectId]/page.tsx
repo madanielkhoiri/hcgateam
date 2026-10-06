@@ -36,9 +36,12 @@ function namaItem(item: EngineerItem): string | null {
 
 function namaFileTampil(item: EngineerItem): string {
   const original = item.originalFileName ?? "Lihat File";
-  return item.latestApproval
+  const nama = item.latestApproval
     ? original.replace(/\.pdf$/i, "-signed.pdf")
     : original;
+  return item.revision && item.revision > 0
+    ? `${nama} - R${String(item.revision).padStart(2, "0")}`
+    : nama;
 }
 
 function namaTandaTangan(filename: string): string {

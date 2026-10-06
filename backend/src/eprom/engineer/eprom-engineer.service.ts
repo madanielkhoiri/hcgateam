@@ -218,7 +218,21 @@ export class EpromEngineerService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return this.denganApproval(tipe, items);
+    const denganApproval = await this.denganApproval(tipe, items);
+    const namaField = FIELD_NAMA[tipe];
+    if (!namaField) return denganApproval;
+
+    const urut = [...denganApproval].sort((a, b) => a.id - b.id);
+    const nomorPerNama = new Map<string, number>();
+    const revisiPerId = new Map<number, number>();
+    for (const item of urut) {
+      const kunci = String(item[namaField] ?? '').trim().toLocaleLowerCase('id-ID');
+      const revisi = nomorPerNama.get(kunci) ?? 0;
+      revisiPerId.set(item.id, revisi);
+      nomorPerNama.set(kunci, revisi + 1);
+    }
+
+    return denganApproval.map((item) => ({ ...item, revision: revisiPerId.get(item.id) ?? 0 }));
   }
 
   async buat(
@@ -252,12 +266,6 @@ export class EpromEngineerService {
     }
 
     const nama = namaField ? dto.nama!.trim() : null;
-    const revisiSebelumnya = namaField && nama
-      ? await this.delegate(tipe).count({ where: { projectId, [namaField]: nama } })
-      : 0;
-    const originalFileName = file?.originalname
-      ? this.namaFileRevisi(file.originalname, revisiSebelumnya)
-      : null;
     const fileUrl = file
       ? this.file.simpanDokumen(file, `project/${projectId}/engineer/${tipe}`)
       : null;
@@ -266,7 +274,7 @@ export class EpromEngineerService {
       data: {
         projectId,
         fileUrl,
-        originalFileName,
+        originalFileName: file?.originalname || null,
         ...(namaField ? { [namaField]: nama } : {}),
       },
     });
@@ -274,13 +282,6 @@ export class EpromEngineerService {
     await this.notifikasiUpload(tipe, projectId, aktor.id);
 
     return hasil;
-  }
-
-  private namaFileRevisi(namaFile: string, revisi: number): string {
-    if (revisi < 1) return namaFile;
-    const ekstensi = extname(namaFile);
-    const dasar = namaFile.slice(0, namaFile.length - ekstensi.length).replace(/-R\d+$/i, '');
-    return `${dasar}-R${String(revisi).padStart(2, '0')}${ekstensi}`;
   }
 
   /** Notifikasi WA ke Owner setiap ada upload baru di salah satu sub-menu Engineer. */
