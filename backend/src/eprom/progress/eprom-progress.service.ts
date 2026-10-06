@@ -139,6 +139,18 @@ function mingguIniWITA(): number {
   return 1 + Math.round((tanggal.getTime() - kamisPertama.getTime()) / (7 * 86400000));
 }
 
+/** Laporan mingguan memakai nomor Week yang tertulis pada nama laporan. */
+function mingguDariNamaLaporan(nama: string): number | null {
+  const cocok = nama.trim().match(/^laporan\s+week\s+(\d+)$/i);
+  return cocok ? Number(cocok[1]) : null;
+}
+
+/** Minggu proyek: tanggal mulai kontrak sampai 6 hari berikutnya = Week 1. */
+function mingguProyek(tanggal: Date, tanggalMulai: Date): number {
+  const hari = Math.floor((Date.UTC(tanggal.getUTCFullYear(), tanggal.getUTCMonth(), tanggal.getUTCDate()) - Date.UTC(tanggalMulai.getUTCFullYear(), tanggalMulai.getUTCMonth(), tanggalMulai.getUTCDate())) / 86400000);
+  return Math.max(1, Math.floor(hari / 7) + 1);
+}
+
 @Injectable()
 export class EpromProgressService {
   constructor(
@@ -243,6 +255,14 @@ export class EpromProgressService {
     const tanggalDipilih = dto.tanggal ? new Date(`${dto.tanggal}T12:00:00.000Z`) : new Date();
     if (Number.isNaN(tanggalDipilih.getTime())) throw new BadRequestException('Tanggal upload tidak valid');
 
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { kontrak: { select: { tanggalMulai: true } } },
+    });
+    if (!project?.kontrak?.tanggalMulai) {
+      throw new BadRequestException('Tanggal mulai project belum tersedia');
+    }
+
     const fileUrl = file
       ? this.file.simpanDokumen(file, `project/${projectId}/progress/${tipe}`)
       : null;
@@ -252,8 +272,8 @@ export class EpromProgressService {
     if (tipe === 'progress-harian') {
       dataEkstra.tanggal = tanggalDipilih;
     } else if (tipe === 'progress-mingguan') {
-      dataEkstra.mingguKe = mingguIniWITA();
       dataEkstra.namaPekerjaan = dto.namaPekerjaan!.trim();
+      dataEkstra.mingguKe = mingguProyek(tanggalDipilih, project.kontrak.tanggalMulai);
       dataEkstra.planned = dto.planned;
       dataEkstra.actual = dto.actual;
     } else if (tipe === 'progress-bulanan' || tipe === 'tta' || tipe === 'kta') {
