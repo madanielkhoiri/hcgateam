@@ -481,8 +481,24 @@ export function EngineerDocumentApproval({
           signatureWidthRatio: placement.width,
           signatureHeightRatio: placement.height,
         })),
-        annotations: inkStrokes,
-        textAnnotations,
+        // ID hanya dipakai untuk memilih/menggeser anotasi di browser.
+        // Backend memakai whitelist ketat, jadi jangan ikut mengirim ID lokal.
+        annotations: inkStrokes.map(({ page, color, width, points }) => ({
+          page,
+          color,
+          width,
+          points,
+        })),
+        textAnnotations: textAnnotations.map(
+          ({ page, text, x, y, rotation, size }) => ({
+            page,
+            text,
+            x,
+            y,
+            rotation,
+            size,
+          }),
+        ),
       });
       window.dispatchEvent(new Event("eprom-engineer-updated"));
       router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
@@ -499,7 +515,25 @@ export function EngineerDocumentApproval({
     if (!komentar?.trim()) return;
     setSubmitting(true); setError(null);
     try {
-      await epromApi.engineer.reject(tipe, documentId, komentar.trim(), inkStrokes, textAnnotations);
+      await epromApi.engineer.reject(
+        tipe,
+        documentId,
+        komentar.trim(),
+        inkStrokes.map(({ page, color, width, points }) => ({
+          page,
+          color,
+          width,
+          points,
+        })),
+        textAnnotations.map(({ page, text, x, y, rotation, size }) => ({
+          page,
+          text,
+          x,
+          y,
+          rotation,
+          size,
+        })),
+      );
       window.dispatchEvent(new Event("eprom-engineer-updated"));
       router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
@@ -786,14 +820,16 @@ export function EngineerDocumentApproval({
         >
           {submitting ? "Memproses..." : "Reject / Minta Revisi"}
         </button>
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          onClick={approveTanpaTtd}
-          disabled={submitting}
-        >
-          {submitting ? "Memproses..." : "Approve Tanpa Tanda Tangan"}
-        </button>
+        {detail.item.status !== "APPROVED" && (
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={approveTanpaTtd}
+            disabled={submitting}
+          >
+            {submitting ? "Memproses..." : "Approve Tanpa Tanda Tangan"}
+          </button>
+        )}
         <button
           type="button"
           className={styles.approveButton}

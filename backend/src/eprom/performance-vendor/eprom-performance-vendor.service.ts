@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { StatusApprovalEprom } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromAksesService } from '../common/eprom-akses.service';
@@ -76,25 +76,14 @@ function batasWita(tanggal: string, jam: string): Date {
   return new Date(Date.UTC(tahun, bulan - 1, hari, pukul - 8, menit));
 }
 
-function periodeBulan(bulan?: string) {
-  const sekarangWita = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  const nilai = bulan ?? `${sekarangWita.getUTCFullYear()}-${duaDigit(sekarangWita.getUTCMonth() + 1)}`;
-
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(nilai)) {
-    throw new BadRequestException('Bulan harus menggunakan format YYYY-MM');
-  }
-
-  const [tahun, nomorBulan] = nilai.split('-').map(Number);
-  const mulai = new Date(Date.UTC(tahun, nomorBulan - 1, 1));
-  const selesai = new Date(Date.UTC(tahun, nomorBulan, 0));
-  const akhirEksklusifUtc = new Date(Date.UTC(tahun, nomorBulan, 1, -8));
-
+function periodeProyek(kontrak: { tanggalMulai: Date; tanggalSelesai: Date }) {
+  const mulai = tanggalKontrak(kontrak.tanggalMulai);
+  const selesai = tanggalKontrak(kontrak.tanggalSelesai);
   return {
-    bulan: nilai,
     mulai,
     selesai,
-    mulaiTimestampUtc: new Date(Date.UTC(tahun, nomorBulan - 1, 1, -8)),
-    akhirEksklusifUtc,
+    mulaiTimestampUtc: batasWita(ymd(mulai), '00:00'),
+    akhirEksklusifUtc: new Date(batasWita(ymd(selesai), '00:00').getTime() + MS_HARI),
   };
 }
 
@@ -279,8 +268,7 @@ export class EpromPerformanceVendorService {
     private readonly akses: EpromAksesService,
   ) {}
 
-  async daftar(aktor: AktorEprom, bulan?: string) {
-    const periode = periodeBulan(bulan);
+  async daftar(aktor: AktorEprom) {
     const projects = await this.prisma.project.findMany({
       where: this.akses.isOwner(aktor)
         ? undefined
@@ -296,17 +284,13 @@ export class EpromPerformanceVendorService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const aktif = projects.filter((project) => {
-      const mulai = tanggalKontrak(project.kontrak.tanggalMulai);
-      const selesai = tanggalKontrak(project.kontrak.tanggalSelesai);
-      return mulai <= periode.selesai && selesai >= periode.mulai;
-    });
-
-    const hasil = await Promise.all(aktif.map((project) => this.hitung(project, periode, false)));
-    return { bulan: periode.bulan, items: hasil };
+    const hasil = await Promise.all(
+      projects.map((project) => this.hitung(project, periodeProyek(project.kontrak), false)),
+    );
+    return { items: hasil };
   }
 
-  async detail(aktor: AktorEprom, projectId: number, bulan?: string) {
+  async detail(aktor: AktorEprom, projectId: number) {
     await this.akses.wajibAksesProject(aktor, projectId);
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -321,12 +305,12 @@ export class EpromPerformanceVendorService {
     });
 
     if (!project) throw new NotFoundException('Project tidak ditemukan');
-    return this.hitung(project, periodeBulan(bulan), true);
+    return this.hitung(project, periodeProyek(project.kontrak), true);
   }
 
   private async hitung(
     project: Awaited<ReturnType<EpromPerformanceVendorService['projectDenganRelasi']>>,
-    periode: ReturnType<typeof periodeBulan>,
+    periode: ReturnType<typeof periodeProyek>,
     sertakanKewajiban: boolean,
   ) {
     const kontrakMulai = tanggalKontrak(project.kontrak.tanggalMulai);
@@ -357,7 +341,6 @@ export class EpromPerformanceVendorService {
         this.prisma.progressBulanan.findMany({
           where: {
             projectId: project.id,
-            bulan: periode.bulan,
             uploadedAt: { gte: periode.mulaiTimestampUtc, lt: periode.akhirEksklusifUtc },
           },
           select: { uploadedAt: true },
@@ -365,14 +348,12 @@ export class EpromPerformanceVendorService {
         this.prisma.tTA.count({
           where: {
             projectId: project.id,
-            bulan: periode.bulan,
             tanggalUpload: { gte: periode.mulaiTimestampUtc, lt: periode.akhirEksklusifUtc },
           },
         }),
         this.prisma.kTA.count({
           where: {
             projectId: project.id,
-            bulan: periode.bulan,
             tanggalUpload: { gte: periode.mulaiTimestampUtc, lt: periode.akhirEksklusifUtc },
           },
         }),
@@ -457,17 +438,24 @@ export class EpromPerformanceVendorService {
       kewajiban.push(status);
     }
 
-    if (hariKerja.length > 0) {
-      const deadline = ymd(hariKerja[hariKerja.length - 1]);
+    const hariPerBulan = new Map<string, Date[]>();
+    for (const hari of hariKerja) {
+      const key = ymd(hari).slice(0, 7);
+      hariPerBulan.set(key, [...(hariPerBulan.get(key) ?? []), hari]);
+    }
+    for (const [bulan, days] of hariPerBulan) {
+      const deadline = ymd(days[days.length - 1]);
       kewajiban.push(
         statusKewajibanPeriode(
           'progress-bulanan',
           'Progress Bulanan',
-          ymd(periode.mulai),
+          ymd(days[0]),
           deadline,
           '08:00',
           '22:00',
-          progressBulanan.map((item) => item.uploadedAt),
+          progressBulanan
+            .filter((item) => ymdWita(item.uploadedAt).startsWith(bulan))
+            .map((item) => item.uploadedAt),
           sekarang,
         ),
       );
@@ -495,10 +483,16 @@ export class EpromPerformanceVendorService {
     const deviasi = bulat(totalActual - totalPlanned);
     const skorDeviasi = terbaru.length === 0 ? null : nilaiDeviasi(deviasi);
 
-    const seluruhHariKerjaBulan = daftarHariKerja(periode.mulai, periode.selesai).length;
-    const targetPeriode = hariKerja.length === 0
-      ? 0
-      : Math.max(1, Math.ceil(TARGET_TTA_KTA_BULANAN * (hariKerja.length / seluruhHariKerjaBulan)));
+    const targetPeriode = [...hariPerBulan.entries()].reduce((total, [bulan, days]) => {
+      const [tahun, nomorBulan] = bulan.split('-').map(Number);
+      const awalBulan = new Date(Date.UTC(tahun, nomorBulan - 1, 1));
+      const akhirBulan = new Date(Date.UTC(tahun, nomorBulan, 0));
+      const seluruhHariKerjaBulan = daftarHariKerja(awalBulan, akhirBulan).length;
+      return total + Math.max(
+        1,
+        Math.ceil(TARGET_TTA_KTA_BULANAN * (days.length / seluruhHariKerjaBulan)),
+      );
+    }, 0);
     const hariBerlalu = hariKerja.filter((hari) => batasWita(ymd(hari), '22:00') <= sekarang).length;
     const targetJatuhTempo = targetPeriode === 0 || hariBerlalu === 0
       ? 0
@@ -575,7 +569,8 @@ export class EpromPerformanceVendorService {
     const semuaSempurna = tersedia.length > 0 && tersedia.every((item) => item.nilai === 100);
 
     return {
-      bulan: periode.bulan,
+      periodeMulai: ymd(periode.mulai),
+      periodeSelesai: ymd(periode.selesai),
       project: {
         id: project.id,
         namaProject: project.namaProject,
