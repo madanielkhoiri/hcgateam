@@ -786,14 +786,16 @@ export function EngineerDocumentApproval({
         >
           {submitting ? "Memproses..." : "Reject / Minta Revisi"}
         </button>
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          onClick={approveTanpaTtd}
-          disabled={submitting}
-        >
-          {submitting ? "Memproses..." : "Approve Tanpa Tanda Tangan"}
-        </button>
+        {detail.item.status !== "APPROVED" && (
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={approveTanpaTtd}
+            disabled={submitting}
+          >
+            {submitting ? "Memproses..." : "Approve Tanpa Tanda Tangan"}
+          </button>
+        )}
         <button
           type="button"
           className={styles.approveButton}

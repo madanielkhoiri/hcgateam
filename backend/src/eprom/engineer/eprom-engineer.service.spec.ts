@@ -49,6 +49,7 @@ function buatService(overrides: {
   };
 
   const approvalCreate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
+  const approvalUpdate = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
   const approvalFindFirst = jest.fn().mockResolvedValue('approvalTerakhir' in overrides ? overrides.approvalTerakhir : null);
   const approvalFindMany = jest.fn().mockResolvedValue(overrides.approvals ?? []);
 
@@ -70,6 +71,7 @@ function buatService(overrides: {
     user: { findUnique: jest.fn().mockResolvedValue({ name: 'Pengunggah' }) },
     engineerDocumentApproval: {
       create: approvalCreate,
+      update: approvalUpdate,
       findFirst: approvalFindFirst,
       findMany: approvalFindMany,
     },
@@ -80,7 +82,7 @@ function buatService(overrides: {
       sertifikasiPekerjaan: sharedModel,
       peralatanList: sharedModel,
       komisioningAlatBerat: sharedModel,
-      engineerDocumentApproval: { create: approvalCreate },
+      engineerDocumentApproval: { create: approvalCreate, update: approvalUpdate },
     })),
   } as unknown as PrismaService;
 
@@ -100,7 +102,7 @@ function buatService(overrides: {
 
   const service = new EpromEngineerService(prisma, akses, file, signing, whatsapp);
 
-  return { service, prisma, akses, file, signing, whatsapp, sharedModel, approvalCreate, approvalFindFirst };
+  return { service, prisma, akses, file, signing, whatsapp, sharedModel, approvalCreate, approvalUpdate, approvalFindFirst };
 }
 
 describe('EpromEngineerService.validasiTipe', () => {
@@ -257,6 +259,20 @@ describe('EpromEngineerService.approveDenganTandaTangan', () => {
 
     const dto = { placements: [{ signatureFile: '/tmp/ttd.png', signaturePage: 1, signatureXRatio: 0.1, signatureYRatio: 0.1, signatureWidthRatio: 0.2, signatureHeightRatio: 0.1 }] };
     await expect(service.approveDenganTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1, dto as any)).resolves.toBeDefined();
+  });
+
+  it('memperbarui approval yang sama saat menambahkan tanda tangan setelah approved', async () => {
+    const approvalTerakhir = { id: 7, adaTandaTangan: false, sourceFilePath: 'a.pdf', signedFilePath: 'a.pdf' };
+    const { service, approvalCreate, approvalUpdate } = buatService({
+      item: itemFixture({ status: StatusApprovalEprom.APPROVED }),
+      approvalTerakhir,
+    });
+    const dto = { placements: [{ signatureFile: '/tmp/ttd.png', signaturePage: 1, signatureXRatio: 0.1, signatureYRatio: 0.1, signatureWidthRatio: 0.2, signatureHeightRatio: 0.1 }] };
+
+    await service.approveDenganTandaTangan(aktor(UserRole.OWNER), 'shop-drawing', 1, dto as any);
+
+    expect(approvalUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 7 } }));
+    expect(approvalCreate).not.toHaveBeenCalled();
   });
 
   it('menolak dokumen non-PDF', async () => {
