@@ -312,6 +312,7 @@ export type EngineerItem = {
   namaMaterial?: string;
   namaMetode?: string;
   namaTahap?: string;
+  revision?: number;
   latestApproval: EngineerDocumentApproval | null;
 };
 
@@ -376,6 +377,7 @@ export type KonstruksiItem = {
   fileUrl: string | null;
   originalFileName?: string | null;
   effectiveFileUrl?: string | null;
+  revision?: number;
   status: StatusApprovalEprom;
   komentar: string | null;
   createdAt: string;
