@@ -81,6 +81,11 @@ function selisihHari(a: Date, b: Date): number {
   return Math.floor((aTengahMalam - bTengahMalam) / msPerHari);
 }
 
+function nomorWeekLaporan(nama: string | null | undefined, fallback: number): number {
+  const cocok = nama?.trim().match(/^laporan\s+week\s+(\d+)/i);
+  return cocok ? Number(cocok[1]) : fallback;
+}
+
 @Injectable()
 export class EpromMeetingService {
   constructor(
@@ -128,7 +133,7 @@ export class EpromMeetingService {
         progressLabel: !sumber
           ? null
           : m.tipeLink === 'MINGGUAN'
-            ? `Minggu ke-${(sumber as { mingguKe: number }).mingguKe}`
+            ? `Minggu ke-${nomorWeekLaporan((sumber as { namaPekerjaan?: string }).namaPekerjaan, (sumber as { mingguKe: number }).mingguKe)}`
             : (sumber as { bulan: string }).bulan,
         progressFileUrl: sumber?.fileUrl ?? null,
       };
@@ -139,10 +144,14 @@ export class EpromMeetingService {
     await this.akses.wajibAksesProject(aktor, projectId);
 
     if (tipeLink === 'MINGGUAN') {
-      return this.prisma.progressMingguan.findMany({
+      const daftar = await this.prisma.progressMingguan.findMany({
         where: { projectId },
         orderBy: { mingguKe: 'desc' },
       });
+      return daftar.map((item) => ({
+        ...item,
+        mingguKe: nomorWeekLaporan(item.namaPekerjaan, item.mingguKe),
+      }));
     }
 
     return this.prisma.progressBulanan.findMany({
