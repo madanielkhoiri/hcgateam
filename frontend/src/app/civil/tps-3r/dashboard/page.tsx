@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import AnimatedLineChart from '@/components/dashboard-charts/animated-line-chart';
 import MultiLineChart from '@/components/dashboard-charts/multi-line-chart';
 import SimplePieChart from '@/components/dashboard-charts/simple-pie-chart';
-import { tps3rApi, type RingkasanTps3r, type TrenBulananTps3r } from '@/lib/tps3r-api';
+import SimpleBarChart from '@/components/dashboard-charts/simple-bar-chart';
+import PhotoCarousel from '@/components/tps3r/photo-carousel';
+import { tps3rApi, type FotoPenyerahanTps3r, type RingkasanTps3r, type TrenBulananTps3r } from '@/lib/tps3r-api';
 import styles from '../../project/tender/tender.module.css';
 
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -19,12 +21,15 @@ export default function Tps3rDashboardPage() {
   const [tahun,setTahun] = useState(sekarang.getFullYear());
   const [ringkasan,setRingkasan] = useState<RingkasanTps3r|null>(null);
   const [tren,setTren] = useState<TrenBulananTps3r[]>([]);
+  const [foto,setFoto] = useState<FotoPenyerahanTps3r[]>([]);
   const [memuat,setMemuat] = useState(true);
   const [error,setError] = useState<string|null>(null);
   useEffect(()=>{setMemuat(true);setError(null);tps3rApi.ringkasan(bulan,tahun).then(setRingkasan).catch((e)=>setError(e instanceof Error?e.message:'Gagal memuat data')).finally(()=>setMemuat(false));},[bulan,tahun]);
   useEffect(()=>{tps3rApi.tren(tahun).then(setTren).catch(()=>setTren([]));},[tahun]);
+  useEffect(()=>{tps3rApi.daftarFoto().then(setFoto).catch(()=>setFoto([]));},[]);
   const kategori = ringkasan ? [{label:'Organik',value:ringkasan.totalOrganik},{label:'Daur Ulang',value:ringkasan.totalRecycle},{label:'Guna Ulang',value:ringkasan.totalReuse},{label:'Residu',value:ringkasan.totalResidu}] : [];
   const pie = ringkasan ? [{label:'Organik',value:ringkasan.totalOrganik,color:WARNA.organik},{label:'Daur Ulang / Recycle',value:ringkasan.totalRecycle,color:WARNA.recycle},{label:'Guna Ulang / Reuse',value:ringkasan.totalReuse,color:WARNA.reuse},{label:'Residu',value:ringkasan.totalResidu,color:WARNA.residu}] : [];
+  const totalTerkelola = ringkasan ? ringkasan.terkelolaOrganik + ringkasan.terkelolaRecycle + ringkasan.terkelolaReuse + ringkasan.terkelolaResidu : 0;
   return <div className={styles.page}>
     <div className={styles.headerRow}><div><h1>Dashboard TPS 3R</h1><p>Ringkasan timbangan sampah per kategori untuk periode terpilih.</p></div><div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
       <select value={bulan} onChange={(e)=>setBulan(Number(e.target.value))} style={selectStyle}>{BULAN.map((nama,i)=><option key={nama} value={i+1}>{nama}</option>)}</select>
@@ -33,16 +38,16 @@ export default function Tps3rDashboardPage() {
     {error&&<p className={styles.errorText}>{error}</p>}
     {memuat||!ringkasan?<p className={styles.emptyText}>Memuat...</p>:<>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12}}>
-        <Stat label="Organik" value={kg(ringkasan.totalOrganik)}/><Stat label="Daur Ulang / Recycle" value={kg(ringkasan.totalRecycle)}/><Stat label="Guna Ulang / Reuse" value={kg(ringkasan.totalReuse)}/><Stat label="Residu" value={kg(ringkasan.totalResidu)}/><Stat label="Sampah Terkelola" value={kg(ringkasan.totalTerkelola)}/><Stat label="Jumlah Laporan" value={String(ringkasan.totalLaporan)}/>
+        <Stat label="Organik" value={kg(ringkasan.totalOrganik)}/><Stat label="Daur Ulang / Recycle" value={kg(ringkasan.totalRecycle)}/><Stat label="Guna Ulang / Reuse" value={kg(ringkasan.totalReuse)}/><Stat label="Residu" value={kg(ringkasan.totalResidu)}/><Stat label="Sampah Terkelola" value={kg(totalTerkelola)}/><Stat label="Jumlah Laporan" value={String(ringkasan.totalLaporan)}/>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
         <AnimatedLineChart title="Total Timbangan per Kategori" subtitle={`${BULAN[bulan-1]} ${tahun} - satuan kg`} data={kategori} accent="green"/>
         <SimplePieChart title="Proporsi Kategori Sampah" subtitle={`${BULAN[bulan-1]} ${tahun}`} data={pie}/>
-        <AnimatedLineChart title="Sampah Terkelola" subtitle={`${BULAN[bulan-1]} ${tahun} - satuan kg`} data={[{label:'Terkelola',value:ringkasan.totalTerkelola}]} accent="blue"/>
+        <SimpleBarChart title="Sampah Terkelola" subtitle={`${BULAN[bulan-1]} ${tahun} - satuan kg`} data={[{label:'Organik',value:ringkasan.terkelolaOrganik,color:WARNA.organik},{label:'Daur Ulang',value:ringkasan.terkelolaRecycle,color:WARNA.recycle},{label:'Guna Ulang',value:ringkasan.terkelolaReuse,color:WARNA.reuse},{label:'Residu',value:ringkasan.terkelolaResidu,color:WARNA.residu}]}/>
       </div>
-      <MultiLineChart title="Tren Sampah per Kategori per Bulan" subtitle={`${tahun} - satuan kg`} labels={BULAN_SINGKAT} series={[
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,2fr) minmax(320px,1fr)',gap:16}}><MultiLineChart title="Tren Sampah per Kategori per Bulan" subtitle={`${tahun} - satuan kg`} labels={BULAN_SINGKAT} series={[
         {label:'Organik',color:WARNA.organik,values:tren.map((x)=>bulat(x.organik))},{label:'Daur Ulang',color:WARNA.recycle,values:tren.map((x)=>bulat(x.recycle))},{label:'Guna Ulang',color:WARNA.reuse,values:tren.map((x)=>bulat(x.reuse))},{label:'Residu',color:WARNA.residu,values:tren.map((x)=>bulat(x.residu))}
-      ]}/>
+      ]}/><PhotoCarousel items={foto}/></div>
     </>}
   </div>;
 }

@@ -7,7 +7,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BuatLaporanTps3rDto, UbahLaporanTps3rDto } from './dto/tps3r.dto';
+import { BuatLaporanTps3rDto, BuatSampahTerkelolaTps3rDto, UbahLaporanTps3rDto, UbahSampahTerkelolaTps3rDto } from './dto/tps3r.dto';
 import type { AktorPostingan } from '../postingan/postingan-aktor';
 import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 
@@ -37,17 +37,19 @@ export class CivilTps3rService {
   async ringkasan(bulan?: number, tahun?: number) {
     const rentang = rentangTanggal(bulan, tahun);
 
-    const hasil = await this.prisma.laporanTps3r.aggregate({
+    const [hasil, terkelola] = await Promise.all([this.prisma.laporanTps3r.aggregate({
       where: rentang ? { tanggal: rentang } : undefined,
       _sum: {
         beratOrganik: true,
         beratReuse: true,
         beratRecycle: true,
         beratResidu: true,
-        sampahTerkelola: true,
       },
       _count: { _all: true },
-    });
+    }), this.prisma.sampahTerkelolaTps3r.aggregate({
+      where: rentang ? { tanggal: rentang } : undefined,
+      _sum: { beratOrganik: true, beratReuse: true, beratRecycle: true, beratResidu: true },
+    })]);
 
     return {
       totalLaporan: hasil._count._all,
@@ -55,7 +57,10 @@ export class CivilTps3rService {
       totalReuse: hasil._sum.beratReuse ?? 0,
       totalRecycle: hasil._sum.beratRecycle ?? 0,
       totalResidu: hasil._sum.beratResidu ?? 0,
-      totalTerkelola: hasil._sum.sampahTerkelola ?? 0,
+      terkelolaOrganik: terkelola._sum.beratOrganik ?? 0,
+      terkelolaReuse: terkelola._sum.beratReuse ?? 0,
+      terkelolaRecycle: terkelola._sum.beratRecycle ?? 0,
+      terkelolaResidu: terkelola._sum.beratResidu ?? 0,
     };
   }
 
@@ -72,7 +77,6 @@ export class CivilTps3rService {
         beratReuse: true,
         beratRecycle: true,
         beratResidu: true,
-        sampahTerkelola: true,
       },
     });
 
@@ -81,7 +85,6 @@ export class CivilTps3rService {
       reuse: 0,
       recycle: 0,
       residu: 0,
-      terkelola: 0,
     }));
 
     for (const row of rows) {
@@ -90,7 +93,6 @@ export class CivilTps3rService {
       totalPerBulan[indexBulan].reuse += row.beratReuse;
       totalPerBulan[indexBulan].recycle += row.beratRecycle;
       totalPerBulan[indexBulan].residu += row.beratResidu;
-      totalPerBulan[indexBulan].terkelola += row.sampahTerkelola;
     }
 
     return totalPerBulan.map((nilai, index) => ({ bulan: index + 1, ...nilai }));
@@ -105,7 +107,7 @@ export class CivilTps3rService {
         beratReuse: dto.beratReuse,
         beratRecycle: dto.beratRecycle,
         beratResidu: dto.beratResidu,
-        sampahTerkelola: dto.sampahTerkelola,
+        sampahTerkelola: 0,
         createdById: aktor.id,
       },
       include: { createdBy: { select: { id: true, name: true, nrp: true } } },
@@ -125,7 +127,6 @@ export class CivilTps3rService {
         ...(dto.beratReuse !== undefined ? { beratReuse: dto.beratReuse } : {}),
         ...(dto.beratRecycle !== undefined ? { beratRecycle: dto.beratRecycle } : {}),
         ...(dto.beratResidu !== undefined ? { beratResidu: dto.beratResidu } : {}),
-        ...(dto.sampahTerkelola !== undefined ? { sampahTerkelola: dto.sampahTerkelola } : {}),
       },
       include: { createdBy: { select: { id: true, name: true, nrp: true } } },
     });
@@ -143,6 +144,40 @@ export class CivilTps3rService {
       throw new NotFoundException('Laporan tidak ditemukan');
     }
     return data;
+  }
+
+  daftarTerkelola() {
+    return this.prisma.sampahTerkelolaTps3r.findMany({ include: { createdBy: { select: { id: true, name: true, nrp: true } } }, orderBy: [{ tanggal: 'desc' }, { id: 'desc' }] });
+  }
+
+  buatTerkelola(aktor: AktorPostingan, dto: BuatSampahTerkelolaTps3rDto) {
+    return this.prisma.sampahTerkelolaTps3r.create({ data: { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`), beratOrganik: dto.beratOrganik, beratReuse: dto.beratReuse, beratRecycle: dto.beratRecycle, beratResidu: dto.beratResidu, createdById: aktor.id } });
+  }
+
+  async ubahTerkelola(id: number, dto: UbahSampahTerkelolaTps3rDto) {
+    const lama = await this.prisma.sampahTerkelolaTps3r.findUnique({ where: { id } });
+    if (!lama) throw new NotFoundException('Data sampah terkelola tidak ditemukan');
+    return this.prisma.sampahTerkelolaTps3r.update({ where: { id }, data: { ...(dto.tanggal ? { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`) } : {}), ...(dto.beratOrganik !== undefined ? { beratOrganik: dto.beratOrganik } : {}), ...(dto.beratReuse !== undefined ? { beratReuse: dto.beratReuse } : {}), ...(dto.beratRecycle !== undefined ? { beratRecycle: dto.beratRecycle } : {}), ...(dto.beratResidu !== undefined ? { beratResidu: dto.beratResidu } : {}) } });
+  }
+
+  async hapusTerkelola(id: number) {
+    await this.prisma.sampahTerkelolaTps3r.delete({ where: { id } });
+    return { message: 'Data sampah terkelola berhasil dihapus' };
+  }
+
+  daftarFoto() {
+    return this.prisma.fotoPenyerahanTps3r.findMany({ orderBy: [{ tanggal: 'desc' }, { id: 'desc' }] });
+  }
+
+  tambahFoto(aktor: AktorPostingan, tanggal: string, urlFoto: string) {
+    return this.prisma.fotoPenyerahanTps3r.create({ data: { tanggal: new Date(`${tanggal}T00:00:00.000Z`), urlFoto, createdById: aktor.id } });
+  }
+
+  async hapusFoto(id: number) {
+    const foto = await this.prisma.fotoPenyerahanTps3r.findUnique({ where: { id } });
+    if (!foto) throw new NotFoundException('Foto tidak ditemukan');
+    await this.prisma.fotoPenyerahanTps3r.delete({ where: { id } });
+    return foto;
   }
 }
 
