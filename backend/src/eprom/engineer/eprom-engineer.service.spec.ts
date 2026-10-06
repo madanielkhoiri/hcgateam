@@ -370,7 +370,7 @@ describe('EpromEngineerService.daftar — denganApproval', () => {
     expect(hasil.latestApproval).toBeNull();
   });
 
-  it('effectiveFileUrl memakai signedFilePath dari approval terbaru', async () => {
+  it('effectiveFileUrl memakai file asli bila signedFilePath tidak tersedia', async () => {
     const { service, sharedModel } = buatService({
       approvals: [{ documentId: 1, signedFilePath: 'eprom/signed-final.pdf' }],
     });
@@ -378,7 +378,7 @@ describe('EpromEngineerService.daftar — denganApproval', () => {
 
     const [hasil] = await service.daftar(aktor(UserRole.OWNER), 'shop-drawing', 1);
 
-    expect(hasil.effectiveFileUrl).toBe('eprom/signed-final.pdf');
+    expect(hasil.effectiveFileUrl).toBe(itemFixture().fileUrl);
   });
 });
 
