@@ -27,10 +27,11 @@ const PAKAI_NAMA: Record<TipeEngineer, string | null> = {
   "sertifikasi-pekerjaan": null,
   "peralatan-list": null,
   "komisioning-alat-berat": null,
+  "checklist-tahapan": "Nama Tahap",
 };
 
 function namaItem(item: EngineerItem): string | null {
-  return item.namaPekerjaan ?? item.namaMaterial ?? item.namaMetode ?? null;
+  return item.namaPekerjaan ?? item.namaMaterial ?? item.namaMetode ?? item.namaTahap ?? null;
 }
 
 function namaFileTampil(item: EngineerItem): string {
