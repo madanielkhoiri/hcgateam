@@ -1,7 +1,7 @@
 // ==================================================
 // FILE: backend/src/civil-tps3r/dto/tps3r.dto.ts
 // FUNGSI: Validasi input Laporan Timbangan Sampah TPS 3R
-// Satu laporan mencakup kelima kategori sekaligus (kg).
+// Satu laporan mencakup empat kategori sampah (kg).
 // ==================================================
 
 import { PartialType } from '@nestjs/mapped-types';
@@ -32,10 +32,9 @@ export class BuatLaporanTps3rDto {
   @Min(0)
   beratResidu: number;
 
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  sampahTerkelola: number;
 }
 
 export class UbahLaporanTps3rDto extends PartialType(BuatLaporanTps3rDto) {}
+
+export class BuatSampahTerkelolaTps3rDto extends BuatLaporanTps3rDto {}
+export class UbahSampahTerkelolaTps3rDto extends PartialType(BuatSampahTerkelolaTps3rDto) {}

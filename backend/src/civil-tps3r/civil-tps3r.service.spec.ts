@@ -44,6 +44,11 @@ function buatService(overrides: {
       aggregate,
       count,
     },
+    sampahTerkelolaTps3r: {
+      aggregate: jest.fn().mockResolvedValue({ _sum: { beratOrganik: null, beratReuse: null, beratRecycle: null, beratResidu: null } }),
+      findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(),
+    },
+    fotoPenyerahanTps3r: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn(), create: jest.fn(), delete: jest.fn() },
   } as unknown as PrismaService;
 
   const service = new CivilTps3rService(prisma);
@@ -107,7 +112,10 @@ describe('CivilTps3rService.ringkasan', () => {
       totalReuse: 0,
       totalRecycle: 0,
       totalResidu: 0,
-      totalTerkelola: 0,
+      terkelolaOrganik: 0,
+      terkelolaReuse: 0,
+      terkelolaRecycle: 0,
+      terkelolaResidu: 0,
     });
   });
 
@@ -132,7 +140,10 @@ describe('CivilTps3rService.ringkasan', () => {
       totalReuse: 5,
       totalRecycle: 3,
       totalResidu: 2,
-      totalTerkelola: 8,
+      terkelolaOrganik: 0,
+      terkelolaReuse: 0,
+      terkelolaRecycle: 0,
+      terkelolaResidu: 0,
     });
   });
 });
@@ -170,9 +181,9 @@ describe('CivilTps3rService.trenBulanan', () => {
     const hasil = await service.trenBulanan(2026);
 
     expect(hasil).toHaveLength(12);
-    expect(hasil[0]).toEqual({ bulan: 1, organik: 3, reuse: 1, recycle: 1, residu: 1, terkelola: 6 });
-    expect(hasil[5]).toEqual({ bulan: 6, organik: 10, reuse: 0, recycle: 0, residu: 0, terkelola: 5 });
-    expect(hasil[1]).toEqual({ bulan: 2, organik: 0, reuse: 0, recycle: 0, residu: 0, terkelola: 0 });
+    expect(hasil[0]).toEqual({ bulan: 1, organik: 3, reuse: 1, recycle: 1, residu: 1 });
+    expect(hasil[5]).toEqual({ bulan: 6, organik: 10, reuse: 0, recycle: 0, residu: 0 });
+    expect(hasil[1]).toEqual({ bulan: 2, organik: 0, reuse: 0, recycle: 0, residu: 0 });
   });
 
   it('mengambil rentang satu tahun penuh (UTC)', async () => {
@@ -203,7 +214,6 @@ describe('CivilTps3rService.buat', () => {
       beratReuse: 3,
       beratRecycle: 4,
       beratResidu: 5,
-      sampahTerkelola: 6,
     });
 
     expect(create).toHaveBeenCalledWith(
@@ -215,7 +225,7 @@ describe('CivilTps3rService.buat', () => {
           beratReuse: 3,
           beratRecycle: 4,
           beratResidu: 5,
-          sampahTerkelola: 6,
+          sampahTerkelola: 0,
           createdById: 9,
         }),
       }),

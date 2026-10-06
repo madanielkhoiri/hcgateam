@@ -7,7 +7,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft, Gauge, Menu, Recycle, Table2, UsersRound, X } from 'lucide-react';
+import { ChevronLeft, Gauge, Images, Menu, Recycle, Table2, UsersRound, X } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
   ACCESS_KEYS,
@@ -26,6 +26,8 @@ import styles from '../project/project-layout.module.css';
 const navItems = [
   { label: 'Dashboard', href: '/civil/tps-3r/dashboard', icon: Gauge },
   { label: 'Tabel Laporan', href: '/civil/tps-3r/tabel', icon: Table2 },
+  { label: 'Sampah Terkelola', href: '/civil/tps-3r/terkelola', icon: Recycle },
+  { label: 'Foto Penyerahan Sampah', href: '/civil/tps-3r/foto-penyerahan', icon: Images },
 ];
 
 const bottomNavItems = navItems.map((item) => ({

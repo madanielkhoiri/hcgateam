@@ -37,12 +37,12 @@ export default function MultiLineChart({
       </div>
       <div style={{ overflowX: 'auto', padding: '2px 12px 8px' }}>
         <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', minWidth: 680, height: 320, display: 'block' }} role="img" aria-label={title}>
-          {[0, 1, 2, 3, 4].map((row) => <line key={row} x1={left} x2={left + graphWidth} y1={top + row * (graphHeight / 4)} y2={top + row * (graphHeight / 4)} stroke="#dbe6f2" strokeDasharray="5 7" />)}
+          {[0, 1, 2, 3, 4].map((row) => { const y=top+row*(graphHeight/4); const nilai=Math.round(maksimum*(4-row)/4); return <g key={row}><line x1={left} x2={left + graphWidth} y1={y} y2={y} stroke="#dbe6f2" strokeDasharray="5 7"/><text x={left-9} y={y+4} textAnchor="end" fontSize="11" fill="#607a99">{nilai}</text></g>})}
           {series.map((item) => {
             const points = titik(item.values);
             return <g key={item.label}>
               <path d={points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ')} fill="none" stroke={item.color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-              {points.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="5" fill={item.color} stroke="#fff" strokeWidth="2"><title>{item.label} {labels[index]}: {point.value} kg</title></circle>)}
+              {points.map((point, index) => <g key={index}><circle cx={point.x} cy={point.y} r="5" fill={item.color} stroke="#fff" strokeWidth="2"><title>{item.label} {labels[index]}: {point.value} kg</title></circle><text x={point.x} y={point.y-9} textAnchor="middle" fontSize="9" fontWeight="700" fill={item.color}>{point.value}</text></g>)}
             </g>;
           })}
           {labels.map((label, index) => <text key={label} x={left + (index / Math.max(1, labels.length - 1)) * graphWidth} y="244" textAnchor="middle" fontSize="12" fill="#607a99">{label}</text>)}

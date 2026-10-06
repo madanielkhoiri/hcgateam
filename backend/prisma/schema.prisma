@@ -173,6 +173,8 @@ model User {
   driveFileDiupload        DriveFile[]          @relation("DriveFileUploader")
   albumDokumentasiDibuat   AlbumDokumentasi[]   @relation("AlbumDokumentasiCreator")
   laporanTps3rDibuat       LaporanTps3r[]       @relation("LaporanTps3rCreator")
+  sampahTerkelolaDibuat    SampahTerkelolaTps3r[] @relation("SampahTerkelolaTps3rCreator")
+  fotoPenyerahanDibuat     FotoPenyerahanTps3r[] @relation("FotoPenyerahanTps3rCreator")
 
   @@map("users")
 }
@@ -3143,6 +3145,32 @@ model LaporanTps3r {
 
   @@index([tanggal])
   @@map("civil_laporan_tps3r")
+}
+
+model SampahTerkelolaTps3r {
+  id           Int      @id @default(autoincrement())
+  tanggal      DateTime @db.Date
+  beratOrganik Float    @default(0) @map("berat_organik")
+  beratReuse   Float    @default(0) @map("berat_reuse")
+  beratRecycle Float    @default(0) @map("berat_recycle")
+  beratResidu  Float    @default(0) @map("berat_residu")
+  createdById  Int      @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdBy User @relation("SampahTerkelolaTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  @@index([tanggal])
+  @@map("civil_sampah_terkelola_tps3r")
+}
+
+model FotoPenyerahanTps3r {
+  id          Int      @id @default(autoincrement())
+  tanggal     DateTime @db.Date
+  urlFoto     String   @map("url_foto")
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy User @relation("FotoPenyerahanTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  @@index([tanggal])
+  @@map("civil_foto_penyerahan_tps3r")
 }
 
 // ==================================================
