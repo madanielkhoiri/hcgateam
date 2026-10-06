@@ -109,12 +109,10 @@ describe('EpromKonstruksiService.review', () => {
     );
   });
 
-  it('menolak review ulang item yang sudah tidak PENDING', async () => {
+  it('mengizinkan review ulang item yang sudah direview', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.REJECTED }) });
 
-    await expect(service.review(aktor(UserRole.OWNER), 'ibpr', 1, { status: 'APPROVED' } as any)).rejects.toThrow(
-      'sudah direview sebelumnya',
-    );
+    await expect(service.review(aktor(UserRole.OWNER), 'ibpr', 1, { status: 'APPROVED' } as any)).resolves.toBeDefined();
   });
 
   it('berhasil approve dengan komentar kosong menjadi null', async () => {
@@ -136,12 +134,10 @@ describe('EpromKonstruksiService.hapus', () => {
     await expect(service.hapus(aktor(UserRole.OWNER), 'ibpr', 1)).rejects.toThrow(NotFoundException);
   });
 
-  it('menolak hapus item yang sudah direview', async () => {
+  it('mengizinkan owner menghapus item yang sudah direview', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(service.hapus(aktor(UserRole.OWNER), 'ibpr', 1)).rejects.toThrow(
-      'sudah direview tidak dapat dihapus',
-    );
+    await expect(service.hapus(aktor(UserRole.OWNER), 'ibpr', 1)).resolves.toBeDefined();
   });
 
   it('berhasil hapus item PENDING dan file fisiknya', async () => {
@@ -190,12 +186,10 @@ describe('EpromKonstruksiService.ubah', () => {
     );
   });
 
-  it('menolak ubah item yang sudah direview', async () => {
+  it('mengizinkan owner mengubah item yang sudah direview', async () => {
     const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.REJECTED }) });
 
-    await expect(service.ubah(aktor(UserRole.OWNER), 'jsa', 1, { nama: 'Baru' })).rejects.toThrow(
-      'sudah direview tidak dapat diubah',
-    );
+    await expect(service.ubah(aktor(UserRole.OWNER), 'jsa', 1, { nama: 'Baru' })).resolves.toBeDefined();
   });
 
   it('berhasil mengubah nama checklist-tahapan PENDING', async () => {
