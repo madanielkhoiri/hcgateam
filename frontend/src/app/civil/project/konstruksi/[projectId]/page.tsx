@@ -292,7 +292,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
               {(item.effectiveFileUrl ?? item.fileUrl) ? (
                 <a href={urlFileEprom(item.effectiveFileUrl ?? item.fileUrl!)} target="_blank" rel="noreferrer">
                   <FileText size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />
-                  {item.originalFileName ?? "Lihat File"}
+                  {item.originalFileName ?? "Lihat File"}{item.revision && item.revision > 0 ? ` - R${String(item.revision).padStart(2, "0")}` : ""}
                 </a>
               ) : (
                 <span>Belum ada file</span>
