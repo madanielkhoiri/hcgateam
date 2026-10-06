@@ -236,7 +236,8 @@ export class EpromEngineerSigningService {
         /-signed(?:-[^.]+)?$/i,
         '',
       );
-      const targetName = `${sourceName}-signed-${Date.now()}-${randomUUID()}.pdf`;
+      const suffixRevisi = revision > 0 ? `-R${String(revision).padStart(2, '0')}` : '';
+      const targetName = `${sourceName}${suffixRevisi}-signed-${Date.now()}-${randomUUID()}.pdf`;
       const targetPath = join(targetDir, targetName);
       writeFileSync(targetPath, await pdf.save());
 
