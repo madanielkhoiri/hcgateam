@@ -247,7 +247,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
       <h2 className={engineerStyles.sectionTitle}>{LABEL_TIPE_KONSTRUKSI[tipe]}</h2>
 
       {(boleh || vendorSaya) && (
-        <form className={engineerStyles.formCard} onSubmit={tambahItem} style={{ marginBottom: 18 }}>
+        <form id="konstruksi-upload" className={engineerStyles.formCard} onSubmit={tambahItem} style={{ marginBottom: 18 }}>
           {namaField && (
             <label>
               {namaField}
@@ -342,6 +342,28 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
                   <Trash2 size={13} />
                 </button>
               </div>
+            )}
+
+            {boleh && item.status !== "PENDING" && (
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                {item.fileUrl && (
+                  <button type="button" className={engineerStyles.secondaryButton} onClick={() => review(item, item.status === "APPROVED" ? "REJECTED" : "APPROVED")}>
+                    Ubah Status
+                  </button>
+                )}
+                <button type="button" className={engineerStyles.iconButtonDanger} onClick={() => hapus(item)} title="Hapus">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )}
+
+            {vendorSaya && item.status === "REJECTED" && (
+              <button type="button" className={engineerStyles.primaryButton} style={{ marginTop: 10 }} onClick={() => {
+                setNamaBaru(item.namaTahap ?? item.namaPekerjaan ?? "");
+                document.getElementById("konstruksi-upload")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}>
+                Upload Revisi
+              </button>
             )}
           </div>
         ))}
