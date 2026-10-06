@@ -418,7 +418,11 @@ export class EpromEngineerService {
           where: { documentType, projectId: item.projectId, documentId: { in: documentIds } },
         })
       : 0;
-    const revision = jumlahApprovalSebelumnya;
+    // Menambahkan/mengganti tanda tangan pada dokumen yang sudah APPROVED
+    // bukan revisi vendor, sehingga nomor revisi tidak boleh bertambah.
+    const revision = item.status === StatusApprovalEprom.APPROVED && approvalTerakhir
+      ? Math.max(0, jumlahApprovalSebelumnya - 1)
+      : jumlahApprovalSebelumnya;
     const tanggalApproval = new Date();
     const signedFilePath = await this.signing.buatPdfSigned(
       sourceFilePath,
