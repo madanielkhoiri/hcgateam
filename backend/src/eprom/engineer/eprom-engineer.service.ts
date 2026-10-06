@@ -396,7 +396,9 @@ export class EpromEngineerService {
         where: { documentType, documentId: id },
         orderBy: { approvedAt: 'desc' },
       });
-    const sourceFilePath = approvalTerakhir?.signedFilePath ?? item.fileUrl;
+    // Saat tanda tangan pada approval lama ditambah/diganti, mulai lagi dari
+    // sumber PDF sebelum tanda tangan agar gambar tanda tangan tidak menumpuk.
+    const sourceFilePath = approvalTerakhir?.sourceFilePath ?? item.fileUrl;
     // Approval pertama tidak diberi label. Untuk upload ulang setelah reject,
     // cari dokumen lama dengan pekerjaan/nama yang sama agar label revisinya
     // tetap berlanjut walaupun upload vendor membuat record baru.
@@ -447,8 +449,7 @@ export class EpromEngineerService {
 
         if (!itemSekarang) throw new BadRequestException('Item tidak ditemukan');
 
-        const approval = await tx.engineerDocumentApproval.create({
-          data: {
+        const dataApproval = {
             documentId: id,
             documentType,
             projectId: item.projectId,
@@ -466,9 +467,17 @@ export class EpromEngineerService {
             originalFilePath: item.fileUrl,
             sourceFilePath,
             signedFilePath,
-          },
-          include: { approvedBy: { select: { id: true, name: true } } },
-        });
+          };
+        const approval = item.status === StatusApprovalEprom.APPROVED && approvalTerakhir
+          ? await tx.engineerDocumentApproval.update({
+              where: { id: approvalTerakhir.id },
+              data: dataApproval,
+              include: { approvedBy: { select: { id: true, name: true } } },
+            })
+          : await tx.engineerDocumentApproval.create({
+              data: dataApproval,
+              include: { approvedBy: { select: { id: true, name: true } } },
+            });
         const updated = await this.delegate(tipe, tx).update({
           where: { id },
           data: { status: StatusApprovalEprom.APPROVED, komentar: null },
@@ -477,6 +486,13 @@ export class EpromEngineerService {
         return { updated, approval };
       });
 
+      if (
+        approvalTerakhir?.adaTandaTangan &&
+        approvalTerakhir.signedFilePath !== signedFilePath &&
+        approvalTerakhir.signedFilePath !== item.fileUrl
+      ) {
+        this.file.hapus(approvalTerakhir.signedFilePath);
+      }
       return {
         ...hasil.updated,
         effectiveFileUrl: hasil.approval.signedFilePath,
