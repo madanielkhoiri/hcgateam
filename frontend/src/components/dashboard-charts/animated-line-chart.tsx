@@ -55,6 +55,7 @@ export default function AnimatedLineChart({
 }: AnimatedLineChartProps) {
   const color = colorMap[accent];
   const points = createPoints(data);
+  const maxValue = Math.max(1, ...data.map((item) => item.value));
 
   const path =
     points.length > 0
@@ -138,17 +139,10 @@ export default function AnimatedLineChart({
           >
             {[0, 1, 2, 3, 4].map((row) => {
               const y = 25 + row * 44;
+              const nilai = Math.round(maxValue * (4 - row) / 4);
 
               return (
-                <line
-                  key={row}
-                  x1="58"
-                  y1={y}
-                  x2="842"
-                  y2={y}
-                  stroke="#dbe6f2"
-                  strokeDasharray="5 7"
-                />
+                <g key={row}><line x1="58" y1={y} x2="842" y2={y} stroke="#dbe6f2" strokeDasharray="5 7" /><text x="49" y={y+4} textAnchor="end" fontSize="11" fill="#607a99">{nilai}</text></g>
               );
             })}
 
