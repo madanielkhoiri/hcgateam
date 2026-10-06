@@ -22,6 +22,7 @@ const ROLE_SETARA_OWNER: UserRole[] = [
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
   UserRole.GRUP_LEADER,
+  UserRole.GRUP_LEADER_GA,
 ];
 
 @Injectable()

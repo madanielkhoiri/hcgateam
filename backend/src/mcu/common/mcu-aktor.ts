@@ -20,7 +20,13 @@ export const Aktor = createParamDecorator(
     const user = request.user;
     // Di modul MCU, Section Head dan Group Leader mengikuti alur mandiri
     // yang sama seperti Karyawan (bukan peran administratif MCU).
-    if (user.role === UserRole.SECTION_HEAD || user.role === UserRole.GRUP_LEADER) {
+    if (
+      user.role === UserRole.SECTION_HEAD ||
+      user.role === UserRole.GRUP_LEADER ||
+      user.role === UserRole.GRUP_LEADER_IR ||
+      user.role === UserRole.GRUP_LEADER_GA ||
+      user.role === UserRole.GRUP_LEADER_RND
+    ) {
       return { ...user, role: UserRole.KARYAWAN };
     }
     if (user.role === UserRole.GRUP_LEADER_COMBEN) {

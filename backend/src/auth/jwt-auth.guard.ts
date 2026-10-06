@@ -50,6 +50,27 @@ type GuardRequest = {
   };
 };
 
+const GROUP_LEADER_ROLES = new Set<UserRole>([
+  UserRole.GRUP_LEADER_IR,
+  UserRole.GRUP_LEADER_COMBEN,
+  UserRole.GRUP_LEADER_GA,
+  UserRole.GRUP_LEADER_RND,
+]);
+
+function aksesSesuaiDomainGroupLeader(role: UserRole, key: string): boolean {
+  const aksesKaryawan = ['HC_IR', 'HC_MCU', 'HC_DEKLARASI', 'HC_TUGAS_DINAS'];
+  if (key === 'HC') return true;
+  if (aksesKaryawan.includes(key)) return true;
+  if (role === UserRole.GRUP_LEADER_COMBEN) return key === 'HC_COMBEN';
+  if (role === UserRole.GRUP_LEADER_RND) {
+    return ['HC_RND', 'HC_ANAK_MAGANG', 'HC_SURAT_BALASAN_MAGANG', 'HC_SURAT_PENOLAKAN_MAGANG'].includes(key);
+  }
+  if (role === UserRole.GRUP_LEADER_GA) {
+    return key === 'GA' || key.startsWith('GA_') || key === 'CIVIL' || key.startsWith('CIVIL_');
+  }
+  return role === UserRole.GRUP_LEADER_IR && key === 'HC_IR';
+}
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private readonly reflector: Reflector) {
@@ -73,11 +94,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       !user ||
       user.role === UserRole.ADMIN ||
       user.role === UserRole.SUPER_ADMIN ||
-      user.role === UserRole.SECTION_HEAD ||
-      user.role === UserRole.GRUP_LEADER_IR ||
-      user.role === UserRole.GRUP_LEADER_COMBEN ||
-      user.role === UserRole.GRUP_LEADER_GA ||
-      user.role === UserRole.GRUP_LEADER_RND
+      user.role === UserRole.SECTION_HEAD
     ) {
       return true;
     }
@@ -102,6 +119,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     if (!requiredAccessKeys || requiredAccessKeys.length === 0) {
       return true;
+    }
+
+    if (
+      user &&
+      GROUP_LEADER_ROLES.has(user.role) &&
+      !requiredAccessKeys.some((key) => aksesSesuaiDomainGroupLeader(user.role, key))
+    ) {
+      throw new ForbiddenException('Group Leader tidak memiliki akses pengelolaan ke domain ini');
     }
 
     const ownedAccessKeys = user.accessKeys ?? [];

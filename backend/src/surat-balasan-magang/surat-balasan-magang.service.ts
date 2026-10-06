@@ -80,7 +80,7 @@ export class SuratBalasanMagangService {
   }
 
   async terbitkan(dto: BuatSuratBalasanMagangDto, aktor: AktorMcu) {
-    this.akses.wajibPeran(aktor, UserRole.HC);
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.GRUP_LEADER_RND);
 
     const anakMagangIds = dto.baris.map((item) => item.anakMagangId);
     const anakMagangList = await this.prisma.anakMagang.findMany({
