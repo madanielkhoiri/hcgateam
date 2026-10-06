@@ -125,6 +125,22 @@ describe('EpromMeetingService.daftarMeeting', () => {
   });
 });
 
+describe('EpromMeetingService.sumberProgress', () => {
+  it('mengurutkan nomor minggu hasil pembacaan nama laporan secara numerik', async () => {
+    const { service } = buatService({
+      progressMingguanList: [
+        { id: 3, projectId: 1, namaPekerjaan: 'LAPORAN WEEK 12', mingguKe: 3 },
+        { id: 2, projectId: 1, namaPekerjaan: 'LAPORAN WEEK 2', mingguKe: 2 },
+        { id: 1, projectId: 1, namaPekerjaan: 'LAPORAN WEEK 1', mingguKe: 1 },
+      ],
+    });
+
+    const hasil = await service.sumberProgress(aktor(UserRole.OWNER), 1, 'MINGGUAN');
+
+    expect(hasil.map((item) => item.mingguKe)).toEqual([1, 2, 12]);
+  });
+});
+
 describe('EpromMeetingService.buatMeeting', () => {
   it('menolak kalau data progress mingguan tidak ditemukan pada project ini', async () => {
     const { service } = buatService({ progressMingguanDetail: null });
