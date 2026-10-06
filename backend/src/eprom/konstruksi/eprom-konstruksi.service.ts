@@ -132,10 +132,6 @@ export class EpromKonstruksiService {
 
     const item = await this.itemAtauThrow(tipe, id);
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item ini sudah direview sebelumnya');
-    }
-
     return this.delegate(tipe).update({
       where: { id },
       data: {
@@ -158,10 +154,6 @@ export class EpromKonstruksiService {
       throw new BadRequestException(`${LABEL_TIPE[tipe]} tidak memiliki data yang dapat diubah`);
     }
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item yang sudah direview tidak dapat diubah');
-    }
-
     const nama = dto.nama?.trim();
 
     if (!nama) {
@@ -175,10 +167,6 @@ export class EpromKonstruksiService {
     const item = await this.itemAtauThrow(tipe, id);
 
     await this.akses.wajibAksesProject(aktor, item.projectId);
-
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item yang sudah direview tidak dapat dihapus');
-    }
 
     await this.delegate(tipe).delete({ where: { id } });
 

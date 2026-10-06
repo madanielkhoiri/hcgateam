@@ -25,7 +25,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { EngineerDocumentType, StatusApprovalEprom } from '@prisma/client';
-import { basename, extname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { basename, extname, join } from 'node:path';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromAksesService } from '../common/eprom-akses.service';
 import { EpromFileService } from '../common/eprom-file.service';
@@ -603,9 +604,14 @@ export class EpromEngineerService {
     return items.map((item) => {
       const latestApproval = terbaru.get(item.id) ?? null;
 
+      const signedPath = latestApproval?.signedFilePath;
+      const signedExists = Boolean(
+        signedPath && existsSync(join(process.cwd(), 'uploads', signedPath)),
+      );
+
       return {
         ...item,
-        effectiveFileUrl: latestApproval?.signedFilePath ?? item.fileUrl,
+        effectiveFileUrl: signedExists ? signedPath : item.fileUrl,
         latestApproval,
       };
     });

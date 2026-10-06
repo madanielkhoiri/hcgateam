@@ -230,6 +230,7 @@ export default function EngineerDetailPage() {
         {(boleh || vendorSaya) && (
           <form
             className={styles.formCard}
+            id="engineer-upload"
             onSubmit={tambahItem}
             style={{ marginBottom: 18 }}
           >
@@ -319,7 +320,7 @@ export default function EngineerDetailPage() {
                 </div>
               )}
 
-              {boleh && (
+              {boleh && item.status === "PENDING" && (
                 <div className={styles.inlineForm} style={{ marginTop: 10 }}>
                   {item.fileUrl?.toLowerCase().endsWith(".pdf") ? (
                     <Link
@@ -357,9 +358,9 @@ export default function EngineerDetailPage() {
                   </p>
                 )}
 
-              {(boleh || (vendorSaya && item.status === "PENDING")) && (
+              {item.status === "PENDING" && (boleh || vendorSaya) && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  {namaField && (
+                  {namaField && item.status === "PENDING" && (
                     <button
                       type="button"
                       className={styles.iconButton}
@@ -378,6 +379,41 @@ export default function EngineerDetailPage() {
                     <Trash2 size={13} />
                   </button>
                 </div>
+              )}
+
+              {boleh && item.status !== "PENDING" && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  {item.fileUrl?.toLowerCase().endsWith(".pdf") && (
+                    <Link
+                      className={styles.secondaryButton}
+                      href={`/civil/project/engineer/${projectId}/approval/${tab}/${item.id}`}
+                    >
+                      Edit Status
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.iconButtonDanger}
+                    onClick={() => hapus(item)}
+                    title="Hapus"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              )}
+
+              {vendorSaya && item.status === "REJECTED" && (
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  style={{ marginTop: 10 }}
+                  onClick={() => {
+                    setNamaBaru(namaItem(item) ?? "");
+                    document.getElementById("engineer-upload")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                >
+                  Upload Revisi
+                </button>
               )}
             </div>
           ))}
