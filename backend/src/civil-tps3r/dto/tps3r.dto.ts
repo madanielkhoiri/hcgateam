@@ -20,11 +20,6 @@ export class BuatLaporanTps3rDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  beratNonOrganik: number;
-
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
   beratReuse: number;
 
   @Type(() => Number)
@@ -36,6 +31,11 @@ export class BuatLaporanTps3rDto {
   @IsNumber()
   @Min(0)
   beratResidu: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  sampahTerkelola: number;
 }
 
 export class UbahLaporanTps3rDto extends PartialType(BuatLaporanTps3rDto) {}

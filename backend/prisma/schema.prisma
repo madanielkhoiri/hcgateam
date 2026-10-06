@@ -3134,6 +3134,7 @@ model LaporanTps3r {
   beratReuse      Float    @default(0) @map("berat_reuse")
   beratRecycle    Float    @default(0) @map("berat_recycle")
   beratResidu     Float    @default(0) @map("berat_residu")
+  sampahTerkelola Float    @default(0) @map("sampah_terkelola")
   createdById     Int      @map("created_by_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")

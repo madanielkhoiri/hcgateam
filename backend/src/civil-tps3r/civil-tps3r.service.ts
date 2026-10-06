@@ -1,8 +1,8 @@
 // ==================================================
 // FILE: backend/src/civil-tps3r/civil-tps3r.service.ts
 // FUNGSI: Laporan timbangan sampah TPS 3R (Civil Infras) — satu
-// laporan mencakup Organik, Non Organik, Guna Ulang/Reuse,
-// Daur Ulang/Recycle, dan Residu sekaligus (kg).
+// laporan mencakup Organik, Daur Ulang/Recycle, Guna Ulang/Reuse,
+// Residu, dan Sampah Terkelola sekaligus (kg).
 // ==================================================
 
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -41,10 +41,10 @@ export class CivilTps3rService {
       where: rentang ? { tanggal: rentang } : undefined,
       _sum: {
         beratOrganik: true,
-        beratNonOrganik: true,
         beratReuse: true,
         beratRecycle: true,
         beratResidu: true,
+        sampahTerkelola: true,
       },
       _count: { _all: true },
     });
@@ -52,10 +52,10 @@ export class CivilTps3rService {
     return {
       totalLaporan: hasil._count._all,
       totalOrganik: hasil._sum.beratOrganik ?? 0,
-      totalNonOrganik: hasil._sum.beratNonOrganik ?? 0,
       totalReuse: hasil._sum.beratReuse ?? 0,
       totalRecycle: hasil._sum.beratRecycle ?? 0,
       totalResidu: hasil._sum.beratResidu ?? 0,
+      totalTerkelola: hasil._sum.sampahTerkelola ?? 0,
     };
   }
 
@@ -69,28 +69,31 @@ export class CivilTps3rService {
       select: {
         tanggal: true,
         beratOrganik: true,
-        beratNonOrganik: true,
         beratReuse: true,
         beratRecycle: true,
         beratResidu: true,
+        sampahTerkelola: true,
       },
     });
 
-    const totalPerBulan = Array.from({ length: 12 }, () => 0);
+    const totalPerBulan = Array.from({ length: 12 }, () => ({
+      organik: 0,
+      reuse: 0,
+      recycle: 0,
+      residu: 0,
+      terkelola: 0,
+    }));
 
     for (const row of rows) {
       const indexBulan = row.tanggal.getUTCMonth();
-      const total =
-        row.beratOrganik +
-        row.beratNonOrganik +
-        row.beratReuse +
-        row.beratRecycle +
-        row.beratResidu;
-
-      totalPerBulan[indexBulan] += total;
+      totalPerBulan[indexBulan].organik += row.beratOrganik;
+      totalPerBulan[indexBulan].reuse += row.beratReuse;
+      totalPerBulan[indexBulan].recycle += row.beratRecycle;
+      totalPerBulan[indexBulan].residu += row.beratResidu;
+      totalPerBulan[indexBulan].terkelola += row.sampahTerkelola;
     }
 
-    return totalPerBulan.map((totalKg, index) => ({ bulan: index + 1, totalKg }));
+    return totalPerBulan.map((nilai, index) => ({ bulan: index + 1, ...nilai }));
   }
 
   async buat(aktor: AktorPostingan, dto: BuatLaporanTps3rDto) {
@@ -98,10 +101,11 @@ export class CivilTps3rService {
       data: {
         tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`),
         beratOrganik: dto.beratOrganik,
-        beratNonOrganik: dto.beratNonOrganik,
+        beratNonOrganik: 0,
         beratReuse: dto.beratReuse,
         beratRecycle: dto.beratRecycle,
         beratResidu: dto.beratResidu,
+        sampahTerkelola: dto.sampahTerkelola,
         createdById: aktor.id,
       },
       include: { createdBy: { select: { id: true, name: true, nrp: true } } },
@@ -118,10 +122,10 @@ export class CivilTps3rService {
           ? { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`) }
           : {}),
         ...(dto.beratOrganik !== undefined ? { beratOrganik: dto.beratOrganik } : {}),
-        ...(dto.beratNonOrganik !== undefined ? { beratNonOrganik: dto.beratNonOrganik } : {}),
         ...(dto.beratReuse !== undefined ? { beratReuse: dto.beratReuse } : {}),
         ...(dto.beratRecycle !== undefined ? { beratRecycle: dto.beratRecycle } : {}),
         ...(dto.beratResidu !== undefined ? { beratResidu: dto.beratResidu } : {}),
+        ...(dto.sampahTerkelola !== undefined ? { sampahTerkelola: dto.sampahTerkelola } : {}),
       },
       include: { createdBy: { select: { id: true, name: true, nrp: true } } },
     });
