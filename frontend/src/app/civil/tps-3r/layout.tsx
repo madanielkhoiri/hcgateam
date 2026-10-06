@@ -27,7 +27,7 @@ const navItems = [
   { label: 'Dashboard', href: '/civil/tps-3r/dashboard', icon: Gauge },
   { label: 'Tabel Laporan', href: '/civil/tps-3r/tabel', icon: Table2 },
   { label: 'Sampah Terkelola', href: '/civil/tps-3r/terkelola', icon: Recycle },
-  { label: 'Foto Penyerahan Sampah', href: '/civil/tps-3r/foto-penyerahan', icon: Images },
+  { label: 'Dokumentasi Pengelolaan Sampah', href: '/civil/tps-3r/foto-penyerahan', icon: Images },
 ];
 
 const bottomNavItems = navItems.map((item) => ({
