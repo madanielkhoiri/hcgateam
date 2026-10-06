@@ -1804,6 +1804,7 @@ enum EngineerDocumentType {
   SERTIFIKASI_PEKERJAAN
   DAFTAR_PERALATAN
   KOMISIONING_ALAT_BERAT
+  CHECKLIST_TAHAPAN
 }
 
 /**
@@ -2267,6 +2268,7 @@ model ChecklistKonstruksi {
   projectId Int                 @map("project_id")
   namaTahap String              @map("nama_tahap")
   fileUrl   String?             @map("file_url")
+  originalFileName String?      @map("original_file_name")
   status    StatusApprovalEprom @default(PENDING)
   komentar  String?             @db.Text
   createdAt DateTime            @default(now()) @map("created_at")
@@ -3132,6 +3134,7 @@ model LaporanTps3r {
   beratReuse      Float    @default(0) @map("berat_reuse")
   beratRecycle    Float    @default(0) @map("berat_recycle")
   beratResidu     Float    @default(0) @map("berat_residu")
+  sampahTerkelola Float    @default(0) @map("sampah_terkelola")
   createdById     Int      @map("created_by_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")

@@ -41,6 +41,7 @@ export const TIPE_ENGINEER = [
   'sertifikasi-pekerjaan',
   'peralatan-list',
   'komisioning-alat-berat',
+  'checklist-tahapan',
 ] as const;
 
 export type TipeEngineer = (typeof TIPE_ENGINEER)[number];
@@ -53,6 +54,7 @@ const FIELD_NAMA: Record<TipeEngineer, string | null> = {
   'sertifikasi-pekerjaan': null,
   'peralatan-list': null,
   'komisioning-alat-berat': null,
+  'checklist-tahapan': 'namaTahap',
 };
 
 const LABEL_TIPE: Record<TipeEngineer, string> = {
@@ -62,6 +64,7 @@ const LABEL_TIPE: Record<TipeEngineer, string> = {
   'sertifikasi-pekerjaan': 'Sertifikasi Pekerjaan',
   'peralatan-list': 'Daftar Peralatan',
   'komisioning-alat-berat': 'Komisioning Alat Berat',
+  'checklist-tahapan': 'Checklist Tahapan Pekerjaan',
 };
 
 const DOCUMENT_TYPE: Record<TipeEngineer, EngineerDocumentType> = {
@@ -71,6 +74,7 @@ const DOCUMENT_TYPE: Record<TipeEngineer, EngineerDocumentType> = {
   'sertifikasi-pekerjaan': EngineerDocumentType.SERTIFIKASI_PEKERJAAN,
   'peralatan-list': EngineerDocumentType.DAFTAR_PERALATAN,
   'komisioning-alat-berat': EngineerDocumentType.KOMISIONING_ALAT_BERAT,
+  'checklist-tahapan': EngineerDocumentType.CHECKLIST_TAHAPAN,
 };
 
 export class BuatEngineerDto {
@@ -201,6 +205,8 @@ export class EpromEngineerService {
         return client.peralatanList;
       case 'komisioning-alat-berat':
         return client.komisioningAlatBerat;
+      case 'checklist-tahapan':
+        return client.checklistKonstruksi;
     }
   }
 
@@ -212,7 +218,21 @@ export class EpromEngineerService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return this.denganApproval(tipe, items);
+    const denganApproval = await this.denganApproval(tipe, items);
+    const namaField = FIELD_NAMA[tipe];
+    if (!namaField) return denganApproval;
+
+    const urut = [...denganApproval].sort((a, b) => a.id - b.id);
+    const nomorPerNama = new Map<string, number>();
+    const revisiPerId = new Map<number, number>();
+    for (const item of urut) {
+      const kunci = String(item[namaField] ?? '').trim().toLocaleLowerCase('id-ID');
+      const revisi = nomorPerNama.get(kunci) ?? 0;
+      revisiPerId.set(item.id, revisi);
+      nomorPerNama.set(kunci, revisi + 1);
+    }
+
+    return denganApproval.map((item) => ({ ...item, revision: revisiPerId.get(item.id) ?? 0 }));
   }
 
   async buat(
@@ -245,6 +265,7 @@ export class EpromEngineerService {
       );
     }
 
+    const nama = namaField ? dto.nama!.trim() : null;
     const fileUrl = file
       ? this.file.simpanDokumen(file, `project/${projectId}/engineer/${tipe}`)
       : null;
@@ -254,7 +275,7 @@ export class EpromEngineerService {
         projectId,
         fileUrl,
         originalFileName: file?.originalname || null,
-        ...(namaField ? { [namaField]: dto.nama!.trim() } : {}),
+        ...(namaField ? { [namaField]: nama } : {}),
       },
     });
 
@@ -550,7 +571,7 @@ export class EpromEngineerService {
   async ringkasanPending(aktor: AktorEprom, projectId: number) {
     await this.akses.wajibAksesProject(aktor, projectId);
 
-    const hasil: Record<TipeEngineer, number> = {
+    const hasil: Record<string, number> = {
       'shop-drawing': 0,
       'material-approval': 0,
       'metode-pekerjaan': 0,
@@ -560,7 +581,7 @@ export class EpromEngineerService {
     };
 
     await Promise.all(
-      TIPE_ENGINEER.map(async (tipe) => {
+      TIPE_ENGINEER.filter((tipe) => tipe !== 'checklist-tahapan').map(async (tipe) => {
         hasil[tipe] = await this.delegate(tipe).count({
           where: { projectId, status: StatusApprovalEprom.PENDING },
         });

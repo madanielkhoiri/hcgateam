@@ -148,10 +148,12 @@ export class EpromMeetingService {
         where: { projectId },
         orderBy: { mingguKe: 'desc' },
       });
-      return daftar.map((item) => ({
-        ...item,
-        mingguKe: nomorWeekLaporan(item.namaPekerjaan, item.mingguKe),
-      }));
+      return daftar
+        .map((item) => ({
+          ...item,
+          mingguKe: nomorWeekLaporan(item.namaPekerjaan, item.mingguKe),
+        }))
+        .sort((a, b) => a.mingguKe - b.mingguKe || a.id - b.id);
     }
 
     return this.prisma.progressBulanan.findMany({

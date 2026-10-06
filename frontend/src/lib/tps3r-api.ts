@@ -1,8 +1,8 @@
 // ==================================================
 // FILE: frontend/src/lib/tps3r-api.ts
 // FUNGSI: Klien API Laporan Timbangan Sampah TPS 3R (Civil Infras) + tipe data
-// Satu laporan mencakup Organik, Non Organik, Guna Ulang/Reuse,
-// Daur Ulang/Recycle, dan Residu sekaligus (kg).
+// Satu laporan mencakup Organik, Daur Ulang/Recycle, Guna Ulang/Reuse,
+// Residu, dan Sampah Terkelola sekaligus (kg).
 // ==================================================
 
 import { getAccessToken } from './access-control';
@@ -16,10 +16,10 @@ export type LaporanTps3r = {
   id: number;
   tanggal: string;
   beratOrganik: number;
-  beratNonOrganik: number;
   beratReuse: number;
   beratRecycle: number;
   beratResidu: number;
+  sampahTerkelola: number;
   createdBy: { id: number; name: string; nrp: string | null };
   createdAt: string;
 };
@@ -27,15 +27,19 @@ export type LaporanTps3r = {
 export type RingkasanTps3r = {
   totalLaporan: number;
   totalOrganik: number;
-  totalNonOrganik: number;
   totalReuse: number;
   totalRecycle: number;
   totalResidu: number;
+  totalTerkelola: number;
 };
 
 export type TrenBulananTps3r = {
   bulan: number;
-  totalKg: number;
+  organik: number;
+  reuse: number;
+  recycle: number;
+  residu: number;
+  terkelola: number;
 };
 
 export class Tps3rApiError extends Error {
@@ -87,10 +91,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export type LaporanTps3rInput = {
   tanggal: string;
   beratOrganik: number;
-  beratNonOrganik: number;
   beratReuse: number;
   beratRecycle: number;
   beratResidu: number;
+  sampahTerkelola: number;
 };
 
 export const tps3rApi = {

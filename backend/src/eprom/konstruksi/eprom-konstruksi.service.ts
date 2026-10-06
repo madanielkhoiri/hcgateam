@@ -121,6 +121,7 @@ export class EpromKonstruksiService {
       data: {
         projectId,
         fileUrl,
+        ...(tipe === 'checklist-tahapan' ? { originalFileName: file?.originalname || null } : {}),
         ...(namaField ? { [namaField]: dto.nama!.trim() } : {}),
       },
     });
