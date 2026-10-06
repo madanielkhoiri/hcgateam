@@ -65,7 +65,7 @@ describe("tps3rApi.buat", () => {
  const data = {
  tanggal: "2026-03-05",
  beratOrganik: 10,
- beratNonOrganik: 5,
+ sampahTerkelola: 5,
  beratReuse: 2,
  beratRecycle: 3,
  beratResidu: 1,
