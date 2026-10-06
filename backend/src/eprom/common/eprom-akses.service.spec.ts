@@ -32,6 +32,7 @@ describe('EpromAksesService.isOwner / isVendor', () => {
     UserRole.SUPER_ADMIN,
     UserRole.SECTION_HEAD,
     UserRole.GRUP_LEADER,
+    UserRole.GRUP_LEADER_GA,
   ])(
     'role %s dianggap setara Owner',
     (role) => {

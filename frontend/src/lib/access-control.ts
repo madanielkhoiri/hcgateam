@@ -179,13 +179,31 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
   if (
     user.role === 'ADMIN' ||
     user.role === 'SUPER_ADMIN' ||
-    user.role === 'SECTION_HEAD' ||
-    user.role === 'GRUP_LEADER_IR' ||
-    user.role === 'GRUP_LEADER_COMBEN' ||
-    user.role === 'GRUP_LEADER_GA' ||
-    user.role === 'GRUP_LEADER_RND'
+    user.role === 'SECTION_HEAD'
   ) {
     return true;
+  }
+
+  const groupLeaderDomain: Record<string, (key: string) => boolean> = {
+    GRUP_LEADER_IR: (key) => key === ACCESS_KEYS.HC_IR,
+    GRUP_LEADER_COMBEN: (key) => key === ACCESS_KEYS.HC_COMBEN,
+    GRUP_LEADER_GA: (key) => key === ACCESS_KEYS.GA || key.startsWith('GA_') || key === ACCESS_KEYS.CIVIL || key.startsWith('CIVIL_'),
+    GRUP_LEADER_RND: (key) => ([ACCESS_KEYS.HC_RND, ACCESS_KEYS.HC_ANAK_MAGANG, ACCESS_KEYS.HC_SURAT_BALASAN_MAGANG, ACCESS_KEYS.HC_SURAT_PENOLAKAN_MAGANG] as string[]).includes(key),
+  };
+  const aksesKaryawanGroupLeader = [
+    ACCESS_KEYS.HC_IR,
+    ACCESS_KEYS.HC_MCU,
+    ACCESS_KEYS.HC_DEKLARASI,
+    ACCESS_KEYS.HC_TUGAS_DINAS,
+  ];
+  const aturanGroupLeader = groupLeaderDomain[user.role];
+  if (
+    aturanGroupLeader &&
+    accessKey !== ACCESS_KEYS.HC &&
+    !(aksesKaryawanGroupLeader as string[]).includes(accessKey) &&
+    !aturanGroupLeader(accessKey)
+  ) {
+    return false;
   }
 
   const keys = user.accessKeys ?? [];
