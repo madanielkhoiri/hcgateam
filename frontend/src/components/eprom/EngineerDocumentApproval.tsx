@@ -40,6 +40,7 @@ function namaPekerjaan(detail: EngineerApprovalDetail): string {
     detail.item.namaPekerjaan ??
     detail.item.namaMaterial ??
     detail.item.namaMetode ??
+    detail.item.namaTahap ??
     "-"
   );
 }
@@ -478,7 +479,7 @@ export function EngineerDocumentApproval({
         textAnnotations,
       });
       window.dispatchEvent(new Event("eprom-engineer-updated"));
-      router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Approval gagal diproses");
@@ -494,7 +495,7 @@ export function EngineerDocumentApproval({
     try {
       await epromApi.engineer.reject(tipe, documentId, komentar.trim(), inkStrokes, textAnnotations);
       window.dispatchEvent(new Event("eprom-engineer-updated"));
-      router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
     } catch (err) { setError(err instanceof Error ? err.message : "Dokumen gagal ditolak"); }
     finally { setSubmitting(false); }
@@ -507,7 +508,7 @@ export function EngineerDocumentApproval({
     try {
       await epromApi.engineer.approveTanpaTandaTangan(tipe, documentId);
       window.dispatchEvent(new Event("eprom-engineer-updated"));
-      router.push(`/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Approval gagal diproses");
@@ -519,7 +520,9 @@ export function EngineerDocumentApproval({
   const selectedPlacement = placements.find(
     (item) => item.id === selectedPlacementId,
   );
-  const backUrl = `/civil/project/engineer/${projectId}?tab=${tipe}`;
+  const backUrl = tipe === "checklist-tahapan"
+    ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan`
+    : `/civil/project/engineer/${projectId}?tab=${tipe}`;
 
   if (loading)
     return <p className={styles.stateText}>Memuat Review & Approval...</p>;
