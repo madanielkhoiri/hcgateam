@@ -75,16 +75,11 @@ describe('EpromPerformanceVendorService — akses & routing', () => {
     jest.useRealTimers();
   });
 
-  it('menolak format bulan yang tidak valid', async () => {
-    const { service } = buatService();
-
-    await expect(service.daftar(aktor(UserRole.OWNER), 'bulan-ngasal')).rejects.toThrow(BadRequestException);
-  });
 
   it('Owner melihat semua project tanpa filter vendorId', async () => {
     const { service, prisma } = buatService({ projects: [] });
 
-    await service.daftar(aktor(UserRole.OWNER), '2026-01');
+    await service.daftar(aktor(UserRole.OWNER));
 
     expect(prisma.project.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: undefined }));
   });
@@ -92,30 +87,30 @@ describe('EpromPerformanceVendorService — akses & routing', () => {
   it('Vendor hanya melihat project dari kontraknya sendiri', async () => {
     const { service, prisma } = buatService({ projects: [] });
 
-    await service.daftar(aktor(UserRole.VENDOR, { vendorId: 7 }), '2026-01');
+    await service.daftar(aktor(UserRole.VENDOR, { vendorId: 7 }));
 
     expect(prisma.project.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { kontrak: { vendorId: 7 } } }),
     );
   });
 
-  it('daftar() hanya menyertakan project yang kontraknya aktif tumpang tindih dengan periode', async () => {
-    const aktifBulanIni = projectFixture();
-    const sudahSelesaiBulanLalu = projectFixture({
-      kontrak: kontrakFixture({ tanggalMulai: new Date('2025-11-01T00:00:00Z'), tanggalSelesai: new Date('2025-11-30T00:00:00Z') }),
-    });
-    const { service } = buatService({ projects: [aktifBulanIni, { ...sudahSelesaiBulanLalu, id: 2 }] });
+  it('daftar() menilai setiap project memakai periode kontraknya masing-masing', async () => {
+    const projectA = projectFixture();
+    const projectB = { ...projectFixture({ kontrak: kontrakFixture({ tanggalMulai: new Date('2025-11-01T00:00:00Z'), tanggalSelesai: new Date('2025-11-30T00:00:00Z') }) }), id: 2 };
+    const { service } = buatService({ projects: [projectA, projectB] });
 
-    const hasil = await service.daftar(aktor(UserRole.OWNER), '2026-01');
+    const hasil = await service.daftar(aktor(UserRole.OWNER));
 
-    expect(hasil.items).toHaveLength(1);
-    expect(hasil.items[0].project.id).toBe(1);
+    expect(hasil.items).toHaveLength(2);
+    expect(hasil.items.map((item) => item.project.id)).toEqual([1, 2]);
+    expect(hasil.items[0].periodeMulai).toBe('2026-01-05');
+    expect(hasil.items[0].periodeSelesai).toBe('2026-01-05');
   });
 
   it('detail() menolak Vendor yang mengakses project bukan miliknya', async () => {
     const { service } = buatService({ projectAksesCheck: { kontrak: { vendorId: 999 } } });
 
-    await expect(service.detail(aktor(UserRole.VENDOR, { vendorId: 1 }), 1, '2026-01')).rejects.toThrow(
+    await expect(service.detail(aktor(UserRole.VENDOR, { vendorId: 1 }), 1)).rejects.toThrow(
       ForbiddenException,
     );
   });
@@ -123,7 +118,7 @@ describe('EpromPerformanceVendorService — akses & routing', () => {
   it('detail() melempar NotFoundException kalau project tidak ada', async () => {
     const { service } = buatService({ projectDetail: null });
 
-    await expect(service.detail(aktor(UserRole.OWNER), 1, '2026-01')).rejects.toThrow(NotFoundException);
+    await expect(service.detail(aktor(UserRole.OWNER), 1)).rejects.toThrow(NotFoundException);
   });
 });
 
@@ -139,7 +134,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
   it('tanpa data sama sekali: disiplin upload & TTA/KTA bernilai 0, komponen lain null, nilaiAkhir 0 grade E', async () => {
     const { service } = buatService();
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
 
     const upload = hasil.komponen.find((k) => k.key === 'upload')!;
     const deviasi = hasil.komponen.find((k) => k.key === 'deviasi')!;
@@ -168,7 +163,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
       kta: 1,
     });
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
 
     const upload = hasil.komponen.find((k) => k.key === 'upload')!;
     const deviasi = hasil.komponen.find((k) => k.key === 'deviasi')!;
@@ -188,7 +183,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
       progressMingguan: [{ id: 1, mingguKe: 1, namaPekerjaan: 'Pekerjaan A', planned: 10, actual: 7, uploadedAt: waktuTepat }],
     });
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
     const deviasi = hasil.komponen.find((k) => k.key === 'deviasi')!;
 
     expect(deviasi.nilai).toBe(75);
@@ -200,7 +195,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
       progressMingguan: [{ id: 1, mingguKe: 1, namaPekerjaan: 'Pekerjaan A', planned: 20, actual: 5, uploadedAt: waktuTepat }],
     });
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
     const deviasi = hasil.komponen.find((k) => k.key === 'deviasi')!;
 
     expect(deviasi.nilai).toBe(20);
@@ -209,7 +204,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
   it('TTA/KTA: hanya salah satu tercapai menghasilkan rata-rata 50', async () => {
     const { service } = buatService({ tta: 1, kta: 0 });
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
     const ttaKta = hasil.komponen.find((k) => k.key === 'ttaKta')!;
 
     expect(ttaKta.nilai).toBe(50);
@@ -223,7 +218,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
       ],
     });
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
     const jsa = hasil.komponen.find((k) => k.key === 'jsa')!;
 
     expect(jsa.nilai).toBe(50);
@@ -238,7 +233,7 @@ describe('EpromPerformanceVendorService — perhitungan skor', () => {
       ],
     });
 
-    const hasil = await service.detail(aktor(UserRole.OWNER), 1, '2026-01');
+    const hasil = await service.detail(aktor(UserRole.OWNER), 1);
     const pica = hasil.komponen.find((k) => k.key === 'pica')!;
 
     expect(pica.nilai).toBe(50);
