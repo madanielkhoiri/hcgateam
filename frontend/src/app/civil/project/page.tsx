@@ -305,7 +305,10 @@ export default function CivilProjectDashboardPage() {
           </div>
           <div className={styles.chartBody}>
             {trendTertampil.length > 0 ? (
-              <ProgressTrendChart seri={trendTertampil} detail={filterChartId !== "semua"} />
+              <ProgressTrendChart
+                seri={trendTertampil}
+                detail={filterChartId !== "semua" || trendTertampil.length === 1}
+              />
             ) : (
               <p className={styles.emptyText} style={{ margin: 0 }}>
                 Belum ada data Laporan Mingguan untuk ditampilkan.
