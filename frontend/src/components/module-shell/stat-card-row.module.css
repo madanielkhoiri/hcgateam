@@ -10,6 +10,17 @@
   }
 }
 
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .card {
+    padding: 16px 18px;
+  }
+}
+
 .card {
   background: #ffffff;
   border: 1px solid #d8e4f2;
