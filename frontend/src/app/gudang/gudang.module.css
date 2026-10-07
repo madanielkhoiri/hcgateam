@@ -16,6 +16,9 @@
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 180;
   flex-shrink: 0;
   padding: 20px 20px 16px;
   background: linear-gradient(180deg, #eaf2ff 0%, #f8fbff 100%);

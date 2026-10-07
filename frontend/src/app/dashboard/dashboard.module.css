@@ -24,6 +24,9 @@
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 180;
   height: 78px;
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid #e4edf7;
