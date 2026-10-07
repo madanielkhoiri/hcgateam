@@ -34,6 +34,20 @@ describe('McuAksesService.peranAktor / punyaPeran', () => {
     expect(peran).toEqual([UserRole.HC]);
   });
 
+  it('hanya Group Leader Comben yang mendapat akses penuh MCU', () => {
+    expect(akses.punyaPeran(aktor(UserRole.GRUP_LEADER_COMBEN), UserRole.HC)).toBe(true);
+    expect(akses.punyaPeran(aktor(UserRole.GRUP_LEADER_COMBEN), UserRole.DOKTER)).toBe(true);
+  });
+
+  it.each([
+    UserRole.GRUP_LEADER_IR,
+    UserRole.GRUP_LEADER_GA,
+    UserRole.GRUP_LEADER_RND,
+  ])('Group Leader domain lain (%s) diperlakukan seperti Karyawan di MCU', (role) => {
+    expect(akses.peranAktor(aktor(role))).toEqual([UserRole.KARYAWAN]);
+    expect(akses.punyaPeran(aktor(role), UserRole.HC)).toBe(false);
+  });
+
   it('punyaPeran true untuk role portal super walau diminta peran spesifik (mis. DOKTER)', () => {
     expect(akses.punyaPeran(aktor(UserRole.ADMIN), UserRole.DOKTER)).toBe(true);
   });

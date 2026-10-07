@@ -130,6 +130,20 @@ describe("hasAccess", () => {
  expect(hasAccess(user, ACCESS_KEYS.HC_HELPDESK)).toBe(true);
  });
 
+ it("Group Leader tetap mengikuti accessKeys dan tidak membuka semua modul", () => {
+ const user = buatUser({ role: "GRUP_LEADER_GA", accessKeys: [ACCESS_KEYS.GA_INVENTORY] });
+ expect(hasAccess(user, ACCESS_KEYS.GA_INVENTORY)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.HC_KARYAWAN)).toBe(false);
+ });
+
+ it("Group Leader lama yang masih memiliki ALL tetap dibatasi ke domain rolenya", () => {
+ const user = buatUser({ role: "GRUP_LEADER_IR", accessKeys: ["ALL"] });
+ expect(hasAccess(user, ACCESS_KEYS.HC_IR)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.HC_MCU)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.HC_KARYAWAN)).toBe(false);
+ expect(hasAccess(user, ACCESS_KEYS.CIVIL_PROJECT)).toBe(false);
+ });
+
  it("KARYAWAN biasa ditolak kalau accessKeys tidak mengandung key yang diminta", () => {
  const user = buatUser({ role: "KARYAWAN", accessKeys: [ACCESS_KEYS.HC_MCU] });
  expect(hasAccess(user, ACCESS_KEYS.GA_INVENTORY)).toBe(false);
