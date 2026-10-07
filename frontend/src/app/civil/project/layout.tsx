@@ -88,6 +88,7 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  statusBadges?: RingkasanStatusApproval;
 };
 
 type NavGroup = {
@@ -202,6 +203,8 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [engineerRingkasan, setEngineerRingkasan] = useState<RingkasanPendingEngineer | null>(null);
   const [konstruksiPending, setKonstruksiPending] = useState(0);
   const [konstruksiStatus, setKonstruksiStatus] = useState<RingkasanStatusApproval>(STATUS_KOSONG);
+  const [statusPerTipe, setStatusPerTipe] = useState<Record<string, RingkasanStatusApproval>>({});
+  const [badgeReadRevision, setBadgeReadRevision] = useState(0);
   const [konstruksiRingkasan, setKonstruksiRingkasan] = useState<RingkasanPendingKonstruksi | null>(
     null,
   );
@@ -296,13 +299,33 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
     ? Object.values(closingRingkasan).reduce((a, b) => a + b, 0)
     : null;
 
+  const statusTipeTerlihat = (tipe: string): RingkasanStatusApproval => {
+    const status = statusPerTipe[tipe] ?? STATUS_KOSONG;
+    if (!vendorSaya || !user) return status;
+    const sudahDibaca = typeof window === 'undefined'
+      ? 0
+      : Number(localStorage.getItem(`eprom-approved-read:${user.id}:${tipe}`) ?? 0);
+    return { ...status, APPROVED: Math.max(0, status.APPROVED - sudahDibaca) };
+  };
+
+  void badgeReadRevision;
+  const engineerStatusTerlihat = {
+    ...engineerStatus,
+    APPROVED: ['shop-drawing', 'material-approval', 'metode-pekerjaan']
+      .reduce((total, tipe) => total + statusTipeTerlihat(tipe).APPROVED, 0),
+  };
+  const konstruksiStatusTerlihat = {
+    ...konstruksiStatus,
+    APPROVED: statusTipeTerlihat('checklist-tahapan').APPROVED,
+  };
+
   const projectAreaGroups: NavGroup[] = [
     {
       id: "engineer",
       label: "Engineer",
       icon: HardHat,
       badge: totalPendingProjekAktif ?? engineerPending,
-      statusBadges: vendorSaya ? engineerStatus : undefined,
+      statusBadges: vendorSaya ? engineerStatusTerlihat : undefined,
       items: [
         { label: "Daftar Project", href: "/civil/project/engineer", icon: ListChecks },
         ...(activeEngineerProjectId
@@ -311,6 +334,9 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
               href: `/civil/project/engineer/${activeEngineerProjectId}?tab=${t.tab}`,
               icon: t.icon,
               badge: engineerRingkasan?.[t.tab] ?? 0,
+              statusBadges: vendorSaya && ['shop-drawing', 'material-approval', 'metode-pekerjaan'].includes(t.tab)
+                ? statusTipeTerlihat(t.tab)
+                : undefined,
             }))
           : []),
       ],
@@ -320,7 +346,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       label: "Konstruksi",
       icon: Building,
       badge: totalPendingKonstruksiAktif ?? konstruksiPending,
-      statusBadges: vendorSaya ? konstruksiStatus : undefined,
+      statusBadges: vendorSaya ? konstruksiStatusTerlihat : undefined,
       items: [
         { label: "Daftar Project", href: "/civil/project/konstruksi", icon: ListChecks },
         ...(activeKonstruksiProjectId
@@ -331,6 +357,9 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
               badge: TIPE_KONSTRUKSI_BADGE.has(t.tab)
                 ? (konstruksiRingkasan?.[t.tab as keyof RingkasanPendingKonstruksi] ?? 0)
                 : 0,
+              statusBadges: vendorSaya && t.tab === 'checklist-tahapan'
+                ? statusTipeTerlihat(t.tab)
+                : undefined,
             }))
           : []),
       ],
@@ -510,6 +539,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
               STATUS_KOSONG,
             ),
           );
+          setStatusPerTipe(
+            projects.reduce<Record<string, RingkasanStatusApproval>>((semua, project) => {
+              Object.entries(project.approvalStatusPerTipe ?? {}).forEach(([tipe, status]) => {
+                semua[tipe] = tambahStatus(semua[tipe] ?? STATUS_KOSONG, status);
+              });
+              return semua;
+            }, {}),
+          );
         })
         .catch(() => { setEngineerPending(0); setEngineerStatus(STATUS_KOSONG); });
     }
@@ -565,6 +602,15 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       window.removeEventListener("eprom-closing-updated", muatClosingPending);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!vendorSaya || !user || !activeTab || typeof window === 'undefined') return;
+    const tipeDidukung = ['shop-drawing', 'material-approval', 'metode-pekerjaan', 'checklist-tahapan'];
+    if (!tipeDidukung.includes(activeTab)) return;
+    const jumlahApproved = statusPerTipe[activeTab]?.APPROVED ?? 0;
+    localStorage.setItem(`eprom-approved-read:${user.id}:${activeTab}`, String(jumlahApproved));
+    setBadgeReadRevision((nilai) => nilai + 1);
+  }, [activeTab, statusPerTipe, user, vendorSaya]);
 
   useEffect(() => {
     if (!user || !activeEngineerProjectId) {
@@ -711,7 +757,13 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
                 >
                   <ItemIcon size={15} />
                   <span>{item.label}</span>
-                  {!!item.badge && <span className={styles.navBadge}>{item.badge}</span>}
+                  {item.statusBadges ? (
+                    <span className={styles.statusBadgeGroup} aria-label="Ringkasan status approval">
+                      {!!item.statusBadges.PENDING && <span className={`${styles.statusBadge} ${styles.statusPending}`} title="Pending">{item.statusBadges.PENDING}</span>}
+                      {!!item.statusBadges.APPROVED && <span className={`${styles.statusBadge} ${styles.statusApproved}`} title="Approved belum dilihat">{item.statusBadges.APPROVED}</span>}
+                      {!!item.statusBadges.REJECTED && <span className={`${styles.statusBadge} ${styles.statusRejected}`} title="Rejected">{item.statusBadges.REJECTED}</span>}
+                    </span>
+                  ) : !!item.badge && <span className={styles.navBadge}>{item.badge}</span>}
                 </Link>
               );
             })}
