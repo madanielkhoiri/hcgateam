@@ -199,7 +199,7 @@
   margin-left: auto;
   padding: 0 5px;
   color: #ffffff;
-  background: #ef2b2b;
+  background: #d89a00;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
@@ -362,6 +362,31 @@
   cursor: pointer;
   text-align: left;
 }
+
+.statusBadgeGroup {
+  flex: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.statusPending { background: #d89a00; }
+.statusApproved { background: #07984c; }
+.statusRejected { background: #e32635; }
 
 .profileWrapper { position: relative; }
 .profileArrow { color: #607895; transition: transform .16s ease; }
