@@ -277,6 +277,9 @@ export function EngineerDocumentApproval({
     if (!surfaceRef.current) return;
     event.preventDefault();
     event.stopPropagation();
+    const target = event.currentTarget;
+    const pointerId = event.pointerId;
+    target.setPointerCapture(pointerId);
     setSelectedTextId(id);
     const rect = surfaceRef.current.getBoundingClientRect();
     const startX = event.clientX;
@@ -284,27 +287,49 @@ export function EngineerDocumentApproval({
     const original = textAnnotations.find((item) => item.id === id);
     if (!original) return;
     const move = (pointer: PointerEvent) => {
+      if (pointer.pointerId !== pointerId) return;
+      pointer.preventDefault();
       setTextAnnotations((items) => items.map((item) => item.id === id ? { ...item, x: Math.max(0, Math.min(0.85, original.x + (pointer.clientX - startX) / rect.width)), y: Math.max(0, Math.min(0.95, original.y + (pointer.clientY - startY) / rect.height)) } : item));
     };
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-    window.addEventListener("pointermove", move);
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId);
+    };
+    window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
   }
 
   function ubahTeks(event: React.PointerEvent<HTMLSpanElement>, id: string, mode: "resize" | "rotate") {
     event.preventDefault(); event.stopPropagation();
+    const target = event.currentTarget;
+    const pointerId = event.pointerId;
+    target.setPointerCapture(pointerId);
     const item = textAnnotations.find((value) => value.id === id); const surface = surfaceRef.current;
     if (!item || !surface) return;
     const rect = surface.getBoundingClientRect(); const startX = event.clientX; const startY = event.clientY;
-    const move = (pointer: PointerEvent) => setTextAnnotations((items) => items.map((value) => {
+    const move = (pointer: PointerEvent) => {
+      if (pointer.pointerId !== pointerId) return;
+      pointer.preventDefault();
+      setTextAnnotations((items) => items.map((value) => {
       if (value.id !== id) return value;
       if (mode === "resize") return { ...value, size: Math.max(8, Math.min(72, item.size + (pointer.clientX - startX) * 0.12)) };
       const cx = rect.left + item.x * rect.width; const cy = rect.top + item.y * rect.height;
       const startAngle = Math.atan2(startY - cy, startX - cx); const angle = Math.atan2(pointer.clientY - cy, pointer.clientX - cx);
       return { ...value, rotation: item.rotation + ((angle - startAngle) * 180) / Math.PI };
-    }));
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+      }));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId);
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
   }
 
   function samakanUkuranSemua() {

@@ -81,7 +81,7 @@ export default function KonstruksiDetailPage() {
   const boleh = isEpromOwner(user);
   const vendorSaya = isEpromVendor(user);
 
-  const tab = (searchParams.get("tab") as TabKonstruksi | null) ?? "checklist-tahapan";
+  const tab = searchParams.get("tab") as TabKonstruksi | null;
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState<string | null>(null);
@@ -125,19 +125,19 @@ export default function KonstruksiDetailPage() {
       </div>
 
       <p className={engineerStyles.tabHint}>
-        {labelTab(tab)}
-        <span> — pilih tahapan lain lewat menu Konstruksi di sidebar.</span>
+        {tab ? labelTab(tab) : "Pilih menu Konstruksi"}
+        <span>{tab ? " — pilih tahapan lain lewat menu Konstruksi di sidebar." : " — pilih salah satu menu di sidebar untuk mulai mengelola proyek."}</span>
       </p>
 
       {projectError && <p className={engineerStyles.errorText}>{projectError}</p>}
 
-      {(TAB_APPROVAL as string[]).includes(tab) && (
+      {tab && (TAB_APPROVAL as string[]).includes(tab) && (
         <ApprovalTab tipe={tab as TipeKonstruksi} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
       )}
-      {(TAB_PERFORMA as string[]).includes(tab) && (
+      {tab && (TAB_PERFORMA as string[]).includes(tab) && (
         <PerformaTab tipe={tab as "tta" | "kta"} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
       )}
-      {(TAB_PROGRESS_LAINNYA as string[]).includes(tab) && (
+      {tab && (TAB_PROGRESS_LAINNYA as string[]).includes(tab) && (
         <ProgressTab tipe={tab as TipeProgress} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
       )}
       {tab === "sosialisasi-jsa" && (

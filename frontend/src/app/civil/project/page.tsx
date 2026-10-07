@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getStoredUser } from "@/lib/access-control";
 import {
-  Bell,
   Building,
   CalendarDays,
   CalendarRange,
@@ -39,12 +38,12 @@ import { ProgressTrendChart } from "@/components/civil-project/progress-trend-ch
 import styles from "./project-dashboard.module.css";
 
 const quickActions = [
-  { label: "Shop Drawing", href: "/civil/project/engineer", icon: Ruler, accent: "#0868f6", soft: "#eaf2ff" },
-  { label: "Material Approval", href: "/civil/project/engineer", icon: FileText, accent: "#07984c", soft: "#e4f7ec" },
-  { label: "Checklist Pekerjaan", href: "/civil/project/konstruksi", icon: ClipboardCheck, accent: "#7a4ce0", soft: "#f0ebff" },
-  { label: "Inspeksi Area", href: "/civil/project/konstruksi", icon: Eye, accent: "#ef7100", soft: "#fff2df" },
-  { label: "Laporan Harian", href: "/civil/project/konstruksi", icon: CalendarDays, accent: "#0aa3a3", soft: "#e4f7f7" },
-  { label: "Laporan Mingguan", href: "/civil/project/konstruksi", icon: CalendarRange, accent: "#0868f6", soft: "#eaf2ff" },
+  { label: "Shop Drawing", href: "/civil/project/engineer?tab=shop-drawing", icon: Ruler, accent: "#0868f6", soft: "#eaf2ff" },
+  { label: "Material Approval", href: "/civil/project/engineer?tab=material-approval", icon: FileText, accent: "#07984c", soft: "#e4f7ec" },
+  { label: "Checklist Pekerjaan", href: "/civil/project/konstruksi?tab=checklist-tahapan", icon: ClipboardCheck, accent: "#7a4ce0", soft: "#f0ebff" },
+  { label: "Inspeksi Area", href: "/civil/project/konstruksi?tab=inspeksi-area", icon: Eye, accent: "#ef7100", soft: "#fff2df" },
+  { label: "Laporan Harian", href: "/civil/project/konstruksi?tab=progress-harian", icon: CalendarDays, accent: "#0aa3a3", soft: "#e4f7f7" },
+  { label: "Laporan Mingguan", href: "/civil/project/konstruksi?tab=progress-mingguan", icon: CalendarRange, accent: "#0868f6", soft: "#eaf2ff" },
   { label: "Opname Pekerjaan", href: "/civil/project/financial", icon: Percent, accent: "#d53535", soft: "#ffeded" },
   { label: "Dokumen", href: "/civil/project/dokumen", icon: FileStack, accent: "#7a4ce0", soft: "#f0ebff" },
 ];
@@ -343,7 +342,6 @@ export default function CivilProjectDashboardPage() {
 
         <div className={styles.notifCard}>
           <div className={styles.areaHeaderNotif}>
-            <Bell size={18} />
             <span>Notifikasi Terbaru</span>
           </div>
 
