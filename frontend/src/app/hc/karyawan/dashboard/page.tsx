@@ -131,7 +131,7 @@ export default function DashboardKaryawanPage() {
 
       <StatCardRow cards={statCards} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
+      <div className="dashboard-chart-grid">
         <AnimatedLineChart
           title="Tren Karyawan Baru per Bulan"
           subtitle={`Jumlah karyawan baru terdaftar, tahun ${tren?.tahun ?? ''}`}

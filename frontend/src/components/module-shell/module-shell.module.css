@@ -256,13 +256,16 @@
 
   .contentArea {
     grid-column: 1;
+    padding-top: 58px;
     padding-bottom: 74px;
   }
 
   .mobileTopBar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 20;
+    left: 0;
+    right: 0;
+    z-index: 180;
     display: flex;
     align-items: center;
     gap: 12px;
