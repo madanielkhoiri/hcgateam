@@ -357,7 +357,24 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
 }
+
+.profileWrapper { position: relative; }
+.profileArrow { color: #607895; transition: transform .16s ease; }
+.profileArrowOpen { color: #607895; transform: rotate(180deg); }
+.profileDropdown { position: absolute; top: calc(100% + 10px); right: 0; z-index: 300; display: grid; min-width: 290px; padding: 14px 18px; border: 1px solid #d8e4f2; border-radius: 18px; background: #fff; box-shadow: 0 18px 38px rgba(15,35,70,.16); }
+.profileDropdownHeader { display: flex; align-items: center; gap: 12px; padding: 8px 2px 12px; color: #0868f6; }
+.profileMenuAvatar { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #edf4ff; }
+.profileDropdownHeader span:last-child, .profileDropdown a span, .profileDropdown button span { display: grid; gap: 3px; }
+.profileDropdown strong { color: #18355e; font-size: 13px; }
+.profileDropdown small { color: #8190a5; font-size: 10px; }
+.profileDivider { height: 1px; margin: 4px 0; background: #e2eaf3; }
+.profileDropdown a, .profileDropdown button { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border: 0; background: none; color: #0868f6; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.profileDropdown .logoutDropdown { color: #e32635; }
 
 .profileAvatar {
   width: 40px;
@@ -462,6 +479,15 @@
   .topHeaderLeft strong {
     font-size: 15px;
   }
+  .profileDropdown { position: fixed; top: 68px; right: 10px; left: 10px; min-width: 0; }
+}
+
+@media (max-width: 640px) {
+  .topHeader { min-height: 64px; padding: 0 12px; }
+  .topHeaderRight { gap: 10px; }
+  .pageContent { padding: 12px; }
+  .pageContent :global(.card), .pageContent :global(.panel), .pageContent :global(.formCard) { max-width: 100%; }
+  .pageContent :global(table) { min-width: 620px; }
 }
 
 /* Ruang buat bottom nav mobile (lihat MobileBottomNav) */

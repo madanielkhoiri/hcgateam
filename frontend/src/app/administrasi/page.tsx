@@ -23,6 +23,7 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
+import { ProfileMenu } from '@/components/profile-menu/profile-menu';
 import styles from './administrasi.module.css';
 
 const API_URL =
@@ -161,15 +162,7 @@ export default function AdministrasiPage() {
           </span>
         </Link>
 
-        <div className={styles.profile}>
-          <span className={styles.profileIcon}>
-            <UsersRound size={22} />
-          </span>
-          <div>
-            <strong>{user.name}</strong>
-            <span>{formatRole(user.role)}</span>
-          </div>
-        </div>
+        <ProfileMenu user={user} />
       </header>
 
       <section className={styles.main}>
