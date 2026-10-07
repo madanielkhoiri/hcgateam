@@ -131,6 +131,9 @@
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
 }
+.canvasArea:has(.inkLayer[style*="auto"]) {
+  touch-action: none;
+}
 .pageSurface {
   position: relative;
   width: fit-content;
@@ -142,7 +145,7 @@
 .canvas {
   display: block;
   width: auto;
-  max-width: none;
+  max-width: 100%;
   height: auto;
 }
 .inkLayer {

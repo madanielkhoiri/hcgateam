@@ -697,7 +697,11 @@ export function EngineerDocumentApproval({
               {rendering && <small>Memuat halaman...</small>}
             </div>
 
-            <div ref={canvasAreaRef} className={styles.canvasArea}>
+            <div
+              ref={canvasAreaRef}
+              className={styles.canvasArea}
+              style={{ touchAction: inkMode ? "none" : "pan-x pan-y" }}
+            >
               <div
                 ref={surfaceRef}
                 className={styles.pageSurface}
