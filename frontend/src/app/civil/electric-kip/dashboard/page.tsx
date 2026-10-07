@@ -133,7 +133,7 @@ export default function DashboardElectricKipPage() {
         <>
           <StatCardRow cards={statCards} />
 
-          <div
+          <div className="dashboard-chart-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)',

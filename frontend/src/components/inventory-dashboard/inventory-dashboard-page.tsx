@@ -342,7 +342,7 @@ export default function InventoryDashboardPage({
         </select>
       </section>
 
-      <section
+      <section className="dashboard-card-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -414,7 +414,7 @@ export default function InventoryDashboardPage({
         </div>
       </section>
 
-      <section
+      <section className="dashboard-card-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
