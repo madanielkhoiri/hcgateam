@@ -302,7 +302,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       label: "Engineer",
       icon: HardHat,
       badge: totalPendingProjekAktif ?? engineerPending,
-      statusBadges: engineerStatus,
+      statusBadges: vendorSaya ? engineerStatus : undefined,
       items: [
         { label: "Daftar Project", href: "/civil/project/engineer", icon: ListChecks },
         ...(activeEngineerProjectId
@@ -320,7 +320,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       label: "Konstruksi",
       icon: Building,
       badge: totalPendingKonstruksiAktif ?? konstruksiPending,
-      statusBadges: konstruksiStatus,
+      statusBadges: vendorSaya ? konstruksiStatus : undefined,
       items: [
         { label: "Daftar Project", href: "/civil/project/konstruksi", icon: ListChecks },
         ...(activeKonstruksiProjectId
