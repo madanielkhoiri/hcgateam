@@ -103,4 +103,24 @@ export class EpromAksesService {
       );
     }
   }
+
+  isOwnerAtauAdmin(aktor: AktorEprom): boolean {
+    return ([UserRole.OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN] as UserRole[]).includes(aktor.role);
+  }
+
+  async wajibAksesMenuProject(
+    aktor: AktorEprom,
+    projectId: number,
+    menu: string,
+  ): Promise<void> {
+    await this.wajibAksesProject(aktor, projectId);
+    if (!this.isVendor(aktor)) return;
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { kontrak: { select: { vendor: { select: { menuNonaktif: true } } } } },
+    });
+    if (project?.kontrak.vendor.menuNonaktif.includes(menu)) {
+      throw new ForbiddenException('Akses submenu ini dinonaktifkan oleh Owner/Admin');
+    }
+  }
 }

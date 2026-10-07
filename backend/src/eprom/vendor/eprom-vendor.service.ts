@@ -10,6 +10,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsArray,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -41,6 +42,11 @@ export class UbahVendorDto extends PartialType(BuatVendorDto) {
   @IsOptional()
   @IsBoolean()
   statusAktif?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  menuNonaktif?: string[];
 }
 
 export class TautkanUserVendorDto {
@@ -96,7 +102,7 @@ export class EpromVendorService {
    * profil kontaknya sendiri (nama/email/telepon), tidak boleh mengubah
    * status legalitas maupun status aktif (itu kewenangan Owner) atau menghapus data.
    */
-  async ubah(id: number, dto: UbahVendorDto, bolehOwner: boolean) {
+  async ubah(id: number, dto: UbahVendorDto, bolehOwner: boolean, bolehAturMenu = bolehOwner) {
     await this.detail(id);
 
     if (dto.legalitasStatus !== undefined && !bolehOwner) {
@@ -105,6 +111,10 @@ export class EpromVendorService {
 
     if (dto.statusAktif !== undefined && !bolehOwner) {
       throw new BadRequestException('Status aktif hanya dapat diubah oleh Owner');
+    }
+
+    if (dto.menuNonaktif !== undefined && !bolehAturMenu) {
+      throw new BadRequestException('Akses submenu hanya dapat diubah oleh Owner/Admin');
     }
 
     return this.prisma.vendor.update({
@@ -121,6 +131,9 @@ export class EpromVendorService {
           ? { legalitasStatus: dto.legalitasStatus }
           : {}),
         ...(dto.statusAktif !== undefined ? { statusAktif: dto.statusAktif } : {}),
+        ...(dto.menuNonaktif !== undefined
+          ? { menuNonaktif: [...new Set(dto.menuNonaktif.map((item) => item.trim()).filter(Boolean))] }
+          : {}),
       },
     });
   }

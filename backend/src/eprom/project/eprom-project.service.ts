@@ -131,6 +131,14 @@ export class EpromProjectService {
       approvalStatusEngineer: engineerStatus.get(p.id) ?? ringkasanKosong(),
       approvalStatusKonstruksi: konstruksiStatus.get(p.id) ?? ringkasanKosong(),
       approvalStatusPerTipe: statusPerTipe.get(p.id) ?? {},
+      approvalStatusShopDrawing:
+        statusPerTipe.get(p.id)?.['shop-drawing'] ?? ringkasanKosong(),
+      approvalStatusMaterialApproval:
+        statusPerTipe.get(p.id)?.['material-approval'] ?? ringkasanKosong(),
+      approvalStatusMetodePekerjaan:
+        statusPerTipe.get(p.id)?.['metode-pekerjaan'] ?? ringkasanKosong(),
+      approvalStatusChecklistTahapan:
+        statusPerTipe.get(p.id)?.['checklist-tahapan'] ?? ringkasanKosong(),
       pendingEngineer:
         p._count.shopDrawings +
         p._count.materialApprovals +
