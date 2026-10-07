@@ -110,13 +110,25 @@ export class UsersService {
       return [...DEFAULT_GUEST_ACCESS_KEYS];
     }
 
-    if (([
-      UserRole.GRUP_LEADER_IR,
-      UserRole.GRUP_LEADER_COMBEN,
-      UserRole.GRUP_LEADER_GA,
-      UserRole.GRUP_LEADER_RND,
-    ] as UserRole[]).includes(role)) {
-      return [...ALL_ACCESS_KEYS];
+    const aksesKaryawan = ['HC_MCU', 'HC_DEKLARASI', 'HC_IR'];
+    if (role === UserRole.GRUP_LEADER_IR) return [...aksesKaryawan];
+    if (role === UserRole.GRUP_LEADER_COMBEN) {
+      return [...aksesKaryawan, 'HC_COMBEN'];
+    }
+    if (role === UserRole.GRUP_LEADER_RND) {
+      return [
+        ...aksesKaryawan,
+        'HC_RND',
+        'HC_TUGAS_DINAS',
+        'HC_ANAK_MAGANG',
+        'HC_SURAT_BALASAN_MAGANG',
+        'HC_SURAT_PENOLAKAN_MAGANG',
+      ];
+    }
+    if (role === UserRole.GRUP_LEADER_GA) {
+      return ALL_ACCESS_KEYS.filter(
+        (key) => key === 'GA' || key.startsWith('GA_') || key === 'CIVIL' || key.startsWith('CIVIL_'),
+      ).concat(aksesKaryawan);
     }
 
     return [];

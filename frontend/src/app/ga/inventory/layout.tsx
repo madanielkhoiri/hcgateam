@@ -33,6 +33,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { ACCESS_KEYS, clearSession, formatRole, getAccessToken, getStoredUser, hasAccess, type PortalUser } from "@/lib/access-control";
 import { MobileBottomNav } from "@/components/module-shell/mobile-bottom-nav";
+import { ProfileMenu } from "@/components/profile-menu/profile-menu";
 import { PageTransition } from "@/components/page-transition/page-transition";
 import { buatInisial } from "@/lib/buat-inisial";
 import styles from "./inventory-layout.module.css";
@@ -604,16 +605,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             </div>
           </div>
 
-          <div className={styles.headerProfile}>
-            <span className={styles.profileAvatar}>
-              <UsersRound size={21} />
-            </span>
-
-            <div>
-              <strong>{user?.name ?? "Pengguna"}</strong>
-              <span>{formatRole(user?.role)}</span>
-            </div>
-          </div>
+          {user ? <ProfileMenu user={user} /> : <div className={styles.headerProfile}>Pengguna</div>}
         </header>
 
         <div className={styles.pageContent}>
