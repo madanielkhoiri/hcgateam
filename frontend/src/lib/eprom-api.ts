@@ -287,6 +287,7 @@ export type Project = {
   pendingClosing?: number;
   approvalStatusEngineer?: RingkasanStatusApproval;
   approvalStatusKonstruksi?: RingkasanStatusApproval;
+  approvalStatusPerTipe?: Partial<Record<TipeEngineer | 'checklist-tahapan', RingkasanStatusApproval>>;
 };
 
 export type TipeEngineer =

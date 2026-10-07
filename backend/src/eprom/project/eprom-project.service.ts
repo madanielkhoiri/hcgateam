@@ -92,6 +92,7 @@ export class EpromProjectService {
 
     const engineerStatus = new Map<number, RingkasanStatus>();
     const konstruksiStatus = new Map<number, RingkasanStatus>();
+    const statusPerTipe = new Map<number, Record<string, RingkasanStatus>>();
     const tambahkan = (
       target: Map<number, RingkasanStatus>,
       rows: { projectId: number; status: StatusApprovalEprom; _count: { _all: number } }[],
@@ -108,10 +109,28 @@ export class EpromProjectService {
     tambahkan(engineerStatus, metodePekerjaan);
     tambahkan(konstruksiStatus, checklistKonstruksi);
 
+    const simpanPerTipe = (
+      tipe: string,
+      rows: { projectId: number; status: StatusApprovalEprom; _count: { _all: number } }[],
+    ) => {
+      for (const row of rows) {
+        const project = statusPerTipe.get(row.projectId) ?? {};
+        const status = project[tipe] ?? ringkasanKosong();
+        status[row.status] += row._count._all;
+        project[tipe] = status;
+        statusPerTipe.set(row.projectId, project);
+      }
+    };
+    simpanPerTipe('shop-drawing', shopDrawing);
+    simpanPerTipe('material-approval', materialApproval);
+    simpanPerTipe('metode-pekerjaan', metodePekerjaan);
+    simpanPerTipe('checklist-tahapan', checklistKonstruksi);
+
     return projects.map((p) => ({
       ...p,
       approvalStatusEngineer: engineerStatus.get(p.id) ?? ringkasanKosong(),
       approvalStatusKonstruksi: konstruksiStatus.get(p.id) ?? ringkasanKosong(),
+      approvalStatusPerTipe: statusPerTipe.get(p.id) ?? {},
       pendingEngineer:
         p._count.shopDrawings +
         p._count.materialApprovals +
