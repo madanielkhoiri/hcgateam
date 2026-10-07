@@ -227,10 +227,16 @@
   .contentArea {
     min-height: 100vh;
     min-height: 100dvh;
-    display: grid;
-    grid-template-rows: 70px minmax(0, 1fr);
+    display: block;
+    padding-top: 70px;
   }
-  .topHeader { padding: 0 16px; }
+  .topHeader {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 180;
+    height: 70px;
+    padding: 0 16px;
+  }
   .mobileMenuButton {
     width: 40px;
     height: 40px;

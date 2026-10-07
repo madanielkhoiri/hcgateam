@@ -26,6 +26,10 @@ function buatService(overrides: { projects?: unknown[]; projectDetail?: unknown;
       findMany: jest.fn().mockResolvedValue(overrides.projects ?? []),
       findUnique: jest.fn().mockResolvedValue('projectDetail' in overrides ? overrides.projectDetail : { id: 1 }),
     },
+    shopDrawing: { groupBy: jest.fn().mockResolvedValue([]) },
+    materialApproval: { groupBy: jest.fn().mockResolvedValue([]) },
+    metodePekerjaan: { groupBy: jest.fn().mockResolvedValue([]) },
+    checklistKonstruksi: { groupBy: jest.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 
   if ('projectAkses' in overrides) {

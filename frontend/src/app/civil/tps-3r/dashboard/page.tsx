@@ -37,15 +37,15 @@ export default function Tps3rDashboardPage() {
     </div></div>
     {error&&<p className={styles.errorText}>{error}</p>}
     {memuat||!ringkasan?<p className={styles.emptyText}>Memuat...</p>:<>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12}}>
+      <div className="dashboard-card-grid" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12}}>
         <Stat label="Organik" value={kg(ringkasan.totalOrganik)}/><Stat label="Daur Ulang / Recycle" value={kg(ringkasan.totalRecycle)}/><Stat label="Guna Ulang / Reuse" value={kg(ringkasan.totalReuse)}/><Stat label="Residu" value={kg(ringkasan.totalResidu)}/><Stat label="Sampah Terkelola" value={kg(totalTerkelola)}/><Stat label="Jumlah Laporan" value={String(ringkasan.totalLaporan)}/>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
+      <div className="dashboard-card-grid" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
         <AnimatedLineChart title="Total Timbangan per Kategori" subtitle={`${BULAN[bulan-1]} ${tahun} - satuan kg`} data={kategori} accent="green"/>
         <SimplePieChart title="Proporsi Kategori Sampah" subtitle={`${BULAN[bulan-1]} ${tahun}`} data={pie}/>
         <SimpleBarChart title="Sampah Terkelola" subtitle={`${BULAN[bulan-1]} ${tahun} - satuan kg`} data={[{label:'Organik',value:ringkasan.terkelolaOrganik,color:WARNA.organik},{label:'Daur Ulang',value:ringkasan.terkelolaRecycle,color:WARNA.recycle},{label:'Guna Ulang',value:ringkasan.terkelolaReuse,color:WARNA.reuse},{label:'Residu',value:ringkasan.terkelolaResidu,color:WARNA.residu}]}/>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'minmax(0,2fr) minmax(320px,1fr)',gap:16}}><MultiLineChart title="Tren Sampah per Kategori per Bulan" subtitle={`${tahun} - satuan kg`} labels={BULAN_SINGKAT} series={[
+      <div className="dashboard-card-grid" style={{display:'grid',gridTemplateColumns:'minmax(0,2fr) minmax(320px,1fr)',gap:16}}><MultiLineChart title="Tren Sampah per Kategori per Bulan" subtitle={`${tahun} - satuan kg`} labels={BULAN_SINGKAT} series={[
         {label:'Organik',color:WARNA.organik,values:tren.map((x)=>bulat(x.organik))},{label:'Daur Ulang',color:WARNA.recycle,values:tren.map((x)=>bulat(x.recycle))},{label:'Guna Ulang',color:WARNA.reuse,values:tren.map((x)=>bulat(x.reuse))},{label:'Residu',color:WARNA.residu,values:tren.map((x)=>bulat(x.residu))}
       ]}/><PhotoCarousel items={foto}/></div>
     </>}
