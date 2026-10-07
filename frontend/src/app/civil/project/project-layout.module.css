@@ -521,3 +521,17 @@
     padding-bottom: 84px;
   }
 }
+/* Keep the mobile navigation trigger reachable while long pages scroll. */
+@media (max-width: 900px) {
+  .contentArea {
+    padding-top: 70px;
+  }
+
+  .topHeader {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 180;
+    width: 100%;
+    min-height: 70px;
+  }
+}

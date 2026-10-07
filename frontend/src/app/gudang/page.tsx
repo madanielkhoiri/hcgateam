@@ -196,6 +196,16 @@ function GudangPageInner() {
     });
   }
 
+  function aturQty(itemId: number, nilai: string, stok: number) {
+    const angka = Math.min(stok, Math.max(0, Math.floor(Number(nilai) || 0)));
+    setCart((current) => {
+      const salinan = { ...current };
+      if (angka === 0) delete salinan[itemId];
+      else salinan[itemId] = angka;
+      return salinan;
+    });
+  }
+
   function hapusDariKeranjang(itemId: number) {
     setCart((current) => {
       const salinan = { ...current };
@@ -480,7 +490,17 @@ function GudangPageInner() {
                       >
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={qty === 0 ? '#c3cede' : '#0868f6'} strokeWidth={2.6} strokeLinecap="round"><path d="M5 12h14" /></svg>
                       </button>
-                      <span className={styles.stepperQty}>{qty}</span>
+                      <input
+                        className={styles.stepperQtyInput}
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max={item.stock}
+                        value={qty}
+                        onFocus={(event) => event.currentTarget.select()}
+                        onChange={(event) => aturQty(item.id, event.target.value, item.stock)}
+                        aria-label={`Jumlah ${item.name}`}
+                      />
                       <button
                         type="button"
                         className={`${styles.stepperButton} ${styles.stepperButtonPrimary}`}
@@ -580,7 +600,17 @@ function GudangPageInner() {
                       <button type="button" className={styles.stepperButton} onClick={() => ubahQty(item.id, -1, item.stock)} aria-label={`Kurangi ${item.name}`}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0868f6" strokeWidth={2.6} strokeLinecap="round"><path d="M5 12h14" /></svg>
                       </button>
-                      <span className={styles.stepperQty}>{qty}</span>
+                      <input
+                        className={styles.stepperQtyInput}
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max={item.stock}
+                        value={qty}
+                        onFocus={(event) => event.currentTarget.select()}
+                        onChange={(event) => aturQty(item.id, event.target.value, item.stock)}
+                        aria-label={`Jumlah ${item.name}`}
+                      />
                       <button type="button" className={`${styles.stepperButton} ${styles.stepperButtonPrimary}`} onClick={() => ubahQty(item.id, 1, item.stock)} aria-label={`Tambah ${item.name}`}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ffffff" strokeWidth={2.6} strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                       </button>
