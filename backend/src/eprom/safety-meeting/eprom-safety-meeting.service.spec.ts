@@ -28,7 +28,7 @@ describe('EpromSafetyMeetingService', () => {
       ),
     } as unknown as PrismaService;
     const akses = {
-      wajibAksesProject: jest.fn().mockResolvedValue(undefined),
+      wajibAksesMenuProject: jest.fn().mockResolvedValue(undefined),
     } as unknown as EpromAksesService;
     const simpanDokumen = jest
       .fn()
