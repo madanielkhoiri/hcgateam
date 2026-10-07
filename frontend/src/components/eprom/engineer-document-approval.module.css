@@ -145,7 +145,7 @@
 .canvas {
   display: block;
   width: auto;
-  max-width: 100%;
+  max-width: none;
   height: auto;
 }
 .inkLayer {
