@@ -49,6 +49,58 @@
   box-sizing: border-box;
 }
 
+/* Baseline responsive guardrails shared by every module. Individual modules
+   can still opt into their own layout without allowing cards/forms to force
+   the viewport wider than the device. */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+}
+
+table {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  h1 { font-size: clamp(1.35rem, 6vw, 2rem); }
+  h2 { font-size: clamp(1.1rem, 5vw, 1.5rem); }
+
+  /* Preserve readable wide data tables while keeping the page itself fixed. */
+  [class*="tableWrap"],
+  [class*="tableContainer"],
+  [class*="tableScroll"],
+  [class*="dataTable"] {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [class*="grid"],
+  [class*="Grid"] {
+    max-width: 100%;
+  }
+
+  [class*="card"],
+  [class*="Card"],
+  [class*="panel"],
+  [class*="Panel"] {
+    min-width: 0;
+  }
+}
+
 html,
 body {
   width: 100%;

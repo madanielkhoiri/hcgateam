@@ -20,6 +20,7 @@ import {
 } from '@/lib/access-control';
 import { MobileBottomNav } from '@/components/module-shell/mobile-bottom-nav';
 import { PageTransition } from '@/components/page-transition/page-transition';
+import { ProfileMenu } from '@/components/profile-menu/profile-menu';
 import { buatInisial } from '@/lib/buat-inisial';
 import styles from '../project/project-layout.module.css';
 
@@ -142,17 +143,7 @@ export default function Tps3rLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className={styles.topHeaderRight}>
-            <div className={styles.profile}>
-              <span className={styles.profileAvatar}>
-                <UsersRound size={20} />
-              </span>
-              <div>
-                <strong>{user.name}</strong>
-                <span>{formatRole(user.role)}</span>
-              </div>
-            </div>
-          </div>
+          <div className={styles.topHeaderRight}><ProfileMenu user={user} /></div>
         </header>
 
         <div className={styles.pageContent}>

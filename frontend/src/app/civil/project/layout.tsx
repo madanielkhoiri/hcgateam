@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
-  Bell,
   Building,
   CalendarCheck,
   CalendarClock,
@@ -45,6 +44,10 @@ import {
   TrendingUp,
   Users,
   UsersRound,
+  UserCog,
+  ScrollText,
+  KeyRound,
+  LogOut,
   Wrench,
   X,
 } from "lucide-react";
@@ -190,6 +193,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [closingRingkasan, setClosingRingkasan] = useState<RingkasanPendingClosing | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const boleh = isEpromOwner(user);
   const vendorSaya = isEpromVendor(user);
@@ -629,9 +633,6 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
     );
   }
 
-  const badgeCount =
-    (ringkasan?.sphMenungguFinal ?? 0) + (ringkasan?.legalitasBelumLengkap ?? 0);
-
   if (!user) {
     return <main className={styles.loading}>Memuat modul Project...</main>;
   }
@@ -794,12 +795,13 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
           </div>
 
           <div className={styles.topHeaderRight}>
-            <button type="button" className={styles.notificationButton} aria-label="Notifikasi">
-              <Bell size={22} />
-              {badgeCount > 0 && <span>{badgeCount}</span>}
-            </button>
-
-            <div className={styles.profile}>
+            <div className={styles.profileWrapper}>
+            <button
+              type="button"
+              className={styles.profile}
+              aria-expanded={profileOpen}
+              onClick={() => setProfileOpen((value) => !value)}
+            >
               <span className={styles.profileAvatar}>
                 <UsersRound size={20} />
               </span>
@@ -807,6 +809,23 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
                 <strong>{user.name}</strong>
                 <span>{formatRole(user.role)}</span>
               </div>
+              <ChevronDown size={17} className={profileOpen ? styles.profileArrowOpen : styles.profileArrow} />
+            </button>
+            {profileOpen && (
+              <div className={styles.profileDropdown} role="menu">
+                <div className={styles.profileDropdownHeader}>
+                  <span className={styles.profileMenuAvatar}><UsersRound size={22} /></span>
+                  <span><strong>{user.name}</strong><small>{formatRole(user.role)}</small></span>
+                </div>
+                <div className={styles.profileDivider} />
+                <Link href="/dashboard" onClick={() => setProfileOpen(false)}><UserCog size={18} /><span><strong>Akun Saya</strong><small>Edit nama dan username</small></span></Link>
+                {(user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "SECTION_HEAD") && <Link href="/admin/manajemen-akun" onClick={() => setProfileOpen(false)}><UsersRound size={18} /><span><strong>Manajemen Akun</strong><small>Atur role dan akses menu akun</small></span></Link>}
+                {(user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "SECTION_HEAD") && <Link href="/admin/audit-log" onClick={() => setProfileOpen(false)}><ScrollText size={18} /><span><strong>Audit Log</strong><small>Riwayat siapa mengubah apa</small></span></Link>}
+                <Link href="/dashboard" onClick={() => setProfileOpen(false)}><KeyRound size={18} /><span><strong>Ubah Password</strong><small>Perbarui keamanan akun</small></span></Link>
+                <div className={styles.profileDivider} />
+                <button type="button" className={styles.logoutDropdown} onClick={() => { clearSession(); router.replace("/login"); }}><LogOut size={18} /><span><strong>Keluar</strong><small>Kembali ke halaman login</small></span></button>
+              </div>
+            )}
             </div>
           </div>
         </header>
