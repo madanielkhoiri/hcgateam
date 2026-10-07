@@ -102,7 +102,7 @@ export class EpromVendorService {
    * profil kontaknya sendiri (nama/email/telepon), tidak boleh mengubah
    * status legalitas maupun status aktif (itu kewenangan Owner) atau menghapus data.
    */
-  async ubah(id: number, dto: UbahVendorDto, bolehOwner: boolean) {
+  async ubah(id: number, dto: UbahVendorDto, bolehOwner: boolean, bolehAturMenu = bolehOwner) {
     await this.detail(id);
 
     if (dto.legalitasStatus !== undefined && !bolehOwner) {
@@ -113,7 +113,7 @@ export class EpromVendorService {
       throw new BadRequestException('Status aktif hanya dapat diubah oleh Owner');
     }
 
-    if (dto.menuNonaktif !== undefined && !bolehOwner) {
+    if (dto.menuNonaktif !== undefined && !bolehAturMenu) {
       throw new BadRequestException('Akses submenu hanya dapat diubah oleh Owner/Admin');
     }
 
