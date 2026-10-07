@@ -277,7 +277,7 @@ export class EpromPerformanceVendorService {
         kontrak: {
           include: {
             tender: { select: { id: true, namaTender: true } },
-            vendor: { select: { id: true, namaVendor: true } },
+            vendor: { select: { id: true, namaVendor: true, menuNonaktif: true } },
           },
         },
       },
@@ -298,7 +298,7 @@ export class EpromPerformanceVendorService {
         kontrak: {
           include: {
             tender: { select: { id: true, namaTender: true } },
-            vendor: { select: { id: true, namaVendor: true } },
+            vendor: { select: { id: true, namaVendor: true, menuNonaktif: true } },
           },
         },
       },
@@ -314,6 +314,7 @@ export class EpromPerformanceVendorService {
     sertakanKewajiban: boolean,
   ) {
     const kontrakMulai = tanggalKontrak(project.kontrak.tanggalMulai);
+    const menuAktif = (key: string) => !(project.kontrak.vendor.menuNonaktif ?? []).includes(key);
     const kontrakSelesai = tanggalKontrak(project.kontrak.tanggalSelesai);
     const mulaiAktif = new Date(Math.max(kontrakMulai.getTime(), periode.mulai.getTime()));
     const selesaiAktif = new Date(Math.min(kontrakSelesai.getTime(), periode.selesai.getTime()));
@@ -394,6 +395,7 @@ export class EpromPerformanceVendorService {
     for (const hari of hariKerja) {
       const tanggal = ymd(hari);
       for (const jadwal of JADWAL_HARIAN) {
+        if (!menuAktif(jadwal.tipe)) continue;
         kewajiban.push(
           statusKewajiban(
             jadwal.tipe,
@@ -414,6 +416,7 @@ export class EpromPerformanceVendorService {
       hariPerMinggu.set(key, [...(hariPerMinggu.get(key) ?? []), hari]);
     }
     for (const [key, days] of hariPerMinggu) {
+      if (!menuAktif('progress-mingguan')) break;
       const deadline = days[days.length - 1];
       const tanggal = ymd(deadline);
       const uploads = progressMingguan
@@ -444,6 +447,7 @@ export class EpromPerformanceVendorService {
       hariPerBulan.set(key, [...(hariPerBulan.get(key) ?? []), hari]);
     }
     for (const [bulan, days] of hariPerBulan) {
+      if (!menuAktif('progress-bulanan')) break;
       const deadline = ymd(days[days.length - 1]);
       kewajiban.push(
         statusKewajibanPeriode(
@@ -481,7 +485,7 @@ export class EpromPerformanceVendorService {
     const totalPlanned = bulat(terbaru.reduce((sum, item) => sum + Number(item.planned), 0));
     const totalActual = bulat(terbaru.reduce((sum, item) => sum + Number(item.actual), 0));
     const deviasi = bulat(totalActual - totalPlanned);
-    const skorDeviasi = terbaru.length === 0 ? null : nilaiDeviasi(deviasi);
+    const skorDeviasi = !menuAktif('progress-mingguan') || terbaru.length === 0 ? null : nilaiDeviasi(deviasi);
 
     const targetPeriode = [...hariPerBulan.entries()].reduce((total, [bulan, days]) => {
       const [tahun, nomorBulan] = bulan.split('-').map(Number);
@@ -499,10 +503,16 @@ export class EpromPerformanceVendorService {
       : Math.max(1, Math.ceil(targetPeriode * (hariBerlalu / hariKerja.length)));
     const nilaiTta = targetJatuhTempo === 0 ? null : Math.min(100, bulat((tta / targetJatuhTempo) * 100));
     const nilaiKta = targetJatuhTempo === 0 ? null : Math.min(100, bulat((kta / targetJatuhTempo) * 100));
-    const nilaiTtaKta = nilaiTta === null || nilaiKta === null ? null : bulat((nilaiTta + nilaiKta) / 2);
+    const nilaiTtaKtaBagian = [menuAktif('tta') ? nilaiTta : null, menuAktif('kta') ? nilaiKta : null]
+      .filter((nilai): nilai is number => nilai !== null);
+    const nilaiTtaKta = nilaiTtaKtaBagian.length === 0
+      ? null
+      : bulat(nilaiTtaKtaBagian.reduce((sum, nilai) => sum + nilai, 0) / nilaiTtaKtaBagian.length);
 
     const jsaLengkap = jsa.filter((item) => item.sosialisasi?.fileUrl).length;
-    const nilaiJsa = jsa.length === 0 ? null : bulat((jsaLengkap / jsa.length) * 100);
+    const nilaiJsa = !menuAktif('jsa') || !menuAktif('sosialisasi-jsa') || jsa.length === 0
+      ? null
+      : bulat((jsaLengkap / jsa.length) * 100);
 
     const tanggalHariIni = tanggalDariYmd(ymdWita(sekarang));
     const batasDue = new Date(Math.min(tanggalHariIni.getTime() - 1, periode.selesai.getTime()));
@@ -514,7 +524,7 @@ export class EpromPerformanceVendorService {
       (item) => item.statusClose && (item.hariTerlambat ?? 0) > 0,
     ).length;
     const picaBelumSelesai = picaJatuhTempo.filter((item) => !item.statusClose).length;
-    const nilaiPicaMom = picaJatuhTempo.length === 0
+    const nilaiPicaMom = !menuAktif('mom') || picaJatuhTempo.length === 0
       ? null
       : bulat(
           picaJatuhTempo.reduce(
@@ -602,7 +612,7 @@ export class EpromPerformanceVendorService {
         kontrak: {
           include: {
             tender: { select: { id: true, namaTender: true } },
-            vendor: { select: { id: true, namaVendor: true } },
+            vendor: { select: { id: true, namaVendor: true, menuNonaktif: true } },
           },
         },
       },

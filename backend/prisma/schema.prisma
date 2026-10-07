@@ -1843,6 +1843,7 @@ model Vendor {
    * Vendor non-aktif tidak muncul di pilihan Undangan Tender.
    */
   statusAktif     Boolean               @default(true) @map("status_aktif")
+  menuNonaktif    String[]              @default([]) @map("menu_nonaktif")
   legalitasStatus StatusLegalitasVendor @default(BELUM_LENGKAP) @map("legalitas_status")
   createdAt       DateTime              @default(now()) @map("created_at")
   updatedAt       DateTime              @updatedAt @map("updated_at")
@@ -2244,6 +2245,8 @@ enum EpromSafetyMeetingType {
   P5M
   SAFETY_TALK
   FATIGUE_TEST
+  DOKPRO
+  IZIN_KERJA_KHUSUS
 }
 
 model EpromSafetyMeetingFile {

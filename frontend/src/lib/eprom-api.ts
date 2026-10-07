@@ -24,6 +24,7 @@ export type Vendor = {
   email: string | null;
   noTelepon: string | null;
   statusAktif: boolean;
+  menuNonaktif: string[];
   legalitasStatus: StatusLegalitasVendor;
   users?: { id: number; name: string; username: string | null }[];
   _count?: { kontrak: number };
@@ -510,7 +511,7 @@ export type ClosingItem = {
 
 export type RingkasanPendingClosing = Record<TipeClosing, number>;
 
-export type TipeSafetyMeeting = 'p5m' | 'safety-talk' | 'fatigue-test';
+export type TipeSafetyMeeting = 'p5m' | 'safety-talk' | 'fatigue-test' | 'dokpro' | 'izin-kerja-khusus';
 
 export type SafetyMeetingFileItem = {
   id: number;
@@ -696,6 +697,7 @@ export const epromApi = {
         noTelepon: string;
         legalitasStatus: StatusLegalitasVendor;
         statusAktif: boolean;
+        menuNonaktif: string[];
       }>,
     ) => request<Vendor>(`/vendors/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     tautkanUser: (id: number, userId: number) =>
@@ -1229,6 +1231,8 @@ export const LABEL_TIPE_SAFETY_MEETING: Record<TipeSafetyMeeting, string> = {
   p5m: 'P5M',
   'safety-talk': 'Safety Talk',
   'fatigue-test': 'Fatigue Test',
+  dokpro: 'Dokpro',
+  'izin-kerja-khusus': 'Izin Kerja Khusus',
 };
 
 // ==================================================
