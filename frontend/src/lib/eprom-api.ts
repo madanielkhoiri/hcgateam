@@ -288,6 +288,10 @@ export type Project = {
   approvalStatusEngineer?: RingkasanStatusApproval;
   approvalStatusKonstruksi?: RingkasanStatusApproval;
   approvalStatusPerTipe?: Partial<Record<TipeEngineer | 'checklist-tahapan', RingkasanStatusApproval>>;
+  approvalStatusShopDrawing?: RingkasanStatusApproval;
+  approvalStatusMaterialApproval?: RingkasanStatusApproval;
+  approvalStatusMetodePekerjaan?: RingkasanStatusApproval;
+  approvalStatusChecklistTahapan?: RingkasanStatusApproval;
 };
 
 export type TipeEngineer =
