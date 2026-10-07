@@ -215,6 +215,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [menuNonaktifVendor, setMenuNonaktifVendor] = useState<string[]>([]);
 
   const boleh = isEpromOwner(user);
   const vendorSaya = isEpromVendor(user);
@@ -224,6 +225,8 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const activeEngineerProjectId = engineerDetailMatch ? engineerDetailMatch[1] : null;
   const konstruksiDetailMatch = /^\/civil\/project\/konstruksi\/(\d+)/.exec(pathname);
   const activeKonstruksiProjectId = konstruksiDetailMatch ? konstruksiDetailMatch[1] : null;
+  const fileDetailMatch = /^\/civil\/project\/project-files\/(\d+)/.exec(pathname);
+  const activeFileProjectId = fileDetailMatch ? fileDetailMatch[1] : null;
   const meetingDetailMatch = /^\/civil\/project\/meeting\/(\d+)/.exec(pathname);
   const activeMeetingProjectId = meetingDetailMatch ? meetingDetailMatch[1] : null;
   const safetyMeetingDetailMatch =
@@ -328,10 +331,10 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       statusBadges: vendorSaya ? engineerStatusTerlihat : undefined,
       items: [
         { label: "Daftar Project", href: "/civil/project/engineer", icon: ListChecks },
-        ...(activeEngineerProjectId
+        ...((activeEngineerProjectId ?? (activeTab === 'dokpro' ? activeFileProjectId : null))
           ? TAB_ENGINEER.map((t) => ({
               label: t.label,
-              href: `/civil/project/engineer/${activeEngineerProjectId}?tab=${t.tab}`,
+              href: `/civil/project/engineer/${activeEngineerProjectId ?? activeFileProjectId}?tab=${t.tab}`,
               icon: t.icon,
               badge: engineerRingkasan?.[t.tab] ?? 0,
               statusBadges: vendorSaya && ['shop-drawing', 'material-approval', 'metode-pekerjaan'].includes(t.tab)
@@ -339,6 +342,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
                 : undefined,
             }))
           : []),
+        ...((activeEngineerProjectId ?? activeFileProjectId) ? [{ label: 'Dokpro', href: `/civil/project/project-files/${activeEngineerProjectId ?? activeFileProjectId}?tab=dokpro`, icon: FileText }] : []),
       ],
     },
     {
@@ -349,10 +353,10 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       statusBadges: vendorSaya ? konstruksiStatusTerlihat : undefined,
       items: [
         { label: "Daftar Project", href: "/civil/project/konstruksi", icon: ListChecks },
-        ...(activeKonstruksiProjectId
+        ...((activeKonstruksiProjectId ?? (activeTab === 'izin-kerja-khusus' ? activeFileProjectId : null))
           ? TAB_KONSTRUKSI.map((t) => ({
               label: t.label,
-              href: `/civil/project/konstruksi/${activeKonstruksiProjectId}?tab=${t.tab}`,
+              href: `/civil/project/konstruksi/${activeKonstruksiProjectId ?? activeFileProjectId}?tab=${t.tab}`,
               icon: t.icon,
               badge: TIPE_KONSTRUKSI_BADGE.has(t.tab)
                 ? (konstruksiRingkasan?.[t.tab as keyof RingkasanPendingKonstruksi] ?? 0)
@@ -362,6 +366,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
                 : undefined,
             }))
           : []),
+        ...((activeKonstruksiProjectId ?? activeFileProjectId) ? [{ label: 'Izin Kerja Khusus', href: `/civil/project/project-files/${activeKonstruksiProjectId ?? activeFileProjectId}?tab=izin-kerja-khusus`, icon: ShieldCheck }] : []),
       ],
     },
     {
@@ -522,6 +527,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       return;
     }
 
+    if (vendorSaya && user.vendorId) {
+      epromApi.vendor.detail(user.vendorId)
+        .then((vendor) => setMenuNonaktifVendor(vendor.menuNonaktif ?? []))
+        .catch(() => setMenuNonaktifVendor([]));
+    } else {
+      setMenuNonaktifVendor([]);
+    }
+
     epromApi.dashboard
       .ringkasan()
       .then((data) => setRingkasan(data))
@@ -541,7 +554,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
           );
           setStatusPerTipe(
             projects.reduce<Record<string, RingkasanStatusApproval>>((semua, project) => {
-              Object.entries(project.approvalStatusPerTipe ?? {}).forEach(([tipe, status]) => {
+              const rincian = {
+                'shop-drawing': project.approvalStatusShopDrawing,
+                'material-approval': project.approvalStatusMaterialApproval,
+                'metode-pekerjaan': project.approvalStatusMetodePekerjaan,
+                'checklist-tahapan': project.approvalStatusChecklistTahapan,
+                ...project.approvalStatusPerTipe,
+              };
+              Object.entries(rincian).forEach(([tipe, status]) => {
                 semua[tipe] = tambahStatus(semua[tipe] ?? STATUS_KOSONG, status);
               });
               return semua;
@@ -718,7 +738,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   function renderGroup(group: NavGroup) {
     const GroupIcon = group.icon;
     const isOpen = openGroups.includes(group.id);
-    const isGroupActive = group.items.some((item) => pathname === item.href.split("?")[0]);
+    const itemsTerlihat = group.items.filter((item) => {
+      if (!vendorSaya) return true;
+      const query = item.href.split('?')[1];
+      const key = query ? new URLSearchParams(query).get('tab') : null;
+      return !key || !menuNonaktifVendor.includes(key);
+    });
+    if (itemsTerlihat.length === 0) return null;
+    const isGroupActive = itemsTerlihat.some((item) => pathname === item.href.split("?")[0]);
 
     return (
       <div className={styles.menuGroup} key={group.id}>
@@ -742,7 +769,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
 
         {isOpen && (
           <div className={styles.submenu}>
-            {group.items.map((item) => {
+            {itemsTerlihat.map((item) => {
               const ItemIcon = item.icon;
               const [itemPath, itemQuery] = item.href.split("?");
               const isItemActive =

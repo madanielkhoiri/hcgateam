@@ -15,6 +15,8 @@ export const TIPE_SAFETY_MEETING = [
   'p5m',
   'safety-talk',
   'fatigue-test',
+  'dokpro',
+  'izin-kerja-khusus',
 ] as const;
 
 export type TipeSafetyMeeting = (typeof TIPE_SAFETY_MEETING)[number];
@@ -23,12 +25,16 @@ const TIPE_DATABASE: Record<TipeSafetyMeeting, EpromSafetyMeetingType> = {
   p5m: EpromSafetyMeetingType.P5M,
   'safety-talk': EpromSafetyMeetingType.SAFETY_TALK,
   'fatigue-test': EpromSafetyMeetingType.FATIGUE_TEST,
+  dokpro: EpromSafetyMeetingType.DOKPRO,
+  'izin-kerja-khusus': EpromSafetyMeetingType.IZIN_KERJA_KHUSUS,
 };
 
 const LABEL_TIPE: Record<TipeSafetyMeeting, string> = {
   p5m: 'P5M',
   'safety-talk': 'Safety Talk',
   'fatigue-test': 'Fatigue Test',
+  dokpro: 'Dokpro',
+  'izin-kerja-khusus': 'Izin Kerja Khusus',
 };
 
 export class UploadSafetyMeetingDto {
@@ -53,7 +59,7 @@ export class EpromSafetyMeetingService {
   }
 
   async daftar(aktor: AktorEprom, tipe: TipeSafetyMeeting, projectId: number) {
-    await this.akses.wajibAksesProject(aktor, projectId);
+    await this.akses.wajibAksesMenuProject(aktor, projectId, tipe);
 
     return this.prisma.epromSafetyMeetingFile.findMany({
       where: { projectId, tipe: TIPE_DATABASE[tipe] },
@@ -68,7 +74,7 @@ export class EpromSafetyMeetingService {
     projectId: number,
     files: Express.Multer.File[] = [],
   ) {
-    await this.akses.wajibAksesProject(aktor, projectId);
+    await this.akses.wajibAksesMenuProject(aktor, projectId, tipe);
 
     if (files.length === 0) {
       throw new BadRequestException('Pilih minimal satu file');
@@ -114,7 +120,7 @@ export class EpromSafetyMeetingService {
       throw new NotFoundException(`${LABEL_TIPE[tipe]} tidak ditemukan`);
     }
 
-    await this.akses.wajibAksesProject(aktor, item.projectId);
+    await this.akses.wajibAksesMenuProject(aktor, item.projectId, tipe);
     await this.prisma.epromSafetyMeetingFile.delete({ where: { id } });
     this.file.hapus(item.fileUrl);
 
