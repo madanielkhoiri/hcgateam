@@ -541,7 +541,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
           );
           setStatusPerTipe(
             projects.reduce<Record<string, RingkasanStatusApproval>>((semua, project) => {
-              Object.entries(project.approvalStatusPerTipe ?? {}).forEach(([tipe, status]) => {
+              const rincian = {
+                'shop-drawing': project.approvalStatusShopDrawing,
+                'material-approval': project.approvalStatusMaterialApproval,
+                'metode-pekerjaan': project.approvalStatusMetodePekerjaan,
+                'checklist-tahapan': project.approvalStatusChecklistTahapan,
+                ...project.approvalStatusPerTipe,
+              };
+              Object.entries(rincian).forEach(([tipe, status]) => {
                 semua[tipe] = tambahStatus(semua[tipe] ?? STATUS_KOSONG, status);
               });
               return semua;
