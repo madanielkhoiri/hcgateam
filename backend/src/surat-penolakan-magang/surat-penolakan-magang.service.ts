@@ -77,7 +77,7 @@ export class SuratPenolakanMagangService {
   }
 
   async terbitkan(dto: BuatSuratPenolakanMagangDto, aktor: AktorMcu) {
-    this.akses.wajibPeran(aktor, UserRole.HC);
+    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.GRUP_LEADER_RND);
 
     const anakMagang = await this.prisma.anakMagang.findUnique({
       where: { id: dto.anakMagangId },

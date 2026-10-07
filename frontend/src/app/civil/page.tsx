@@ -28,6 +28,7 @@ import {
   saveStoredUser,
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
+import { ProfileMenu } from '@/components/profile-menu/profile-menu';
 import { ambilRingkasanApproval, type RingkasanApproval } from '@/lib/approval-summary-api';
 import styles from './civil.module.css';
 
@@ -234,15 +235,7 @@ export default function CivilPage() {
           </span>
         </Link>
 
-        <div className={styles.profile}>
-          <span className={styles.profileIcon}>
-            <UsersRound size={22} />
-          </span>
-          <div>
-            <strong>{user.name}</strong>
-            <span>{formatRole(user.role)}</span>
-          </div>
-        </div>
+        <ProfileMenu user={user} />
       </header>
 
       <section className={styles.main}>
