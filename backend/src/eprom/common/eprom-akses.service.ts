@@ -104,6 +104,10 @@ export class EpromAksesService {
     }
   }
 
+  isOwnerAtauAdmin(aktor: AktorEprom): boolean {
+    return ([UserRole.OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN] as UserRole[]).includes(aktor.role);
+  }
+
   async wajibAksesMenuProject(
     aktor: AktorEprom,
     projectId: number,
