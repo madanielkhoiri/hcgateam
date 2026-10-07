@@ -61,7 +61,12 @@ export class EpromVendorController {
     // Owner boleh mengubah vendor manapun; akun Vendor cuma boleh mengubah
     // profilnya sendiri (tidak boleh menghapus, lihat endpoint hapus di bawah).
     await this.akses.wajibVendorSendiri(aktor, id);
-    return this.service.ubah(id, dto, this.akses.isOwner(aktor));
+    return this.service.ubah(
+      id,
+      dto,
+      this.akses.isOwner(aktor),
+      this.akses.isOwnerAtauAdmin(aktor),
+    );
   }
 
   @Delete(':id')

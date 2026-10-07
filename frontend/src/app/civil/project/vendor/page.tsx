@@ -31,6 +31,7 @@ const SUBMENU_EPROM = [
 export default function MasterVendorPage() {
   const user = getStoredUser();
   const boleh = isEpromOwner(user);
+  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role ?? '');
 
   const [vendorList, setVendorList] = useState<Vendor[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -272,7 +273,7 @@ export default function MasterVendorPage() {
                               <Pencil size={14} />
                             </button>
                           )}
-                          {boleh && (
+                          {bolehAturAkses && (
                             <button
                               type="button"
                               className={styles.iconButton}
