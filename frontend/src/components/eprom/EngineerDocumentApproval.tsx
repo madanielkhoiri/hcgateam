@@ -697,7 +697,11 @@ export function EngineerDocumentApproval({
               {rendering && <small>Memuat halaman...</small>}
             </div>
 
-            <div ref={canvasAreaRef} className={styles.canvasArea}>
+            <div
+              ref={canvasAreaRef}
+              className={styles.canvasArea}
+              style={{ touchAction: inkMode ? "none" : "pan-x pan-y" }}
+            >
               <div
                 ref={surfaceRef}
                 className={styles.pageSurface}
@@ -708,7 +712,10 @@ export function EngineerDocumentApproval({
                     : undefined
                 }
               >
-                <canvas ref={canvasRef} className={styles.canvas} />
+                <canvas
+                  ref={canvasRef}
+                  className={`${styles.canvas} ${zoom <= 0.5 ? styles.canvasFit : ""}`}
+                />
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ pointerEvents: inkMode ? "auto" : "none" }} className={styles.inkLayer} onPointerDown={mulaiCoret} onPointerMove={lanjutCoret} onPointerUp={selesaiCoret} onPointerCancel={selesaiCoret}>
                   {inkStrokes.filter((stroke) => stroke.page === page).map((stroke) => <polyline key={stroke.id} points={stroke.points} fill="none" stroke={stroke.color} strokeWidth={stroke.width} strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>
