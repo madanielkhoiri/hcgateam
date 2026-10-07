@@ -42,7 +42,7 @@ export class EpromSafetyMeetingController {
   }
 
   @Post(':tipe')
-  @UseInterceptors(FilesInterceptor('file', 100, { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 1000, { storage: memoryStorage() }))
   unggah(
     @Aktor() aktor: AktorEprom,
     @Param('tipe') tipeRaw: string,
