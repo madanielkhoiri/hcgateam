@@ -285,6 +285,8 @@ export type Project = {
   pendingKonstruksi?: number;
   pendingFinancial?: number;
   pendingClosing?: number;
+  approvalStatusEngineer?: RingkasanStatusApproval;
+  approvalStatusKonstruksi?: RingkasanStatusApproval;
 };
 
 export type TipeEngineer =
@@ -297,6 +299,7 @@ export type TipeEngineer =
   | 'checklist-tahapan';
 
 export type StatusApprovalEprom = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type RingkasanStatusApproval = Record<StatusApprovalEprom, number>;
 
 export type EngineerItem = {
   id: number;

@@ -71,6 +71,7 @@ import {
   type RingkasanPendingClosing,
   type RingkasanPendingEngineer,
   type RingkasanPendingKonstruksi,
+  type RingkasanStatusApproval,
   type TipeEngineer,
   type TipeSafetyMeeting,
 } from "@/lib/eprom-api";
@@ -95,7 +96,22 @@ type NavGroup = {
   icon: React.ElementType;
   items: NavItem[];
   badge?: number;
+  statusBadges?: RingkasanStatusApproval;
 };
+
+const STATUS_KOSONG: RingkasanStatusApproval = { PENDING: 0, APPROVED: 0, REJECTED: 0 };
+
+function tambahStatus(
+  total: RingkasanStatusApproval,
+  status?: RingkasanStatusApproval,
+): RingkasanStatusApproval {
+  if (!status) return total;
+  return {
+    PENDING: total.PENDING + status.PENDING,
+    APPROVED: total.APPROVED + status.APPROVED,
+    REJECTED: total.REJECTED + status.REJECTED,
+  };
+}
 
 const dashboardItem: NavItem = { label: "Dashboard", href: "/civil/project", icon: Gauge };
 const dataVendorItem: NavItem = { label: "Data Vendor", href: "/civil/project/vendor", icon: Users };
@@ -182,8 +198,10 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [user, setUser] = useState<PortalUser | null>(null);
   const [ringkasan, setRingkasan] = useState<DashboardRingkasanEprom | null>(null);
   const [engineerPending, setEngineerPending] = useState(0);
+  const [engineerStatus, setEngineerStatus] = useState<RingkasanStatusApproval>(STATUS_KOSONG);
   const [engineerRingkasan, setEngineerRingkasan] = useState<RingkasanPendingEngineer | null>(null);
   const [konstruksiPending, setKonstruksiPending] = useState(0);
+  const [konstruksiStatus, setKonstruksiStatus] = useState<RingkasanStatusApproval>(STATUS_KOSONG);
   const [konstruksiRingkasan, setKonstruksiRingkasan] = useState<RingkasanPendingKonstruksi | null>(
     null,
   );
@@ -284,6 +302,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       label: "Engineer",
       icon: HardHat,
       badge: totalPendingProjekAktif ?? engineerPending,
+      statusBadges: engineerStatus,
       items: [
         { label: "Daftar Project", href: "/civil/project/engineer", icon: ListChecks },
         ...(activeEngineerProjectId
@@ -301,6 +320,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       label: "Konstruksi",
       icon: Building,
       badge: totalPendingKonstruksiAktif ?? konstruksiPending,
+      statusBadges: konstruksiStatus,
       items: [
         { label: "Daftar Project", href: "/civil/project/konstruksi", icon: ListChecks },
         ...(activeKonstruksiProjectId
@@ -484,8 +504,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
         .then((projects: Project[]) => {
           const total = projects.reduce((sum, p) => sum + (p.pendingEngineer ?? 0), 0);
           setEngineerPending(total);
+          setEngineerStatus(
+            projects.reduce(
+              (sum, project) => tambahStatus(sum, project.approvalStatusEngineer),
+              STATUS_KOSONG,
+            ),
+          );
         })
-        .catch(() => setEngineerPending(0));
+        .catch(() => { setEngineerPending(0); setEngineerStatus(STATUS_KOSONG); });
     }
 
     function muatKonstruksiPending() {
@@ -494,8 +520,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
         .then((projects: Project[]) => {
           const total = projects.reduce((sum, p) => sum + (p.pendingKonstruksi ?? 0), 0);
           setKonstruksiPending(total);
+          setKonstruksiStatus(
+            projects.reduce(
+              (sum, project) => tambahStatus(sum, project.approvalStatusKonstruksi),
+              STATUS_KOSONG,
+            ),
+          );
         })
-        .catch(() => setKonstruksiPending(0));
+        .catch(() => { setKonstruksiPending(0); setKonstruksiStatus(STATUS_KOSONG); });
     }
 
     function muatFinancialPending() {
@@ -651,7 +683,14 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
         >
           <GroupIcon size={18} />
           <span>{group.label}</span>
-          {!!group.badge && <span className={styles.navBadge}>{group.badge}</span>}
+          {group.statusBadges && (
+            <span className={styles.statusBadgeGroup} aria-label="Ringkasan status approval">
+              {!!group.statusBadges.PENDING && <span className={`${styles.statusBadge} ${styles.statusPending}`} title="Pending">{group.statusBadges.PENDING}</span>}
+              {!!group.statusBadges.APPROVED && <span className={`${styles.statusBadge} ${styles.statusApproved}`} title="Approved">{group.statusBadges.APPROVED}</span>}
+              {!!group.statusBadges.REJECTED && <span className={`${styles.statusBadge} ${styles.statusRejected}`} title="Rejected">{group.statusBadges.REJECTED}</span>}
+            </span>
+          )}
+          {!group.statusBadges && !!group.badge && <span className={styles.navBadge}>{group.badge}</span>}
           <ChevronDown size={16} className={isOpen ? styles.groupChevronOpen : styles.groupChevron} />
         </button>
 
