@@ -53,7 +53,6 @@
    can still opt into their own layout without allowing cards/forms to force
    the viewport wider than the device. */
 img,
-svg,
 video,
 canvas {
   max-width: 100%;
@@ -244,5 +243,27 @@ a {
   .modalPanelEnter,
   .modalPanelExit {
     animation: none;
+  }
+}
+/* Shared two-panel dashboard layout. Keep charts readable instead of squeezing
+   them side-by-side on phones. e-ProM uses its own layout and is unaffected. */
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.dashboard-card-grid {
+  display: grid;
+}
+
+@media (max-width: 760px) {
+  .dashboard-chart-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-card-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }

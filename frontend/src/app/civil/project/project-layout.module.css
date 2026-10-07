@@ -363,6 +363,31 @@
   text-align: left;
 }
 
+.statusBadgeGroup {
+  flex: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.statusPending { background: #d89a00; }
+.statusApproved { background: #07984c; }
+.statusRejected { background: #e32635; }
+
 .profileWrapper { position: relative; }
 .profileArrow { color: #607895; transition: transform .16s ease; }
 .profileArrowOpen { color: #607895; transform: rotate(180deg); }
@@ -494,5 +519,19 @@
 @media (max-width: 900px) {
   .pageContent {
     padding-bottom: 84px;
+  }
+}
+/* Keep the mobile navigation trigger reachable while long pages scroll. */
+@media (max-width: 900px) {
+  .contentArea {
+    padding-top: 70px;
+  }
+
+  .topHeader {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 180;
+    width: 100%;
+    min-height: 70px;
   }
 }

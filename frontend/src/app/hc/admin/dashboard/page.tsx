@@ -332,7 +332,7 @@ export default function DashboardAdminPage() {
 
  <StatCardRow cards={statCards} />
 
- <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
+ <div className="dashboard-chart-grid">
  <AnimatedLineChart
  title="Statistik Penggunaan Bulanan"
  subtitle={`Dalam juta rupiah • ${teksTrenBulanan}`}
