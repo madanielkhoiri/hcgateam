@@ -142,11 +142,19 @@
   background: #fff;
   box-shadow: 0 8px 28px rgb(0 0 0 / 24%);
 }
+.pageSurface:has(.canvasFit) {
+  width: 100%;
+  max-width: 100%;
+}
 .canvas {
   display: block;
   width: auto;
   max-width: none;
   height: auto;
+}
+.canvasFit {
+  width: 100%;
+  max-width: 100%;
 }
 .inkLayer {
   position: absolute;
@@ -322,5 +330,9 @@
   }
   .actions {
     flex-direction: column;
+  }
+  .actions button {
+    width: 100%;
+    min-height: 44px;
   }
 }
