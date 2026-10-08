@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
-import { epromApi, isEpromOwner, isEpromVendor, urlFileEprom, type Project, type SafetyMeetingFileItem, type TipeSafetyMeeting } from "@/lib/eprom-api";
+import { epromApi, formatWaktuWITA, isEpromOwner, isEpromVendor, urlFileEprom, type Project, type SafetyMeetingFileItem, type TipeSafetyMeeting } from "@/lib/eprom-api";
 import styles from "../../engineer/engineer.module.css";
 
 type TipeFileProject = Extract<TipeSafetyMeeting, 'dokpro' | 'izin-kerja-khusus'>;
@@ -57,7 +57,7 @@ export default function ProjectFilePage() {
       {boleh && <form className={styles.formCard} onSubmit={unggah} style={{marginBottom:18}}><label>Pilih File<input key={inputKey} type="file" multiple accept="*/*" onChange={(e) => setFiles(Array.from(e.target.files ?? []))}/>{files.length > 0 && <span>{files.length} file dipilih</span>}</label><button className={styles.primaryButton} disabled={submitting || !files.length}><Upload size={14}/>{submitting ? 'Mengunggah...' : 'Unggah File'}</button></form>}
       {error && <p className={styles.errorText}>{error}</p>}{loading && <p className={styles.emptyText}>Memuat file...</p>}
       {!loading && !items.length && <p className={styles.emptyText}>Belum ada file.</p>}
-      <div className={styles.itemList}>{items.map((item) => <div className={styles.itemRow} key={item.id}><div className={styles.itemRowTop}><strong>{item.originalFileName}</strong>{boleh && <button type="button" className={styles.iconButtonDanger} onClick={() => hapus(item)}><Trash2 size={13}/></button>}</div><div className={styles.itemRowMeta}><a href={urlFileEprom(item.fileUrl)} target="_blank" rel="noreferrer"><FileText size={12}/> Lihat File</a><span>Diunggah oleh {item.uploadedBy.name} &middot; {new Date(item.uploadedAt).toLocaleString('id-ID')}</span></div></div>)}</div>
+      <div className={styles.itemList}>{items.map((item) => <div className={styles.itemRow} key={item.id}><div className={styles.itemRowTop}><strong>{item.originalFileName}</strong>{boleh && <button type="button" className={styles.iconButtonDanger} onClick={() => hapus(item)}><Trash2 size={13}/></button>}</div><div className={styles.itemRowMeta}><a href={urlFileEprom(item.fileUrl)} target="_blank" rel="noreferrer"><FileText size={12}/> Lihat File</a><span>Diunggah oleh {item.uploadedBy.name} &middot; {formatWaktuWITA(item.uploadedAt)}</span></div></div>)}</div>
     </div>
   </div>;
 }

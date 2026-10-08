@@ -6,7 +6,10 @@ import { EpromFileService } from '../common/eprom-file.service';
 import { EpromSafetyMeetingService } from './eprom-safety-meeting.service';
 
 describe('EpromSafetyMeetingService', () => {
+  afterEach(() => jest.useRealTimers());
+
   it('menyimpan seluruh file dari satu unggahan multi-file', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-08T01:00:00.000Z'));
     type CreateInput = {
       data: {
         projectId: number;
@@ -29,6 +32,7 @@ describe('EpromSafetyMeetingService', () => {
     } as unknown as PrismaService;
     const akses = {
       wajibAksesMenuProject: jest.fn().mockResolvedValue(undefined),
+      isOwner: jest.fn().mockReturnValue(false),
     } as unknown as EpromAksesService;
     const simpanDokumen = jest
       .fn()
@@ -61,5 +65,45 @@ describe('EpromSafetyMeetingService', () => {
       uploadedById: 9,
     });
     expect(simpanDokumen).toHaveBeenCalledTimes(2);
+  });
+
+  it('menolak unggahan P5M Vendor mulai pukul 10.00 WITA', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-08T02:00:00.000Z'));
+    const prisma = {} as PrismaService;
+    const akses = {
+      wajibAksesMenuProject: jest.fn().mockResolvedValue(undefined),
+      isOwner: jest.fn().mockReturnValue(false),
+    } as unknown as EpromAksesService;
+    const file = { simpanDokumen: jest.fn(), hapus: jest.fn() } as unknown as EpromFileService;
+    const service = new EpromSafetyMeetingService(prisma, akses, file);
+    const aktor = { id: 9, username: 'vendor', role: UserRole.VENDOR, vendorId: 3 };
+
+    await expect(
+      service.unggah(aktor, 'p5m', 7, [{ originalname: 'p5m.pdf' }] as Express.Multer.File[]),
+    ).rejects.toThrow('Batas unggah P5M adalah pukul 10.00 WITA');
+    expect(file.simpanDokumen).not.toHaveBeenCalled();
+  });
+
+  it('Owner tetap dapat mengunggah P5M setelah pukul 10.00 WITA', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-08T02:01:00.000Z'));
+    const create = jest.fn().mockResolvedValue({ id: 1 });
+    const prisma = {
+      epromSafetyMeetingFile: { create },
+      $transaction: jest.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
+    } as unknown as PrismaService;
+    const akses = {
+      wajibAksesMenuProject: jest.fn().mockResolvedValue(undefined),
+      isOwner: jest.fn().mockReturnValue(true),
+    } as unknown as EpromAksesService;
+    const file = {
+      simpanDokumen: jest.fn().mockReturnValue('eprom/project/7/safety-meeting/p5m/a.pdf'),
+      hapus: jest.fn(),
+    } as unknown as EpromFileService;
+    const service = new EpromSafetyMeetingService(prisma, akses, file);
+    const aktor = { id: 1, username: 'owner', role: UserRole.ADMIN };
+
+    await expect(
+      service.unggah(aktor, 'p5m', 7, [{ originalname: 'p5m.pdf' }] as Express.Multer.File[]),
+    ).resolves.toHaveLength(1);
   });
 });
