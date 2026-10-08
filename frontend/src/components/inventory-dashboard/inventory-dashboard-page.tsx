@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AnimatedLineChart from "@/components/dashboard-charts/animated-line-chart";
+import styles from "./inventory-dashboard-page.module.css";
 
 type InventoryScope = "general" | "mess" | "electric";
 
@@ -181,6 +182,7 @@ export default function InventoryDashboardPage({
 
   return (
     <main
+      className={styles.dashboard}
       style={{
         display: "grid",
         gap: 14,
