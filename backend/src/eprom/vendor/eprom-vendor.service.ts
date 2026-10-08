@@ -87,6 +87,26 @@ export class EpromVendorService {
     return vendor;
   }
 
+  /**
+   * Sumber akses submenu untuk akun Vendor yang sedang login. Vendor diambil
+   * dari JWT di server, sehingga frontend tidak bergantung pada vendorId yang
+   * mungkin masih lama di localStorage.
+   */
+  async aksesMenuSaya(aktor: AktorEprom) {
+    this.akses.wajibVendor(aktor);
+
+    const vendor = await this.akses.vendorDariAkun(aktor);
+    if (!vendor) {
+      throw new BadRequestException('Akun Vendor belum tertaut ke data vendor');
+    }
+
+    return {
+      vendorId: vendor.id,
+      namaVendor: vendor.namaVendor,
+      menuNonaktif: vendor.menuNonaktif ?? [],
+    };
+  }
+
   async buat(dto: BuatVendorDto) {
     return this.prisma.vendor.create({
       data: {
