@@ -41,6 +41,11 @@ export class EpromVendorController {
     return this.service.daftar(hanyaAktif === 'true');
   }
 
+  @Get('saya/menu-access')
+  aksesMenuSaya(@Aktor() aktor: AktorEprom) {
+    return this.service.aksesMenuSaya(aktor);
+  }
+
   @Get(':id')
   detail(@Param('id', ParseIntPipe) id: number) {
     return this.service.detail(id);
