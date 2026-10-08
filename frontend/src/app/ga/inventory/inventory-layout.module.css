@@ -581,12 +581,21 @@
 @media (max-width: 900px) {
   .contentArea,
   .shellCollapsed .contentArea {
+    /* Header mobile sudah fixed, jadi area isi tidak boleh lagi memakai
+       grid dua baris desktop. Grid lama menjepit pageContent ke baris 70px
+       dan overflow-x:hidden mengubahnya menjadi scroll container vertikal. */
+    display: block !important;
+    grid-template-rows: none !important;
     width: 100% !important;
     margin-left: 0 !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
   }
 
   .pageContent {
     padding: 16px !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
   }
 }
 

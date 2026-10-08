@@ -1,3 +1,9 @@
+.dashboard {
+  width: 100%;
+  min-width: 0;
+  align-content: start;
+}
+
 .page {
   display: grid;
   gap: 16px;
