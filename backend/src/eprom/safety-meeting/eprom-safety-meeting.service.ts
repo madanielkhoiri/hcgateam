@@ -84,7 +84,7 @@ export class EpromSafetyMeetingService {
   ) {
     await this.akses.wajibAksesMenuProject(aktor, projectId, tipe);
 
-    if (tipe === 'p5m' && lewatBatasUploadP5m()) {
+    if (tipe === 'p5m' && !this.akses.isOwner(aktor) && lewatBatasUploadP5m()) {
       throw new BadRequestException(
         'Batas unggah P5M adalah pukul 10.00 WITA',
       );
