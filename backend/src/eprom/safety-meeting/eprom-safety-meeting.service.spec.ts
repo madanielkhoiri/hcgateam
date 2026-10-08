@@ -84,7 +84,7 @@ describe('EpromSafetyMeetingService', () => {
     expect(file.simpanDokumen).not.toHaveBeenCalled();
   });
 
-  it('Owner tetap dapat mengunggah P5M setelah pukul 10.00 WITA', async () => {
+  it('menolak unggahan P5M Owner/Admin setelah pukul 10.00 WITA', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-10-08T02:01:00.000Z'));
     const create = jest.fn().mockResolvedValue({ id: 1 });
     const prisma = {
@@ -104,6 +104,7 @@ describe('EpromSafetyMeetingService', () => {
 
     await expect(
       service.unggah(aktor, 'p5m', 7, [{ originalname: 'p5m.pdf' }] as Express.Multer.File[]),
-    ).resolves.toHaveLength(1);
+    ).rejects.toThrow('Batas unggah P5M adalah pukul 10.00 WITA');
+    expect(create).not.toHaveBeenCalled();
   });
 });
