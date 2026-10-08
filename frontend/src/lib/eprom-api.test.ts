@@ -75,7 +75,7 @@ describe("formatWaktuWITA", () => {
 
  it("mengonversi UTC ke WITA (UTC+8) tanpa bergantung timezone mesin", () => {
  // 05 Mar 2026 16:30 UTC == 06 Mar 2026 00.30 WITA
- expect(formatWaktuWITA("2026-03-05T16:30:00.000Z")).toBe("06 Mar 2026, 00:30 WITA");
+ expect(formatWaktuWITA("2026-03-05T16:30:00.000Z")).toBe("06 Mar 2026, 00.30 WITA");
  });
 });
 
