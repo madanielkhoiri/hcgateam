@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import {
   epromApi,
+  formatWaktuWITA,
   urlFileEprom,
   type EngineerApprovalDetail,
   type EngineerSignature,
@@ -644,7 +645,7 @@ export function EngineerDocumentApproval({
         <div>
           <span>Tanggal Upload</span>
           <strong>
-            {new Date(detail.item.createdAt).toLocaleString("id-ID")}
+            {formatWaktuWITA(detail.item.createdAt)}
           </strong>
         </div>
       </section>
