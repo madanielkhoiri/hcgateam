@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
+  formatWaktuWITA,
   isEpromOwner,
   isEpromVendor,
   LABEL_TIPE_SAFETY_MEETING,
@@ -105,6 +106,20 @@ function SafetyMeetingFileTab({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [p5mDitutup, setP5mDitutup] = useState(false);
+
+  useEffect(() => {
+    const perbaruiStatusP5m = () => {
+      const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      setP5mDitutup(
+        tipe === "p5m" &&
+          wita.getUTCHours() * 60 + wita.getUTCMinutes() >= 10 * 60,
+      );
+    };
+    perbaruiStatusP5m();
+    const timer = window.setInterval(perbaruiStatusP5m, 30_000);
+    return () => window.clearInterval(timer);
+  }, [tipe]);
 
   const muat = useCallback(() => {
     setLoading(true);
@@ -160,7 +175,13 @@ function SafetyMeetingFileTab({
         File {LABEL_TIPE_SAFETY_MEETING[tipe]}
       </h2>
 
-      {bolehMengelola && (
+      {tipe === "p5m" && (
+        <p className={styles.tabHint}>
+          Batas unggah pukul 10.00 WITA untuk semua akun.
+        </p>
+      )}
+
+      {bolehMengelola && !p5mDitutup && (
         <form
           className={styles.formCard}
           onSubmit={unggah}
@@ -188,6 +209,12 @@ function SafetyMeetingFileTab({
             {submitting ? "Mengunggah..." : "Unggah File"}
           </button>
         </form>
+      )}
+
+      {bolehMengelola && p5mDitutup && (
+        <p className={styles.errorText}>
+          Unggah P5M ditutup. Batas unggah pukul 10.00 WITA.
+        </p>
       )}
 
       {error && <p className={styles.errorText}>{error}</p>}
@@ -228,7 +255,7 @@ function SafetyMeetingFileTab({
               </a>
               <span>
                 Diunggah oleh {item.uploadedBy.name} &middot;{" "}
-                {new Date(item.uploadedAt).toLocaleString("id-ID")}
+                {formatWaktuWITA(item.uploadedAt)}
               </span>
             </div>
           </div>

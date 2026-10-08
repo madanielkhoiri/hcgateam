@@ -1300,7 +1300,7 @@ export function formatWaktuWITA(nilai: string | null | undefined): string {
   const jam = String(wita.getUTCHours()).padStart(2, '0');
   const menit = String(wita.getUTCMinutes()).padStart(2, '0');
 
-  return `${tanggal} ${bulan} ${tahun}, ${jam}:${menit} WITA`;
+  return `${tanggal} ${bulan} ${tahun}, ${jam}.${menit} WITA`;
 }
 
 export function formatWaktuRelatif(nilai: string | null | undefined): string {
