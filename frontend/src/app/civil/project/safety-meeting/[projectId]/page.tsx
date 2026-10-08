@@ -106,6 +106,20 @@ function SafetyMeetingFileTab({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [p5mDitutup, setP5mDitutup] = useState(false);
+
+  useEffect(() => {
+    const perbaruiStatusP5m = () => {
+      const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      setP5mDitutup(
+        tipe === "p5m" &&
+          wita.getUTCHours() * 60 + wita.getUTCMinutes() >= 10 * 60,
+      );
+    };
+    perbaruiStatusP5m();
+    const timer = window.setInterval(perbaruiStatusP5m, 30_000);
+    return () => window.clearInterval(timer);
+  }, [tipe]);
 
   const muat = useCallback(() => {
     setLoading(true);
@@ -163,11 +177,11 @@ function SafetyMeetingFileTab({
 
       {tipe === "p5m" && (
         <p className={styles.tabHint}>
-          Batas unggah Vendor pukul 10.00 WITA. Owner/Admin tetap dapat mengelola file.
+          Batas unggah pukul 10.00 WITA untuk semua akun.
         </p>
       )}
 
-      {bolehMengelola && (
+      {bolehMengelola && !p5mDitutup && (
         <form
           className={styles.formCard}
           onSubmit={unggah}
@@ -195,6 +209,12 @@ function SafetyMeetingFileTab({
             {submitting ? "Mengunggah..." : "Unggah File"}
           </button>
         </form>
+      )}
+
+      {bolehMengelola && p5mDitutup && (
+        <p className={styles.errorText}>
+          Unggah P5M ditutup. Batas unggah pukul 10.00 WITA.
+        </p>
       )}
 
       {error && <p className={styles.errorText}>{error}</p>}
