@@ -86,6 +86,7 @@ export default function SafetyMeetingDetailPage() {
         projectId={projectId}
         tipe={tipe}
         bolehMengelola={bolehMengelola}
+        vendorDibatasi={isEpromVendor(user)}
       />
     </div>
   );
@@ -95,10 +96,12 @@ function SafetyMeetingFileTab({
   projectId,
   tipe,
   bolehMengelola,
+  vendorDibatasi,
 }: {
   projectId: number;
   tipe: TipeSafetyMeeting;
   bolehMengelola: boolean;
+  vendorDibatasi: boolean;
 }) {
   const [items, setItems] = useState<SafetyMeetingFileItem[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -112,14 +115,15 @@ function SafetyMeetingFileTab({
     const perbaruiStatusP5m = () => {
       const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
       setP5mDitutup(
-        tipe === "p5m" &&
+        vendorDibatasi &&
+          tipe === "p5m" &&
           wita.getUTCHours() * 60 + wita.getUTCMinutes() >= 10 * 60,
       );
     };
     perbaruiStatusP5m();
     const timer = window.setInterval(perbaruiStatusP5m, 30_000);
     return () => window.clearInterval(timer);
-  }, [tipe]);
+  }, [tipe, vendorDibatasi]);
 
   const muat = useCallback(() => {
     setLoading(true);
@@ -177,7 +181,9 @@ function SafetyMeetingFileTab({
 
       {tipe === "p5m" && (
         <p className={styles.tabHint}>
-          Batas unggah pukul 10.00 WITA untuk semua akun.
+          {vendorDibatasi
+            ? "Batas unggah Vendor pukul 10.00 WITA."
+            : "Batas pukul 10.00 WITA hanya berlaku untuk Vendor; Owner/Admin bebas mengelola file."}
         </p>
       )}
 
