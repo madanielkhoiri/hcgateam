@@ -37,6 +37,14 @@ const LABEL_TIPE: Record<TipeSafetyMeeting, string> = {
   'izin-kerja-khusus': 'Izin Kerja Khusus',
 };
 
+const BATAS_UPLOAD_P5M_MENIT_WITA = 10 * 60;
+
+/** P5M Vendor dapat diunggah sampai sebelum pukul 10.00 WITA. */
+function lewatBatasUploadP5m(): boolean {
+  const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  return wita.getUTCHours() * 60 + wita.getUTCMinutes() >= BATAS_UPLOAD_P5M_MENIT_WITA;
+}
+
 export class UploadSafetyMeetingDto {
   @Type(() => Number)
   @IsInt()
@@ -75,6 +83,12 @@ export class EpromSafetyMeetingService {
     files: Express.Multer.File[] = [],
   ) {
     await this.akses.wajibAksesMenuProject(aktor, projectId, tipe);
+
+    if (tipe === 'p5m' && !this.akses.isOwner(aktor) && lewatBatasUploadP5m()) {
+      throw new BadRequestException(
+        'Batas unggah P5M adalah pukul 10.00 WITA',
+      );
+    }
 
     if (files.length === 0) {
       throw new BadRequestException('Pilih minimal satu file');

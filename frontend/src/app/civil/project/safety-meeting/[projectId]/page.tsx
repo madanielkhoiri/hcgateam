@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
+  formatWaktuWITA,
   isEpromOwner,
   isEpromVendor,
   LABEL_TIPE_SAFETY_MEETING,
@@ -160,6 +161,12 @@ function SafetyMeetingFileTab({
         File {LABEL_TIPE_SAFETY_MEETING[tipe]}
       </h2>
 
+      {tipe === "p5m" && (
+        <p className={styles.tabHint}>
+          Batas unggah Vendor pukul 10.00 WITA. Owner/Admin tetap dapat mengelola file.
+        </p>
+      )}
+
       {bolehMengelola && (
         <form
           className={styles.formCard}
@@ -228,7 +235,7 @@ function SafetyMeetingFileTab({
               </a>
               <span>
                 Diunggah oleh {item.uploadedBy.name} &middot;{" "}
-                {new Date(item.uploadedAt).toLocaleString("id-ID")}
+                {formatWaktuWITA(item.uploadedAt)}
               </span>
             </div>
           </div>
