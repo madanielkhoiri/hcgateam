@@ -56,6 +56,38 @@ describe('EpromVendorService.detail', () => {
   });
 });
 
+describe('EpromVendorService.aksesMenuSaya', () => {
+  it('mengambil menu nonaktif dari vendor yang tertaut ke akun login', async () => {
+    const { service } = buatService({
+      vendor: vendorFixture({ menuNonaktif: ['shop-drawing', 'dokpro'] }),
+    });
+
+    await expect(
+      service.aksesMenuSaya(aktor(UserRole.VENDOR, { vendorId: 1 })),
+    ).resolves.toEqual({
+      vendorId: 1,
+      namaVendor: 'PT A',
+      menuNonaktif: ['shop-drawing', 'dokpro'],
+    });
+  });
+
+  it('menolak akun selain Vendor', async () => {
+    const { service } = buatService();
+
+    await expect(service.aksesMenuSaya(aktor(UserRole.ADMIN))).rejects.toThrow(
+      'Aksi ini hanya dapat dilakukan oleh akun Vendor',
+    );
+  });
+
+  it('menolak akun Vendor yang belum tertaut', async () => {
+    const { service } = buatService();
+
+    await expect(
+      service.aksesMenuSaya(aktor(UserRole.VENDOR, { vendorId: null })),
+    ).rejects.toThrow('belum tertaut');
+  });
+});
+
 describe('EpromVendorService.buat', () => {
   it('trim nama & telepon, email kosong jadi null', async () => {
     const { service, create } = buatService();

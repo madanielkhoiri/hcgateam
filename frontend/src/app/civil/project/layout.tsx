@@ -215,7 +215,9 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [menuNonaktifVendor, setMenuNonaktifVendor] = useState<string[]>([]);
+  // null = akses vendor belum selesai dimuat. Pada kondisi ini jangan pernah
+  // membuka semua submenu (fail closed), terutama di jaringan mobile lambat.
+  const [menuNonaktifVendor, setMenuNonaktifVendor] = useState<string[] | null>(null);
 
   const boleh = isEpromOwner(user);
   const vendorSaya = isEpromVendor(user);
@@ -527,10 +529,12 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       return;
     }
 
-    if (vendorSaya && user.vendorId) {
-      epromApi.vendor.detail(user.vendorId)
+    if (vendorSaya) {
+      setMenuNonaktifVendor(null);
+      epromApi.vendor.aksesSaya()
         .then((vendor) => setMenuNonaktifVendor(vendor.menuNonaktif ?? []))
-        .catch(() => setMenuNonaktifVendor([]));
+        // Gagal memuat akses tidak boleh berarti semua submenu terbuka.
+        .catch(() => setMenuNonaktifVendor(null));
     } else {
       setMenuNonaktifVendor([]);
     }
@@ -705,6 +709,29 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   }, [user, activeClosingProjectId]);
 
   useEffect(() => {
+    if (!vendorSaya || menuNonaktifVendor === null || !activeTab) return;
+    if (!menuNonaktifVendor.includes(activeTab)) return;
+
+    const tujuan = pathname.includes('/engineer/') || activeTab === 'dokpro'
+      ? '/civil/project/engineer'
+      : pathname.includes('/konstruksi/') || activeTab === 'izin-kerja-khusus'
+        ? '/civil/project/konstruksi'
+        : pathname.includes('/meeting/')
+          ? '/civil/project/meeting'
+          : pathname.includes('/safety-meeting/')
+            ? '/civil/project/safety-meeting'
+            : pathname.includes('/dokumen/')
+              ? '/civil/project/dokumen'
+              : pathname.includes('/financial/')
+                ? '/civil/project/financial'
+                : pathname.includes('/closing/')
+                  ? '/civil/project/closing'
+                  : '/civil/project';
+
+    router.replace(tujuan);
+  }, [activeTab, menuNonaktifVendor, pathname, router, vendorSaya]);
+
+  useEffect(() => {
     setMobileSidebarOpen(false);
   }, [pathname]);
 
@@ -742,7 +769,10 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       if (!vendorSaya) return true;
       const query = item.href.split('?')[1];
       const key = query ? new URLSearchParams(query).get('tab') : null;
-      return !key || !menuNonaktifVendor.includes(key);
+      // Item daftar project tidak memiliki key dan tetap dipakai untuk memilih
+      // project. Submenu project baru tampil setelah akses berhasil dimuat.
+      if (!key) return true;
+      return menuNonaktifVendor !== null && !menuNonaktifVendor.includes(key);
     });
     if (itemsTerlihat.length === 0) return null;
     const isGroupActive = itemsTerlihat.some((item) => pathname === item.href.split("?")[0]);
