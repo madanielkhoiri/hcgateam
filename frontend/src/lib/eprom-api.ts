@@ -686,6 +686,10 @@ export const epromApi = {
   vendor: {
     daftar: (hanyaAktif?: boolean) =>
       request<Vendor[]>(`/vendors${hanyaAktif ? '?hanyaAktif=true' : ''}`),
+    aksesSaya: () =>
+      request<{ vendorId: number; namaVendor: string; menuNonaktif: string[] }>(
+        '/vendors/saya/menu-access',
+      ),
     detail: (id: number) => request<Vendor>(`/vendors/${id}`),
     buat: (data: { namaVendor: string; email?: string; noTelepon?: string }) =>
       request<Vendor>('/vendors', { method: 'POST', body: JSON.stringify(data) }),
