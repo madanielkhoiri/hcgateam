@@ -28,7 +28,7 @@ export default function KontrakPage() {
   const [nomorKontrak, setNomorKontrak] = useState("");
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [tanggalSelesai, setTanggalSelesai] = useState("");
-  const [fileKontrakBaru, setFileKontrakBaru] = useState<File | null>(null);
+  const [fileKontrakBaru, setFileKontrakBaru] = useState<File[]>([]);
   const [showKontrakForm, setShowKontrakForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [projectNames, setProjectNames] = useState<Record<number, string>>({});
@@ -37,7 +37,7 @@ export default function KontrakPage() {
   const [editNomor, setEditNomor] = useState("");
   const [editTanggalMulai, setEditTanggalMulai] = useState("");
   const [editTanggalSelesai, setEditTanggalSelesai] = useState("");
-  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editFile, setEditFile] = useState<File[]>([]);
 
   const [dokumenModal, setDokumenModal] = useState<Kontrak | null>(null);
 
@@ -89,7 +89,7 @@ export default function KontrakPage() {
       setTanggalMulai("");
       setTanggalSelesai("");
       setTenderId("");
-      setFileKontrakBaru(null);
+      setFileKontrakBaru([]);
       setShowKontrakForm(false);
       muatUlang();
     } catch (err) {
@@ -104,7 +104,7 @@ export default function KontrakPage() {
     setEditNomor(kontrak.nomorKontrak);
     setEditTanggalMulai(kontrak.tanggalMulai.slice(0, 10));
     setEditTanggalSelesai(kontrak.tanggalSelesai.slice(0, 10));
-    setEditFile(null);
+    setEditFile([]);
   }
 
   async function simpanEdit(id: number) {
@@ -234,8 +234,9 @@ export default function KontrakPage() {
               File Kontrak
               <input
                 type="file"
+                multiple
                 accept="*/*"
-                onChange={(e) => setFileKontrakBaru(e.target.files?.[0] ?? null)}
+                onChange={(e) => setFileKontrakBaru(Array.from(e.target.files ?? []))}
               />
             </label>
             <button type="submit" className={styles.primaryButton} disabled={submitting}>
@@ -286,8 +287,9 @@ export default function KontrakPage() {
                       <td>
                         <input
                           type="file"
+                          multiple
                           accept="*/*"
-                          onChange={(e) => setEditFile(e.target.files?.[0] ?? null)}
+                          onChange={(e) => setEditFile(Array.from(e.target.files ?? []))}
                         />
                       </td>
                       <td colSpan={boleh ? 2 : 1}>
@@ -319,16 +321,22 @@ export default function KontrakPage() {
                       <td>{formatTanggal(kontrak.tanggalSelesai)}</td>
                       <td>
                         <div className={styles.stackedText}>
-                          {kontrak.fileKontrak ? (
+                          {(kontrak.fileKontrakFiles?.length
+                            ? kontrak.fileKontrakFiles
+                            : kontrak.fileKontrak
+                              ? [kontrak.fileKontrak]
+                              : []).map((file, index) => (
                             <a
-                              href={urlFileEprom(kontrak.fileKontrak)}
+                              key={`${file}-${index}`}
+                              href={urlFileEprom(file)}
                               target="_blank"
                               rel="noreferrer"
                               className={styles.linkButton}
                             >
-                              <FileText size={14} /> File Kontrak
+                              <FileText size={14} /> File Kontrak {index + 1}
                             </a>
-                          ) : (
+                          ))}
+                          {!kontrak.fileKontrak && !kontrak.fileKontrakFiles?.length && (
                             <small>Belum ada file kontrak</small>
                           )}
                           <button

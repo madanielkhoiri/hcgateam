@@ -208,6 +208,7 @@ export type Kontrak = {
   vendorId: number;
   nomorKontrak: string;
   fileKontrak: string | null;
+  fileKontrakFiles?: string[];
   tanggalMulai: string;
   tanggalSelesai: string;
   tender: { id: number; namaTender: string };
@@ -427,6 +428,7 @@ export type ProgressItem = {
 export type JamUploadInfo = {
   dibatasi: boolean;
   bukaSekarang: boolean;
+  dalamJadwal: boolean;
   bebasSebagaiOwner: boolean;
   jamBuka: string | null;
   jamTutup: string | null;
@@ -442,6 +444,7 @@ export type PerformaBulanIni = {
 export type SosialisasiJsaSlot = {
   id: number;
   fileUrl: string | null;
+  fileUrls?: string[];
   tanggal: string | null;
 };
 
@@ -587,6 +590,7 @@ export type MomItem = {
   statusClose: boolean;
   tglClose: string | null;
   fileFotoClose: string | null;
+  fileFotoCloseFiles: string[];
   hariTerlambat: number | null;
   hariTerlambatLive: number | null;
   createdAt: string;
@@ -808,26 +812,26 @@ export const epromApi = {
     detail: (id: number) => request<Kontrak>(`/kontrak/${id}`),
     buat: (
       data: { tenderId: number; nomorKontrak: string; tanggalMulai: string; tanggalSelesai: string },
-      file?: File | null,
+      files: File[] = [],
     ) => {
       const form = new FormData();
       form.append('tenderId', String(data.tenderId));
       form.append('nomorKontrak', data.nomorKontrak);
       form.append('tanggalMulai', data.tanggalMulai);
       form.append('tanggalSelesai', data.tanggalSelesai);
-      if (file) form.append('file', file);
+      files.forEach((file) => form.append('file', file));
       return request<Kontrak>('/kontrak', { method: 'POST', body: form });
     },
     ubah: (
       id: number,
       data: Partial<{ nomorKontrak: string; tanggalMulai: string; tanggalSelesai: string }>,
-      file?: File | null,
+      files: File[] = [],
     ) => {
       const form = new FormData();
       if (data.nomorKontrak !== undefined) form.append('nomorKontrak', data.nomorKontrak);
       if (data.tanggalMulai !== undefined) form.append('tanggalMulai', data.tanggalMulai);
       if (data.tanggalSelesai !== undefined) form.append('tanggalSelesai', data.tanggalSelesai);
-      if (file) form.append('file', file);
+      files.forEach((file) => form.append('file', file));
       return request<Kontrak>(`/kontrak/${id}`, { method: 'PATCH', body: form });
     },
     hapus: (id: number) => request<{ message: string }>(`/kontrak/${id}`, { method: 'DELETE' }),
@@ -1036,9 +1040,9 @@ export const epromApi = {
   sosialisasiJsa: {
     daftar: (projectId: number) =>
       request<JsaDenganSosialisasi[]>(`/sosialisasi-jsa?projectId=${projectId}`),
-    unggah: (jsaId: number, file: File) => {
+    unggah: (jsaId: number, files: File[]) => {
       const form = new FormData();
-      form.append('file', file);
+      files.forEach((file) => form.append('file', file));
       return request<SosialisasiJsaSlot>(`/sosialisasi-jsa/${jsaId}`, {
         method: 'POST',
         body: form,
@@ -1064,10 +1068,10 @@ export const epromApi = {
 
     daftarDokumentasi: (meetingId: number) =>
       request<DokumentasiMeetingItem[]>(`/meeting/${meetingId}/dokumentasi`),
-    unggahDokumentasi: (meetingId: number, file: File) => {
+    unggahDokumentasi: (meetingId: number, files: File[]) => {
       const form = new FormData();
-      form.append('file', file);
-      return request<DokumentasiMeetingItem>(`/meeting/${meetingId}/dokumentasi`, {
+      files.forEach((file) => form.append('file', file));
+      return request<DokumentasiMeetingItem[]>(`/meeting/${meetingId}/dokumentasi`, {
         method: 'POST',
         body: form,
       });
@@ -1078,9 +1082,9 @@ export const epromApi = {
     daftarMom: (meetingId: number) => request<MomItem[]>(`/meeting/${meetingId}/mom`),
     buatMom: (meetingId: number, data: { pica: string; dueDate: string; pic: string }) =>
       request<MomItem>(`/meeting/${meetingId}/mom`, { method: 'POST', body: JSON.stringify(data) }),
-    closeMom: (id: number, file: File) => {
+    closeMom: (id: number, files: File[]) => {
       const form = new FormData();
-      form.append('file', file);
+      files.forEach((file) => form.append('file', file));
       return request<MomItem>(`/meeting/mom/${id}/close`, { method: 'PATCH', body: form });
     },
     ubahMom: (id: number, data: { pica?: string; dueDate?: string; pic?: string }) =>
