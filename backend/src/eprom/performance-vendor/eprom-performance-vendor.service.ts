@@ -173,7 +173,7 @@ function statusKewajiban(
       label,
       jamBuka: buka,
       jamTutup: tutup,
-      status: 'ORANYE',
+      status: 'MERAH',
       keterangan: 'Upload di luar batas waktu',
       uploadedAt: uploadLain,
     };
@@ -243,7 +243,7 @@ function statusKewajibanPeriode(
       label,
       jamBuka: buka,
       jamTutup: tutup,
-      status: 'ORANYE',
+      status: 'MERAH',
       keterangan: 'Upload di luar batas waktu',
       uploadedAt: uploadLain,
     };

@@ -13,11 +13,11 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { TipeLinkMeeting } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -77,13 +77,13 @@ export class EpromMeetingController {
   }
 
   @Post(':meetingId/dokumentasi')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   unggahDokumentasi(
     @Aktor() aktor: AktorEprom,
     @Param('meetingId', ParseIntPipe) meetingId: number,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.service.unggahDokumentasi(aktor, meetingId, file);
+    return this.service.unggahDokumentasi(aktor, meetingId, files ?? []);
   }
 
   @Delete('dokumentasi/:id')
@@ -106,13 +106,13 @@ export class EpromMeetingController {
   }
 
   @Patch('mom/:id/close')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   closeMom(
     @Aktor() aktor: AktorEprom,
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.service.closeMom(aktor, id, file);
+    return this.service.closeMom(aktor, id, files ?? []);
   }
 
   @Patch('mom/:id')

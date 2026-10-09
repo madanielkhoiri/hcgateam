@@ -70,7 +70,7 @@ export default function TenderDetailPage() {
   const [sphFile, setSphFile] = useState<Record<number, File[]>>({});
   const [sphHarga, setSphHarga] = useState<Record<number, string>>({});
   const [editingRoundId, setEditingRoundId] = useState<number | null>(null);
-  const [editRoundFile, setEditRoundFile] = useState<File | null>(null);
+  const [editRoundFile, setEditRoundFile] = useState<File[]>([]);
   const [editRoundHarga, setEditRoundHarga] = useState("");
   const [evaluasiVendorList, setEvaluasiVendorList] = useState<EvaluasiVendorItem[]>([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -210,7 +210,7 @@ export default function TenderDetailPage() {
 
   function mulaiEditRound(roundId: number) {
     setEditingRoundId(roundId);
-    setEditRoundFile(null);
+    setEditRoundFile([]);
     setEditRoundHarga("");
   }
 
@@ -514,7 +514,8 @@ export default function TenderDetailPage() {
                           <strong>SPH {round.roundKe}</strong>
                           <input
                             type="file" multiple
-                            onChange={(e) => setEditRoundFile(e.target.files?.[0] ?? null)}
+                            accept="*/*"
+                            onChange={(e) => setEditRoundFile(Array.from(e.target.files ?? []))}
                           />
                           <input
                             type="number"

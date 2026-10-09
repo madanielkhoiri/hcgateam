@@ -217,6 +217,16 @@
   border-bottom: 0;
 }
 
+.rowLate td {
+  color: #b42318;
+  background: #fff1f0;
+  border-bottom-color: #ffc9c5;
+}
+
+.rowLate td:first-child {
+  box-shadow: inset 4px 0 0 #e53935;
+}
+
 .rowLink {
   display: block;
   color: #10244a;

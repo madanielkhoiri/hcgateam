@@ -23,8 +23,6 @@ import {
 } from "@/lib/eprom-api";
 import engineerStyles from "../../engineer/engineer.module.css";
 
-const ACCEPT_FOTO = ".jpg,.jpeg,.png,.webp";
-
 type Tab = "meeting" | "dokumentasi" | "mom";
 
 function labelProgress(item: ProgressItem, tipeLink: TipeLinkMeeting): string {
@@ -453,7 +451,7 @@ function DokumentasiTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
 
   const muat = useCallback(() => {
     if (!selectedMeetingId) {
@@ -470,12 +468,12 @@ function DokumentasiTab({
 
   useEffect(() => {
     muat();
-    setFileBaru(null);
+    setFileBaru([]);
   }, [muat]);
 
   async function unggah(event: React.FormEvent) {
     event.preventDefault();
-    if (!selectedMeetingId || !fileBaru) {
+    if (!selectedMeetingId || fileBaru.length === 0) {
       setError("Pilih file terlebih dahulu");
       return;
     }
@@ -484,7 +482,7 @@ function DokumentasiTab({
     setError(null);
     try {
       await epromApi.meeting.unggahDokumentasi(selectedMeetingId, fileBaru);
-      setFileBaru(null);
+      setFileBaru([]);
       muat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengunggah");
@@ -521,12 +519,14 @@ function DokumentasiTab({
       {selectedMeetingId && (boleh || vendorSaya) && (
         <form className={engineerStyles.formCard} onSubmit={unggah} style={{ marginBottom: 18 }}>
           <label>
-            Foto
+            File dokumentasi
             <input
               type="file"
-              accept={ACCEPT_FOTO}
-              onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+              multiple
+              accept="*/*"
+              onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
             />
+            {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
           </label>
           <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
             {submitting ? "Mengunggah..." : "Unggah Foto"}
@@ -551,17 +551,8 @@ function DokumentasiTab({
           <div key={item.id} style={{ position: "relative" }}>
             {item.fileFoto ? (
               <a href={urlFileEprom(item.fileFoto)} target="_blank" rel="noreferrer">
-                <img
-                  src={urlFileEprom(item.fileFoto)}
-                  alt="Dokumentasi meeting"
-                  style={{
-                    width: "100%",
-                    height: 110,
-                    objectFit: "cover",
-                    borderRadius: 10,
-                    border: "1px solid #e4edf7",
-                  }}
-                />
+                <FileText size={28} />
+                <span>Lihat file</span>
               </a>
             ) : (
               <div className={engineerStyles.emptyText}>Tidak ada file</div>
@@ -645,10 +636,10 @@ function MomTab({
     }
   }
 
-  async function close(item: MomItem, file: File) {
+  async function close(item: MomItem, files: File[]) {
     if (!confirm("Tutup MOM ini? Angka keterlambatan akan dibekukan saat ini.")) return;
     try {
-      await epromApi.meeting.closeMom(item.id, file);
+      await epromApi.meeting.closeMom(item.id, files);
       muat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menutup MOM");
@@ -755,7 +746,13 @@ function MomTab({
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id}>
+                <tr
+                  key={item.id}
+                  className={(item.statusClose ? item.hariTerlambat : item.hariTerlambatLive) &&
+                    Number(item.statusClose ? item.hariTerlambat : item.hariTerlambatLive) > 0
+                    ? engineerStyles.rowLate
+                    : undefined}
+                >
                   <td>{item.pica}</td>
                   <td>{formatTanggal(item.dueDate)}</td>
                   <td>{item.pic}</td>
@@ -766,23 +763,28 @@ function MomTab({
                           Close
                         </span>
                         {item.tglClose && <small>{formatTanggal(item.tglClose)}</small>}
-                        {item.fileFotoClose && (
-                          <a href={urlFileEprom(item.fileFotoClose)} target="_blank" rel="noreferrer">
+                        {(item.fileFotoCloseFiles?.length
+                          ? item.fileFotoCloseFiles
+                          : item.fileFotoClose
+                            ? [item.fileFotoClose]
+                            : []).map((file, index) => (
+                          <a key={`${file}-${index}`} href={urlFileEprom(file)} target="_blank" rel="noreferrer">
                             <FileText size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />
-                            Lihat Foto
+                            Lihat File {index + 1}
                           </a>
-                        )}
+                        ))}
                       </div>
                     ) : (boleh || vendorSaya) ? (
                       <div className={engineerStyles.inlineForm}>
                         <input
                           type="file"
-                          accept={ACCEPT_FOTO}
+                          multiple
+                          accept="*/*"
                           style={{ maxWidth: 150 }}
                           onChange={(e) => {
-                            const file = e.target.files?.[0];
+                            const files = Array.from(e.target.files ?? []);
                             e.target.value = "";
-                            if (file) close(item, file);
+                            if (files.length) close(item, files);
                           }}
                         />
                         <button

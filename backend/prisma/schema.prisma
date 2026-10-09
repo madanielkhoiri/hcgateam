@@ -57,14 +57,14 @@ enum StatusKwitansiObat {
 }
 
 model KwitansiObatNotifikasi {
-  id          Int                @id @default(autoincrement())
-  karyawanId  Int
-  status      StatusKwitansiObat
-  nominal     Decimal?           @db.Decimal(15, 2)
-  alasan      String?            @db.Text
+  id           Int                @id @default(autoincrement())
+  karyawanId   Int
+  status       StatusKwitansiObat
+  nominal      Decimal?           @db.Decimal(15, 2)
+  alasan       String?            @db.Text
   dibuatOlehId Int
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
   @@index([karyawanId, createdAt])
   @@index([status, createdAt])
@@ -117,18 +117,18 @@ model User {
   packMealOrders        PackMealOrder[]       @relation("PackMealOrderCreator")
   miningPackMealEntries MiningPackMealEntry[] @relation("MiningPackMealEntryCreator")
 
-  profilKaryawan     Karyawan?
-  departemenDikelola Departemen[]       @relation("AdminDepartemen")
-  klinikDikelola     Klinik[]           @relation("AkunKlinik")
-  jadwalMcuDibuat    JadwalMcu[]        @relation("PembuatJadwalMcu")
-  jadwalMcuDiubah    JadwalMcu[]        @relation("PengubahJadwalMcu")
-  suratPengantarMcu  SuratPengantar[]   @relation("PenerbitSuratPengantar")
-  hasilMcuDiupload   HasilMcu[]         @relation("PengunggahHasilMcu")
-  rekomendasiMcu     RekomendasiMcu[]   @relation("DokterRekomendasi")
-  batasFollowUp      FollowUp[]         @relation("PenetapBatasFollowUp")
-  hasilFollowUp      HasilFollowUp[]    @relation("PengunggahHasilFollowUp")
-  induksiUlangPic    InduksiUlang[]     @relation("PicSheInduksi")
-  notifikasiMcu      LogNotifikasiMcu[] @relation("PenerimaNotifikasiMcu")
+  profilKaryawan       Karyawan?
+  departemenDikelola   Departemen[]          @relation("AdminDepartemen")
+  klinikDikelola       Klinik[]              @relation("AkunKlinik")
+  jadwalMcuDibuat      JadwalMcu[]           @relation("PembuatJadwalMcu")
+  jadwalMcuDiubah      JadwalMcu[]           @relation("PengubahJadwalMcu")
+  suratPengantarMcu    SuratPengantar[]      @relation("PenerbitSuratPengantar")
+  hasilMcuDiupload     HasilMcu[]            @relation("PengunggahHasilMcu")
+  rekomendasiMcu       RekomendasiMcu[]      @relation("DokterRekomendasi")
+  batasFollowUp        FollowUp[]            @relation("PenetapBatasFollowUp")
+  hasilFollowUp        HasilFollowUp[]       @relation("PengunggahHasilFollowUp")
+  induksiUlangPic      InduksiUlang[]        @relation("PicSheInduksi")
+  notifikasiMcu        LogNotifikasiMcu[]    @relation("PenerimaNotifikasiMcu")
   webPushSubscriptions WebPushSubscription[]
 
   tiketHelpdeskDibuat   TiketHelpdesk[] @relation("PembuatTiketHelpdesk")
@@ -163,18 +163,18 @@ model User {
   deviasiStokDiubah  DeviasiStok[]
   tenderPesanDikirim TenderPesan[]
 
-  dokumenIrDiupload        DokumenIr[]          @relation("DokumenIrUploader")
-  aspirasiPertanyaanDibuat AspirasiPertanyaan[] @relation("AspirasiPertanyaanCreator")
-  aspirasiJawabanDiberikan AspirasiJawaban[]    @relation("AspirasiJawabanUser")
-  irCourseVideoDiupload    IrCourseVideo[]      @relation("IrCourseUploader")
-  irCourseTontonan         IrCourseTontonan[]   @relation("IrCourseTontonanUser")
-  irCourseQuizJawaban      IrCourseQuizJawaban[] @relation("IrCourseQuizJawabanUser")
-  postinganDiupload        Postingan[]          @relation("PostinganUploader")
-  driveFileDiupload        DriveFile[]          @relation("DriveFileUploader")
-  albumDokumentasiDibuat   AlbumDokumentasi[]   @relation("AlbumDokumentasiCreator")
-  laporanTps3rDibuat       LaporanTps3r[]       @relation("LaporanTps3rCreator")
+  dokumenIrDiupload        DokumenIr[]            @relation("DokumenIrUploader")
+  aspirasiPertanyaanDibuat AspirasiPertanyaan[]   @relation("AspirasiPertanyaanCreator")
+  aspirasiJawabanDiberikan AspirasiJawaban[]      @relation("AspirasiJawabanUser")
+  irCourseVideoDiupload    IrCourseVideo[]        @relation("IrCourseUploader")
+  irCourseTontonan         IrCourseTontonan[]     @relation("IrCourseTontonanUser")
+  irCourseQuizJawaban      IrCourseQuizJawaban[]  @relation("IrCourseQuizJawabanUser")
+  postinganDiupload        Postingan[]            @relation("PostinganUploader")
+  driveFileDiupload        DriveFile[]            @relation("DriveFileUploader")
+  albumDokumentasiDibuat   AlbumDokumentasi[]     @relation("AlbumDokumentasiCreator")
+  laporanTps3rDibuat       LaporanTps3r[]         @relation("LaporanTps3rCreator")
   sampahTerkelolaDibuat    SampahTerkelolaTps3r[] @relation("SampahTerkelolaTps3rCreator")
-  fotoPenyerahanDibuat     FotoPenyerahanTps3r[] @relation("FotoPenyerahanTps3rCreator")
+  fotoPenyerahanDibuat     FotoPenyerahanTps3r[]  @relation("FotoPenyerahanTps3rCreator")
 
   @@map("users")
 }
@@ -2052,15 +2052,16 @@ model FileUpload {
 // --------------------------------------------------
 
 model Kontrak {
-  id             Int      @id @default(autoincrement())
-  tenderId       Int      @unique @map("tender_id")
-  vendorId       Int      @map("vendor_id")
-  nomorKontrak   String   @map("nomor_kontrak")
-  fileKontrak    String?  @map("file_kontrak")
-  tanggalMulai   DateTime @map("tanggal_mulai") @db.Date
-  tanggalSelesai DateTime @map("tanggal_selesai") @db.Date
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  tenderId         Int      @unique @map("tender_id")
+  vendorId         Int      @map("vendor_id")
+  nomorKontrak     String   @map("nomor_kontrak")
+  fileKontrak      String?  @map("file_kontrak")
+  fileKontrakFiles String[] @default([]) @map("file_kontrak_files")
+  tanggalMulai     DateTime @map("tanggal_mulai") @db.Date
+  tanggalSelesai   DateTime @map("tanggal_selesai") @db.Date
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   tender  TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Restrict)
   vendor  Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
@@ -2269,15 +2270,15 @@ model EpromSafetyMeetingFile {
 // -------- Konstruksi --------
 
 model ChecklistKonstruksi {
-  id        Int                 @id @default(autoincrement())
-  projectId Int                 @map("project_id")
-  namaTahap String              @map("nama_tahap")
-  fileUrl   String?             @map("file_url")
-  originalFileName String?      @map("original_file_name")
-  status    StatusApprovalEprom @default(PENDING)
-  komentar  String?             @db.Text
-  createdAt DateTime            @default(now()) @map("created_at")
-  updatedAt DateTime            @updatedAt @map("updated_at")
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @map("project_id")
+  namaTahap        String              @map("nama_tahap")
+  fileUrl          String?             @map("file_url")
+  originalFileName String?             @map("original_file_name")
+  status           StatusApprovalEprom @default(PENDING)
+  komentar         String?             @db.Text
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -2432,6 +2433,7 @@ model SosialisasiJSA {
   id        Int       @id @default(autoincrement())
   jsaId     Int       @unique @map("jsa_id")
   fileUrl   String?   @map("file_url")
+  fileUrls  String[]  @default([]) @map("file_urls")
   tanggal   DateTime?
   createdAt DateTime  @default(now()) @map("created_at")
 
@@ -2474,17 +2476,18 @@ model DokumentasiMeeting {
  * hariTerlambat dibekukan saat statusClose = true, lihat bagian 5.3.3.
  */
 model MOM {
-  id            Int       @id @default(autoincrement())
-  meetingId     Int       @map("meeting_id")
-  pica          String    @db.Text
-  dueDate       DateTime  @map("due_date") @db.Date
-  pic           String
-  statusClose   Boolean   @default(false) @map("status_close")
-  tglClose      DateTime? @map("tgl_close") @db.Date
-  fileFotoClose String?   @map("file_foto_close")
-  hariTerlambat Int?      @map("hari_terlambat")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id                 Int       @id @default(autoincrement())
+  meetingId          Int       @map("meeting_id")
+  pica               String    @db.Text
+  dueDate            DateTime  @map("due_date") @db.Date
+  pic                String
+  statusClose        Boolean   @default(false) @map("status_close")
+  tglClose           DateTime? @map("tgl_close") @db.Date
+  fileFotoClose      String?   @map("file_foto_close")
+  fileFotoCloseFiles String[]  @default([]) @map("file_foto_close_files")
+  hariTerlambat      Int?      @map("hari_terlambat")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
 
@@ -2971,27 +2974,29 @@ model IrCourseVideo {
 }
 
 model IrCourseQuiz {
-  id             Int      @id @default(autoincrement())
-  videoId        Int      @map("video_id")
-  pertanyaan     String   @db.Text
-  pilihan        Json
-  jawabanBenar   Int      @map("jawaban_benar")
-  urutan         Int      @default(1)
-  video          IrCourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  jawaban        IrCourseQuizJawaban[]
+  id           Int                   @id @default(autoincrement())
+  videoId      Int                   @map("video_id")
+  pertanyaan   String                @db.Text
+  pilihan      Json
+  jawabanBenar Int                   @map("jawaban_benar")
+  urutan       Int                   @default(1)
+  video        IrCourseVideo         @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  jawaban      IrCourseQuizJawaban[]
+
   @@index([videoId])
   @@map("ir_course_quiz")
 }
 
 model IrCourseQuizJawaban {
-  id          Int      @id @default(autoincrement())
-  quizId      Int      @map("quiz_id")
-  userId      Int      @map("user_id")
+  id          Int          @id @default(autoincrement())
+  quizId      Int          @map("quiz_id")
+  userId      Int          @map("user_id")
   pilihan     Int
   benar       Boolean
-  dijawabPada DateTime @default(now()) @map("dijawab_pada")
+  dijawabPada DateTime     @default(now()) @map("dijawab_pada")
   quiz        IrCourseQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user        User @relation("IrCourseQuizJawabanUser", fields: [userId], references: [id], onDelete: Cascade)
+  user        User         @relation("IrCourseQuizJawabanUser", fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([quizId, userId])
   @@index([userId])
   @@map("ir_course_quiz_jawaban")
@@ -3160,7 +3165,8 @@ model SampahTerkelolaTps3r {
   createdById  Int      @map("created_by_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  createdBy User @relation("SampahTerkelolaTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy    User     @relation("SampahTerkelolaTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
   @@index([tanggal])
   @@map("civil_sampah_terkelola_tps3r")
 }
@@ -3171,7 +3177,8 @@ model FotoPenyerahanTps3r {
   urlFoto     String   @map("url_foto")
   createdById Int      @map("created_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
-  createdBy User @relation("FotoPenyerahanTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User     @relation("FotoPenyerahanTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
   @@index([tanggal])
   @@map("civil_foto_penyerahan_tps3r")
 }

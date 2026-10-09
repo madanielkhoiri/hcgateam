@@ -197,11 +197,13 @@ export class EpromProgressService {
   jamUpload(aktor: AktorEprom, tipe: TipeProgress) {
     const jam = JAM_WITA[tipe];
     const owner = this.akses.isOwner(aktor);
+    const dalamJadwal = dalamJamWITA(jam);
 
     return {
       dibatasi: jam !== null,
-      bukaSekarang: owner || dalamJamWITA(jam),
-      bebasSebagaiOwner: owner && jam !== null && !dalamJamWITA(jam),
+      bukaSekarang: true,
+      dalamJadwal,
+      bebasSebagaiOwner: owner && jam !== null && !dalamJadwal,
       jamBuka: jam?.buka ?? null,
       jamTutup: jam?.tutup ?? null,
     };
@@ -243,13 +245,6 @@ export class EpromProgressService {
       }
     } else if (!file) {
       throw new BadRequestException('File wajib diunggah');
-    }
-
-    const jam = JAM_WITA[tipe];
-    if (!this.akses.isOwner(aktor) && !dalamJamWITA(jam)) {
-      throw new BadRequestException(
-        `Upload ${LABEL_TIPE[tipe]} hanya dibuka pukul ${jam!.buka}-${jam!.tutup} WITA`,
-      );
     }
 
     const tanggalDipilih = dto.tanggal ? new Date(`${dto.tanggal}T12:00:00.000Z`) : new Date();
