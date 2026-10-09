@@ -457,7 +457,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setEditProgressId(null);
   }, [muat]);
 
-  const terkunci = false;
+  const terkunci = Boolean(jam?.dibatasi && !jam.bukaSekarang);
 
   async function unggah(event: React.FormEvent) {
     event.preventDefault();
@@ -534,7 +534,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             ? `Jam upload normal pukul ${jam.jamBuka}-${jam.jamTutup} WITA, tapi Owner/Admin bebas upload kapan saja.`
             : jam.dalamJadwal
               ? `Upload sedang dibuka, tutup pukul ${jam.jamTutup} WITA.`
-              : `Di luar jadwal ${jam.jamBuka}-${jam.jamTutup} WITA. File tetap dapat diunggah, tetapi status penilaian menjadi merah.`}
+              : `Upload Vendor ditutup. Jadwal upload pukul ${jam.jamBuka}-${jam.jamTutup} WITA; hubungi Admin/Owner bila perlu dibantu mengunggah.`}
         </div>
       )}
 

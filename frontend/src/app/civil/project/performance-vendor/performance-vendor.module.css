@@ -261,6 +261,16 @@
   vertical-align: top;
 }
 
+.rowRed td {
+  color: #8f1d18;
+  background: #fff1f0;
+  border-top-color: #ffc9c5;
+}
+
+.rowRed td:first-child {
+  box-shadow: inset 4px 0 0 #e53935;
+}
+
 .empty {
   padding: 34px;
   color: #7a8aa0;
