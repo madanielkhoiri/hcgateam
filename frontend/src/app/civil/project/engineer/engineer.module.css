@@ -227,6 +227,18 @@
   box-shadow: inset 4px 0 0 #e53935;
 }
 
+.itemLate {
+  color: #8f1d18;
+  background: #fff1f0;
+  border-color: #ffc9c5;
+  box-shadow: inset 4px 0 0 #e53935;
+}
+
+.lateText {
+  color: #b42318;
+  font-weight: 700;
+}
+
 .rowLink {
   display: block;
   color: #10244a;

@@ -27,6 +27,13 @@ const TAB_SAFETY_MEETING: TipeSafetyMeeting[] = [
   "fatigue-test",
 ];
 
+function p5mTerlambat(uploadedAt: string): boolean {
+  const waktu = new Date(uploadedAt);
+  if (Number.isNaN(waktu.getTime())) return false;
+  const wita = new Date(waktu.getTime() + 8 * 60 * 60 * 1000);
+  return wita.getUTCHours() * 60 + wita.getUTCMinutes() >= 10 * 60;
+}
+
 export default function SafetyMeetingDetailPage() {
   const params = useParams<{ projectId: string }>();
   const searchParams = useSearchParams();
@@ -232,8 +239,13 @@ function SafetyMeetingFileTab({
       )}
 
       <div className={styles.itemList}>
-        {items.map((item) => (
-          <div key={item.id} className={styles.itemRow}>
+        {items.map((item) => {
+          const terlambat = tipe === "p5m" && p5mTerlambat(item.uploadedAt);
+          return (
+          <div
+            key={item.id}
+            className={`${styles.itemRow} ${terlambat ? styles.itemLate : ""}`}
+          >
             <div className={styles.itemRowTop}>
               <strong>{item.originalFileName}</strong>
               {bolehMengelola && (
@@ -263,9 +275,11 @@ function SafetyMeetingFileTab({
                 Diunggah oleh {item.uploadedBy.name} &middot;{" "}
                 {formatWaktuWITA(item.uploadedAt)}
               </span>
+              {terlambat && <span className={styles.lateText}>Terlambat / lewat pukul 10.00 WITA</span>}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
