@@ -13,12 +13,11 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AnyFilesInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -135,19 +134,19 @@ export class EpromTenderController {
   }
 
   @Patch(':id/sph/:vendorId/:roundId')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   async ubahRoundSph(
     @Aktor() aktor: AktorEprom,
     @Param('id', ParseIntPipe) id: number,
     @Param('vendorId', ParseIntPipe) vendorId: number,
     @Param('roundId', ParseIntPipe) roundId: number,
     @Body('hargaPenawaran') hargaPenawaranRaw: string | undefined,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     // Owner boleh mengubah SPH vendor manapun; akun Vendor cuma boleh
     // mengubah SPH miliknya sendiri (tidak boleh menghapus).
     await this.akses.wajibVendorSendiri(aktor, vendorId);
-    return this.service.ubahRoundSph(id, vendorId, roundId, file, parseHarga(hargaPenawaranRaw));
+    return this.service.ubahRoundSph(id, vendorId, roundId, files ?? [], parseHarga(hargaPenawaranRaw));
   }
 
   @Delete(':id/sph/:vendorId/:roundId')

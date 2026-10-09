@@ -197,14 +197,26 @@ export class EpromProgressService {
   jamUpload(aktor: AktorEprom, tipe: TipeProgress) {
     const jam = JAM_WITA[tipe];
     const owner = this.akses.isOwner(aktor);
+    const vendor = this.akses.isVendor(aktor);
+    const dalamJadwal = dalamJamWITA(jam);
 
     return {
       dibatasi: jam !== null,
-      bukaSekarang: owner || dalamJamWITA(jam),
-      bebasSebagaiOwner: owner && jam !== null && !dalamJamWITA(jam),
+      bukaSekarang: !vendor || dalamJadwal,
+      dalamJadwal,
+      bebasSebagaiOwner: owner && jam !== null && !dalamJadwal,
       jamBuka: jam?.buka ?? null,
       jamTutup: jam?.tutup ?? null,
     };
+  }
+
+  private wajibDalamJamUpload(aktor: AktorEprom, tipe: TipeProgress): void {
+    const jam = JAM_WITA[tipe];
+    if (this.akses.isVendor(aktor) && jam && !dalamJamWITA(jam)) {
+      throw new BadRequestException(
+        `Upload ${LABEL_TIPE[tipe]} untuk Vendor hanya dibuka pukul ${jam.buka}-${jam.tutup} WITA`,
+      );
+    }
   }
 
   async daftar(aktor: AktorEprom, tipe: TipeProgress, projectId: number) {
@@ -233,6 +245,7 @@ export class EpromProgressService {
     file?: Express.Multer.File,
   ) {
     await this.akses.wajibAksesProject(aktor, projectId);
+    this.wajibDalamJamUpload(aktor, tipe);
 
     if (tipe === 'progress-mingguan') {
       if (!dto.namaPekerjaan?.trim()) {
@@ -243,13 +256,6 @@ export class EpromProgressService {
       }
     } else if (!file) {
       throw new BadRequestException('File wajib diunggah');
-    }
-
-    const jam = JAM_WITA[tipe];
-    if (!this.akses.isOwner(aktor) && !dalamJamWITA(jam)) {
-      throw new BadRequestException(
-        `Upload ${LABEL_TIPE[tipe]} hanya dibuka pukul ${jam!.buka}-${jam!.tutup} WITA`,
-      );
     }
 
     const tanggalDipilih = dto.tanggal ? new Date(`${dto.tanggal}T12:00:00.000Z`) : new Date();
@@ -268,7 +274,9 @@ export class EpromProgressService {
       : null;
 
     const dataEkstra: Record<string, unknown> = {};
-    if (tipe !== 'tta' && tipe !== 'kta') dataEkstra.uploadedAt = tanggalDipilih;
+    // Waktu penilaian selalu memakai waktu unggah aktual. Tanggal laporan yang
+    // dipilih pengguna disimpan pada field periodenya masing-masing.
+    if (tipe !== 'tta' && tipe !== 'kta') dataEkstra.uploadedAt = new Date();
     if (tipe === 'progress-harian') {
       dataEkstra.tanggal = tanggalDipilih;
     } else if (tipe === 'progress-mingguan') {
@@ -313,6 +321,7 @@ export class EpromProgressService {
     const item = await this.delegate(tipe).findUnique({ where: { id } });
     if (!item) throw new NotFoundException(`${LABEL_TIPE[tipe]} tidak ditemukan`);
     await this.akses.wajibAksesProject(aktor, item.projectId);
+    this.wajibDalamJamUpload(aktor, tipe);
     if (tipe === 'progress-mingguan') {
       if (!dto.namaPekerjaan?.trim()) throw new BadRequestException('Nama Pekerjaan wajib diisi');
       if (dto.planned === undefined || dto.actual === undefined) {
@@ -323,7 +332,6 @@ export class EpromProgressService {
     if (dto.tanggal) {
       const tanggalDipilih = new Date(`${dto.tanggal}T12:00:00.000Z`);
       if (Number.isNaN(tanggalDipilih.getTime())) throw new BadRequestException('Tanggal upload tidak valid');
-      if (tipe !== 'tta' && tipe !== 'kta') data.uploadedAt = tanggalDipilih;
       if (tipe === 'progress-harian') data.tanggal = tanggalDipilih;
       if (tipe === 'progress-bulanan') data.bulan = dto.tanggal.slice(0, 7);
       if (tipe === 'tta' || tipe === 'kta') data.tanggalUpload = tanggalDipilih;
