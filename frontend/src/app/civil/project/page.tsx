@@ -23,7 +23,6 @@ import {
   TrendingUp,
   Trophy,
   UsersRound,
-  Wallet,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -83,6 +82,8 @@ const ownerAreaGroups = [
     items: ["Pembuatan Kontrak", "Legalitas Vendor"],
   },
 ];
+
+const JUMLAH_LAPORAN_PER_HALAMAN = 7;
 
 /** Hitung naik dari 0 ke target (persen) selama sekian ms, dipakai buat animasi angka & progress bar. */
 function useCountUp(target: number, durasiMs = 1000): number {
@@ -150,6 +151,7 @@ export default function CivilProjectDashboardPage() {
   const [deviasiItems, setDeviasiItems] = useState<ProgressItem[]>([]);
   const [deviasiLoading, setDeviasiLoading] = useState(false);
   const [deviasiError, setDeviasiError] = useState<string | null>(null);
+  const [halamanLaporan, setHalamanLaporan] = useState(1);
 
   useEffect(() => {
     // Dashboard ini berisi ringkasan lintas Vendor/Tender, khusus Owner.
@@ -188,11 +190,25 @@ export default function CivilProjectDashboardPage() {
 
   useEffect(muatDeviasi, [muatDeviasi]);
 
+  useEffect(() => {
+    setHalamanLaporan(1);
+  }, [projectDeviasiId]);
+
   const trendTertampil = useMemo(() => {
     if (!ringkasan) return [];
     if (filterChartId === "semua") return ringkasan.progressTrend;
     return ringkasan.progressTrend.filter((s) => s.id === filterChartId);
   }, [ringkasan, filterChartId]);
+
+  const totalHalamanLaporan = Math.max(
+    1,
+    Math.ceil(deviasiItems.length / JUMLAH_LAPORAN_PER_HALAMAN),
+  );
+  const awalLaporan = (halamanLaporan - 1) * JUMLAH_LAPORAN_PER_HALAMAN;
+  const laporanTertampil = deviasiItems.slice(
+    awalLaporan,
+    awalLaporan + JUMLAH_LAPORAN_PER_HALAMAN,
+  );
 
   const cards = [
     {
@@ -237,17 +253,6 @@ export default function CivilProjectDashboardPage() {
       icon: TrendingUp,
       accent: "#7a4ce0",
       soft: "#f0ebff",
-    },
-    {
-      label: "Progress Keuangan",
-      value:
-        ringkasan?.progressKeuanganRataRata !== null && ringkasan?.progressKeuanganRataRata !== undefined
-          ? `${ringkasan.progressKeuanganRataRata}%`
-          : "-",
-      sub: "Rata-rata Opname Pekerjaan disetujui",
-      icon: Wallet,
-      accent: "#0aa3a3",
-      soft: "#e4f7f7",
     },
   ];
 
@@ -466,7 +471,7 @@ export default function CivilProjectDashboardPage() {
             {ringkasan && ringkasan.progressPerProject.length > 0 && (
               <select
                 value={projectDeviasiId ?? ""}
-                onChange={(e) => setProjectDeviasiId(Number(e.target.value))}
+                  onChange={(e) => setProjectDeviasiId(Number(e.target.value))}
               >
                 {ringkasan.progressPerProject.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -497,9 +502,9 @@ export default function CivilProjectDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {deviasiItems.map((item, index) => (
+                  {laporanTertampil.map((item, index) => (
                     <tr key={item.id}>
-                      <td>{index + 1}</td>
+                      <td>{awalLaporan + index + 1}</td>
                       <td>{item.namaPekerjaan}</td>
                       <td>{item.planned}%</td>
                       <td>{item.actual}%</td>
@@ -528,6 +533,26 @@ export default function CivilProjectDashboardPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {deviasiItems.length > JUMLAH_LAPORAN_PER_HALAMAN && (
+            <div className={styles.tablePagination}>
+              <button
+                type="button"
+                onClick={() => setHalamanLaporan((nilai) => Math.max(1, nilai - 1))}
+                disabled={halamanLaporan === 1}
+              >
+                Sebelumnya
+              </button>
+              <span>Halaman {halamanLaporan} dari {totalHalamanLaporan}</span>
+              <button
+                type="button"
+                onClick={() => setHalamanLaporan((nilai) => Math.min(totalHalamanLaporan, nilai + 1))}
+                disabled={halamanLaporan === totalHalamanLaporan}
+              >
+                Berikutnya
+              </button>
             </div>
           )}
         </div>
