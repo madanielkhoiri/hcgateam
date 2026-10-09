@@ -227,6 +227,18 @@
   box-shadow: inset 4px 0 0 #e53935;
 }
 
+.itemLate {
+  color: #8f1d18;
+  background: #fff1f0;
+  border-color: #ffc9c5;
+  box-shadow: inset 4px 0 0 #e53935;
+}
+
+.lateText {
+  color: #b42318;
+  font-weight: 700;
+}
+
 .rowLink {
   display: block;
   color: #10244a;
@@ -367,7 +379,26 @@
 .itemRow {
   padding: 12px 14px;
   background: #f7fafd;
+  border: 1px solid transparent;
   border-radius: 12px;
+}
+
+.itemStatus_PENDING {
+  background: #fff7e8;
+  border-color: #ffd79a;
+  box-shadow: inset 4px 0 0 #ef8b00;
+}
+
+.itemStatus_APPROVED {
+  background: #eefbf3;
+  border-color: #bce9cc;
+  box-shadow: inset 4px 0 0 #0aa556;
+}
+
+.itemStatus_REJECTED {
+  background: #fff1f0;
+  border-color: #ffc9c5;
+  box-shadow: inset 4px 0 0 #e53935;
 }
 
 .itemRowTop {
