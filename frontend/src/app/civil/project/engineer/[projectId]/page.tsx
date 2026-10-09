@@ -75,7 +75,7 @@ export default function EngineerDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [namaBaru, setNamaBaru] = useState("");
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [rejectItem, setRejectItem] = useState<EngineerItem | null>(null);
   const [alasanReject, setAlasanReject] = useState("");
   const [rejecting, setRejecting] = useState(false);
@@ -118,7 +118,7 @@ export default function EngineerDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     muatItems();
     setNamaBaru("");
-    setFileBaru(null);
+    setFileBaru([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, projectId]);
 
@@ -127,14 +127,14 @@ export default function EngineerDetailPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.engineer.buat(
-        tab,
-        projectId,
-        namaBaru || undefined,
-        fileBaru,
+      const daftarFile: Array<File | null> = fileBaru.length ? fileBaru : [null];
+      await Promise.all(
+        daftarFile.map((file) =>
+          epromApi.engineer.buat(tab, projectId, namaBaru || undefined, file),
+        ),
       );
       setNamaBaru("");
-      setFileBaru(null);
+      setFileBaru([]);
       muatItems();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menambah data");
@@ -252,14 +252,12 @@ export default function EngineerDetailPage() {
               File
               <input
                 type="file"
-                accept={
-                  tab === "komisioning-alat-berat"
-                    ? ".pdf"
-                    : ".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp,.dwg,.dxf,.zip,.rar"
-                }
-                onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+                multiple
+                accept="*/*"
+                onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
                 required={tab === "komisioning-alat-berat"}
               />
+              {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
             </label>
             <button
               type="submit"

@@ -306,7 +306,7 @@ export class EpromTenderService {
     tenderId: number,
     vendorId: number,
     roundId: number,
-    file?: Express.Multer.File,
+    files: Express.Multer.File[] = [],
     hargaPenawaran?: number,
   ) {
     const round = await this.prisma.tenderSPH.findUnique({ where: { id: roundId } });
@@ -319,14 +319,17 @@ export class EpromTenderService {
       throw new BadRequestException('SPH ini sudah final, tidak dapat diubah lagi');
     }
 
-    const fileSph = file
-      ? this.file.simpan(file, `tender/${tenderId}/sph`, this.file.tebakTipe(file.originalname))
+    const fileSphFiles = files.length
+      ? files.map((file) =>
+          this.file.simpan(file, `tender/${tenderId}/sph`, this.file.tebakTipe(file.originalname)),
+        )
       : undefined;
+    const fileSph = fileSphFiles?.[0];
 
     return this.prisma.tenderSPH.update({
       where: { id: roundId },
       data: {
-        ...(fileSph !== undefined ? { fileSph } : {}),
+        ...(fileSphFiles !== undefined ? { fileSph, fileSphFiles } : {}),
         ...(hargaPenawaran !== undefined ? { hargaPenawaran } : {}),
       },
     });

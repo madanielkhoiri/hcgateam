@@ -155,7 +155,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [namaBaru, setNamaBaru] = useState("");
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
   const [editItem, setEditItem] = useState<KonstruksiItem | null>(null);
   const [editNama, setEditNama] = useState("");
@@ -176,7 +176,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   useEffect(() => {
     muatItems();
     setNamaBaru("");
-    setFileBaru(null);
+    setFileBaru([]);
   }, [muatItems]);
 
   async function tambahItem(event: React.FormEvent) {
@@ -184,13 +184,14 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setSubmitting(true);
     setError(null);
     try {
-      if (tipe === "checklist-tahapan") {
-        await epromApi.engineer.buat("checklist-tahapan", projectId, namaBaru || undefined, fileBaru);
-      } else {
-        await epromApi.konstruksi.buat(tipe, projectId, namaBaru || undefined, fileBaru);
-      }
+      const daftarFile: Array<File | null> = fileBaru.length ? fileBaru : [null];
+      await Promise.all(daftarFile.map((file) =>
+        tipe === "checklist-tahapan"
+          ? epromApi.engineer.buat("checklist-tahapan", projectId, namaBaru || undefined, file)
+          : epromApi.konstruksi.buat(tipe, projectId, namaBaru || undefined, file),
+      ));
       setNamaBaru("");
-      setFileBaru(null);
+      setFileBaru([]);
       muatItems();
       window.dispatchEvent(new Event("eprom-konstruksi-updated"));
     } catch (err) {
@@ -264,9 +265,11 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             File
             <input
               type="file"
+              multiple
               accept="*/*"
-              onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+              onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
             />
+            {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
           </label>
           <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
             {submitting ? "Mengunggah..." : "Unggah Baru"}
@@ -426,7 +429,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [namaPekerjaan, setNamaPekerjaan] = useState("");
   const [planned, setPlanned] = useState("");
   const [actual, setActual] = useState("");
@@ -446,7 +449,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
   useEffect(() => {
     muat();
-    setFileBaru(null);
+    setFileBaru([]);
     setNamaPekerjaan("");
     setPlanned("");
     setActual("");
@@ -454,7 +457,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setEditProgressId(null);
   }, [muat]);
 
-  const terkunci = jam ? jam.dibatasi && !jam.bukaSekarang : false;
+  const terkunci = false;
 
   async function unggah(event: React.FormEvent) {
     event.preventDefault();
@@ -464,7 +467,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
         setError("Nama Pekerjaan, Planned, dan Actual wajib diisi");
         return;
       }
-    } else if (!fileBaru && editProgressId === null) {
+    } else if (fileBaru.length === 0 && editProgressId === null) {
       setError("Pilih file terlebih dahulu");
       return;
     }
@@ -475,9 +478,14 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
       const data = mingguan
           ? { namaPekerjaan: namaPekerjaan.trim(), planned: Number(planned), actual: Number(actual), tanggal: tanggalUpload }
           : { namaPekerjaan: "", planned: 0, actual: 0, tanggal: tanggalUpload };
-      if (editProgressId !== null) await epromApi.progress.ubah(tipe, editProgressId, fileBaru, data);
-      else await epromApi.progress.buat(tipe, projectId, fileBaru, data);
-      setFileBaru(null);
+      if (editProgressId !== null) {
+        await epromApi.progress.ubah(tipe, editProgressId, fileBaru[0] ?? null, data);
+        await Promise.all(fileBaru.slice(1).map((file) => epromApi.progress.buat(tipe, projectId, file, data)));
+      } else {
+        const daftarFile: Array<File | null> = fileBaru.length ? fileBaru : [null];
+        await Promise.all(daftarFile.map((file) => epromApi.progress.buat(tipe, projectId, file, data)));
+      }
+      setFileBaru([]);
       setNamaPekerjaan("");
       setPlanned("");
       setActual("");
@@ -497,7 +505,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setPlanned(item.planned === undefined ? "" : String(item.planned));
     setActual(item.actual === undefined ? "" : String(item.actual));
     setTanggalUpload((item.uploadedAt ?? item.tanggal ?? new Date().toISOString()).slice(0, 10));
-    setFileBaru(null);
+    setFileBaru([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -524,9 +532,9 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
         <div className={`${styles.gateBanner} ${jam.bukaSekarang ? styles.gateBannerOpen : ""}`}>
           {jam.bebasSebagaiOwner
             ? `Jam upload normal pukul ${jam.jamBuka}-${jam.jamTutup} WITA, tapi Owner/Admin bebas upload kapan saja.`
-            : jam.bukaSekarang
+            : jam.dalamJadwal
               ? `Upload sedang dibuka, tutup pukul ${jam.jamTutup} WITA.`
-              : `Upload hanya dibuka pukul ${jam.jamBuka}-${jam.jamTutup} WITA. Saat ini di luar jam upload.`}
+              : `Di luar jadwal ${jam.jamBuka}-${jam.jamTutup} WITA. File tetap dapat diunggah, tetapi status penilaian menjadi merah.`}
         </div>
       )}
 
@@ -580,8 +588,9 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             File {mingguan && "(opsional)"}
             <input
               type="file"
+              multiple
               accept="*/*"
-              onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+              onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
               disabled={terkunci}
             />
           </label>
@@ -589,7 +598,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             {submitting ? "Menyimpan..." : editProgressId !== null ? "Simpan Perubahan" : mingguan ? "Simpan Update" : "Unggah"}
           </button>
           {editProgressId !== null && (
-            <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setEditProgressId(null); setNamaPekerjaan(""); setPlanned(""); setActual(""); setFileBaru(null); }}>
+            <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setEditProgressId(null); setNamaPekerjaan(""); setPlanned(""); setActual(""); setFileBaru([]); }}>
               Batal Edit
             </button>
           )}
@@ -716,7 +725,7 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
 
   const muat = useCallback(() => {
     setLoading(true);
@@ -731,12 +740,12 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
   useEffect(() => {
     muat();
-    setFileBaru(null);
+    setFileBaru([]);
   }, [muat]);
 
   async function unggah(event: React.FormEvent) {
     event.preventDefault();
-    if (!fileBaru) {
+    if (fileBaru.length === 0) {
       setError("Pilih file terlebih dahulu");
       return;
     }
@@ -744,8 +753,8 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.progress.buat(tipe, projectId, fileBaru);
-      setFileBaru(null);
+      await Promise.all(fileBaru.map((file) => epromApi.progress.buat(tipe, projectId, file)));
+      setFileBaru([]);
       muat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengunggah");
@@ -798,8 +807,9 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             File
             <input
               type="file"
+              multiple
               accept="*/*"
-              onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+              onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
             />
           </label>
           <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
@@ -866,11 +876,11 @@ function SosialisasiTab({ projectId, boleh, vendorSaya }: TabProps) {
 
   useEffect(muat, [muat]);
 
-  async function unggah(jsaId: number, file: File) {
+  async function unggah(jsaId: number, files: File[]) {
     setUploadingId(jsaId);
     setError(null);
     try {
-      await epromApi.sosialisasiJsa.unggah(jsaId, file);
+      await epromApi.sosialisasiJsa.unggah(jsaId, files);
       muat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengunggah");
@@ -902,12 +912,17 @@ function SosialisasiTab({ projectId, boleh, vendorSaya }: TabProps) {
             </div>
 
             <div className={engineerStyles.itemRowMeta}>
-              {jsa.sosialisasi?.fileUrl ? (
-                <a href={urlFileEprom(jsa.sosialisasi.fileUrl)} target="_blank" rel="noreferrer">
+              {(jsa.sosialisasi?.fileUrls?.length
+                ? jsa.sosialisasi.fileUrls
+                : jsa.sosialisasi?.fileUrl
+                  ? [jsa.sosialisasi.fileUrl]
+                  : []).map((file, index) => (
+                <a key={`${file}-${index}`} href={urlFileEprom(file)} target="_blank" rel="noreferrer">
                   <FileText size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />
-                  Lihat File
+                  Lihat File {index + 1}
                 </a>
-              ) : (
+              ))}
+              {!jsa.sosialisasi?.fileUrl && !jsa.sosialisasi?.fileUrls?.length && (
                 <span>Belum ada file</span>
               )}
               {jsa.sosialisasi?.tanggal && <span>&middot; {formatTanggal(jsa.sosialisasi.tanggal)}</span>}
@@ -917,12 +932,13 @@ function SosialisasiTab({ projectId, boleh, vendorSaya }: TabProps) {
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
                 <input
                   type="file"
+                  multiple
                   accept="*/*"
                   disabled={uploadingId === jsa.id}
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
+                    const files = Array.from(e.target.files ?? []);
                     e.target.value = "";
-                    if (file) unggah(jsa.id, file);
+                    if (files.length) unggah(jsa.id, files);
                   }}
                 />
                 {uploadingId === jsa.id && <span className={engineerStyles.emptyText}>Mengunggah...</span>}

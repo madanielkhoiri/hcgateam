@@ -90,12 +90,13 @@ describe('EpromProgressService.jamUpload', () => {
     expect(hasil.bebasSebagaiOwner).toBe(false);
   });
 
-  it('Vendor di luar jam buka (23:00 WITA): bukaSekarang false', () => {
+  it('Vendor di luar jadwal tetap boleh upload, tetapi ditandai di luar jadwal', () => {
     jest.setSystemTime(new Date('2026-01-05T15:00:00Z')); // 23:00 WITA
     const { service } = buatService();
     const hasil = service.jamUpload(aktor(UserRole.VENDOR), 'inspeksi-area');
 
-    expect(hasil.bukaSekarang).toBe(false);
+    expect(hasil.bukaSekarang).toBe(true);
+    expect(hasil.dalamJadwal).toBe(false);
   });
 
   it('Owner tetap bukaSekarang true di luar jam, ditandai bebasSebagaiOwner', () => {
@@ -167,14 +168,13 @@ describe('EpromProgressService.buat', () => {
     );
   });
 
-  it('menolak Vendor upload di luar jam WITA', async () => {
+  it('menerima Vendor upload di luar jam WITA agar dapat dinilai merah', async () => {
     jest.setSystemTime(new Date('2026-01-05T15:00:00Z')); // 23:00 WITA
-    const { service } = buatService();
+    const { service, sharedModel } = buatService();
     const file = { originalname: 'a.jpg' } as Express.Multer.File;
 
-    await expect(service.buat(aktor(UserRole.VENDOR, { vendorId: 1 }), 'inspeksi-area', 1, {} as any, file)).rejects.toThrow(
-      'hanya dibuka pukul',
-    );
+    await service.buat(aktor(UserRole.VENDOR, { vendorId: 1 }), 'inspeksi-area', 1, {} as any, file);
+    expect(sharedModel.create).toHaveBeenCalled();
   });
 
   it('Owner boleh upload di luar jam WITA', async () => {

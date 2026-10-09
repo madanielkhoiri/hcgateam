@@ -83,7 +83,10 @@ export class EpromKontrakService {
     return kontrak;
   }
 
-  async buat(dto: BuatKontrakDto, file?: Express.Multer.File) {
+  async buat(
+    dto: BuatKontrakDto,
+    inputFiles: Express.Multer.File[] | Express.Multer.File = [],
+  ) {
     const tender = await this.prisma.tenderProcess.findUnique({
       where: { id: dto.tenderId },
       include: { sph: { where: { statusPemenang: true } }, kontrak: true },
@@ -108,9 +111,11 @@ export class EpromKontrakService {
     }
 
     const vendorId = tender.sph[0].vendorId;
-    const fileKontrak = file
-      ? this.file.simpanDokumen(file, `tender/${dto.tenderId}/kontrak`)
-      : null;
+    const files = Array.isArray(inputFiles) ? inputFiles : [inputFiles];
+    const fileKontrakFiles = files.map((file) =>
+      this.file.simpanDokumen(file, `tender/${dto.tenderId}/kontrak`),
+    );
+    const fileKontrak = fileKontrakFiles[0] ?? null;
 
     return this.prisma.kontrak.create({
       data: {
@@ -118,13 +123,18 @@ export class EpromKontrakService {
         vendorId,
         nomorKontrak: dto.nomorKontrak.trim(),
         fileKontrak,
+        fileKontrakFiles,
         tanggalMulai: new Date(dto.tanggalMulai),
         tanggalSelesai: new Date(dto.tanggalSelesai),
       },
     });
   }
 
-  async ubah(id: number, dto: UbahKontrakDto, file?: Express.Multer.File) {
+  async ubah(
+    id: number,
+    dto: UbahKontrakDto,
+    inputFiles: Express.Multer.File[] | Express.Multer.File = [],
+  ) {
     const kontrak = await this.detail(id);
 
     const tanggalMulaiBaru = dto.tanggalMulai !== undefined ? new Date(dto.tanggalMulai) : kontrak.tanggalMulai;
@@ -135,9 +145,11 @@ export class EpromKontrakService {
       throw new BadRequestException('Tanggal Selesai tidak boleh sebelum Tanggal Mulai');
     }
 
-    const fileKontrak = file
-      ? this.file.simpanDokumen(file, `tender/${kontrak.tenderId}/kontrak`)
+    const files = Array.isArray(inputFiles) ? inputFiles : [inputFiles];
+    const fileKontrakFiles = files.length
+      ? files.map((file) => this.file.simpanDokumen(file, `tender/${kontrak.tenderId}/kontrak`))
       : undefined;
+    const fileKontrak = fileKontrakFiles?.[0];
 
     return this.prisma.kontrak.update({
       where: { id },
@@ -145,7 +157,7 @@ export class EpromKontrakService {
         ...(dto.nomorKontrak !== undefined ? { nomorKontrak: dto.nomorKontrak.trim() } : {}),
         ...(dto.tanggalMulai !== undefined ? { tanggalMulai: tanggalMulaiBaru } : {}),
         ...(dto.tanggalSelesai !== undefined ? { tanggalSelesai: tanggalSelesaiBaru } : {}),
-        ...(fileKontrak !== undefined ? { fileKontrak } : {}),
+        ...(fileKontrakFiles !== undefined ? { fileKontrak, fileKontrakFiles } : {}),
       },
     });
   }
