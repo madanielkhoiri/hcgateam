@@ -29,8 +29,13 @@ export class EpromSosialisasiJsaService {
     });
   }
 
-  async unggah(aktor: AktorEprom, jsaId: number, file?: Express.Multer.File) {
-    if (!file) {
+  async unggah(
+    aktor: AktorEprom,
+    jsaId: number,
+    inputFiles: Express.Multer.File[] | Express.Multer.File = [],
+  ) {
+    const files = Array.isArray(inputFiles) ? inputFiles : [inputFiles];
+    if (files.length === 0) {
       throw new BadRequestException('File wajib diunggah');
     }
 
@@ -45,18 +50,23 @@ export class EpromSosialisasiJsaService {
 
     await this.akses.wajibAksesProject(aktor, jsa.projectId);
 
-    const fileUrlLama = jsa.sosialisasi?.fileUrl ?? null;
-    const fileUrlBaru = this.file.simpanDokumen(file, `project/${jsa.projectId}/sosialisasi-jsa`);
+    const fileUrlLama = jsa.sosialisasi?.fileUrls?.length
+      ? jsa.sosialisasi.fileUrls
+      : jsa.sosialisasi?.fileUrl
+        ? [jsa.sosialisasi.fileUrl]
+        : [];
+    const fileUrls = files.map((file) =>
+      this.file.simpanDokumen(file, `project/${jsa.projectId}/sosialisasi-jsa`),
+    );
+    const fileUrl = fileUrls[0] ?? null;
 
     const hasil = await this.prisma.sosialisasiJSA.upsert({
       where: { jsaId },
-      create: { jsaId, fileUrl: fileUrlBaru, tanggal: new Date() },
-      update: { fileUrl: fileUrlBaru, tanggal: new Date() },
+      create: { jsaId, fileUrl, fileUrls, tanggal: new Date() },
+      update: { fileUrl, fileUrls, tanggal: new Date() },
     });
 
-    if (fileUrlLama) {
-      this.file.hapus(fileUrlLama);
-    }
+    fileUrlLama.forEach((file) => this.file.hapus(file));
 
     return hasil;
   }

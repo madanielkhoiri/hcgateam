@@ -10,11 +10,11 @@ import {
   ParseIntPipe,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -34,12 +34,12 @@ export class EpromSosialisasiJsaController {
   }
 
   @Post(':jsaId')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   unggah(
     @Aktor() aktor: AktorEprom,
     @Param('jsaId', ParseIntPipe) jsaId: number,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.service.unggah(aktor, jsaId, file);
+    return this.service.unggah(aktor, jsaId, files ?? []);
   }
 }
