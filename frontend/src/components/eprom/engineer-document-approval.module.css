@@ -42,6 +42,21 @@
   border-radius: 999px;
   opacity: 1 !important;
 }
+
+.status_PENDING {
+  color: #8a4b00;
+  background: #fff2d8;
+}
+
+.status_APPROVED {
+  color: #08783f;
+  background: #e5f8ec;
+}
+
+.status_REJECTED {
+  color: #b42318;
+  background: #ffe8e6;
+}
 .infoGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

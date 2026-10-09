@@ -31,6 +31,23 @@ import {
 import engineerStyles from "../../engineer/engineer.module.css";
 import styles from "../konstruksi.module.css";
 
+function waktuWitaDiLuarJadwal(
+  nilai: string,
+  jamBuka: string | null,
+  jamTutup: string | null,
+): boolean {
+  if (!jamBuka || !jamTutup) return false;
+  const waktu = new Date(nilai);
+  if (Number.isNaN(waktu.getTime())) return false;
+  const wita = new Date(waktu.getTime() + 8 * 60 * 60 * 1000);
+  const menit = wita.getUTCHours() * 60 + wita.getUTCMinutes();
+  const keMenit = (jam: string) => {
+    const [hour, minute] = jam.split(":").map(Number);
+    return hour * 60 + minute;
+  };
+  return menit < keMenit(jamBuka) || menit >= keMenit(jamTutup);
+}
+
 const ACCEPT_DOKUMEN =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp,.dwg,.dxf,.zip,.rar";
 
@@ -283,7 +300,10 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
       <div className={engineerStyles.itemList}>
         {items.map((item) => (
-          <div key={item.id} className={engineerStyles.itemRow}>
+          <div
+            key={item.id}
+            className={`${engineerStyles.itemRow} ${engineerStyles[`itemStatus_${item.status}`]}`}
+          >
             <div className={engineerStyles.itemRowTop}>
               <strong>{item.namaTahap ?? item.namaPekerjaan ?? `#${item.id}`}</strong>
               <span className={`${engineerStyles.statusPill} ${engineerStyles[`status_${item.status}`]}`}>
@@ -458,6 +478,10 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   }, [muat]);
 
   const terkunci = Boolean(jam?.dibatasi && !jam.bukaSekarang);
+  const terlambat = (item: ProgressItem) =>
+    jam?.dibatasi === true &&
+    Boolean(item.uploadedAt) &&
+    waktuWitaDiLuarJadwal(item.uploadedAt!, jam.jamBuka, jam.jamTutup);
 
   async function unggah(event: React.FormEvent) {
     event.preventDefault();
@@ -626,7 +650,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id}>
+                <tr key={item.id} className={terlambat(item) ? engineerStyles.rowLate : undefined}>
                   <td>{item.namaPekerjaan}</td>
                   <td>{formatTanggal(item.uploadedAt)}</td>
                   <td>{item.planned}%</td>
@@ -684,7 +708,10 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
       ) : (
         <div className={engineerStyles.itemList}>
           {items.map((item) => (
-            <div key={item.id} className={engineerStyles.itemRow}>
+            <div
+              key={item.id}
+              className={`${engineerStyles.itemRow} ${terlambat(item) ? engineerStyles.itemLate : ""}`}
+            >
               <div className={engineerStyles.itemRowTop}>
                 <strong>{labelEkstra(tipe, item)}</strong>
                 {item.fileUrl ? (
@@ -699,6 +726,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
               <div className={engineerStyles.itemRowMeta}>
                 <span>Diunggah {formatWaktuWITA(item.uploadedAt ?? item.tanggalUpload)}</span>
+                {terlambat(item) && <span className={engineerStyles.lateText}>Terlambat / di luar jadwal</span>}
               </div>
 
               {(boleh || vendorSaya) && (
