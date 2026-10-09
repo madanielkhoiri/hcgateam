@@ -613,7 +613,9 @@ export function EngineerDocumentApproval({
           <h1>{detail.project.namaProject}</h1>
           <p>{detail.documentLabel}</p>
         </div>
-        <span className={styles.status}>{detail.item.status}</span>
+        <span className={`${styles.status} ${styles[`status_${detail.item.status}`]}`}>
+          {detail.item.status}
+        </span>
       </header>
 
       <section className={styles.infoGrid}>
