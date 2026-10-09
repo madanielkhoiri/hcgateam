@@ -276,7 +276,10 @@ export default function EngineerDetailPage() {
 
         <div className={styles.itemList}>
           {items.map((item) => (
-            <div key={item.id} className={styles.itemRow}>
+            <div
+              key={item.id}
+              className={`${styles.itemRow} ${styles[`itemStatus_${item.status}`]}`}
+            >
               <div className={styles.itemRowTop}>
                 <strong>{namaItem(item) ?? `#${item.id}`}</strong>
                 <span

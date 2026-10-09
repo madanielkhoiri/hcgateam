@@ -206,7 +206,10 @@ function ClosingTab({
 
       <div className={engineerStyles.itemList}>
         {items.map((item) => (
-          <div key={item.id} className={engineerStyles.itemRow}>
+          <div
+            key={item.id}
+            className={`${engineerStyles.itemRow} ${engineerStyles[`itemStatus_${item.status}`]}`}
+          >
             <div className={engineerStyles.itemRowTop}>
               <strong>#{item.id}</strong>
               <span className={`${engineerStyles.statusPill} ${engineerStyles[`status_${item.status}`]}`}>
