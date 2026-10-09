@@ -605,6 +605,38 @@
   border-bottom: 0;
 }
 
+.tablePagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #eef2f7;
+}
+
+.tablePagination span {
+  color: #7185a0;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tablePagination button {
+  padding: 6px 9px;
+  color: #34506f;
+  background: #f7fafd;
+  border: 1px solid #d8e4f2;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tablePagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .statusDot {
   width: 8px;
   height: 8px;
