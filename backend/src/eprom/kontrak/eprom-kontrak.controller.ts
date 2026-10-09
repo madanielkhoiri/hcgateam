@@ -12,11 +12,11 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -52,26 +52,26 @@ export class EpromKontrakController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   buat(
     @Aktor() aktor: AktorEprom,
     @Body() dto: BuatKontrakDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     this.akses.wajibOwner(aktor);
-    return this.service.buat(dto, file);
+    return this.service.buat(dto, files ?? []);
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   ubah(
     @Aktor() aktor: AktorEprom,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UbahKontrakDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     this.akses.wajibOwner(aktor);
-    return this.service.ubah(id, dto, file);
+    return this.service.ubah(id, dto, files ?? []);
   }
 
   @Delete(':id')

@@ -246,17 +246,32 @@ export class EpromMeetingService {
     });
   }
 
-  async unggahDokumentasi(aktor: AktorEprom, meetingId: number, file?: Express.Multer.File) {
+  async unggahDokumentasi(
+    aktor: AktorEprom,
+    meetingId: number,
+    inputFiles: Express.Multer.File[] | Express.Multer.File = [],
+  ) {
     const meeting = await this.meetingAtauThrow(meetingId);
     await this.akses.wajibAksesProject(aktor, meeting.projectId);
 
-    if (!file) {
+    const files = Array.isArray(inputFiles) ? inputFiles : [inputFiles];
+    if (files.length === 0) {
       throw new BadRequestException('File wajib diunggah');
     }
 
-    const fileFoto = this.file.simpanDokumen(file, `project/${meeting.projectId}/meeting/${meetingId}/dokumentasi`);
-
-    return this.prisma.dokumentasiMeeting.create({ data: { meetingId, fileFoto } });
+    const tersimpan = files.map((file) =>
+      this.file.simpanDokumen(file, `project/${meeting.projectId}/meeting/${meetingId}/dokumentasi`),
+    );
+    try {
+      return await Promise.all(
+        tersimpan.map((fileFoto) =>
+          this.prisma.dokumentasiMeeting.create({ data: { meetingId, fileFoto } }),
+        ),
+      );
+    } catch (error) {
+      tersimpan.forEach((file) => this.file.hapus(file));
+      throw error;
+    }
   }
 
   async hapusDokumentasi(aktor: AktorEprom, id: number) {
@@ -313,7 +328,11 @@ export class EpromMeetingService {
   }
 
   /** Menutup MOM (wajib upload foto bukti) dan membekukan angka keterlambatan saat itu. */
-  async closeMom(aktor: AktorEprom, id: number, file?: Express.Multer.File) {
+  async closeMom(
+    aktor: AktorEprom,
+    id: number,
+    inputFiles: Express.Multer.File[] | Express.Multer.File = [],
+  ) {
     const mom = await this.prisma.mOM.findUnique({ where: { id }, include: { meeting: true } });
 
     if (!mom) {
@@ -326,14 +345,18 @@ export class EpromMeetingService {
       throw new BadRequestException('MOM ini sudah ditutup sebelumnya');
     }
 
-    if (!file) {
+    const files = Array.isArray(inputFiles) ? inputFiles : [inputFiles];
+    if (files.length === 0) {
       throw new BadRequestException('Foto bukti wajib diunggah untuk menutup MOM');
     }
 
-    const fileFotoClose = this.file.simpanDokumen(
-      file,
-      `project/${mom.meeting.projectId}/meeting/${mom.meetingId}/mom-close`,
+    const fileFotoCloseFiles = files.map((file) =>
+      this.file.simpanDokumen(
+        file,
+        `project/${mom.meeting.projectId}/meeting/${mom.meetingId}/mom-close`,
+      ),
     );
+    const fileFotoClose = fileFotoCloseFiles[0];
     const sekarang = new Date();
 
     return this.prisma.mOM.update({
@@ -342,6 +365,7 @@ export class EpromMeetingService {
         statusClose: true,
         tglClose: sekarang,
         fileFotoClose,
+        fileFotoCloseFiles,
         hariTerlambat: selisihHari(sekarang, mom.dueDate),
       },
     });

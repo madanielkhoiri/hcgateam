@@ -197,7 +197,10 @@ export default function PerformanceVendorPage() {
                 </thead>
                 <tbody>
                   {kewajibanTampil.map((item, index) => (
-                    <tr key={`${item.tipe}-${item.tanggal}-${index}`}>
+                    <tr
+                      key={`${item.tipe}-${item.tanggal}-${index}`}
+                      className={item.status === "MERAH" ? styles.rowRed : undefined}
+                    >
                       <td>{formatTanggal(item.tanggal)}</td>
                       <td>{item.label}</td>
                       <td>{item.jamBuka}–{item.jamTutup} WITA</td>

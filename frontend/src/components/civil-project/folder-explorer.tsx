@@ -67,7 +67,7 @@ export function FolderExplorer({ scope, tenderId, vendorId }: FolderExplorerProp
     }
   }
 
-  async function unggahFile(file: File) {
+  async function unggahFile(files: File[]) {
     if (!currentFolderId) {
       setError("Buka atau buat folder terlebih dahulu sebelum mengunggah file");
       return;
@@ -75,7 +75,7 @@ export function FolderExplorer({ scope, tenderId, vendorId }: FolderExplorerProp
 
     setError(null);
     try {
-      await epromApi.documents.unggahFile(currentFolderId, file);
+      await Promise.all(files.map((file) => epromApi.documents.unggahFile(currentFolderId, file)));
       muatUlang();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengunggah file");
@@ -163,10 +163,12 @@ export function FolderExplorer({ scope, tenderId, vendorId }: FolderExplorerProp
           <Upload size={15} /> Upload File
           <input
             type="file"
+            multiple
+            accept="*/*"
             hidden
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void unggahFile(file);
+              const files = Array.from(e.target.files ?? []);
+              if (files.length) void unggahFile(files);
               e.target.value = "";
             }}
           />

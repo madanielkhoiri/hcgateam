@@ -190,6 +190,7 @@ export function TenderChatPanel({ tenderId, vendorId, namaTender, namaVendor, on
             ref={fileInputRef}
             type="file"
             multiple
+            accept="*/*"
             className={styles.hiddenFileInput}
             onChange={(e) => tambahFile(e.target.files)}
           />

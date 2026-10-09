@@ -34,7 +34,7 @@ export default function FinancialDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [progressPersen, setProgressPersen] = useState("");
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
   const [editItem, setEditItem] = useState<OpnameItem | null>(null);
   const [editPersen, setEditPersen] = useState("");
@@ -60,7 +60,7 @@ export default function FinancialDetailPage() {
   useEffect(() => {
     muatItems();
     setProgressPersen("");
-    setFileBaru(null);
+    setFileBaru([]);
   }, [muatItems]);
 
   async function tambah(event: React.FormEvent) {
@@ -68,9 +68,12 @@ export default function FinancialDetailPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.financial.buat({ projectId, progressPersen: Number(progressPersen) }, fileBaru);
+      const daftarFile: Array<File | null> = fileBaru.length ? fileBaru : [null];
+      await Promise.all(daftarFile.map((file) =>
+        epromApi.financial.buat({ projectId, progressPersen: Number(progressPersen) }, file),
+      ));
       setProgressPersen("");
-      setFileBaru(null);
+      setFileBaru([]);
       muatItems();
       window.dispatchEvent(new Event("eprom-financial-updated"));
     } catch (err) {
@@ -171,9 +174,11 @@ export default function FinancialDetailPage() {
               File Pendukung
               <input
                 type="file"
+                multiple
                 accept="*/*"
-                onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+                onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
               />
+              {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
             </label>
             <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
               {submitting ? "Menyimpan..." : "Unggah Baru"}

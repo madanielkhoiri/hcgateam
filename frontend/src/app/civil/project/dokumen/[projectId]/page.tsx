@@ -47,7 +47,7 @@ export default function DokumenDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [tanggal, setTanggal] = useState("");
-  const [fileBaru, setFileBaru] = useState<File | null>(null);
+  const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [editItem, setEditItem] = useState<DokumenSuratItem | null>(null);
   const [editTanggal, setEditTanggal] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -72,7 +72,7 @@ export default function DokumenDetailPage() {
   useEffect(() => {
     muatItems();
     setTanggal("");
-    setFileBaru(null);
+    setFileBaru([]);
   }, [muatItems]);
 
   async function tambah(event: React.FormEvent) {
@@ -80,9 +80,10 @@ export default function DokumenDetailPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.dokumen.buat({ projectId, tipe, tanggal }, fileBaru);
+      const daftarFile: Array<File | null> = fileBaru.length ? fileBaru : [null];
+      await Promise.all(daftarFile.map((file) => epromApi.dokumen.buat({ projectId, tipe, tanggal }, file)));
       setTanggal("");
-      setFileBaru(null);
+      setFileBaru([]);
       muatItems();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menambah data");
@@ -161,9 +162,11 @@ export default function DokumenDetailPage() {
               File
               <input
                 type="file"
+                multiple
                 accept="*/*"
-                onChange={(e) => setFileBaru(e.target.files?.[0] ?? null)}
+                onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
               />
+              {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
             </label>
             <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
               {submitting ? "Menyimpan..." : "Tambah Dokumen"}
