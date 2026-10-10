@@ -51,7 +51,7 @@ function buatService(overrides: {
     hapus: jest.fn().mockReturnValue(true),
   } as unknown as EpromFileService;
 
-  const service = new EpromProgressService(prisma, akses, file);
+  const service = new EpromProgressService(prisma, akses, file, {} as any);
 
   return { service, prisma, akses, file, sharedModel, progressMingguanFindMany };
 }
