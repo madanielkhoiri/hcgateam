@@ -183,8 +183,8 @@ export class EpromProgressService {
       }
       for (const tim of timWajib) {
         const jumlah = dokumentasi.filter((item: any) => item?.tim === tim).length;
-        if (jumlah < 1 || jumlah > 10) {
-          throw new BadRequestException(`${tim} wajib memiliki 1 sampai 10 foto`);
+        if (jumlah > 10) {
+          throw new BadRequestException(`${tim} maksimal memiliki 10 foto`);
         }
       }
       if (dokumentasi.some((item: any) => !timWajib.includes(item?.tim))) {
