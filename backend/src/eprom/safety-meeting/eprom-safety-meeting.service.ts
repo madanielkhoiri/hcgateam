@@ -4,12 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsInt } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 import { EpromSafetyMeetingType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromAksesService } from '../common/eprom-akses.service';
 import { AktorEprom } from '../common/eprom-aktor';
 import { EpromFileService } from '../common/eprom-file.service';
+import { EpromReportPdfService } from '../reports/eprom-report-pdf.service';
 
 export const TIPE_SAFETY_MEETING = [
   'p5m',
@@ -49,6 +50,10 @@ export class UploadSafetyMeetingDto {
   @Type(() => Number)
   @IsInt()
   projectId: number;
+
+  @IsOptional()
+  @IsString()
+  formData?: string;
 }
 
 @Injectable()
@@ -57,7 +62,52 @@ export class EpromSafetyMeetingService {
     private readonly prisma: PrismaService,
     private readonly akses: EpromAksesService,
     private readonly file: EpromFileService,
+    private readonly reportPdf: EpromReportPdfService,
   ) {}
+
+  async buatP5mForm(
+    aktor: AktorEprom,
+    projectId: number,
+    formDataRaw: string,
+    photos: Express.Multer.File[] = [],
+  ) {
+    await this.akses.wajibAksesMenuProject(aktor, projectId, 'p5m');
+    if (!this.akses.isOwner(aktor) && lewatBatasUploadP5m()) {
+      throw new BadRequestException('Batas unggah P5M adalah pukul 10.00 WITA');
+    }
+    let formData: any;
+    try { formData = JSON.parse(formDataRaw); } catch { throw new BadRequestException('Data form P5M tidak valid'); }
+    for (const field of ['activityDate', 'location', 'speaker', 'supervisor', 'participants', 'topic']) {
+      if (!String(formData[field] ?? '').trim()) throw new BadRequestException(`${field} wajib diisi`);
+    }
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
+    });
+    if (!project) throw new NotFoundException('Project tidak ditemukan');
+    const pdf = await this.reportPdf.p5m(formData, project, photos);
+    const fileUrl = this.file.simpanBuffer(
+      pdf,
+      `P5M-${formData.activityDate}.pdf`,
+      `project/${projectId}/safety-meeting/p5m`,
+    );
+    try {
+      return await this.prisma.epromSafetyMeetingFile.create({
+        data: {
+          projectId,
+          tipe: EpromSafetyMeetingType.P5M,
+          fileUrl,
+          originalFileName: `P5M-${formData.activityDate}.pdf`,
+          uploadedById: aktor.id,
+          formData,
+        },
+        include: { uploadedBy: { select: { id: true, name: true } } },
+      });
+    } catch (error) {
+      this.file.hapus(fileUrl);
+      throw error;
+    }
+  }
 
   validasiTipe(tipe: string): TipeSafetyMeeting {
     if (!TIPE_SAFETY_MEETING.includes(tipe as TipeSafetyMeeting)) {

@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/civil-project/modal";
+import { DailyReportForm, InspectionForm } from "@/components/eprom/EpromStructuredReportForm";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -443,6 +444,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
 function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: TipeProgress }) {
   const mingguan = tipe === "progress-mingguan";
+  const formTerstruktur = tipe === "inspeksi-area" || tipe === "progress-harian";
 
   const [items, setItems] = useState<ProgressItem[]>([]);
   const [jam, setJam] = useState<JamUploadInfo | null>(null);
@@ -562,7 +564,14 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
         </div>
       )}
 
-      {(boleh || vendorSaya) && (
+      {(boleh || vendorSaya) && tipe === "progress-harian" && (
+        <DailyReportForm projectId={projectId} disabled={terkunci} onSaved={muat} />
+      )}
+      {(boleh || vendorSaya) && tipe === "inspeksi-area" && (
+        <InspectionForm projectId={projectId} disabled={terkunci} onSaved={muat} />
+      )}
+
+      {(boleh || vendorSaya) && !formTerstruktur && (
         <form className={engineerStyles.formCard} onSubmit={unggah} style={{ marginBottom: 18 }}>
           {mingguan && (
             <>
@@ -731,9 +740,11 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
               {(boleh || vendorSaya) && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  <button type="button" className={engineerStyles.iconButton} onClick={() => mulaiEdit(item)} title="Edit">
-                    <Pencil size={13} />
-                  </button>
+                  {!formTerstruktur && (
+                    <button type="button" className={engineerStyles.iconButton} onClick={() => mulaiEdit(item)} title="Edit">
+                      <Pencil size={13} />
+                    </button>
+                  )}
                   <button type="button" className={engineerStyles.iconButtonDanger} onClick={() => hapus(item)} title="Hapus">
                     <Trash2 size={13} />
                   </button>

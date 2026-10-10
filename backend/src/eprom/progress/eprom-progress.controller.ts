@@ -15,10 +15,11 @@ import {
   Post,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -75,6 +76,24 @@ export class EpromProgressController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.service.buat(aktor, this.service.validasiTipe(tipeRaw), projectId, dto, file);
+  }
+
+  @Post(':tipe/form')
+  @UseInterceptors(FilesInterceptor('file', 100, { storage: memoryStorage() }))
+  buatForm(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Query('projectId', ParseIntPipe) projectId: number,
+    @Body('formData') formData: string,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    return this.service.buatForm(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      projectId,
+      formData,
+      files,
+    );
   }
 
   @Delete(':tipe/:id')

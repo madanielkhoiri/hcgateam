@@ -42,7 +42,7 @@ describe('EpromSafetyMeetingService', () => {
       simpanDokumen,
       hapus: jest.fn(),
     } as unknown as EpromFileService;
-    const service = new EpromSafetyMeetingService(prisma, akses, file);
+    const service = new EpromSafetyMeetingService(prisma, akses, file, {} as any);
     const aktor: AktorEprom = {
       id: 9,
       username: 'vendor',
@@ -75,7 +75,7 @@ describe('EpromSafetyMeetingService', () => {
       isOwner: jest.fn().mockReturnValue(false),
     } as unknown as EpromAksesService;
     const file = { simpanDokumen: jest.fn(), hapus: jest.fn() } as unknown as EpromFileService;
-    const service = new EpromSafetyMeetingService(prisma, akses, file);
+    const service = new EpromSafetyMeetingService(prisma, akses, file, {} as any);
     const aktor = { id: 9, username: 'vendor', role: UserRole.VENDOR, vendorId: 3 };
 
     await expect(
@@ -99,7 +99,7 @@ describe('EpromSafetyMeetingService', () => {
       simpanDokumen: jest.fn().mockReturnValue('eprom/project/7/safety-meeting/p5m/a.pdf'),
       hapus: jest.fn(),
     } as unknown as EpromFileService;
-    const service = new EpromSafetyMeetingService(prisma, akses, file);
+    const service = new EpromSafetyMeetingService(prisma, akses, file, {} as any);
     const aktor = { id: 1, username: 'owner', role: UserRole.ADMIN };
 
     await expect(

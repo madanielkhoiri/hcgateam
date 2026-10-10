@@ -2258,6 +2258,7 @@ model EpromSafetyMeetingFile {
   originalFileName String                 @map("original_file_name")
   uploadedById     Int                    @map("uploaded_by")
   uploadedAt       DateTime               @default(now()) @map("uploaded_at")
+  formData         Json?                  @map("form_data")
 
   project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   uploadedBy User    @relation("EpromSafetyMeetingUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
@@ -2294,6 +2295,7 @@ model InspeksiAreaPekerjaan {
   projectId  Int      @map("project_id")
   fileUrl    String?  @map("file_url")
   uploadedAt DateTime @default(now()) @map("uploaded_at")
+  formData   Json?    @map("form_data")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -2322,6 +2324,7 @@ model ProgressHarian {
   tanggal    DateTime @db.Date
   fileUrl    String?  @map("file_url")
   uploadedAt DateTime @default(now()) @map("uploaded_at")
+  formData   Json?    @map("form_data")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

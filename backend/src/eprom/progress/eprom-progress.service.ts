@@ -11,6 +11,7 @@ import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromAksesService } from '../common/eprom-akses.service';
 import { EpromFileService } from '../common/eprom-file.service';
+import { EpromReportPdfService } from '../reports/eprom-report-pdf.service';
 import { AktorEprom } from '../common/eprom-aktor';
 
 export type StatusDeviasi = 'ON_TRACK' | 'WASPADA' | 'TERLAMBAT';
@@ -157,7 +158,49 @@ export class EpromProgressService {
     private readonly prisma: PrismaService,
     private readonly akses: EpromAksesService,
     private readonly file: EpromFileService,
+    private readonly reportPdf: EpromReportPdfService,
   ) {}
+
+  async buatForm(
+    aktor: AktorEprom,
+    tipe: TipeProgress,
+    projectId: number,
+    formDataRaw: string,
+    files: Express.Multer.File[] = [],
+  ) {
+    if (tipe !== 'inspeksi-area' && tipe !== 'progress-harian') {
+      throw new BadRequestException('Form terstruktur hanya tersedia untuk Inspeksi Area dan Laporan Harian');
+    }
+    await this.akses.wajibAksesProject(aktor, projectId);
+    this.wajibDalamJamUpload(aktor, tipe);
+    let formData: any;
+    try { formData = JSON.parse(formDataRaw); } catch { throw new BadRequestException('Data form tidak valid'); }
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
+    });
+    if (!project) throw new NotFoundException('Project tidak ditemukan');
+    const pdf = tipe === 'progress-harian'
+      ? await this.reportPdf.daily(formData, project, files)
+      : await this.reportPdf.inspection(formData, project);
+    const fileUrl = this.file.simpanBuffer(
+      pdf,
+      `${tipe}-${formData.tanggal || Date.now()}.pdf`,
+      `project/${projectId}/progress/${tipe}`,
+    );
+    try {
+      const data: Record<string, unknown> = { projectId, fileUrl, uploadedAt: new Date(), formData };
+      if (tipe === 'progress-harian') {
+        const tanggal = new Date(`${formData.tanggal}T12:00:00.000Z`);
+        if (Number.isNaN(tanggal.getTime())) throw new BadRequestException('Tanggal laporan tidak valid');
+        data.tanggal = tanggal;
+      }
+      return await this.delegate(tipe).create({ data });
+    } catch (error) {
+      this.file.hapus(fileUrl);
+      throw error;
+    }
+  }
 
   validasiTipe(tipe: string): TipeProgress {
     if (!TIPE_PROGRESS.includes(tipe as TipeProgress)) {
