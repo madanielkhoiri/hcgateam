@@ -57,6 +57,16 @@ export class EpromSafetyMeetingController {
     );
   }
 
+  @Post('p5m/form/create')
+  @UseInterceptors(FilesInterceptor('file', 4, { storage: memoryStorage() }))
+  buatP5mForm(
+    @Aktor() aktor: AktorEprom,
+    @Body() dto: UploadSafetyMeetingDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    return this.service.buatP5mForm(aktor, dto.projectId, dto.formData ?? '', files);
+  }
+
   @Delete(':tipe/:id')
   hapus(
     @Aktor() aktor: AktorEprom,

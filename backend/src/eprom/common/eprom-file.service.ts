@@ -91,6 +91,13 @@ export class EpromFileService {
     return `eprom/${scope}/${namaFile}`;
   }
 
+  simpanBuffer(buffer: Buffer, originalname: string, scope: string): string {
+    return this.simpanDokumen(
+      { buffer, originalname } as Express.Multer.File,
+      scope,
+    );
+  }
+
   /** Resolve path relatif menjadi absolut sambil menahan path traversal. */
   resolveAbsolut(pathRelatif: string): string {
     const bersih = pathRelatif.replace(/\\/g, '/').replace(/^\/+/, '');

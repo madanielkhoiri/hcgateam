@@ -47,6 +47,7 @@ import { EpromSafetyMeetingController } from './safety-meeting/eprom-safety-meet
 import { EpromSafetyMeetingService } from './safety-meeting/eprom-safety-meeting.service';
 import { EpromPerformanceVendorController } from './performance-vendor/eprom-performance-vendor.controller';
 import { EpromPerformanceVendorService } from './performance-vendor/eprom-performance-vendor.service';
+import { EpromReportPdfService } from './reports/eprom-report-pdf.service';
 
 @Module({
   imports: [AuthModule],
@@ -94,6 +95,7 @@ import { EpromPerformanceVendorService } from './performance-vendor/eprom-perfor
     EpromClosingService,
     EpromSafetyMeetingService,
     EpromPerformanceVendorService,
+    EpromReportPdfService,
   ],
 })
 export class EpromModule {}
