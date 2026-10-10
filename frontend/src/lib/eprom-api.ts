@@ -1012,6 +1012,12 @@ export const epromApi = {
         body: form,
       });
     },
+    buatForm: (tipe: 'inspeksi-area' | 'progress-harian', projectId: number, data: unknown, files: File[] = []) => {
+      const form = new FormData();
+      form.append('formData', JSON.stringify(data));
+      files.forEach((file) => form.append('file', file));
+      return request<ProgressItem>(`/progress/${tipe}/form?projectId=${projectId}`, { method: 'POST', body: form });
+    },
     hapus: (tipe: TipeProgress, id: number) =>
       request<{ message: string }>(`/progress/${tipe}/${id}`, { method: 'DELETE' }),
     ubah: (
@@ -1162,6 +1168,13 @@ export const epromApi = {
         method: 'POST',
         body: form,
       });
+    },
+    buatP5mForm: (projectId: number, data: unknown, files: File[]) => {
+      const form = new FormData();
+      form.append('projectId', String(projectId));
+      form.append('formData', JSON.stringify(data));
+      files.forEach((file) => form.append('file', file));
+      return request<SafetyMeetingFileItem>('/safety-meeting/p5m/form/create', { method: 'POST', body: form });
     },
     hapus: (tipe: TipeSafetyMeeting, id: number) =>
       request<{ message: string }>(`/safety-meeting/${tipe}/${id}`, {
