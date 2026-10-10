@@ -27,3 +27,10 @@ export async function siapkanGambarUntukPdfKit(
 
   return sharp(readFileSync(absolutePath)).png().toBuffer();
 }
+
+/** Konversi buffer unggahan browser (WebP/JPEG/PNG dan format yang didukung sharp) ke PNG. */
+export async function siapkanBufferGambarUntukPdfKit(
+  buffer: Buffer,
+): Promise<Buffer> {
+  return sharp(buffer).rotate().png().toBuffer();
+}
