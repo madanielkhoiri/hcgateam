@@ -77,8 +77,13 @@ export class EpromSafetyMeetingService {
     }
     let formData: any;
     try { formData = JSON.parse(formDataRaw); } catch { throw new BadRequestException('Data form P5M tidak valid'); }
-    for (const field of ['activityDate', 'location', 'speaker', 'supervisor', 'participants', 'topic']) {
+    for (const field of ['activityDate', 'location', 'participants', 'topic']) {
       if (!String(formData[field] ?? '').trim()) throw new BadRequestException(`${field} wajib diisi`);
+    }
+    for (const key of ['speakers', 'supervisors']) {
+      if (!Array.isArray(formData[key]) || formData[key].length < 1 || formData[key].length > 5 || formData[key].some((person: any) => !String(person?.name ?? '').trim() || !String(person?.position ?? '').trim())) {
+        throw new BadRequestException(`${key} wajib memiliki nama dan jabatan`);
+      }
     }
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
