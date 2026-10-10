@@ -242,6 +242,19 @@
   display: none;
 }
 
+/* Compact desktop untuk laptop dan tablet landscape. */
+@media (min-width: 768px) and (max-width: 1366px) {
+  .shell {
+    --sidebar-width: 230px;
+    --sidebar-collapsed-width: 70px;
+  }
+  .sidebar { grid-template-rows: 68px minmax(0, 1fr) auto; }
+  .sidebarHeader { padding: 0 14px; }
+  .brandLogo { width: 38px; height: 38px; }
+  .brandText strong { font-size: 14px; }
+  .navigation { padding: 11px 9px; }
+}
+
 /* Di layar sempit, sidebar kolom disembunyikan dan diganti top bar +
    drawer (isi menu sama persis, cuma jadi overlay geser dari kiri). */
 @media (max-width: 767px) {
