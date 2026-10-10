@@ -153,6 +153,21 @@
   padding: 22px 0 30px;
 }
 
+@media (min-width: 701px) and (max-width: 1366px) {
+  .hero { min-height: 210px !important; padding: 26px 54px !important; }
+}
+
+/* Kepadatan dashboard untuk layar laptop agar seluruh area langsung pas pada
+   zoom 100%, tanpa mengubah skala browser atau memotong konten. */
+@media (min-width: 701px) and (max-width: 1366px) {
+  .header { height: 68px; }
+  .headerInner, .container { width: min(1280px, calc(100% - 28px)); }
+  .container { padding-top: 14px; }
+  .brandLogo, .brandLogo img { width: 150px; height: 52px; }
+  .headerRight { gap: 16px; }
+  .profileAvatar { width: 38px; height: 38px; }
+}
+
 /* ==================================================
    HERO SLIDER
 ================================================== */
