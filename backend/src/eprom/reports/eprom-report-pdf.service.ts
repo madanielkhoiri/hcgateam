@@ -271,8 +271,11 @@ export class EpromReportPdfService {
       doc.fontSize(24).fillColor('#111827').text('P5M', margin + 72, 52, { width: contentWidth - 72 });
 
       const formattedDate = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(data.activityDate));
-      const info = [['Tanggal', formattedDate], ['Lokasi', data.location], ['Pemateri', data.speaker], ['Peserta', data.participants]];
-      const infoY = 94; const rowHeight = 40; const half = contentWidth / 2; const labelWidth = 92;
+      const peopleText = (people: any[]) => (Array.isArray(people) ? people : [])
+        .map((person: any, index: number) => `${index + 1}. ${person?.name || '-'} - ${person?.position || '-'}`)
+        .join('\n') || '-';
+      const info = [['Tanggal', formattedDate], ['Lokasi', data.location], ['Pemateri', peopleText(data.speakers)], ['Peserta', data.participants]];
+      const infoY = 94; const rowHeight = 58; const half = contentWidth / 2; const labelWidth = 92;
       doc.lineWidth(.8).strokeColor('#C6D0D8').rect(margin, infoY, contentWidth, rowHeight * 2).stroke();
       doc.moveTo(margin + half, infoY).lineTo(margin + half, infoY + rowHeight * 2).stroke();
       doc.moveTo(margin, infoY + rowHeight).lineTo(margin + contentWidth, infoY + rowHeight).stroke();
@@ -291,11 +294,11 @@ export class EpromReportPdfService {
         const boxY = y + 24; doc.lineWidth(.8).strokeColor('#C6D0D8').fillColor('#FAFBFC').rect(margin, boxY, contentWidth, height).fillAndStroke();
         fit(value, margin + 12, boxY + 12, contentWidth - 24, height - 24);
       };
-      section('Materi', numbered(data.topic), 190, 84);
-      section('Pengawas', data.supervisor || '-', 317, 82);
+      section('Materi', numbered(data.topic), 222, 78);
+      section('Pengawas', peopleText(data.supervisors), 323, 82);
 
-      doc.font('Helvetica-Bold').fontSize(13).fillColor('#147A70').text('Dokumentasi', margin, 442, { width: contentWidth });
-      const gap = 12; const cardWidth = (contentWidth - gap) / 2; const cardHeight = 164; const startY = 469;
+      doc.font('Helvetica-Bold').fontSize(13).fillColor('#147A70').text('Dokumentasi', margin, 428, { width: contentWidth });
+      const gap = 12; const cardWidth = (contentWidth - gap) / 2; const cardHeight = 164; const startY = 455;
       if (!photos.length) {
         doc.lineWidth(.8).strokeColor('#C6D0D8').roundedRect(margin, startY, contentWidth, 105, 8).stroke();
         fit('Belum ada dokumentasi.', margin, startY + 44, contentWidth, 20, { color: '#718091', align: 'center', size: 9 });
