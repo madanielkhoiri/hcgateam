@@ -175,6 +175,22 @@ export class EpromProgressService {
     this.wajibDalamJamUpload(aktor, tipe);
     let formData: any;
     try { formData = JSON.parse(formDataRaw); } catch { throw new BadRequestException('Data form tidak valid'); }
+    if (tipe === 'progress-harian') {
+      const dokumentasi = Array.isArray(formData.dokumentasi) ? formData.dokumentasi : [];
+      const timWajib = ['Tim Sipil', 'Tim Baja', 'Tim MEP', 'Tim Arsitektur'];
+      if (dokumentasi.length !== files.length) {
+        throw new BadRequestException('Setiap dokumentasi Daily Report wajib memiliki satu foto');
+      }
+      for (const tim of timWajib) {
+        const jumlah = dokumentasi.filter((item: any) => item?.tim === tim).length;
+        if (jumlah < 1 || jumlah > 10) {
+          throw new BadRequestException(`${tim} wajib memiliki 1 sampai 10 foto`);
+        }
+      }
+      if (dokumentasi.some((item: any) => !timWajib.includes(item?.tim))) {
+        throw new BadRequestException('Tim dokumentasi Daily Report tidak valid');
+      }
+    }
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
