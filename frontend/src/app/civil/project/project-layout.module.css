@@ -441,6 +441,20 @@
   display: none;
 }
 
+/* Laptop dan tablet landscape tetap memakai navigasi desktop, tetapi dengan
+   kepadatan yang sesuai viewport agar pengguna tidak perlu zoom-out browser. */
+@media (min-width: 901px) and (max-width: 1440px) {
+  .shell { --sidebar-width: 220px; }
+  .sidebarHeader { min-height: 68px; padding: 0 14px; }
+  .brandLogo { width: 38px; height: 38px; }
+  .brandText { font-size: 17px; }
+  .navigation { padding: 11px 9px; }
+  .navItem, .navItemDisabled, .groupButton { min-height: 38px; padding: 0 10px; font-size: 12px; }
+  .submenuItem { min-height: 32px; font-size: 10.5px; }
+  .topHeader { min-height: 68px; padding: 0 18px; }
+  .pageContent { padding: 16px; }
+}
+
 @media (max-width: 900px) {
   .sidebar {
     width: min(88vw, 300px);
