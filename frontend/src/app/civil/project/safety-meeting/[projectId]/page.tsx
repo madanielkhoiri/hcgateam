@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
+import { P5mReportForm } from "@/components/eprom/EpromStructuredReportForm";
 import {
   epromApi,
   formatWaktuWITA,
@@ -194,7 +195,11 @@ function SafetyMeetingFileTab({
         </p>
       )}
 
-      {bolehMengelola && !p5mDitutup && (
+      {bolehMengelola && tipe === "p5m" && !p5mDitutup && (
+        <P5mReportForm projectId={projectId} disabled={p5mDitutup} onSaved={muat} />
+      )}
+
+      {bolehMengelola && tipe !== "p5m" && !p5mDitutup && (
         <form
           className={styles.formCard}
           onSubmit={unggah}
