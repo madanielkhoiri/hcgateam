@@ -312,7 +312,7 @@ export default function CivilProjectDashboardPage() {
             {trendTertampil.length > 0 ? (
               <ProgressTrendChart
                 seri={trendTertampil}
-                detail={filterChartId !== "semua" || trendTertampil.length === 1}
+                detail={filterChartId !== "semua"}
               />
             ) : (
               <p className={styles.emptyText} style={{ margin: 0 }}>
