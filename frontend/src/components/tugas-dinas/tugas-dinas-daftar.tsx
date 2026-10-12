@@ -1,52 +1,65 @@
-'use client';
+"use client";
 
 // ==================================================
-// FILE: frontend/src/app/hc/tugas-dinas/daftar/page.tsx
-// FUNGSI: Daftar Surat Tugas Dinas - terpisah dari dashboard/page.tsx
-// (yang hanya statistik + grafik).
+// FILE: frontend/src/components/tugas-dinas/tugas-dinas-daftar.tsx
+// FUNGSI: Tabel daftar surat untuk menu "STD" dan "STD Akomodasi"
+// (dipisah lewat filter denganAkomodasi). Tombol "+ Tambah" membuka
+// form pembuatan surat dalam popup.
 // ==================================================
 
-import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Eye, Plane, Plus } from 'lucide-react';
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Eye, Plane, Plus } from "lucide-react";
 import {
   BadgeStatusSurat,
+  Dialog,
   Kosong,
   Memuat,
   Panel,
   Pesan,
-} from '@/components/tugas-dinas/tugas-dinas-ui';
+} from "@/components/tugas-dinas/tugas-dinas-ui";
+import { TugasDinasBuatForm } from "@/components/tugas-dinas/tugas-dinas-buat-form";
 import {
   formatTanggal,
   suratTugasApi,
   type HasilHalaman,
   type StatusSuratTugas,
   type SuratTugasDinas,
-} from '@/lib/surat-tugas-dinas-api';
-import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
-import styles from '../tugas-dinas.module.css';
+} from "@/lib/surat-tugas-dinas-api";
+import {
+  PaginationBar,
+  hitungTotalHalaman,
+} from "@/components/pagination/pagination-bar";
+import styles from "@/app/hc/tugas-dinas/tugas-dinas.module.css";
 
 const UKURAN_HALAMAN = 20;
 
 const TAB_STATUS: Array<{ key: string; label: string }> = [
-  { key: '', label: 'Semua' },
-  { key: 'MENUNGGU_SH', label: 'Menunggu SH' },
-  { key: 'MENUNGGU_PJO', label: 'Menunggu PJO' },
-  { key: 'DISETUJUI', label: 'Disetujui' },
-  { key: 'DITOLAK', label: 'Ditolak' },
+  { key: "", label: "Semua" },
+  { key: "MENUNGGU_SH", label: "Menunggu SH" },
+  { key: "MENUNGGU_PJO", label: "Menunggu PJO" },
+  { key: "DISETUJUI", label: "Disetujui" },
+  { key: "DITOLAK", label: "Ditolak" },
 ];
 
-export default function DaftarTugasDinasPage() {
-  const [tab, setTab] = useState('');
+export function TugasDinasDaftar({
+  withAkomodasi,
+}: {
+  withAkomodasi: boolean;
+}) {
+  const [tab, setTab] = useState("");
   const [daftar, setDaftar] = useState<SuratTugasDinas[]>([]);
   const [memuat, setMemuat] = useState(true);
   const [galat, setGalat] = useState<string | null>(null);
 
-  const [cari, setCari] = useState('');
-  const [filterBulan, setFilterBulan] = useState('');
-  const [filterTahun, setFilterTahun] = useState('');
+  const [cari, setCari] = useState("");
+  const [filterBulan, setFilterBulan] = useState("");
+  const [filterTahun, setFilterTahun] = useState("");
   const [halaman, setHalaman] = useState(1);
   const [totalSurat, setTotalSurat] = useState(0);
+  const [dialogBuat, setDialogBuat] = useState(false);
+
+  const judul = withAkomodasi ? "STD Akomodasi" : "Surat Tugas Dinas (STD)";
 
   const muat = useCallback(async () => {
     setMemuat(true);
@@ -56,12 +69,13 @@ export default function DaftarTugasDinasPage() {
       const parameter = new URLSearchParams({
         halaman: String(halaman),
         ukuranHalaman: String(UKURAN_HALAMAN),
+        denganAkomodasi: String(withAkomodasi),
       });
 
-      if (tab) parameter.set('status', tab);
-      if (cari.trim()) parameter.set('cari', cari.trim());
-      if (filterBulan) parameter.set('bulan', filterBulan);
-      if (filterTahun) parameter.set('tahun', filterTahun);
+      if (tab) parameter.set("status", tab);
+      if (cari.trim()) parameter.set("cari", cari.trim());
+      if (filterBulan) parameter.set("bulan", filterBulan);
+      if (filterTahun) parameter.set("tahun", filterTahun);
 
       const hasil = await suratTugasApi.ambil<HasilHalaman<SuratTugasDinas>>(
         `?${parameter.toString()}`,
@@ -73,7 +87,7 @@ export default function DaftarTugasDinasPage() {
     } finally {
       setMemuat(false);
     }
-  }, [tab, cari, filterBulan, filterTahun, halaman]);
+  }, [tab, cari, filterBulan, filterTahun, halaman, withAkomodasi]);
 
   useEffect(() => {
     void muat();
@@ -98,19 +112,24 @@ export default function DaftarTugasDinasPage() {
           </span>
 
           <div>
-            <h1>Form Tugas Dinas</h1>
+            <h1>{judul}</h1>
             <p>
-              Buat Surat Tugas Dinas dengan karyawan dari Database Karyawan,
-              otomatis jadi PDF, lengkap alur persetujuan SH &amp; PJO.
+              {withAkomodasi
+                ? "Daftar STD Akomodasi: uang makan, transportasi, dan laundry dari STD yang sudah disetujui."
+                : "Daftar Surat Tugas Dinas dengan karyawan dari Database Karyawan, lengkap alur persetujuan SH & PJO."}
             </p>
           </div>
         </div>
 
         <div className={styles.headActions}>
-          <Link href="/hc/tugas-dinas/buat" className={styles.tombol}>
+          <button
+            type="button"
+            className={styles.tombol}
+            onClick={() => setDialogBuat(true)}
+          >
             <Plus size={15} />
-            Buat Surat Tugas
-          </Link>
+            Tambah
+          </button>
         </div>
       </div>
 
@@ -122,7 +141,7 @@ export default function DaftarTugasDinasPage() {
             key={item.key}
             type="button"
             className={`${styles.tombol} ${styles.tombolKecil} ${
-              tab === item.key ? '' : styles.tombolNetral
+              tab === item.key ? "" : styles.tombolNetral
             }`}
             onClick={() => setTab(item.key)}
           >
@@ -132,7 +151,7 @@ export default function DaftarTugasDinasPage() {
       </div>
 
       <Panel
-        judul="Daftar Surat Tugas Dinas"
+        judul={`Daftar ${judul}`}
         keterangan={`${totalSurat} surat, ditampilkan ${daftar.length} per halaman.`}
       >
         <div className={styles.filterBar}>
@@ -153,8 +172,8 @@ export default function DaftarTugasDinasPage() {
             <option value="">Semua Bulan</option>
             {Array.from({ length: 12 }, (_, index) => (
               <option key={index + 1} value={index + 1}>
-                {new Intl.DateTimeFormat('id-ID', {
-                  month: 'long',
+                {new Intl.DateTimeFormat("id-ID", {
+                  month: "long",
                 }).format(new Date(2026, index, 1))}
               </option>
             ))}
@@ -180,7 +199,7 @@ export default function DaftarTugasDinasPage() {
         ) : daftar.length === 0 ? (
           <Kosong
             judul="Belum ada surat tugas"
-            keterangan="Buat surat tugas dinas baru untuk mulai."
+            keterangan='Klik "+ Tambah" untuk membuat surat baru.'
           />
         ) : (
           <div className={styles.tableWrap}>
@@ -212,13 +231,15 @@ export default function DaftarTugasDinasPage() {
                     <td>{item.nomor}</td>
                     <td>{item.tujuanLokasi}</td>
                     <td>
-                      {formatTanggal(item.tanggalMulai)} -{' '}
+                      {formatTanggal(item.tanggalMulai)} -{" "}
                       {formatTanggal(item.tanggalSelesai)}
                     </td>
                     <td>{item.karyawan.length} orang</td>
                     <td>{item.dibuatOleh.name}</td>
                     <td>
-                      <BadgeStatusSurat nilai={item.status as StatusSuratTugas} />
+                      <BadgeStatusSurat
+                        nilai={item.status as StatusSuratTugas}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -233,6 +254,20 @@ export default function DaftarTugasDinasPage() {
           onGanti={setHalaman}
         />
       </Panel>
+
+      {dialogBuat ? (
+        <Dialog
+          lebar
+          judul={withAkomodasi ? "Tambah STD Akomodasi" : "Tambah Surat Tugas Dinas"}
+          keterangan="Setelah dibuat, surat menunggu persetujuan SH lalu PJO."
+          onTutup={() => setDialogBuat(false)}
+        >
+          <TugasDinasBuatForm
+            withAkomodasi={withAkomodasi}
+            onBatal={() => setDialogBuat(false)}
+          />
+        </Dialog>
+      ) : null}
     </>
   );
 }

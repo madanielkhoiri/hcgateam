@@ -130,6 +130,12 @@ describe("hasAccess", () => {
  expect(hasAccess(user, ACCESS_KEYS.HC_HELPDESK)).toBe(true);
  });
 
+ it("PJO selalu diizinkan", () => {
+ const user = buatUser({ role: "PJO", accessKeys: [] });
+ expect(hasAccess(user, ACCESS_KEYS.HC_TUGAS_DINAS)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.GA_INVENTORY)).toBe(true);
+ });
+
  it("Group Leader tetap mengikuti accessKeys dan tidak membuka semua modul", () => {
  const user = buatUser({ role: "GRUP_LEADER_GA", accessKeys: [ACCESS_KEYS.GA_INVENTORY] });
  expect(hasAccess(user, ACCESS_KEYS.GA_INVENTORY)).toBe(true);

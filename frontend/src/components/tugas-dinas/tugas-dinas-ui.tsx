@@ -99,12 +99,14 @@ export function Dialog({
   onTutup,
   children,
   aksi,
+  lebar,
 }: {
   judul: string;
   keterangan?: string;
   onTutup: () => void;
   children: ReactNode;
   aksi?: ReactNode;
+  lebar?: boolean;
 }) {
   return (
     <div
@@ -115,7 +117,7 @@ export function Dialog({
         }
       }}
     >
-      <div className={styles.dialog}>
+      <div className={`${styles.dialog} ${lebar ? styles.dialogLebar : ""}`}>
         <div className={styles.dialogHead}>
           <div>
             <h3>{judul}</h3>
