@@ -123,6 +123,12 @@ const performanceVendorItem: NavItem = {
   icon: TrendingUp,
 };
 
+const performanceInternalItem: NavItem = {
+  label: "Performance Internal",
+  href: "/civil/project/performance-internal",
+  icon: TrendingUp,
+};
+
 const segeraHadirItems: NavItem[] = [];
 
 const TAB_ENGINEER: { tab: TipeEngineer; label: string; icon: React.ElementType }[] = [
@@ -257,6 +263,37 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       .catch(() => { if (aktif) setActiveTender(null); });
     return () => { aktif = false; };
   }, [activeTenderId]);
+
+  // Project Internal punya vendor bayangan; akses submenunya diatur lewat
+  // Data Vendor dan berlaku juga untuk Owner/Admin yang membuka project itu.
+  const [menuNonaktifInternal, setMenuNonaktifInternal] = useState<string[] | null>(null);
+  const activeProjectId =
+    activeEngineerProjectId ??
+    activeKonstruksiProjectId ??
+    activeFileProjectId ??
+    activeMeetingProjectId ??
+    activeSafetyMeetingProjectId ??
+    activeDokumenProjectId ??
+    activeFinancialProjectId ??
+    activeClosingProjectId;
+
+  useEffect(() => {
+    if (!activeProjectId || vendorSaya) {
+      setMenuNonaktifInternal(null);
+      return;
+    }
+    let aktif = true;
+    epromApi.project.detail(Number(activeProjectId))
+      .then((project) => {
+        if (aktif) {
+          setMenuNonaktifInternal(
+            project.kontrak.vendor.internal ? (project.kontrak.vendor.menuNonaktif ?? []) : null,
+          );
+        }
+      })
+      .catch(() => { if (aktif) setMenuNonaktifInternal(null); });
+    return () => { aktif = false; };
+  }, [activeProjectId, vendorSaya, pathname]);
 
   const navGroups: NavGroup[] = [
     {
@@ -723,8 +760,9 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   }, [user, activeClosingProjectId]);
 
   useEffect(() => {
-    if (!vendorSaya || menuNonaktifVendor === null || !activeTab) return;
-    if (!menuNonaktifVendor.includes(activeTab)) return;
+    const daftarNonaktif = vendorSaya ? menuNonaktifVendor : menuNonaktifInternal;
+    if (daftarNonaktif === null || !activeTab) return;
+    if (!daftarNonaktif.includes(activeTab)) return;
 
     const tujuan = pathname.includes('/engineer/') || activeTab === 'dokpro'
       ? '/civil/project/engineer'
@@ -743,7 +781,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
                   : '/civil/project';
 
     router.replace(tujuan);
-  }, [activeTab, menuNonaktifVendor, pathname, router, vendorSaya]);
+  }, [activeTab, menuNonaktifVendor, menuNonaktifInternal, pathname, router, vendorSaya]);
 
   useEffect(() => {
     setMobileSidebarOpen(false);
@@ -780,12 +818,13 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
     const GroupIcon = group.icon;
     const isOpen = openGroups.includes(group.id);
     const itemsTerlihat = group.items.filter((item) => {
-      if (!vendorSaya) return true;
+      if (!vendorSaya && menuNonaktifInternal === null) return true;
       const query = item.href.split('?')[1];
       const key = query ? new URLSearchParams(query).get('tab') : null;
       // Item daftar project tidak memiliki key dan tetap dipakai untuk memilih
       // project. Submenu project baru tampil setelah akses berhasil dimuat.
       if (!key) return true;
+      if (!vendorSaya) return !(menuNonaktifInternal ?? []).includes(key);
       return menuNonaktifVendor !== null && !menuNonaktifVendor.includes(key);
     });
     if (itemsTerlihat.length === 0) return null;
@@ -904,6 +943,16 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
             >
               <TrendingUp size={18} />
               <span>{performanceVendorItem.label}</span>
+            </Link>
+          )}
+
+          {boleh && (
+            <Link
+              href={performanceInternalItem.href}
+              className={`${styles.navItem} ${pathname === performanceInternalItem.href ? styles.navItemActive : ""}`}
+            >
+              <TrendingUp size={18} />
+              <span>{performanceInternalItem.label}</span>
             </Link>
           )}
 

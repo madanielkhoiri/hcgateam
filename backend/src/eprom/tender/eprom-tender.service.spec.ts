@@ -55,6 +55,9 @@ function buatService(overrides: {
     vendor: {
       findMany: jest.fn().mockResolvedValue(overrides.vendorList ?? []),
     },
+    kontrak: {
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
     tenderSPH: {
       count: jest.fn().mockResolvedValue(overrides.jumlahSph ?? 0),
       findFirst: jest.fn().mockResolvedValue('roundTerakhir' in overrides ? overrides.roundTerakhir : null),
@@ -71,7 +74,7 @@ function buatService(overrides: {
       if (Array.isArray(arg)) {
         return Promise.all(arg);
       }
-      return arg({ tenderUndangan: { upsert: undanganUpsert }, tenderProcess: { update: tenderUpdate }, tenderSPH: { updateMany: sphUpdateMany, update: sphUpdate } });
+      return arg({ vendor: { create: jest.fn().mockResolvedValue({ id: 7 }) }, kontrak: { create: jest.fn().mockResolvedValue({ id: 8 }) }, project: { create: jest.fn().mockResolvedValue({ id: 9 }) }, tenderUndangan: { upsert: undanganUpsert }, tenderProcess: { update: tenderUpdate }, tenderSPH: { updateMany: sphUpdateMany, update: sphUpdate } });
     }),
   } as unknown as PrismaService;
 
@@ -159,6 +162,20 @@ describe('EpromTenderService.buat', () => {
     expect(tenderCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ jenisTender: JenisTender.INTERNAL }),
     }));
+  });
+});
+
+describe('EpromTenderService.buat Internal', () => {
+  it('membuat vendor bayangan, kontrak, dan project otomatis', async () => {
+    const { service, prisma } = buatService();
+    await service.buat({ namaTender: 'TPS 3R', jenisTender: JenisTender.INTERNAL } as any);
+    expect((prisma as any).$transaction).toHaveBeenCalled();
+  });
+
+  it('tidak membuat project untuk tender Vendor', async () => {
+    const { service, prisma } = buatService();
+    await service.buat({ namaTender: 'Tender A' } as any);
+    expect((prisma as any).$transaction).not.toHaveBeenCalled();
   });
 });
 
