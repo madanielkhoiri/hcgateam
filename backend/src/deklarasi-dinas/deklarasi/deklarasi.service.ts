@@ -1,8 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { promises as fs } from 'node:fs';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { buatKodeDeklarasi } from '../bantuan/kode-deklarasi.bantuan';
@@ -148,12 +150,45 @@ export class DeklarasiService {
       throw new NotFoundException('Deklarasi tidak ditemukan.');
     }
 
-    return deklarasi;
+    // Departemen diambil dari Database Karyawan (NRP = NIK) agar cetakan
+    // sesuai karyawannya.
+    const karyawan = await this.prisma.karyawan.findUnique({
+      where: { nik: deklarasi.nrp },
+      select: { departemen: { select: { namaDepartemen: true } } },
+    });
+
+    return {
+      ...deklarasi,
+      departemen: karyawan?.departemen.namaDepartemen ?? null,
+    };
   }
   // <--- end --->
 
   // <--- mengedit data deklarasi --->
-  async editDeklarasi(idDeklarasi: number, data: EditDeklarasiDto) {
+  private apakahAdminAtauFa(aktor: { role: UserRole }) {
+    const roleDiizinkan: UserRole[] = [
+      UserRole.ADMIN,
+      UserRole.SUPER_ADMIN,
+      UserRole.HC,
+      UserRole.FA,
+    ];
+
+    return roleDiizinkan.includes(aktor.role);
+  }
+
+  private pastikanAdminAtauFa(aktor: { role: UserRole }) {
+    if (!this.apakahAdminAtauFa(aktor)) {
+      throw new ForbiddenException(
+        'Edit dan hapus deklarasi hanya dapat dilakukan Admin HC atau FA.',
+      );
+    }
+  }
+
+  async editDeklarasi(
+    idDeklarasi: number,
+    data: EditDeklarasiDto,
+    aktor: { role: UserRole },
+  ) {
     const deklarasi = await this.prisma.deklarasi.findUnique({
       where: {
         id: idDeklarasi,
@@ -164,9 +199,16 @@ export class DeklarasiService {
       throw new NotFoundException('Deklarasi tidak ditemukan.');
     }
 
-    if (!['DRAFT', 'DITOLAK'].includes(deklarasi.status)) {
+    const adminAtauFa = this.apakahAdminAtauFa(aktor);
+    if (!adminAtauFa && aktor.role !== UserRole.KARYAWAN) {
+      throw new ForbiddenException('Anda tidak berhak mengedit deklarasi ini.');
+    }
+    if (
+      !adminAtauFa &&
+      !['DRAFT', 'DITOLAK'].includes(deklarasi.status)
+    ) {
       throw new BadRequestException(
-        'Deklarasi hanya dapat diedit ketika berstatus DRAFT atau DITOLAK.',
+        'Deklarasi hanya dapat diedit karyawan ketika berstatus DRAFT atau DITOLAK.',
       );
     }
 
@@ -185,20 +227,90 @@ export class DeklarasiService {
       throw new BadRequestException('Keterangan wajib diisi.');
     }
 
-    let statusUpdate = deklarasi.status;
-    if (deklarasi.status === 'DITOLAK') {
-      statusUpdate = 'DRAFT';
-    }
-
-    return this.prisma.deklarasi.update({
+    const hasil = await this.prisma.deklarasi.update({
       where: { id: idDeklarasi },
       data: {
         tanggalKegiatan: new Date(data.tanggal_kegiatan),
         lokasi,
         keterangan,
-        status: statusUpdate,
       }
     });
+
+    if (deklarasi.status === 'DISETUJUI') {
+      await this.databaseSettlementService.sinkronkanDariDeklarasi(hasil);
+    }
+
+    return hasil;
+  }
+  // <--- end --->
+
+  // <--- hapus deklarasi beserta nota, settlement, dan reset saldo --->
+  async hapusDeklarasi(
+    idDeklarasi: number,
+    aktor: { role: UserRole },
+  ) {
+    this.pastikanAdminAtauFa(aktor);
+
+    if (!Number.isInteger(idDeklarasi) || idDeklarasi <= 0) {
+      throw new BadRequestException('ID deklarasi tidak valid.');
+    }
+
+    const deklarasi = await this.prisma.deklarasi.findUnique({
+      where: { id: idDeklarasi },
+    });
+
+    if (!deklarasi) {
+      throw new NotFoundException('Deklarasi tidak ditemukan.');
+    }
+
+    const daftarNota = await this.prisma.nota.findMany({
+      where: { idDeklarasi },
+      select: { pathFile: true },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.databaseSettlement.deleteMany({ where: { idDeklarasi } });
+      await tx.nota.deleteMany({ where: { idDeklarasi } });
+      await tx.deklarasi.delete({ where: { id: idDeklarasi } });
+
+      if (deklarasi.idSaldo) {
+        const saldo = await tx.saldo.findUnique({
+          where: { id: deklarasi.idSaldo },
+        });
+
+        if (saldo) {
+          await tx.saldo.update({
+            where: { id: saldo.id },
+            data: {
+              totalPenggunaan: 0,
+              sisaSaldo: 0,
+              nominalPengembalian: 0,
+              statusSaldo: 'SELESAI',
+              statusBuktiPengembalian: 'BELUM_UPLOAD',
+              alasanBuktiPengembalianDitolak: null,
+              tanggalVerifikasiPengembalian: null,
+            },
+          });
+        }
+      }
+    });
+
+    await Promise.all(
+      daftarNota.map(async (nota) => {
+        if (!nota.pathFile) return;
+        try {
+          await fs.unlink(`.${nota.pathFile}`);
+        } catch {
+          // File mungkin sudah tidak ada; penghapusan data tetap berhasil.
+        }
+      }),
+    );
+
+    return {
+      message: 'Deklarasi berhasil dihapus dan saldo karyawan telah menjadi 0.',
+      id_deklarasi: idDeklarasi,
+      id_saldo: deklarasi.idSaldo,
+    };
   }
   // <--- end --->
 

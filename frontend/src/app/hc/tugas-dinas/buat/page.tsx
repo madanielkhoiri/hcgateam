@@ -2,11 +2,11 @@
 
 // ==================================================
 // FILE: frontend/src/app/hc/tugas-dinas/buat/page.tsx
-// FUNGSI: Menu "Buat Tugas Dinas" (STD biasa, tanpa field akomodasi).
+// FUNGSI: Menu "STD" - tabel STD biasa (tanpa akomodasi) + popup tambah.
 // ==================================================
 
-import { TugasDinasBuatForm } from '@/components/tugas-dinas/tugas-dinas-buat-form';
+import { TugasDinasDaftar } from '@/components/tugas-dinas/tugas-dinas-daftar';
 
 export default function BuatTugasDinasPage() {
-  return <TugasDinasBuatForm withAkomodasi={false} />;
+  return <TugasDinasDaftar withAkomodasi={false} />;
 }

@@ -179,7 +179,8 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
   if (
     user.role === 'ADMIN' ||
     user.role === 'SUPER_ADMIN' ||
-    user.role === 'SECTION_HEAD'
+    user.role === 'SECTION_HEAD' ||
+    user.role === 'PJO'
   ) {
     return true;
   }

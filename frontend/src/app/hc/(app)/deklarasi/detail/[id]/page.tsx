@@ -44,6 +44,7 @@ type DataDeklarasi = {
  lokasi: string;
  keterangan: string;
  nomor_std?: string | null;
+ departemen?: string | null;
  total_nominal: string | number;
  status: "DRAFT" | "DIAJUKAN" | "DIVERIFIKASI" | "MENUNGGU_FA" | "DISETUJUI" | "DITOLAK";
  alasan_ditolak?: string | null;
@@ -2873,14 +2874,14 @@ export default function HalamanDetailDeklarasi() {
  <td>Nama</td>
  <td colSpan={2}>: {deklarasi?.nama_pengguna}</td>
  <td>Departemen</td>
- <td colSpan={2}>: HCGA</td>
+ <td colSpan={2}>: {deklarasi?.departemen || ""}</td>
  <td className="pdf-ket-heading">Keterangan Perjalanan :</td>
  </tr>
  <tr>
  <td>NRP</td>
  <td colSpan={2}>: {deklarasi?.nrp}</td>
  <td>Golongan</td>
- <td colSpan={2}>: TRAINING</td>
+ <td colSpan={2}>:</td>
  <td className="pdf-ket-value" rowSpan={2}>
  {deklarasi?.keterangan || "-"}
  </td>
@@ -3064,7 +3065,7 @@ export default function HalamanDetailDeklarasi() {
  <td className="pdf-doc-value"></td>
  </tr>
  <tr>
- <td colSpan={2}>Department : HCGA</td>
+ <td colSpan={2}>Department : {deklarasi?.departemen || "HCGA"}</td>
  <td colSpan={2}>Tanggal</td>
  <td>: {formatTanggal(deklarasi?.tanggal_kegiatan)}</td>
  </tr>
@@ -3876,8 +3877,8 @@ export default function HalamanDetailDeklarasi() {
  }
 
  .pdf-logo-cell {
- text-align: left !important;
- padding-left: 3px !important;
+ text-align: center !important;
+ padding: 1px !important;
  }
 
  .pdf-logo {
@@ -4018,6 +4019,7 @@ export default function HalamanDetailDeklarasi() {
 
  .pdf-sign-row span {
  display: block !important;
+ margin-top: 1.5mm !important;
  }
 
  .pdf-sign-row-deklarasi {
@@ -4369,6 +4371,7 @@ export default function HalamanDetailDeklarasi() {
 
  .pdf-sign-row span {
  display: block;
+ margin-top: 1.5mm;
  }
 
  .pdf-sign-row-deklarasi {

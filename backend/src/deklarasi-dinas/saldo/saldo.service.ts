@@ -238,12 +238,50 @@ export class SaldoService {
 
     for (const saldo of daftarAktif) {
       const deklarasiAktif = await this.pastikanDeklarasiSaldoAda(saldo);
+      const rincianStd = saldo.nomorStd
+        ? await this.prisma.suratTugasDinas.findFirst({
+            where: { nomor: saldo.nomorStd },
+            select: {
+              tanggalMulai: true,
+              tanggalSelesai: true,
+              karyawan: {
+                where: { nrp: saldo.nrp },
+                take: 1,
+                select: {
+                  uangPerjalananNominal: true,
+                  akomodasiNominal: true,
+                  laundryNominal: true,
+                  frekuensiMakan: true,
+                  ruteTransportasiLokal: true,
+                },
+              },
+            },
+          })
+        : null;
+      const rincianKaryawan = rincianStd?.karyawan[0];
+      const durasiHari = rincianStd
+        ? Math.floor(
+            (rincianStd.tanggalSelesai.getTime() -
+              rincianStd.tanggalMulai.getTime()) /
+              (24 * 60 * 60 * 1000),
+          ) + 1
+        : 0;
 
       hasil.push({
         ...saldo,
         id_deklarasi_aktif: deklarasiAktif.id,
         kode_deklarasi_aktif: deklarasiAktif.kodeDeklarasi,
         status_deklarasi_aktif: deklarasiAktif.status,
+        rincian_saldo: {
+          makan: rincianKaryawan?.uangPerjalananNominal ?? 0,
+          transportasi: rincianKaryawan?.akomodasiNominal ?? 0,
+          laundry:
+            durasiHari >= 3 ? (rincianKaryawan?.laundryNominal ?? 0) : 0,
+          frekuensi_makan: rincianKaryawan?.frekuensiMakan ?? 0,
+          rute_transportasi: rincianKaryawan?.ruteTransportasiLokal ?? null,
+          durasi_hari: durasiHari,
+          laundry_berlaku: durasiHari >= 3,
+        },
       });
     }
 

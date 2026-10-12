@@ -4,7 +4,7 @@
 // FILE: frontend/src/app/hc/tugas-dinas/dashboard/page.tsx
 // FUNGSI: Dashboard modul Form Tugas Dinas - halaman pertama begitu
 // masuk sidebar Tugas Dinas. Statistik + grafik saja; daftar surat
-// tugas ada di tugas-dinas/daftar/page.tsx.
+// tugas ada di menu STD dan STD Akomodasi.
 // ==================================================
 
 import { useEffect, useState } from 'react';
