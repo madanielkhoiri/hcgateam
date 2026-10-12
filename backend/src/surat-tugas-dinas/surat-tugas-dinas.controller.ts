@@ -46,6 +46,7 @@ export class SuratTugasDinasController {
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
     @Query('cari') cari?: string,
+    @Query('denganAkomodasi') denganAkomodasi?: string,
   ) {
     return this.service.daftar(
       request.user,
@@ -55,6 +56,11 @@ export class SuratTugasDinasController {
       bulan ? Number(bulan) : undefined,
       tahun ? Number(tahun) : undefined,
       cari?.trim() || undefined,
+      denganAkomodasi === 'true'
+        ? true
+        : denganAkomodasi === 'false'
+          ? false
+          : undefined,
     );
   }
 

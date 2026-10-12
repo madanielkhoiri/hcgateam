@@ -222,7 +222,7 @@ describe('SuratTugasDinasService.buat', () => {
             akomodasiKeterangan: 'Tidak boleh tersimpan',
             laundryNominal: 50_000,
             laundryKeterangan: 'Tidak boleh tersimpan',
-            frekuensiMakan: 999,
+            frekuensiMakan: 4,
             ruteTransportasiLokal: 'Bandara - Hotel (PP)',
           },
         ],
@@ -251,7 +251,7 @@ describe('SuratTugasDinasService.buat', () => {
       uangPerjalananKeterangan: null,
       akomodasiKeterangan: null,
       laundryKeterangan: null,
-      frekuensiMakan: 9,
+      frekuensiMakan: 4,
       ruteTransportasiLokal: 'Bandara - Hotel (PP)',
     });
   });

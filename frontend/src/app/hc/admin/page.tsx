@@ -6,7 +6,11 @@ import {
  Database,
  CalendarDays,
  FileText,
+ Pencil,
  RefreshCw,
+ Save,
+ Trash2,
+ X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -125,6 +129,11 @@ export default function HalamanAdmin() {
  const [daftarPengajuan, setDaftarPengajuan] = useState<DataPengajuan[]>([]);
  const [sedangMemuat, setSedangMemuat] = useState(true);
  const [pesanError, setPesanError] = useState("");
+ const [pesanSukses, setPesanSukses] = useState("");
+ const [deklarasiDiedit, setDeklarasiDiedit] = useState<DataDeklarasi | null>(null);
+ const [formEdit, setFormEdit] = useState({ tanggal_kegiatan: "", lokasi: "", keterangan: "" });
+ const [sedangMenyimpan, setSedangMenyimpan] = useState(false);
+ const [sedangMenghapus, setSedangMenghapus] = useState<number | null>(null);
 
  const [filterBulanSaldo, setFilterBulanSaldo] = useState("SEMUA");
  const [filterTahunSaldo, setFilterTahunSaldo] = useState(
@@ -337,6 +346,60 @@ export default function HalamanAdmin() {
  }
  };
 
+ const bukaEditDeklarasi = (deklarasi: DataDeklarasi) => {
+  setDeklarasiDiedit(deklarasi);
+  setFormEdit({
+   tanggal_kegiatan: deklarasi.tanggal_kegiatan.slice(0, 10),
+   lokasi: deklarasi.lokasi || "",
+   keterangan: deklarasi.keterangan || "",
+  });
+  setPesanError("");
+ };
+
+ const simpanEditDeklarasi = async () => {
+  if (!deklarasiDiedit) return;
+  setSedangMenyimpan(true);
+  setPesanError("");
+  setPesanSukses("");
+  try {
+   const response = await fetch(`${apiUrl}/deklarasi/${deklarasiDiedit.id}/edit`, {
+    method: "PATCH",
+    headers: { ...ambilHeaderAuth(), "Content-Type": "application/json" } as HeadersInit,
+    body: JSON.stringify(formEdit),
+   });
+   const hasil = await response.json().catch(() => null);
+   if (!response.ok) throw new Error(hasil?.message || "Deklarasi gagal diperbarui.");
+   setDeklarasiDiedit(null);
+   setPesanSukses("Deklarasi berhasil diperbarui.");
+   await ambilRingkasanAdmin();
+  } catch (error) {
+   setPesanError(error instanceof Error ? error.message : "Deklarasi gagal diperbarui.");
+  } finally {
+   setSedangMenyimpan(false);
+  }
+ };
+
+ const hapusDeklarasi = async (deklarasi: DataDeklarasi) => {
+  if (!window.confirm(`Hapus deklarasi ${deklarasi.kode_deklarasi}? Nota dan settlement ikut dihapus, lalu saldo karyawan menjadi Rp0.`)) return;
+  setSedangMenghapus(deklarasi.id);
+  setPesanError("");
+  setPesanSukses("");
+  try {
+   const response = await fetch(`${apiUrl}/deklarasi/${deklarasi.id}`, {
+    method: "DELETE",
+    headers: ambilHeaderAuth() as HeadersInit,
+   });
+   const hasil = await response.json().catch(() => null);
+   if (!response.ok) throw new Error(hasil?.message || "Deklarasi gagal dihapus.");
+   setPesanSukses("Deklarasi berhasil dihapus dan saldo karyawan menjadi Rp0.");
+   await ambilRingkasanAdmin();
+  } catch (error) {
+   setPesanError(error instanceof Error ? error.message : "Deklarasi gagal dihapus.");
+  } finally {
+   setSedangMenghapus(null);
+  }
+ };
+
  useEffect(() => {
  const token =
  (localStorage.getItem("hcga_access_token") || sessionStorage.getItem("hcga_access_token")) ||
@@ -542,6 +605,11 @@ export default function HalamanAdmin() {
  {pesanError}
  </div>
  )}
+ {pesanSukses && (
+ <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">
+ {pesanSukses}
+ </div>
+ )}
 
  <section
  id="saldo-admin-card"
@@ -685,13 +753,14 @@ export default function HalamanAdmin() {
  <div className="mt-5 grid gap-3">
  {deklarasiTerbaru.length > 0 ? (
  deklarasiTerbaru.map((deklarasi) => (
- <button
+ <div
  key={deklarasi.id}
- type="button"
  onClick={() =>
  router.push(`/hc/deklarasi/detail/${deklarasi.id}`)
  }
- className="rounded-xl border border-[#e3ebf5] bg-[#f7faff] p-4 text-left transition hover:border-[#a9c6ee] hover:bg-white hover:shadow-sm"
+ role="button"
+ tabIndex={0}
+ className="cursor-pointer rounded-xl border border-[#e3ebf5] bg-[#f7faff] p-4 text-left transition hover:border-[#a9c6ee] hover:bg-white hover:shadow-sm"
  >
  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div className="min-w-0">
@@ -721,12 +790,19 @@ export default function HalamanAdmin() {
  </p>
  </div>
 
- <div className="flex shrink-0 items-center gap-2 text-sm font-black text-[#0868f6]">
- Koreksi Nota
- <ArrowRight className="h-4 w-4" />
+ <div className="flex shrink-0 flex-wrap items-center gap-2">
+  <div className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white">
+   Koreksi Nota <ArrowRight className="h-4 w-4" />
+  </div>
+  <button type="button" onClick={(event) => { event.stopPropagation(); bukaEditDeklarasi(deklarasi); }} className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-black text-blue-700 hover:bg-blue-50">
+   <Pencil className="h-4 w-4" /> Edit
+  </button>
+  <button type="button" disabled={sedangMenghapus === deklarasi.id} onClick={(event) => { event.stopPropagation(); void hapusDeklarasi(deklarasi); }} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-700 hover:bg-red-50 disabled:opacity-50">
+   {sedangMenghapus === deklarasi.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Hapus
+  </button>
  </div>
  </div>
- </button>
+ </div>
  ))
  ) : (
  <div className="rounded-xl bg-[#f7faff] p-6 text-center">
@@ -781,6 +857,36 @@ export default function HalamanAdmin() {
  )}
  </div>
  </section>
+ {deklarasiDiedit && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+   <div className="w-full max-w-xl rounded-[30px] bg-white p-6 shadow-2xl">
+    <div className="flex items-start justify-between gap-4">
+     <div>
+      <h2 className="text-xl font-black text-slate-950">Edit Deklarasi</h2>
+      <p className="mt-1 text-sm font-semibold text-slate-500">{deklarasiDiedit.kode_deklarasi} • {deklarasiDiedit.nama_pengguna}</p>
+     </div>
+     <button type="button" onClick={() => setDeklarasiDiedit(null)} className="rounded-xl bg-slate-100 p-2 text-slate-500"><X className="h-5 w-5" /></button>
+    </div>
+    <div className="mt-5 grid gap-4">
+     <label className="grid gap-2 text-sm font-black text-slate-700">Tanggal kegiatan
+      <input type="date" value={formEdit.tanggal_kegiatan} onChange={(event) => setFormEdit((lama) => ({ ...lama, tanggal_kegiatan: event.target.value }))} className="rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-blue-500" />
+     </label>
+     <label className="grid gap-2 text-sm font-black text-slate-700">Lokasi
+      <input value={formEdit.lokasi} onChange={(event) => setFormEdit((lama) => ({ ...lama, lokasi: event.target.value }))} className="rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-blue-500" />
+     </label>
+     <label className="grid gap-2 text-sm font-black text-slate-700">Keterangan
+      <textarea rows={4} value={formEdit.keterangan} onChange={(event) => setFormEdit((lama) => ({ ...lama, keterangan: event.target.value }))} className="resize-none rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-blue-500" />
+     </label>
+    </div>
+    <div className="mt-6 flex justify-end gap-3">
+     <button type="button" onClick={() => setDeklarasiDiedit(null)} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-600">Batal</button>
+     <button type="button" disabled={sedangMenyimpan} onClick={() => void simpanEditDeklarasi()} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:opacity-50">
+      {sedangMenyimpan ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan
+     </button>
+    </div>
+   </div>
+  </div>
+ )}
  </main>
  );
 }

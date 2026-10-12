@@ -1,4 +1,4 @@
-import { UseInterceptors, Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { UseInterceptors, Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 
 import { BuatDeklarasiDto } from './dto/buat-deklarasi.dto';
 import { DeklarasiService } from './deklarasi.service';
@@ -48,8 +48,17 @@ export class DeklarasiController {
   editDeklarasi(
     @Param('idDeklarasi') idDeklarasi: string,
     @Body() data: EditDeklarasiDto,
+    @Req() req: any,
   ) {
-    return this.deklarasiService.editDeklarasi(Number(idDeklarasi), data);
+    return this.deklarasiService.editDeklarasi(Number(idDeklarasi), data, req.user);
+  }
+
+  @Delete(':idDeklarasi')
+  hapusDeklarasi(
+    @Param('idDeklarasi') idDeklarasi: string,
+    @Req() req: any,
+  ) {
+    return this.deklarasiService.hapusDeklarasi(Number(idDeklarasi), req.user);
   }
 
   @Patch(':idDeklarasi/ajukan')
