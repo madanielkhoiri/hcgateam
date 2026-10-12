@@ -25,6 +25,7 @@ export type Vendor = {
   noTelepon: string | null;
   statusAktif: boolean;
   menuNonaktif: string[];
+  internal?: boolean;
   legalitasStatus: StatusLegalitasVendor;
   users?: { id: number; name: string; username: string | null }[];
   _count?: { kontrak: number };
@@ -61,7 +62,7 @@ export type TenderProcess = {
   tanggalMulai: string | null;
   tanggalSelesai: string | null;
   _count?: { undangan: number; sph: number };
-  kontrak?: { id: number } | null;
+  kontrak?: { id: number; vendor?: { id: number; menuNonaktif: string[] } } | null;
   /** SPH pemenang (statusPemenang=true), terisi hanya saat status SELESAI. */
   pemenang?: { vendorId: number; vendor: { id: number; namaVendor: string } } | null;
 };
@@ -266,7 +267,7 @@ export type Project = {
     tanggalMulai: string;
     tanggalSelesai: string;
     tender: { id: number; namaTender: string };
-    vendor: { id: number; namaVendor: string };
+    vendor: { id: number; namaVendor: string; internal?: boolean; menuNonaktif?: string[] };
   };
   _count?: {
     shopDrawings: number;
@@ -1190,8 +1191,10 @@ export const epromApi = {
   },
 
   performanceVendor: {
-    daftar: () =>
-      request<{ items: PerformanceVendorItem[] }>('/performance-vendor'),
+    daftar: (internal = false) =>
+      request<{ items: PerformanceVendorItem[] }>(
+        internal ? '/performance-vendor?jenis=internal' : '/performance-vendor',
+      ),
     detail: (projectId: number) =>
       request<PerformanceVendorItem>(`/performance-vendor/${projectId}`),
   },

@@ -66,11 +66,66 @@ export class EpromTenderService {
     private readonly gateway: EpromTenderChatGateway,
   ) {}
 
+  /**
+   * Tender Internal otomatis diberi vendor bayangan + kontrak + project supaya
+   * bisa dipilih di Engineer, Konstruksi, dst. dan submenunya bisa diatur
+   * lewat Data Vendor, sama seperti project Vendor. Idempoten.
+   */
+  private async pastikanProyekInternal(tender: {
+    id: number;
+    namaTender: string;
+    jenisTender: JenisTender;
+    tanggalMulai: Date | null;
+    tanggalSelesai: Date | null;
+  }) {
+    if (tender.jenisTender !== JenisTender.INTERNAL) return;
+
+    const ada = await this.prisma.kontrak.findUnique({
+      where: { tenderId: tender.id },
+      select: { id: true },
+    });
+    if (ada) return;
+
+    const mulai = tender.tanggalMulai ?? new Date();
+    const selesai =
+      tender.tanggalSelesai ??
+      new Date(Date.UTC(mulai.getUTCFullYear() + 1, mulai.getUTCMonth(), mulai.getUTCDate()));
+
+    await this.prisma.$transaction(async (tx) => {
+      const vendor = await tx.vendor.create({
+        data: {
+          namaVendor: `${tender.namaTender} (Internal)`,
+          internal: true,
+        },
+      });
+      const kontrak = await tx.kontrak.create({
+        data: {
+          tenderId: tender.id,
+          vendorId: vendor.id,
+          nomorKontrak: 'INTERNAL',
+          tanggalMulai: mulai,
+          tanggalSelesai: selesai,
+        },
+      });
+      await tx.project.create({
+        data: { kontrakId: kontrak.id, namaProject: tender.namaTender },
+      });
+    });
+  }
+
   async daftar() {
+    // Tender Internal lama (dibuat sebelum fitur ini) dilengkapi otomatis.
+    const internalTanpaKontrak = await this.prisma.tenderProcess.findMany({
+      where: { jenisTender: JenisTender.INTERNAL, kontrak: null },
+    });
+    for (const tender of internalTanpaKontrak) {
+      await this.pastikanProyekInternal(tender);
+    }
+
     const list = await this.prisma.tenderProcess.findMany({
       include: {
         _count: { select: { undangan: true, sph: true } },
-        kontrak: { select: { id: true } },
+        kontrak: { select: { id: true, vendor: { select: { id: true, menuNonaktif: true } } } },
         sph: {
           where: { statusPemenang: true },
           take: 1,
@@ -101,7 +156,7 @@ export class EpromTenderService {
   }
 
   async buat(dto: BuatTenderDto) {
-    return this.prisma.tenderProcess.create({
+    const dibuat = await this.prisma.tenderProcess.create({
       data: {
         namaTender: dto.namaTender.trim(),
         jenisTender: dto.jenisTender ?? JenisTender.VENDOR,
@@ -109,6 +164,9 @@ export class EpromTenderService {
         tanggalSelesai: dto.tanggalSelesai ? new Date(dto.tanggalSelesai) : null,
       },
     });
+
+    await this.pastikanProyekInternal(dibuat);
+    return dibuat;
   }
 
   async ubah(id: number, dto: UbahTenderDto) {
@@ -155,6 +213,30 @@ export class EpromTenderService {
 
     if (!tender) {
       throw new NotFoundException('Tender tidak ditemukan');
+    }
+
+    if (tender.kontrak && tender.jenisTender === JenisTender.INTERNAL) {
+      // Kontrak tender Internal dibuat otomatis; ikut dihapus bersama
+      // project dan vendor bayangannya selama project belum berisi data.
+      const kontrakId = tender.kontrak.id;
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          const kontrak = await tx.kontrak.findUnique({
+            where: { id: kontrakId },
+            select: { vendorId: true },
+          });
+          await tx.project.deleteMany({ where: { kontrakId } });
+          await tx.kontrak.delete({ where: { id: kontrakId } });
+          if (kontrak) await tx.vendor.delete({ where: { id: kontrak.vendorId } });
+          await tx.tenderProcess.delete({ where: { id } });
+        });
+      } catch {
+        throw new BadRequestException(
+          'Tender Internal ini sudah berisi data project, tidak dapat dihapus',
+        );
+      }
+
+      return { message: 'Tender berhasil dihapus' };
     }
 
     if (tender.kontrak) {
