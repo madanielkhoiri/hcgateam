@@ -45,7 +45,11 @@ export default function KontrakPage() {
     epromApi.kontrak.daftar().then(setKontrakList).catch(() => setKontrakList([]));
     epromApi.tender
       .daftar()
-      .then((list) => setTenderSiap(list.filter((t) => t.status === "SELESAI" && !t.kontrak)))
+      .then((list) =>
+        setTenderSiap(
+          list.filter((t) => t.jenisTender === "VENDOR" && t.status === "SELESAI" && !t.kontrak),
+        ),
+      )
       .catch(() => setTenderSiap([]));
   }
 

@@ -1787,6 +1787,11 @@ enum StatusTender {
   SELESAI
 }
 
+enum JenisTender {
+  VENDOR
+  INTERNAL
+}
+
 enum ScopeDocumentFolder {
   TENDER_DOKUMEN
   LEGALITAS_VENDOR
@@ -1866,6 +1871,8 @@ model TenderProcess {
   id             Int          @id @default(autoincrement())
   namaTender     String       @map("nama_tender")
   status         StatusTender @default(PERSIAPAN)
+  jenisTender    JenisTender  @default(VENDOR) @map("jenis_tender")
+  internalAktif  Boolean      @default(true) @map("internal_aktif")
   tanggalMulai   DateTime?    @map("tanggal_mulai") @db.Date
   tanggalSelesai DateTime?    @map("tanggal_selesai") @db.Date
   createdAt      DateTime     @default(now()) @map("created_at")

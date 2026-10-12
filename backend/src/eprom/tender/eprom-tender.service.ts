@@ -10,12 +10,14 @@ import {
   ArrayMinSize,
   IsArray,
   IsDateString,
+  IsBoolean,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ArahPesanTenderChat, StatusTender } from '@prisma/client';
+import { ArahPesanTenderChat, JenisTender, StatusTender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromFileService } from '../common/eprom-file.service';
 import { AktorEprom } from '../common/eprom-aktor';
@@ -35,6 +37,15 @@ export class BuatTenderDto {
   @IsOptional()
   @IsDateString()
   tanggalSelesai?: string;
+
+  @IsOptional()
+  @IsEnum(JenisTender)
+  jenisTender?: JenisTender;
+}
+
+export class UbahStatusInternalDto {
+  @IsBoolean()
+  aktif: boolean;
 }
 
 export class UbahTenderDto extends PartialType(BuatTenderDto) {}
@@ -93,6 +104,7 @@ export class EpromTenderService {
     return this.prisma.tenderProcess.create({
       data: {
         namaTender: dto.namaTender.trim(),
+        jenisTender: dto.jenisTender ?? JenisTender.VENDOR,
         tanggalMulai: dto.tanggalMulai ? new Date(dto.tanggalMulai) : null,
         tanggalSelesai: dto.tanggalSelesai ? new Date(dto.tanggalSelesai) : null,
       },
@@ -100,7 +112,10 @@ export class EpromTenderService {
   }
 
   async ubah(id: number, dto: UbahTenderDto) {
-    await this.detail(id);
+    const tender = await this.detail(id);
+    if (dto.jenisTender !== undefined && dto.jenisTender !== tender.jenisTender) {
+      throw new BadRequestException('Jenis tender tidak dapat diubah setelah tender dibuat');
+    }
 
     return this.prisma.tenderProcess.update({
       where: { id },
@@ -114,6 +129,22 @@ export class EpromTenderService {
           : {}),
       },
     });
+  }
+
+  async ubahStatusInternal(id: number, aktif: boolean) {
+    const tender = await this.detail(id);
+    if (tender.jenisTender !== JenisTender.INTERNAL) {
+      throw new BadRequestException('Status submenu hanya berlaku untuk tender Internal');
+    }
+    return this.prisma.tenderProcess.update({ where: { id }, data: { internalAktif: aktif } });
+  }
+
+  private async wajibTenderVendor(tenderId: number) {
+    const tender = await this.detail(tenderId);
+    if (tender.jenisTender === JenisTender.INTERNAL) {
+      throw new BadRequestException('Tender Internal hanya memiliki fitur Upload Dokumen');
+    }
+    return tender;
   }
 
   async hapus(id: number) {
@@ -150,7 +181,7 @@ export class EpromTenderService {
     dto: KirimUndanganDto,
     filesPerVendor: Map<number, Express.Multer.File[]> = new Map(),
   ) {
-    const tender = await this.detail(tenderId);
+    const tender = await this.wajibTenderVendor(tenderId);
     const vendors = await this.prisma.vendor.findMany({
       where: { id: { in: dto.vendorIds } },
       select: { id: true, namaVendor: true, email: true },
@@ -228,6 +259,7 @@ export class EpromTenderService {
 
   /** Batalkan undangan vendor — hanya boleh sebelum vendor punya SPH sama sekali. */
   async hapusUndangan(tenderId: number, vendorId: number) {
+    await this.wajibTenderVendor(tenderId);
     const undangan = await this.prisma.tenderUndangan.findUnique({
       where: { tenderId_vendorId: { tenderId, vendorId } },
     });
@@ -264,6 +296,7 @@ export class EpromTenderService {
     files: Express.Multer.File[] | Express.Multer.File = [],
     hargaPenawaran?: number,
   ) {
+    await this.wajibTenderVendor(tenderId);
     const undangan = await this.prisma.tenderUndangan.findUnique({
       where: { tenderId_vendorId: { tenderId, vendorId } },
     });
@@ -309,6 +342,7 @@ export class EpromTenderService {
     files: Express.Multer.File[] = [],
     hargaPenawaran?: number,
   ) {
+    await this.wajibTenderVendor(tenderId);
     const round = await this.prisma.tenderSPH.findUnique({ where: { id: roundId } });
 
     if (!round || round.tenderId !== tenderId || round.vendorId !== vendorId) {
@@ -337,6 +371,7 @@ export class EpromTenderService {
 
   /** Hapus satu SPH yang belum final (salah unggah, batal negosiasi). */
   async hapusRoundSph(tenderId: number, vendorId: number, roundId: number) {
+    await this.wajibTenderVendor(tenderId);
     const round = await this.prisma.tenderSPH.findUnique({ where: { id: roundId } });
 
     if (!round || round.tenderId !== tenderId || round.vendorId !== vendorId) {
@@ -360,6 +395,7 @@ export class EpromTenderService {
    * tetapkanPemenang(), mempertimbangkan harga (SPH) DAN Evaluasi Vendor.
    */
   async finalisasiTender(tenderId: number) {
+    await this.wajibTenderVendor(tenderId);
     const undangan = await this.prisma.tenderUndangan.findMany({
       where: { tenderId },
       include: { vendor: { select: { namaVendor: true } } },
@@ -406,7 +442,7 @@ export class EpromTenderService {
    * final berharga. Menggantikan tender lain yang mungkin pernah ditetapkan.
    */
   async tetapkanPemenang(tenderId: number, vendorId: number) {
-    await this.detail(tenderId);
+    await this.wajibTenderVendor(tenderId);
 
     const roundFinal = await this.prisma.tenderSPH.findFirst({
       where: { tenderId, vendorId, isFinal: true, hargaPenawaran: { not: null } },

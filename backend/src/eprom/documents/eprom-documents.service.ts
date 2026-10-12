@@ -52,6 +52,16 @@ export class EpromDocumentsService {
 
     if (folder.scope === ScopeDocumentFolder.TENDER_DOKUMEN) {
       this.akses.wajibOwner(aktor);
+      if (folder.tenderId) {
+        const tender = await this.prisma.tenderProcess.findUnique({
+          where: { id: folder.tenderId },
+          select: { jenisTender: true, internalAktif: true },
+        });
+        if (!tender) throw new NotFoundException('Tender tidak ditemukan');
+        if (tender.jenisTender === 'INTERNAL' && !tender.internalAktif) {
+          throw new ForbiddenException('Upload Dokumen tender Internal sedang dinonaktifkan');
+        }
+      }
       return;
     }
 
