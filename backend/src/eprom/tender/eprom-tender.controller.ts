@@ -29,6 +29,7 @@ import {
   EpromTenderService,
   KirimUndanganDto,
   UbahTenderDto,
+  UbahStatusInternalDto,
 } from './eprom-tender.service';
 
 @Controller('eprom/tender')
@@ -64,6 +65,16 @@ export class EpromTenderController {
   ) {
     this.akses.wajibOwner(aktor);
     return this.service.ubah(id, dto);
+  }
+
+  @Patch(':id/internal-status')
+  ubahStatusInternal(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UbahStatusInternalDto,
+  ) {
+    this.akses.wajibOwner(aktor);
+    return this.service.ubahStatusInternal(id, dto.aktif);
   }
 
   @Delete(':id')

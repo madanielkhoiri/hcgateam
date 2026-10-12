@@ -56,6 +56,8 @@ export type TenderProcess = {
   id: number;
   namaTender: string;
   status: StatusTender;
+  jenisTender: "VENDOR" | "INTERNAL";
+  internalAktif: boolean;
   tanggalMulai: string | null;
   tanggalSelesai: string | null;
   _count?: { undangan: number; sph: number };
@@ -721,10 +723,15 @@ export const epromApi = {
   tender: {
     daftar: () => request<TenderProcess[]>('/tender'),
     detail: (id: number) => request<TenderDetail>(`/tender/${id}`),
-    buat: (data: { namaTender: string; tanggalMulai?: string; tanggalSelesai?: string }) =>
+    buat: (data: { namaTender: string; tanggalMulai?: string; tanggalSelesai?: string; jenisTender?: "VENDOR" | "INTERNAL" }) =>
       request<TenderProcess>('/tender', { method: 'POST', body: JSON.stringify(data) }),
     ubah: (id: number, data: Partial<{ namaTender: string; tanggalMulai: string; tanggalSelesai: string }>) =>
       request<TenderProcess>(`/tender/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    ubahStatusInternal: (id: number, aktif: boolean) =>
+      request<TenderProcess>(`/tender/${id}/internal-status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ aktif }),
+      }),
     /** Kirim undangan ke beberapa vendor sekaligus â€” file lampiran per vendor berbeda-beda. */
     kirimUndangan: (id: number, vendorIds: number[], filesPerVendor: Record<number, File[]> = {}) => {
       const form = new FormData();

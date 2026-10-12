@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -23,6 +23,7 @@ export default function TenderListPage() {
   const [bulan, setBulan] = useState("");
   const [tahun, setTahun] = useState("");
   const [namaTender, setNamaTender] = useState("");
+  const [jenisTender, setJenisTender] = useState<"VENDOR" | "INTERNAL">("VENDOR");
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [tanggalSelesai, setTanggalSelesai] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -79,10 +80,12 @@ export default function TenderListPage() {
     try {
       await epromApi.tender.buat({
         namaTender,
+        jenisTender,
         tanggalMulai: tanggalMulai || undefined,
         tanggalSelesai: tanggalSelesai || undefined,
       });
       setNamaTender("");
+      setJenisTender("VENDOR");
       setTanggalMulai("");
       setTanggalSelesai("");
       setShowForm(false);
@@ -125,12 +128,21 @@ export default function TenderListPage() {
     }
   }
 
+  async function toggleInternal(tender: TenderProcess) {
+    try {
+      await epromApi.tender.ubahStatusInternal(tender.id, !tender.internalAktif);
+      muatUlang();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengubah status tender Internal");
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.headerRow}>
         <div>
           <h1>Tender</h1>
-          <p>Upload Dokumen, Undangan Tender, dan Klasifikasi & Evaluasi (SPH).</p>
+          <p>Vendor memakai alur lengkap; Internal hanya memakai Upload Dokumen.</p>
         </div>
 
         {boleh && (
@@ -146,6 +158,13 @@ export default function TenderListPage() {
           <label>
             Nama Tender
             <input value={namaTender} onChange={(e) => setNamaTender(e.target.value)} required />
+          </label>
+          <label>
+            Jenis Tender
+            <select value={jenisTender} onChange={(e) => setJenisTender(e.target.value as "VENDOR" | "INTERNAL")}>
+              <option value="VENDOR">Vendor</option>
+              <option value="INTERNAL">Internal</option>
+            </select>
           </label>
           <label>
             Tanggal Mulai
@@ -204,6 +223,7 @@ export default function TenderListPage() {
             <thead>
               <tr>
                 <th>Nama Tender</th>
+                <th>Jenis</th>
                 <th>Status</th>
                 <th>Undangan</th>
                 <th>SPH</th>
@@ -227,7 +247,7 @@ export default function TenderListPage() {
                         <input type="date" value={editSelesai} onChange={(e) => setEditSelesai(e.target.value)} />
                       </div>
                     </td>
-                    <td colSpan={boleh ? 3 : 2}>
+                    <td colSpan={boleh ? 4 : 3}>
                       <div className={styles.inlineForm}>
                         <button
                           type="button"
@@ -255,17 +275,29 @@ export default function TenderListPage() {
                       </Link>
                       <small>{formatTanggal(tender.tanggalMulai)} - {formatTanggal(tender.tanggalSelesai)}</small>
                     </td>
+                    <td>{tender.jenisTender === "INTERNAL" ? "Internal" : "Vendor"}</td>
                     <td>
                       <span className={`${styles.statusPill} ${styles[`status_${tender.status}`]}`}>
-                        {LABEL_STATUS_TENDER[tender.status]}
+                        {tender.jenisTender === "INTERNAL"
+                          ? tender.internalAktif ? "Aktif" : "Nonaktif"
+                          : LABEL_STATUS_TENDER[tender.status]}
                       </span>
                     </td>
-                    <td>{tender._count?.undangan ?? 0} vendor</td>
-                    <td>{tender._count?.sph ?? 0} round</td>
-                    <td>{tender.kontrak ? "Sudah dibuat" : "-"}</td>
+                    <td>{tender.jenisTender === "INTERNAL" ? "Tidak berlaku" : `${tender._count?.undangan ?? 0} vendor`}</td>
+                    <td>{tender.jenisTender === "INTERNAL" ? "Tidak berlaku" : `${tender._count?.sph ?? 0} round`}</td>
+                    <td>{tender.jenisTender === "INTERNAL" ? "Tidak berlaku" : tender.kontrak ? "Sudah dibuat" : "-"}</td>
                     {boleh && (
                       <td>
                         <div className={styles.inlineForm}>
+                          <button
+                            type="button"
+                            className={styles.iconButton}
+                            onClick={() => toggleInternal(tender)}
+                            hidden={tender.jenisTender !== "INTERNAL"}
+                            title={tender.internalAktif ? "Nonaktifkan Upload Dokumen" : "Aktifkan Upload Dokumen"}
+                          >
+                            <Power size={14} />
+                          </button>
                           <button
                             type="button"
                             className={styles.iconButton}
