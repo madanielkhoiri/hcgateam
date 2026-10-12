@@ -44,6 +44,11 @@ export class KaryawanTugasDto {
   uangPerjalananNominal?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  frekuensiMakan?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(250)
   uangPerjalananKeterangan?: string;

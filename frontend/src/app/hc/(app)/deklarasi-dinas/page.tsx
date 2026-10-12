@@ -2,18 +2,15 @@
 import {
  ArrowRight,
  CheckCircle2,
- History,
  LogOut,
  ReceiptText,
  RefreshCw,
  ShieldCheck,
  UploadCloud,
- UserRound,
  Wallet,
  X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { compressImage } from "@/lib/compress-image";
 import { urlFileApi } from "@/lib/uploads-url";
@@ -97,6 +94,15 @@ type DataSaldo = {
  | "DIVERIFIKASI"
  | "DISETUJUI"
  | "DITOLAK";
+ rincian_saldo?: {
+  makan: string | number;
+  transportasi: string | number;
+  laundry: string | number;
+  frekuensi_makan: number;
+  rute_transportasi: string | null;
+  durasi_hari: number;
+  laundry_berlaku: boolean;
+ };
 };
 type DataNota = {
  id: number;
@@ -115,13 +121,6 @@ type DataNota = {
  status_verifikasi: "BELUM_OCR" | "OCR_SELESAI" | "DIVERIFIKASI" | "DITOLAK";
  dibuat_pada: string;
  diperbarui_pada: string;
-};
-type MenuCepat = {
- judul: string;
- deskripsi: string;
- icon: ReactNode;
- warna: string;
- aksi: () => void;
 };
 type PilihanKategoriNota = {
  value: KategoriNota;
@@ -266,6 +265,8 @@ function notaDitolakFinal(nota: DataNota | any) {
 
 export default function HalamanDashboard() {
  const router = useRouter();
+ const pathname = usePathname();
+ const halamanUploadNota = pathname === "/hc/upload-nota";
  
 
 
@@ -323,6 +324,7 @@ function headerAuth(): Record<string, string> {
  const [detikPemberitahuanDeklarasi, setDetikPemberitahuanDeklarasi] =
  useState(5);
  const [saldoDipilih, setSaldoDipilih] = useState<DataSaldo | null>(null);
+ const [rincianSaldoTerbuka, setRincianSaldoTerbuka] = useState(false);
  const [kategoriDipilih, setKategoriDipilih] = useState<KategoriNota | "">("");
 const [fileNota, setFileNota] = useState<File | null>(null);
  const [barangJasaNota, setBarangJasaNota] = useState("");
@@ -658,6 +660,21 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  }
  return total + sisa;
  }, 0);
+ }, [daftarSaldoAktif]);
+ const rincianSaldoAktif = useMemo(() => {
+  return daftarSaldoAktif.reduce(
+   (total, saldo) => ({
+    makan: total.makan + normalisasiAngka(saldo.rincian_saldo?.makan),
+    transportasi:
+     total.transportasi + normalisasiAngka(saldo.rincian_saldo?.transportasi),
+    laundry:
+     total.laundry +
+     (saldo.rincian_saldo?.laundry_berlaku
+      ? normalisasiAngka(saldo.rincian_saldo?.laundry)
+      : 0),
+   }),
+   { makan: 0, transportasi: 0, laundry: 0 },
+  );
  }, [daftarSaldoAktif]);
  const totalMinusSaldo = useMemo(() => {
  return daftarSaldoAktif.reduce((total, saldo) => {
@@ -1590,48 +1607,6 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  setSedangSelesai(null);
  }
  };
- const menuCepat: MenuCepat[] = [
- 
- 
- {
- judul: "Riwayat",
- deskripsi: "Semua data",
- icon: <History className="h-6 w-6" />,
- warna: "bg-blue-50 text-blue-600",
- aksi: () => router.push("/hc/riwayat"),
- },
- {
- judul: "Saldo Aktif",
- deskripsi: `${daftarSaldoAktif.length} saldo`,
- icon: <Wallet className="h-6 w-6" />,
- warna: "bg-emerald-50 text-emerald-600",
- aksi: () => {
- const elemen = document.getElementById("saldo-aktif-dashboard");
- elemen?.scrollIntoView({ behavior: "smooth", block: "start" });
- },
- },
- {
- judul: "Status",
- deskripsi: "Tracking",
- icon: <ShieldCheck className="h-6 w-6" />,
- warna: "bg-amber-50 text-amber-600",
- aksi: () => router.push("/hc/riwayat"),
- },
- {
- judul: "Perlu Revisi",
- deskripsi: `${totalPerluRevisi + totalBuktiDitolak} data`,
- icon: <ReceiptText className="h-6 w-6" />,
- warna: "bg-rose-50 text-rose-600",
- aksi: () => router.push("/hc/riwayat?status=DITOLAK"),
- },
- {
- judul: "Akun",
- deskripsi: "Info login",
- icon: <UserRound className="h-6 w-6" />,
- warna: "bg-slate-100 text-slate-700",
- aksi: () => router.push("/hc/akun"),
- },
- ];
  if (sedangMemuat) {
  return (
  <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -1737,7 +1712,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  )}
  <div
  id="saldo-aktif-dashboard"
- className="rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6"
+ className={`${halamanUploadNota ? "hidden" : ""} rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6`}
  >
  <div className="mb-5">
  <div className="text-2xl font-black text-slate-900">
@@ -1745,14 +1720,14 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </div>
  </div>
  <div className="grid gap-4">
- <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
+ <button type="button" onClick={() => setRincianSaldoTerbuka(true)} className="w-full rounded-3xl border border-slate-100 bg-slate-50 p-5 text-left transition hover:border-blue-200 hover:bg-blue-50/50">
  <div className="flex items-start gap-4">
  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#eaf2ff] text-[#0868f6]">
  <Wallet className="h-6 w-6" />
  </div>
  <div className="min-w-0">
  <div className="text-sm font-semibold text-slate-500">
- Total Sisa Saldo Aktif
+ Saldo Aktif
  </div>
  <div className="mt-1 break-words text-3xl font-black leading-tight text-slate-900 md:text-4xl">
  {formatRupiah(totalSisaSaldoAktif)}
@@ -1768,7 +1743,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </div>
  </div>
  </div>
- </div>
+ </button>
  <div className="grid gap-4 md:grid-cols-2">
  <div className="rounded-3xl border border-red-100 bg-red-50 p-5">
  <div className="flex items-start gap-4">
@@ -1824,39 +1799,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </button>
  </div>
  </div>
- <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6">
- <div className="mb-5">
- <div className="text-2xl font-black text-slate-900">
- Menu Utama
- </div>
- <div className="mt-1 text-sm font-semibold text-slate-500">
- Upload nota dilakukan satu per satu secara realtime.
- </div>
- </div>
- <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:gap-4 md:grid-cols-6">
- {menuCepat.map((menu) => (
- <button
- key={menu.judul}
- type="button"
- onClick={menu.aksi}
- className="group flex min-w-0 flex-col items-center rounded-3xl p-2 text-center transition hover:bg-[#eaf2ff] sm:p-3"
- >
- <div
- className={`flex h-14 w-14 items-center justify-center rounded-full ${menu.warna} transition group-hover:scale-105 sm:h-16 sm:w-16`}
- >
- {menu.icon}
- </div>
- <div className="mt-3 text-xs font-black leading-4 text-slate-900 sm:text-sm sm:leading-5">
- {menu.judul}
- </div>
- <div className="mt-1 text-[11px] font-semibold leading-4 text-slate-500 sm:text-xs">
- {menu.deskripsi}
- </div>
- </button>
- ))}
- </div>
- </div>
- <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6">
+ <div className={`${halamanUploadNota ? "" : "hidden"} mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6`}>
  <div className="mb-5">
  <div className="text-2xl font-black text-slate-900">
  Upload Nota dari Saldo Aktif
@@ -1985,7 +1928,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  {saldo.jenis_saldo === "PERJALANAN_DINAS" && (
  <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
  {saldo.tanggal_mulai && saldo.tanggal_selesai ? (
- <>Perjalanan {formatTanggal(saldo.tanggal_mulai)} – {formatTanggal(saldo.tanggal_selesai)} ({durasiPerjalanan(saldo) ?? "-"} hari). Uang mencakup Makan, Transport{(durasiPerjalanan(saldo) ?? 0) > 3 ? " & Laundry" : ""}.</>
+ <>Perjalanan {formatTanggal(saldo.tanggal_mulai)} – {formatTanggal(saldo.tanggal_selesai)} ({durasiPerjalanan(saldo) ?? "-"} hari). Uang mencakup Makan, Transport{(durasiPerjalanan(saldo) ?? 0) >= 3 ? " & Laundry" : ""}.</>
  ) : "Uang perjalanan mencakup Makan dan Transport. Tanggal perjalanan belum tercatat."}
  </p>
  )}
@@ -2310,7 +2253,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </div>
  )}
  </div>
- <div className="mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6">
+ <div className={`${halamanUploadNota ? "hidden" : ""} mt-6 rounded-[32px] border border-[#d8e4f2] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-6`}>
  <div className="mb-5 flex items-center justify-between gap-4">
  <div>
  <div className="text-2xl font-black text-slate-900">
@@ -2383,7 +2326,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  </div>
  </div>
  </section>
- {typeof riwayatDeklarasiUrut !== "undefined" &&
+ {!halamanUploadNota && typeof riwayatDeklarasiUrut !== "undefined" &&
  riwayatDeklarasiUrut.length > jumlahDataRiwayatPerHalaman && (
  <div className="mt-5 flex flex-col gap-3 rounded-3xl bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
  <button
@@ -2412,6 +2355,35 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  Selanjutnya
  </button>
  </div>
+ )}
+ {rincianSaldoTerbuka && (
+  <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+   <div className="w-full max-w-lg rounded-[30px] bg-white p-6 shadow-2xl">
+    <div className="flex items-start justify-between gap-4">
+     <div>
+      <h2 className="text-xl font-black text-slate-950">Rincian Saldo Aktif</h2>
+      <p className="mt-1 text-sm font-semibold text-slate-500">Rincian alokasi biaya perjalanan dinas aktif.</p>
+     </div>
+     <button type="button" onClick={() => setRincianSaldoTerbuka(false)} className="rounded-xl bg-slate-100 p-2 text-slate-500"><X className="h-5 w-5" /></button>
+    </div>
+    <div className="mt-5 grid gap-3">
+     {[
+      ["Uang Makan", rincianSaldoAktif.makan],
+      ["Transportasi", rincianSaldoAktif.transportasi],
+      ["Laundry", rincianSaldoAktif.laundry],
+     ].map(([label, nominal]) => (
+      <div key={String(label)} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+       <span className="text-sm font-black text-slate-700">{label}</span>
+       <span className="text-base font-black text-slate-950">{formatRupiah(nominal)}</span>
+      </div>
+     ))}
+    </div>
+    <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-xs font-bold leading-5 text-blue-700">
+     Laundry hanya berlaku untuk perjalanan atau training dengan durasi minimal 3 hari.
+    </div>
+    <button type="button" onClick={() => setRincianSaldoTerbuka(false)} className="mt-5 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white">Tutup</button>
+   </div>
+  </div>
  )}
  {saldoDipilih && (
  <div className="fixed inset-0 z-[80] flex items-start md:items-start sm:items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm overflow-y-auto overscroll-contain px-3 py-4">
