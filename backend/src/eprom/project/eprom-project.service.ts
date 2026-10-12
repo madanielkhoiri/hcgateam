@@ -37,7 +37,7 @@ export class EpromProjectService {
             tanggalMulai: true,
             tanggalSelesai: true,
             tender: { select: { id: true, namaTender: true } },
-            vendor: { select: { id: true, namaVendor: true } },
+            vendor: { select: { id: true, namaVendor: true, internal: true, menuNonaktif: true } },
           },
         },
         _count: {
@@ -170,7 +170,7 @@ export class EpromProjectService {
             tanggalMulai: true,
             tanggalSelesai: true,
             tender: { select: { id: true, namaTender: true } },
-            vendor: { select: { id: true, namaVendor: true } },
+            vendor: { select: { id: true, namaVendor: true, internal: true, menuNonaktif: true } },
           },
         },
       },

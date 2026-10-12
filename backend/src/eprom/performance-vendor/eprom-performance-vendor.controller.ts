@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
@@ -12,8 +12,8 @@ export class EpromPerformanceVendorController {
   constructor(private readonly service: EpromPerformanceVendorService) {}
 
   @Get()
-  daftar(@Aktor() aktor: AktorEprom) {
-    return this.service.daftar(aktor);
+  daftar(@Aktor() aktor: AktorEprom, @Query('jenis') jenis?: string) {
+    return this.service.daftar(aktor, jenis === 'internal');
   }
 
   @Get(':projectId')

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Power, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Power, Settings2, Trash2, X } from "lucide-react";
+import { AksesSubmenuDialog } from "@/components/eprom/akses-submenu-dialog";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -27,6 +28,9 @@ export default function TenderListPage() {
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [tanggalSelesai, setTanggalSelesai] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [aksesTender, setAksesTender] = useState<TenderProcess | null>(null);
+  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(getStoredUser()?.role ?? '');
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNama, setEditNama] = useState("");
@@ -289,15 +293,26 @@ export default function TenderListPage() {
                     {boleh && (
                       <td>
                         <div className={styles.inlineForm}>
-                          <button
-                            type="button"
-                            className={styles.iconButton}
-                            onClick={() => toggleInternal(tender)}
-                            hidden={tender.jenisTender !== "INTERNAL"}
-                            title={tender.internalAktif ? "Nonaktifkan Upload Dokumen" : "Aktifkan Upload Dokumen"}
-                          >
-                            <Power size={14} />
-                          </button>
+                          {tender.jenisTender === "INTERNAL" && bolehAturAkses && tender.kontrak?.vendor && (
+                            <button
+                              type="button"
+                              className={styles.iconButton}
+                              onClick={() => setAksesTender(tender)}
+                              title="Atur akses submenu"
+                            >
+                              <Settings2 size={14} />
+                            </button>
+                          )}
+                          {tender.jenisTender === "INTERNAL" && (
+                            <button
+                              type="button"
+                              className={styles.iconButton}
+                              onClick={() => toggleInternal(tender)}
+                              title={tender.internalAktif ? "Nonaktifkan Upload Dokumen" : "Aktifkan Upload Dokumen"}
+                            >
+                              <Power size={14} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             className={styles.iconButton}
@@ -310,9 +325,9 @@ export default function TenderListPage() {
                             type="button"
                             className={styles.iconButtonDanger}
                             onClick={() => hapusTender(tender)}
-                            disabled={!!tender.kontrak}
+                            disabled={tender.jenisTender === "VENDOR" && !!tender.kontrak}
                             title={
-                              tender.kontrak
+                              tender.jenisTender === "VENDOR" && tender.kontrak
                                 ? "Sudah punya Kontrak, tidak dapat dihapus"
                                 : "Hapus tender"
                             }
@@ -329,6 +344,23 @@ export default function TenderListPage() {
           </table>
         )}
       </div>
+
+      {aksesTender?.kontrak?.vendor && (
+        <AksesSubmenuDialog
+          judul={aksesTender.namaTender}
+          menuNonaktifAwal={aksesTender.kontrak.vendor.menuNonaktif ?? []}
+          onTutup={() => setAksesTender(null)}
+          onSimpan={async (menuNonaktif) => {
+            try {
+              await epromApi.vendor.ubah(aksesTender.kontrak!.vendor!.id, { menuNonaktif });
+              setAksesTender(null);
+              muatUlang();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Gagal menyimpan akses submenu");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

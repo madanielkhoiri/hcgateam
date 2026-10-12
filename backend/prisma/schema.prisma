@@ -1849,6 +1849,11 @@ model Vendor {
    */
   statusAktif     Boolean               @default(true) @map("status_aktif")
   menuNonaktif    String[]              @default([]) @map("menu_nonaktif")
+  /**
+   * Vendor bayangan untuk tender Internal (dibuat otomatis); tidak muncul di
+   * pilihan Undangan Tender, tidak punya akun login.
+   */
+  internal        Boolean               @default(false)
   legalitasStatus StatusLegalitasVendor @default(BELUM_LENGKAP) @map("legalitas_status")
   createdAt       DateTime              @default(now()) @map("created_at")
   updatedAt       DateTime              @updatedAt @map("updated_at")

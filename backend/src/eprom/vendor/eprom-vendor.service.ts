@@ -63,7 +63,8 @@ export class EpromVendorService {
 
   async daftar(hanyaAktif?: boolean) {
     return this.prisma.vendor.findMany({
-      where: hanyaAktif ? { statusAktif: true } : undefined,
+      // Vendor bayangan tender Internal tidak pernah tampil sebagai vendor.
+      where: { internal: false, ...(hanyaAktif ? { statusAktif: true } : {}) },
       include: {
         users: { select: { id: true, name: true, username: true } },
         _count: { select: { kontrak: true } },
