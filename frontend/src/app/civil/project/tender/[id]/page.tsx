@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, MessageCircle, Pencil, Plus, Printer, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, Plus, Power, Printer, Trash2, Trophy } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import { urlUploads } from "@/lib/uploads-url";
@@ -279,6 +279,20 @@ export default function TenderDetailPage() {
     }
   }
 
+  async function toggleInternal() {
+    if (!detail) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await epromApi.tender.ubahStatusInternal(tenderId, !detail.internalAktif);
+      muatUlang();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengubah status Upload Dokumen");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (!detail) {
     return (
       <div className={styles.page}>
@@ -286,6 +300,44 @@ export default function TenderDetailPage() {
           <ArrowLeft size={16} /> Kembali
         </Link>
         {error ? <p className={styles.errorText}>{error}</p> : <p className={styles.emptyText}>Memuat...</p>}
+      </div>
+    );
+  }
+
+  if (detail.jenisTender === "INTERNAL") {
+    return (
+      <div className={styles.page}>
+        <Link href="/civil/project/tender" className={styles.backLink}>
+          <ArrowLeft size={16} /> Kembali ke daftar Tender
+        </Link>
+        <div className={styles.detailHeader}>
+          <div>
+            <h1>{detail.namaTender}</h1>
+            <span className={`${styles.statusPill} ${styles[`status_${detail.status}`]}`}>
+              Internal · {detail.internalAktif ? "Aktif" : "Nonaktif"}
+            </span>
+          </div>
+          {boleh && (
+            <button type="button" className={styles.secondaryButton} onClick={toggleInternal} disabled={submitting}>
+              <Power size={14} />
+              {detail.internalAktif ? "Nonaktifkan Upload Dokumen" : "Aktifkan Upload Dokumen"}
+            </button>
+          )}
+        </div>
+        {error && <p className={styles.errorText}>{error}</p>}
+        {detail.internalAktif ? (
+          boleh ? (
+            <div className={styles.panel}>
+              <FolderExplorer scope="TENDER_DOKUMEN" tenderId={tenderId} />
+            </div>
+          ) : (
+            <p className={styles.emptyText}>Upload Dokumen Internal hanya dapat diakses Owner.</p>
+          )
+        ) : (
+          <div className={styles.panel}>
+            <p className={styles.emptyText}>Submenu Upload Dokumen tender Internal sedang dinonaktifkan.</p>
+          </div>
+        )}
       </div>
     );
   }

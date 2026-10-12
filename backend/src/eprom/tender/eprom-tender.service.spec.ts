@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { StatusTender } from '@prisma/client';
+import { JenisTender, StatusTender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromFileService } from '../common/eprom-file.service';
 import { MailgunService } from '../../mailgun/mailgun.service';
@@ -144,8 +144,21 @@ describe('EpromTenderService.buat', () => {
     await service.buat({ namaTender: '  Tender A  ', tanggalMulai: '2026-01-01' } as any);
 
     expect(tenderCreate).toHaveBeenCalledWith({
-      data: { namaTender: 'Tender A', tanggalMulai: new Date('2026-01-01'), tanggalSelesai: null },
+      data: {
+        namaTender: 'Tender A',
+        jenisTender: JenisTender.VENDOR,
+        tanggalMulai: new Date('2026-01-01'),
+        tanggalSelesai: null,
+      },
     });
+  });
+
+  it('menyimpan jenis Internal saat dipilih', async () => {
+    const { service, tenderCreate } = buatService();
+    await service.buat({ namaTender: 'Pekerjaan Internal', jenisTender: JenisTender.INTERNAL } as any);
+    expect(tenderCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ jenisTender: JenisTender.INTERNAL }),
+    }));
   });
 });
 
@@ -173,6 +186,12 @@ describe('EpromTenderService.hapus', () => {
 });
 
 describe('EpromTenderService.kirimUndangan', () => {
+  it('menolak undangan pada tender Internal', async () => {
+    const { service } = buatService({ tender: { id: 1, jenisTender: JenisTender.INTERNAL } });
+    await expect(service.kirimUndangan(1, { vendorIds: [1] } as any)).rejects.toThrow(
+      'Tender Internal hanya memiliki fitur Upload Dokumen',
+    );
+  });
   it('upsert undangan untuk tiap vendorId dan ubah status kalau masih PERSIAPAN', async () => {
     const { service, undanganUpsert, tenderUpdate } = buatService({ tender: { id: 1, status: StatusTender.PERSIAPAN } });
 

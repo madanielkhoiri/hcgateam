@@ -19,6 +19,7 @@ function folderVendorFixture(overrides: Record<string, unknown> = {}) {
 }
 
 function buatService(overrides: {
+  tender?: unknown;
   folder?: unknown;
   folderCreate?: jest.Mock;
   folderUpdate?: jest.Mock;
@@ -48,6 +49,13 @@ function buatService(overrides: {
   const fileUploadFindMany = jest.fn().mockResolvedValue(overrides.fileFindMany ?? []);
 
   const prisma = {
+    tenderProcess: {
+      findUnique: jest.fn().mockResolvedValue(
+        'tender' in overrides
+          ? overrides.tender
+          : { id: 5, jenisTender: 'VENDOR', internalAktif: true },
+      ),
+    },
     documentFolder: {
       findUnique: jest.fn().mockResolvedValue('folder' in overrides ? overrides.folder : folderTenderFixture()),
       findMany: documentFolderFindMany,
@@ -77,6 +85,18 @@ function buatService(overrides: {
 }
 
 describe('EpromDocumentsService.isiFolder — akses per scope', () => {
+  it('menolak Upload Dokumen Internal saat submenunya nonaktif', async () => {
+    const { service } = buatService({
+      tender: { id: 5, jenisTender: 'INTERNAL', internalAktif: false },
+    });
+    await expect(
+      service.isiFolder(aktor(UserRole.ADMIN), {
+        scope: ScopeDocumentFolder.TENDER_DOKUMEN,
+        tenderId: 5,
+      }),
+    ).rejects.toThrow('sedang dinonaktifkan');
+  });
+
   it('TENDER_DOKUMEN hanya boleh diakses Owner', async () => {
     const { service } = buatService();
 

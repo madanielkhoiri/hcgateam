@@ -250,6 +250,11 @@ export class EpromEvaluasiVendorService {
 
   /** Satu baris per vendor yang diundang, evaluasi null kalau belum diisi sama sekali. */
   async daftar(tenderId: number) {
+    const tender = await this.prisma.tenderProcess.findUnique({ where: { id: tenderId } });
+    if (!tender) throw new NotFoundException('Tender tidak ditemukan');
+    if (tender.jenisTender === 'INTERNAL') {
+      throw new BadRequestException('Tender Internal tidak memiliki Evaluasi Vendor');
+    }
     const undangan = await this.prisma.tenderUndangan.findMany({
       where: { tenderId },
       include: { vendor: { select: { id: true, namaVendor: true } } },
@@ -277,6 +282,9 @@ export class EpromEvaluasiVendorService {
 
     if (!tender) {
       throw new NotFoundException('Tender tidak ditemukan');
+    }
+    if (tender.jenisTender === 'INTERNAL') {
+      throw new BadRequestException('Tender Internal tidak memiliki Evaluasi Vendor');
     }
 
     const undangan = await this.prisma.tenderUndangan.findUnique({

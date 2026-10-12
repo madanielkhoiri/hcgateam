@@ -7,7 +7,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { StatusTender } from '@prisma/client';
+import { JenisTender, StatusTender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromFileService } from '../common/eprom-file.service';
 
@@ -94,6 +94,10 @@ export class EpromKontrakService {
 
     if (!tender) {
       throw new NotFoundException('Tender tidak ditemukan');
+    }
+
+    if (tender.jenisTender === JenisTender.INTERNAL) {
+      throw new BadRequestException('Tender Internal tidak memiliki proses Kontrak');
     }
 
     if (tender.status !== StatusTender.SELESAI || tender.sph.length === 0) {

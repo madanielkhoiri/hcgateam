@@ -74,6 +74,7 @@ import {
   type RingkasanStatusApproval,
   type TipeEngineer,
   type TipeSafetyMeeting,
+  type TenderProcess,
 } from "@/lib/eprom-api";
 import { MobileBottomNav } from "@/components/module-shell/mobile-bottom-nav";
 import { PageTransition } from "@/components/page-transition/page-transition";
@@ -218,6 +219,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   // null = akses vendor belum selesai dimuat. Pada kondisi ini jangan pernah
   // membuka semua submenu (fail closed), terutama di jaringan mobile lambat.
   const [menuNonaktifVendor, setMenuNonaktifVendor] = useState<string[] | null>(null);
+  const [activeTender, setActiveTender] = useState<TenderProcess | null>(null);
 
   const boleh = isEpromOwner(user);
   const vendorSaya = isEpromVendor(user);
@@ -244,6 +246,18 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const activeClosingProjectId = closingDetailMatch ? closingDetailMatch[1] : null;
   const activeTab = searchParams.get("tab");
 
+  useEffect(() => {
+    if (!activeTenderId) {
+      setActiveTender(null);
+      return;
+    }
+    let aktif = true;
+    epromApi.tender.detail(Number(activeTenderId))
+      .then((tender) => { if (aktif) setActiveTender(tender); })
+      .catch(() => { if (aktif) setActiveTender(null); });
+    return () => { aktif = false; };
+  }, [activeTenderId]);
+
   const navGroups: NavGroup[] = [
     {
       id: "tender",
@@ -251,27 +265,27 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       icon: FileStack,
       items: [
         { label: "Daftar Tender", href: "/civil/project/tender", icon: ListChecks },
-        ...(activeTenderId
+        ...(activeTenderId && activeTender
           ? [
               ...(boleh
                 ? [
-                    {
+                    ...(activeTender.jenisTender !== "INTERNAL" || activeTender.internalAktif ? [{
                       label: "Upload Dokumen",
                       href: `/civil/project/tender/${activeTenderId}?tab=dokumen`,
                       icon: FolderOpen,
-                    },
-                    {
+                    }] : []),
+                    ...(activeTender.jenisTender === "VENDOR" ? [{
                       label: "Undangan Tender",
                       href: `/civil/project/tender/${activeTenderId}?tab=undangan`,
                       icon: Send,
-                    },
+                    }] : []),
                   ]
                 : []),
-              {
+              ...(activeTender.jenisTender === "VENDOR" ? [{
                 label: "Klasifikasi & Evaluasi",
                 href: `/civil/project/tender/${activeTenderId}?tab=sph`,
                 icon: ClipboardList,
-              },
+              }] : []),
             ]
           : []),
       ],
@@ -895,7 +909,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
 
           {boleh && navGroups.map(renderGroup)}
 
-          {boleh && renderGroup(kontrakGroup)}
+          {boleh && activeTender?.jenisTender !== "INTERNAL" && renderGroup(kontrakGroup)}
 
           <div className={styles.navLabel}>PROJECT AREA</div>
 
