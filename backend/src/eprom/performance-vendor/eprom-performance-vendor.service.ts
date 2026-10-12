@@ -268,10 +268,19 @@ export class EpromPerformanceVendorService {
     private readonly akses: EpromAksesService,
   ) {}
 
-  async daftar(aktor: AktorEprom) {
+  /**
+   * `internal=true` menampilkan Performance Internal (project dari tender
+   * Internal) dan hanya boleh dibuka non-Vendor; Performance Vendor tidak
+   * memuat project internal.
+   */
+  async daftar(aktor: AktorEprom, internal = false) {
+    if (internal) {
+      this.akses.wajibOwner(aktor);
+    }
+
     const projects = await this.prisma.project.findMany({
       where: this.akses.isOwner(aktor)
-        ? undefined
+        ? { kontrak: { vendor: { internal } } }
         : { kontrak: { vendorId: aktor.vendorId ?? -1 } },
       include: {
         kontrak: {
