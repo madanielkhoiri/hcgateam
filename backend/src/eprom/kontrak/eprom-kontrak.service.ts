@@ -57,6 +57,7 @@ export class EpromKontrakService {
 
   async daftar() {
     return this.prisma.kontrak.findMany({
+      where: { vendor: { internal: false } },
       include: {
         tender: { select: { id: true, namaTender: true } },
         vendor: { select: { id: true, namaVendor: true } },

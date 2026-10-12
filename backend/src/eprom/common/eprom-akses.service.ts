@@ -114,11 +114,12 @@ export class EpromAksesService {
     menu: string,
   ): Promise<void> {
     await this.wajibAksesProject(aktor, projectId);
-    if (!this.isVendor(aktor)) return;
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { kontrak: { select: { vendor: { select: { menuNonaktif: true } } } } },
+      select: { kontrak: { select: { vendor: { select: { menuNonaktif: true, internal: true } } } } },
     });
+    // Project Internal (vendor bayangan) ikut diatur menunya untuk semua akun.
+    if (!this.isVendor(aktor) && !project?.kontrak.vendor.internal) return;
     if (project?.kontrak.vendor.menuNonaktif.includes(menu)) {
       throw new ForbiddenException('Akses submenu ini dinonaktifkan oleh Owner/Admin');
     }

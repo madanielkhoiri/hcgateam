@@ -81,7 +81,17 @@ describe('EpromPerformanceVendorService — akses & routing', () => {
 
     await service.daftar(aktor(UserRole.OWNER));
 
-    expect(prisma.project.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: undefined }));
+    expect(prisma.project.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { kontrak: { vendor: { internal: false } } } }));
+  });
+
+  it('Performance Internal hanya untuk non-Vendor dan memfilter project internal', async () => {
+    const { service, prisma } = buatService({ projects: [] });
+
+    await service.daftar(aktor(UserRole.OWNER), true);
+    expect(prisma.project.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { kontrak: { vendor: { internal: true } } } }),
+    );
+    await expect(service.daftar(aktor(UserRole.VENDOR, { vendorId: 7 }), true)).rejects.toThrow();
   });
 
   it('Vendor hanya melihat project dari kontraknya sendiri', async () => {

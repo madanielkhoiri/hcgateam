@@ -36,7 +36,7 @@ export default function LegalitasVendorPage() {
   }, []);
 
   function muatUlang() {
-    epromApi.vendor.daftar().then(setVendorList).catch(() => setVendorList([]));
+    epromApi.vendor.daftar().then((list) => setVendorList(list.filter((v) => !v.internal))).catch(() => setVendorList([]));
   }
 
   useEffect(muatUlang, []);
