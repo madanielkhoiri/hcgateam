@@ -101,7 +101,8 @@ export class UsersService {
     if (
       role === UserRole.ADMIN ||
       role === UserRole.SUPER_ADMIN ||
-      role === UserRole.SECTION_HEAD
+      role === UserRole.SECTION_HEAD ||
+      role === UserRole.PJO
     ) {
       return [...ALL_ACCESS_KEYS];
     }

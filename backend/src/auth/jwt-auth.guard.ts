@@ -94,7 +94,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       !user ||
       user.role === UserRole.ADMIN ||
       user.role === UserRole.SUPER_ADMIN ||
-      user.role === UserRole.SECTION_HEAD
+      user.role === UserRole.SECTION_HEAD ||
+      user.role === UserRole.PJO
     ) {
       return true;
     }

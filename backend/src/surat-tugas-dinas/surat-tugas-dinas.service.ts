@@ -90,6 +90,7 @@ export class SuratTugasDinasService {
     bulan?: number,
     tahun?: number,
     cari?: string,
+    denganAkomodasi?: boolean,
   ) {
     const statusValid = (Object.values(StatusSuratTugas) as string[]).includes(
       status ?? '',
@@ -113,6 +114,7 @@ export class SuratTugasDinasService {
 
     const where: Prisma.SuratTugasDinasWhereInput = {
       ...(statusValid ? { status: statusValid } : {}),
+      ...(denganAkomodasi === undefined ? {} : { denganAkomodasi }),
       ...(this.bolehLihatSemua(aktor) ? {} : { dibuatOlehId: aktor.id }),
       ...(rentangTanggalMulai ? { tanggalMulai: rentangTanggalMulai } : {}),
       ...(cari
@@ -406,7 +408,9 @@ export class SuratTugasDinasService {
               ? (item.laundryNominal ?? null)
               : null,
             laundryKeterangan: null,
-            frekuensiMakan: denganAkomodasi ? durasiHari * 3 : null,
+            frekuensiMakan: denganAkomodasi
+              ? (item.frekuensiMakan ?? durasiHari * 3)
+              : null,
             ruteTransportasiLokal: denganAkomodasi
               ? item.ruteTransportasiLokal?.trim() || null
               : null,
