@@ -2,15 +2,14 @@
 
 // ==================================================
 // FILE: frontend/src/components/tugas-dinas/tugas-dinas-buat-form.tsx
-// FUNGSI: Form pembuatan Surat Tugas Dinas - dipakai bersama oleh menu
-// "Buat Tugas Dinas" (STD biasa) dan "STD Akomodasi" (STD + field
+// FUNGSI: Form pembuatan Surat Tugas Dinas (ditampilkan dalam popup) -
+// dipakai bersama oleh menu "STD" (STD biasa) dan "STD Akomodasi" (STD + field
 // penginapan/transportasi/laundry). Karyawan diambil dari Database
 // Karyawan (NRP & nama), lalu PDF dibuat otomatis.
 // ==================================================
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plane, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Field, Pesan } from "@/components/tugas-dinas/tugas-dinas-ui";
 import { karyawanApi, type Karyawan } from "@/lib/karyawan-api";
@@ -28,11 +27,16 @@ type BarisKaryawan = {
   nama: string;
   departemen: string;
   jabatan: string;
-  uangPerjalananNominal: string;
+  uangPerMakan: string;
+  frekuensiMakan: string;
   akomodasiNominal: string;
   ruteTransportasiLokal: string;
   laundryNominal: string;
 };
+
+function totalMakanBaris(row: BarisKaryawan) {
+  return (Number(row.uangPerMakan) || 0) * (Number(row.frekuensiMakan) || 0);
+}
 
 type PilihanKaryawanForm = {
   nrp: string;
@@ -47,34 +51,12 @@ type PilihanKaryawanForm = {
   keteranganTugas?: string;
 };
 
-type KategoriUangMakan = "GL" | "NON_STAFF" | "MANUAL";
-
-function kategoriUangMakan(jabatan: string): KategoriUangMakan {
-  const normal = jabatan.trim().toUpperCase().replace(/[._-]+/g, " ");
-  if (/\b(GL|GROUP\s*LEADER)\b/.test(normal)) return "GL";
-  if (/\b(DEPT\s*HEAD|DEPARTMENT\s*HEAD|PJO)\b/.test(normal)) {
-    return "MANUAL";
-  }
-  return "NON_STAFF";
-}
-
-function labelKategoriUangMakan(kategori: KategoriUangMakan) {
-  if (kategori === "GL") return "GL / Group Leader";
-  if (kategori === "MANUAL") return "Dept Head / PJO (manual HC)";
-  return "Non-Staff";
-}
-
-function nominalMakanDefault(jabatan: string, frekuensi: number) {
-  const kategori = kategoriUangMakan(jabatan);
-  if (kategori === "MANUAL" || frekuensi <= 0) return "";
-  const tarif = kategori === "GL" ? 75000 : 50000;
-  return String(tarif * frekuensi);
-}
-
 export function TugasDinasBuatForm({
   withAkomodasi,
+  onBatal,
 }: {
   withAkomodasi: boolean;
+  onBatal: () => void;
 }) {
   const router = useRouter();
 
@@ -91,10 +73,9 @@ export function TugasDinasBuatForm({
   const [suratTugasAsalId, setSuratTugasAsalId] = useState<number | null>(null);
   const durasiHari = durasiHariTugas(tanggalMulai, tanggalSelesai);
   const laundryTersedia = durasiHari >= 3;
-  const frekuensiMakanOtomatis = durasiHari > 0 ? durasiHari * 3 : 0;
 
   const totalMakan = baris.reduce(
-    (total, row) => total + (Number(row.uangPerjalananNominal) || 0),
+    (total, row) => total + totalMakanBaris(row),
     0,
   );
   const totalTransportasi = baris.reduce(
@@ -206,10 +187,6 @@ export function TugasDinasBuatForm({
       setGalat(null);
     }
 
-    const frekuensiDariSurat = withAkomodasi && item.tanggalMulai && item.tanggalSelesai
-      ? durasiHariTugas(item.tanggalMulai.slice(0, 10), item.tanggalSelesai.slice(0, 10)) * 3
-      : frekuensiMakanOtomatis;
-
     setBaris((current) => [
       ...current,
       {
@@ -217,10 +194,8 @@ export function TugasDinasBuatForm({
         nama: item.nama,
         departemen: item.departemen,
         jabatan: item.jabatan,
-        uangPerjalananNominal: nominalMakanDefault(
-          item.jabatan,
-          frekuensiDariSurat,
-        ),
+        uangPerMakan: "",
+        frekuensiMakan: "",
         akomodasiNominal: "",
         ruteTransportasiLokal: "",
         laundryNominal: "",
@@ -241,7 +216,8 @@ export function TugasDinasBuatForm({
     index: number,
     kolom: keyof Pick<
       BarisKaryawan,
-      | "uangPerjalananNominal"
+      | "uangPerMakan"
+      | "frekuensiMakan"
       | "akomodasiNominal"
       | "ruteTransportasiLokal"
       | "laundryNominal"
@@ -293,9 +269,12 @@ export function TugasDinasBuatForm({
           nama: row.nama,
           departemen: row.departemen,
           jabatan: row.jabatan,
-          uangPerjalananNominal: row.uangPerjalananNominal
-            ? Number(row.uangPerjalananNominal)
-            : undefined,
+          ...(totalMakanBaris(row) > 0
+            ? {
+                uangPerjalananNominal: totalMakanBaris(row),
+                frekuensiMakan: Number(row.frekuensiMakan),
+              }
+            : {}),
           akomodasiNominal: row.akomodasiNominal
             ? Number(row.akomodasiNominal)
             : undefined,
@@ -329,31 +308,6 @@ export function TugasDinasBuatForm({
 
   return (
     <>
-      <Link href="/hc/tugas-dinas" className={styles.backButton}>
-        <ArrowLeft size={16} />
-        Kembali
-      </Link>
-
-      <div className={styles.pageHead}>
-        <div className={styles.pageTitle}>
-          <span className={styles.pageIcon}>
-            <Plane size={26} />
-          </span>
-
-          <div>
-            <h1>
-              {withAkomodasi ? "Buat STD Akomodasi" : "Buat Surat Tugas Dinas"}
-            </h1>
-            <p>
-              {withAkomodasi
-                ? "Pilih karyawan dari Surat Tugas Dinas yang sudah disetujui SH dan PJO. Lokasi, tanggal, keterangan tugas, serta identitas karyawan akan terisi otomatis."
-                : "Pilih karyawan dari Database Karyawan (NRP & nama), lengkapi detail tugas, PDF akan dibuat otomatis."}{" "}
-              Setelah dibuat, surat menunggu persetujuan SH lalu PJO.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {galat ? <Pesan jenis="error">{galat}</Pesan> : null}
 
       <section className={styles.panel}>
@@ -603,42 +557,41 @@ export function TugasDinasBuatForm({
                       ({row.nrp})
                     </span>
                   </strong>
-                  <div style={{ color: "#667085", fontSize: 12, marginTop: 4 }}>
-                    Kategori uang makan: {labelKategoriUangMakan(kategoriUangMakan(row.jabatan))}
-                    {kategoriUangMakan(row.jabatan) === "MANUAL"
-                      ? " — nominal wajib diisi HC"
-                      : " — nominal otomatis, dapat dikoreksi"}
-                  </div>
                   <div className={styles.formGrid} style={{ marginTop: 10 }}>
-                    <Field label="Makan (Rp)">
+                    <Field label="Uang per 1x Makan (Rp)">
                       <input
                         className={styles.input}
                         type="number"
                         min="0"
-                        value={row.uangPerjalananNominal}
+                        value={row.uangPerMakan}
                         onChange={(event) =>
-                          ubahAlokasi(
-                            index,
-                            "uangPerjalananNominal",
-                            event.target.value,
-                          )
+                          ubahAlokasi(index, "uangPerMakan", event.target.value)
                         }
                         placeholder="0"
                       />
                     </Field>
-                    <Field label="Uang per 1x Makan (Rp)">
+                    <Field label="Perkalian Makan (x)">
+                      <input
+                        className={styles.input}
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={row.frekuensiMakan}
+                        onChange={(event) =>
+                          ubahAlokasi(
+                            index,
+                            "frekuensiMakan",
+                            event.target.value.replace(/\D/g, ""),
+                          )
+                        }
+                        placeholder="Contoh: 9"
+                      />
+                    </Field>
+                    <Field label="Makan (Rp)">
                       <input
                         className={styles.input}
                         readOnly
-                        value={
-                          frekuensiMakanOtomatis > 0
-                            ? Math.round(
-                                (Number(row.uangPerjalananNominal) || 0) /
-                                  frekuensiMakanOtomatis,
-                              )
-                            : ""
-                        }
-                        placeholder="0"
+                        value={totalMakanBaris(row)}
                       />
                     </Field>
                     <Field label="Transportasi (Rp)">
@@ -760,12 +713,14 @@ export function TugasDinasBuatForm({
       ) : null}
 
       <div className={styles.headActions} style={{ marginTop: 18 }}>
-        <Link
-          href="/hc/tugas-dinas"
+        <button
+          type="button"
           className={`${styles.tombol} ${styles.tombolNetral}`}
+          onClick={onBatal}
+          disabled={proses}
         >
           Batal
-        </Link>
+        </button>
 
         <button
           type="button"

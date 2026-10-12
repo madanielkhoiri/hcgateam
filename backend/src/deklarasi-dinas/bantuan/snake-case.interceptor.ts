@@ -7,7 +7,18 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+// Kolom waktu memakai nama Indonesia di DB (dibuat_pada/diperbarui_pada) dan
+// frontend membacanya dengan nama itu, bukan created_at/updated_at.
+const ALIAS_KUNCI: Record<string, string> = {
+  createdAt: 'dibuat_pada',
+  updatedAt: 'diperbarui_pada',
+};
+
 function toSnakeCase(str: string): string {
+  if (ALIAS_KUNCI[str]) {
+    return ALIAS_KUNCI[str];
+  }
+
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
