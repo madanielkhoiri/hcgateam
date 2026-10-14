@@ -98,6 +98,36 @@ describe('McuKaryawanService.buatDepartemen', () => {
   });
 });
 
+describe('McuKaryawanService.ubahDepartemen', () => {
+  it('mengganti nama master dan menyamakan teks departemen akun', async () => {
+    const updateDepartemen = jest.fn().mockResolvedValue({ id: 3, namaDepartemen: 'ENGINEERING' });
+    const updateUser = jest.fn().mockResolvedValue({ count: 4 });
+    const tx = {
+      departemen: { update: updateDepartemen },
+      user: { updateMany: updateUser },
+    };
+    const prisma = {
+      departemen: { findUnique: jest.fn().mockResolvedValue({ id: 3, namaDepartemen: 'ENGINEER' }) },
+      $transaction: jest.fn((callback) => callback(tx)),
+    } as unknown as PrismaService;
+    const service = new McuKaryawanService(
+      prisma,
+      {} as McuNotifikasiService,
+      {} as WhatsappService,
+    );
+
+    await service.ubahDepartemen(3, { namaDepartemen: 'ENGINEERING' } as any);
+
+    expect(updateDepartemen).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ namaDepartemen: 'ENGINEERING' }),
+    }));
+    expect(updateUser).toHaveBeenCalledWith({
+      where: { departemen: 'ENGINEER' },
+      data: { departemen: 'ENGINEERING' },
+    });
+  });
+});
+
 describe('McuKaryawanService.hapusDepartemen', () => {
   it('menolak hapus departemen yang masih punya karyawan', async () => {
     const prisma = {

@@ -81,7 +81,7 @@ export class McuKaryawanService {
       const s = norm(v);
       if (s.includes('SCM') || s.includes('FAW')) return 'SCM - FAW';
       if (s === 'MNG' || s.includes('MANAGEMENT')) return 'MANAGEMENT';
-      if (s === 'ENG' || s === 'ENGINEER') return 'ENGINEER';
+      if (s === 'ENG' || s === 'ENGINEER' || s === 'ENGINEERING') return 'ENGINEERING';
       if (s === 'PLT' || s === 'PLANT') return 'PLANT';
       if (s === 'PRO' || s.includes('PRODUKSI')) return 'PRODUKSI';
       if (s === 'HCG' || s === 'HCGA') return 'HCGA';
@@ -89,7 +89,7 @@ export class McuKaryawanService {
       if (s.includes('HCGA') || s === 'HC' || s === 'GA') return 'HCGA';
       if (s.includes('PRODUKSI')) return 'PRODUKSI';
       if (s.includes('SHE')) return 'SHE';
-      if (s.includes('ENGINEER')) return 'ENGINEER';
+      if (s.includes('ENGINEER')) return 'ENGINEERING';
       if (s.includes('PLANT')) return 'PLANT';
       return null;
     };
@@ -108,7 +108,7 @@ export class McuKaryawanService {
     const unknown = [...new Set(data.map((r) => clean(at(r, 'DEPT.'))).filter((v) => v && !dept(v)))];
     if (unknown.length) throw new BadRequestException(`Departemen belum dimapping: ${unknown.join(', ')}`);
     const result = await this.prisma.$transaction(async (tx) => {
-      const names = ['ICT MD', 'HCGA', 'MANAGEMENT', 'PRODUKSI', 'SHE', 'ENGINEER', 'PLANT', 'SCM - FAW'];
+      const names = ['ICT MD', 'HCGA', 'MANAGEMENT', 'PRODUKSI', 'SHE', 'ENGINEERING', 'PLANT', 'SCM - FAW'];
       const map = new Map<string, number>();
       for (const name of names) {
         const row = await tx.departemen.upsert({ where: { namaDepartemen: name }, update: { aktif: true }, create: { namaDepartemen: name, aktif: true } });
@@ -174,19 +174,29 @@ export class McuKaryawanService {
   }
 
   async ubahDepartemen(id: number, dto: UbahDepartemenDto) {
-    await this.cariDepartemen(id);
+    const sebelumnya = await this.cariDepartemen(id);
+    const namaBaru = dto.namaDepartemen?.trim();
 
-    return this.prisma.departemen.update({
-      where: { id },
-      data: {
-        ...(dto.namaDepartemen !== undefined
-          ? { namaDepartemen: dto.namaDepartemen.trim() }
-          : {}),
-        ...(dto.adminAkunId !== undefined
-          ? { adminAkunId: dto.adminAkunId }
-          : {}),
-        ...(dto.aktif !== undefined ? { aktif: dto.aktif } : {}),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const diperbarui = await tx.departemen.update({
+        where: { id },
+        data: {
+          ...(namaBaru !== undefined ? { namaDepartemen: namaBaru } : {}),
+          ...(dto.adminAkunId !== undefined
+            ? { adminAkunId: dto.adminAkunId }
+            : {}),
+          ...(dto.aktif !== undefined ? { aktif: dto.aktif } : {}),
+        },
+      });
+
+      if (namaBaru && namaBaru !== sebelumnya.namaDepartemen) {
+        await tx.user.updateMany({
+          where: { departemen: sebelumnya.namaDepartemen },
+          data: { departemen: namaBaru },
+        });
+      }
+
+      return diperbarui;
     });
   }
 
