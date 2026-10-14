@@ -691,3 +691,31 @@
 
 .roundFiles { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .roundFiles a { color: #1769e0; font-size: 12px; text-decoration: underline; }
+.roundFiles > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  background: #eef5ff;
+  color: #34506f;
+  font-size: 11px;
+}
+.roundFiles > span button { padding: 2px; }
+
+.filePickerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  color: #1769e0;
+  background: #eef5ff;
+  border: 1px dashed #8bb9f5;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.filePickerButton:hover { background: #e2efff; border-color: #1769e0; }
+.filePickerButton input { display: none; }
+.filePickerInfo { color: #7185a0; font-size: 11px; }
