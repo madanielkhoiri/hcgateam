@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, MessageCircle, Pencil, Plus, Power, Printer, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, Plus, Power, Printer, Trash2, Trophy, X } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
 import { urlUploads } from "@/lib/uploads-url";
@@ -564,11 +564,38 @@ export default function TenderDetailPage() {
                       return (
                         <div className={styles.inlineForm} key={round.id}>
                           <strong>SPH {round.roundKe}</strong>
-                          <input
-                            type="file" multiple
-                            accept="*/*"
-                            onChange={(e) => setEditRoundFile(Array.from(e.target.files ?? []))}
-                          />
+                          <label className={styles.filePickerButton}>
+                            <Plus size={13} /> Pilih File SPH
+                            <input
+                              type="file" multiple
+                              accept="*/*"
+                              onChange={(e) => {
+                                const files = Array.from(e.target.files ?? []);
+                                setEditRoundFile((current) => [...current, ...files]);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                          <small className={styles.filePickerInfo}>
+                            {editRoundFile.length > 0 ? `${editRoundFile.length} file dipilih` : "Bisa pilih lebih dari satu file"}
+                          </small>
+                          {editRoundFile.length > 0 && (
+                            <span className={styles.roundFiles}>
+                              {editRoundFile.map((file, index) => (
+                                <span key={`${file.name}-${index}`}>
+                                  {file.name}
+                                  <button
+                                    type="button"
+                                    className={styles.iconButtonDanger}
+                                    onClick={() => setEditRoundFile((current) => current.filter((_, i) => i !== index))}
+                                    title="Hapus file dari pilihan"
+                                  >
+                                    <X size={11} />
+                                  </button>
+                                </span>
+                              ))}
+                            </span>
+                          )}
                           <input
                             type="number"
                             placeholder="Harga penawaran (opsional)"
@@ -637,15 +664,46 @@ export default function TenderDetailPage() {
                     !rounds.some((r) => r.isFinal) &&
                     (sphFormOpen[undangan.vendorId] ? (
                       <div className={styles.inlineForm}>
-                        <input
-                          type="file" multiple
-                          onChange={(e) =>
-                            setSphFile((cur) => ({
-                              ...cur,
-                              [undangan.vendorId]: Array.from(e.target.files ?? []),
-                            }))
-                          }
-                        />
+                        <label className={styles.filePickerButton}>
+                          <Plus size={13} /> Pilih File SPH
+                          <input
+                            type="file" multiple
+                            accept="*/*"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files ?? []);
+                              setSphFile((cur) => ({
+                                ...cur,
+                                [undangan.vendorId]: [...(cur[undangan.vendorId] ?? []), ...files],
+                              }));
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <small className={styles.filePickerInfo}>
+                          {(sphFile[undangan.vendorId] ?? []).length > 0
+                            ? `${(sphFile[undangan.vendorId] ?? []).length} file dipilih`
+                            : "Bisa pilih lebih dari satu file"}
+                        </small>
+                        {(sphFile[undangan.vendorId] ?? []).length > 0 && (
+                          <span className={styles.roundFiles}>
+                            {(sphFile[undangan.vendorId] ?? []).map((file, index) => (
+                              <span key={`${file.name}-${index}`}>
+                                {file.name}
+                                <button
+                                  type="button"
+                                  className={styles.iconButtonDanger}
+                                  onClick={() => setSphFile((cur) => ({
+                                    ...cur,
+                                    [undangan.vendorId]: (cur[undangan.vendorId] ?? []).filter((_, i) => i !== index),
+                                  }))}
+                                  title="Hapus file dari pilihan"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
+                            ))}
+                          </span>
+                        )}
                         <input
                           type="number"
                           placeholder="Harga penawaran (opsional)"
