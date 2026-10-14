@@ -3,6 +3,7 @@ import PDFDocument from 'pdfkit';
 import { PDFDocument as TemplateDocument, StandardFonts, rgb } from 'pdf-lib';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import sharp from 'sharp';
 import { siapkanBufferGambarUntukPdfKit } from '../../common/pdf-image.util';
 
 type ProjectInfo = { namaProject: string; kontrak: { vendor: { namaVendor: string } } };
@@ -91,7 +92,13 @@ export class EpromReportPdfService {
 
   async daily(data: any, project: ProjectInfo, photos: Express.Multer.File[]) {
     const preparedPhotos = await Promise.all(photos.map(async photo => {
-      try { return await siapkanBufferGambarUntukPdfKit(photo.buffer); } catch { return null; }
+      try {
+        return await sharp(photo.buffer)
+          .rotate()
+          .flatten({ background: '#ffffff' })
+          .jpeg({ quality: 70, mozjpeg: true })
+          .toBuffer();
+      } catch { return null; }
     }));
     return this.document((doc) => {
       this.header(doc, `DAILY REPORT - ${project.namaProject.toUpperCase()}`);
