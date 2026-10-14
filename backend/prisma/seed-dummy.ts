@@ -171,7 +171,7 @@ const DEPARTEMEN_LIST = [
   'PLANT',
   'PRODUKSI',
   'SHE',
-  'ENGINEER',
+  'ENGINEERING',
   'ICT MD',
   'SCM - FAW',
 ];

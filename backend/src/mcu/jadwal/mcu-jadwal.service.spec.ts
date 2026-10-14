@@ -12,7 +12,7 @@ function aktor(role: UserRole, id = 1): AktorMcu {
   return { id, role, username: 'test' };
 }
 
-function karyawanFixture(overrides: Partial<{ statusKerja: StatusKerja; departemenId: number }> = {}) {
+function karyawanFixture(overrides: Partial<{ statusKerja: StatusKerja; departemenId: number; tanggalMcuExpired: Date | null }> = {}) {
   return {
     id: 7,
     nama: 'Budi',
@@ -21,6 +21,7 @@ function karyawanFixture(overrides: Partial<{ statusKerja: StatusKerja; departem
     akunId: 70,
     departemenId: overrides.departemenId ?? 3,
     statusKerja: overrides.statusKerja ?? StatusKerja.AKTIF,
+    tanggalMcuExpired: overrides.tanggalMcuExpired ?? null,
   };
 }
 
@@ -100,7 +101,7 @@ function buatService(overrides: {
 
   const service = new McuJadwalService(prisma, akses, notifikasi, whatsapp);
 
-  return { service, prisma, create, update, updateMany, findMany, count, whatsapp };
+  return { service, prisma, create, update, updateMany, findMany, count, whatsapp, notifikasi };
 }
 
 const DTO_DASAR = { karyawanId: 7, tanggalMcu: isoTanggal(tambahHari(hariIni(), 10)) };
@@ -208,6 +209,28 @@ describe('McuJadwalService.buat', () => {
           tanggalLock: tambahHari(tanggalMcu, -3),
         }),
       }),
+    );
+  });
+
+  it('notifikasi jadwal menampilkan sisa masa berlaku MCU dalam hari', async () => {
+    const karyawan = karyawanFixture({ tanggalMcuExpired: tambahHari(hariIni(), 4) });
+    const create = jest.fn(({ data }) => Promise.resolve({
+      id: 1,
+      ...data,
+      karyawan,
+      departemen: { id: 3, namaDepartemen: 'ENGINEERING', adminAkunId: 30, adminAkun: null },
+      klinik: null,
+      suratPengantar: null,
+      hasilMcu: null,
+      dibuatOleh: { id: 1, name: 'Admin Dept' },
+      diubahOlehHc: null,
+    }));
+    const { service, notifikasi } = buatService({ karyawan, create });
+
+    await service.buat(DTO_DASAR as any, aktor(UserRole.ADMIN_DEPT));
+
+    expect(notifikasi.duaKanal).toHaveBeenCalledWith(
+      expect.objectContaining({ pesan: expect.stringContaining('Sisa masa berlaku MCU sebelumnya 4 hari') }),
     );
   });
 });

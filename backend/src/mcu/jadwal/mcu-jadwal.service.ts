@@ -576,11 +576,23 @@ export class McuJadwalService {
       ? `Perubahan jadwal MCU ${jadwal.karyawan.nama}`
       : `Jadwal MCU ${jadwal.karyawan.nama}`;
 
+    const sisaMasaBerlaku = jadwal.karyawan.tanggalMcuExpired
+      ? selisihHari(hariIni(), jadwal.karyawan.tanggalMcuExpired)
+      : null;
+    const infoSisaMasaBerlaku = sisaMasaBerlaku === null
+      ? ''
+      : sisaMasaBerlaku > 0
+        ? ` Sisa masa berlaku MCU sebelumnya ${sisaMasaBerlaku} hari.`
+        : sisaMasaBerlaku === 0
+          ? ' Masa berlaku MCU sebelumnya berakhir hari ini.'
+          : ` Masa berlaku MCU sebelumnya sudah lewat ${Math.abs(sisaMasaBerlaku)} hari.`;
+
     const pesan =
       `MCU ${jadwal.jenisMcu.toLowerCase()} dijadwalkan pada ` +
       `${formatTanggalIndonesia(jadwal.tanggalMcu)}` +
       `${jadwal.klinik ? ` di ${jadwal.klinik.namaKlinik}` : ''}. ` +
-      `Pendaftaran terkunci pada ${formatTanggalIndonesia(jadwal.tanggalLock)}.`;
+      `Pendaftaran terkunci pada ${formatTanggalIndonesia(jadwal.tanggalLock)}.` +
+      infoSisaMasaBerlaku;
 
     const isi = {
       tipe: TipeNotifikasiMcu.JADWAL_MCU,
