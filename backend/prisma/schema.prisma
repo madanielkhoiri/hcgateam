@@ -3198,6 +3198,46 @@ model FotoPenyerahanTps3r {
   @@map("civil_foto_penyerahan_tps3r")
 }
 
+enum KategoriRkb {
+  PROJECT
+  MAINTENANCE
+}
+
+enum StatusRkb {
+  WAITING_APPROVAL
+  WAITING_SUPPLY
+  CLOSE
+}
+
+model MonitoringRkb {
+  id          Int                   @id @default(autoincrement())
+  tanggal     DateTime              @db.Date
+  nomorRkb    String                @unique @map("nomor_rkb")
+  kategori    KategoriRkb
+  status      StatusRkb             @default(WAITING_APPROVAL)
+  createdById Int                   @map("created_by_id")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+  barang      MonitoringRkbBarang[]
+
+  @@index([kategori, status])
+  @@index([tanggal])
+  @@map("ga_monitoring_rkb")
+}
+
+model MonitoringRkbBarang {
+  id         Int           @id @default(autoincrement())
+  rkbId      Int           @map("rkb_id")
+  namaBarang String        @map("nama_barang")
+  qty        Decimal       @db.Decimal(15, 2)
+  satuan     String
+  urutan     Int           @default(0)
+  rkb        MonitoringRkb @relation(fields: [rkbId], references: [id], onDelete: Cascade)
+
+  @@index([rkbId, urutan])
+  @@map("ga_monitoring_rkb_barang")
+}
+
 // ==================================================
 // SELESAI: TPS 3R
 // ==================================================

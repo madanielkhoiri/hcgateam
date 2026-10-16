@@ -134,6 +134,13 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'card',
   },
   {
+    key: 'GA_MONITORING_RKB',
+    title: 'Monitoring RKB',
+    description: 'Monitoring RKB kategori Project dan Maintenance beserta seluruh rincian barang.',
+    parentKey: 'GA',
+    level: 'card',
+  },
+  {
     key: 'GA_TRANSPORT_SECTION',
     title: 'Transport',
     description: 'Dashboard dan data operasional transport.',
