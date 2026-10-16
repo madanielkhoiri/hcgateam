@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsDateString, IsEnum, IsNotEmpty, IsNumber, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { KategoriRkb, StatusRkb } from '@prisma/client';
 
 export class BarangRkbDto {
@@ -31,8 +31,15 @@ export class SimpanMonitoringRkbDto {
   @IsEnum(StatusRkb)
   status: StatusRkb;
 
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => BarangRkbDto)
+  barang?: BarangRkbDto[];
+}
+
+export class TambahBarangRkbDto {
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => BarangRkbDto)
   barang: BarangRkbDto[];

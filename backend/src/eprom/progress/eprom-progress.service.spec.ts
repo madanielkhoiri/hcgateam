@@ -112,13 +112,21 @@ describe('EpromProgressService.jamUpload', () => {
 describe('EpromProgressService.daftar', () => {
   it('menghitung deviasi & status hanya untuk progress-mingguan', async () => {
     const { service } = buatService({
-      progressMingguan: [{ id: 1, planned: 50, actual: 45 }],
+      progressMingguan: [{ id: 1, namaPekerjaan: 'Pekerjaan A', mingguKe: 1, planned: 50, actual: 45 }],
     });
 
     const [hasil] = await service.daftar(aktor(UserRole.OWNER), 'progress-mingguan', 1);
 
     expect(hasil.deviasi).toBe(-5);
     expect(hasil.status).toBe('WASPADA');
+  });
+
+  it('mengoreksi nomor week data lama dari nama laporan', async () => {
+    const { service } = buatService({
+      progressMingguan: [{ id: 1, namaPekerjaan: 'LAPORAN WEEK 7', mingguKe: 40, planned: 20, actual: 18 }],
+    });
+    const [hasil] = await service.daftar(aktor(UserRole.OWNER), 'progress-mingguan', 1);
+    expect(hasil.mingguKe).toBe(7);
   });
 
   it('tipe selain progress-mingguan dikembalikan apa adanya', async () => {

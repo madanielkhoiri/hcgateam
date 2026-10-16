@@ -155,6 +155,12 @@ function jumlahMingguProyek(tanggalMulai: Date, tanggalSelesai: Date): number {
   return Math.max(1, Math.ceil((selisihHari + 1) / 7));
 }
 
+/** Kompatibilitas data lama: "LAPORAN WEEK 17" berarti Week 17. */
+function nomorWeekLaporan(namaPekerjaan: string, mingguKe: number): number {
+  const cocok = namaPekerjaan.trim().match(/^laporan\s+week\s+(\d+)$/i);
+  return cocok ? Number(cocok[1]) : mingguKe;
+}
+
 @Injectable()
 export class EpromProgressService {
   constructor(
@@ -293,9 +299,9 @@ export class EpromProgressService {
       return items;
     }
 
-    return items.map((item: { planned: number | string; actual: number | string }) => {
+    return items.map((item: { namaPekerjaan: string; mingguKe: number; planned: number | string; actual: number | string }) => {
       const deviasi = Math.round((Number(item.actual) - Number(item.planned)) * 100) / 100;
-      return { ...item, deviasi, status: statusDeviasi(deviasi) };
+      return { ...item, mingguKe: nomorWeekLaporan(item.namaPekerjaan, item.mingguKe), deviasi, status: statusDeviasi(deviasi) };
     });
   }
 
