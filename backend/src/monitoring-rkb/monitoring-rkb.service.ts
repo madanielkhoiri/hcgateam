@@ -32,6 +32,7 @@ export class MonitoringRkbService {
   }
 
   async buat(createdById: number, dto: SimpanMonitoringRkbDto) {
+    if (!dto.barang?.length) throw new BadRequestException('Minimal satu barang harus diisi saat membuat RKB');
     const project = await this.detailProject(dto.projectId);
     try {
       return await this.prisma.monitoringRkb.create({
