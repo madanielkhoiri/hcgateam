@@ -7,7 +7,7 @@
 
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EpromAksesService } from '../common/eprom-akses.service';
 import { EpromFileService } from '../common/eprom-file.service';
@@ -27,6 +27,12 @@ export class BuatProgressDto {
   @IsOptional()
   @IsString()
   tanggal?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  mingguKe?: number;
   @IsOptional()
   @IsString()
   namaPekerjaan?: string;
@@ -140,16 +146,13 @@ function mingguIniWITA(): number {
   return 1 + Math.round((tanggal.getTime() - kamisPertama.getTime()) / (7 * 86400000));
 }
 
-/** Laporan mingguan memakai nomor Week yang tertulis pada nama laporan. */
-function mingguDariNamaLaporan(nama: string): number | null {
-  const cocok = nama.trim().match(/^laporan\s+week\s+(\d+)$/i);
-  return cocok ? Number(cocok[1]) : null;
-}
-
-/** Minggu proyek: tanggal mulai kontrak sampai 6 hari berikutnya = Week 1. */
-function mingguProyek(tanggal: Date, tanggalMulai: Date): number {
-  const hari = Math.floor((Date.UTC(tanggal.getUTCFullYear(), tanggal.getUTCMonth(), tanggal.getUTCDate()) - Date.UTC(tanggalMulai.getUTCFullYear(), tanggalMulai.getUTCMonth(), tanggalMulai.getUTCDate())) / 86400000);
-  return Math.max(1, Math.floor(hari / 7) + 1);
+function jumlahMingguProyek(tanggalMulai: Date, tanggalSelesai: Date): number {
+  const selisihHari = Math.floor(
+    (Date.UTC(tanggalSelesai.getUTCFullYear(), tanggalSelesai.getUTCMonth(), tanggalSelesai.getUTCDate()) -
+      Date.UTC(tanggalMulai.getUTCFullYear(), tanggalMulai.getUTCMonth(), tanggalMulai.getUTCDate())) /
+      86400000,
+  );
+  return Math.max(1, Math.ceil((selisihHari + 1) / 7));
 }
 
 @Injectable()
@@ -322,10 +325,23 @@ export class EpromProgressService {
 
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { kontrak: { select: { tanggalMulai: true } } },
+      select: { kontrak: { select: { tanggalMulai: true, tanggalSelesai: true } } },
     });
     if (!project?.kontrak?.tanggalMulai) {
       throw new BadRequestException('Tanggal mulai project belum tersedia');
+    }
+
+    if (tipe === 'progress-mingguan') {
+      if (!project.kontrak.tanggalSelesai) {
+        throw new BadRequestException('Tanggal selesai project belum tersedia');
+      }
+      if (dto.mingguKe === undefined) {
+        throw new BadRequestException('Week laporan wajib dipilih');
+      }
+      const totalMinggu = jumlahMingguProyek(project.kontrak.tanggalMulai, project.kontrak.tanggalSelesai);
+      if (dto.mingguKe > totalMinggu) {
+        throw new BadRequestException(`Week laporan harus antara 1 sampai ${totalMinggu}`);
+      }
     }
 
     const fileUrl = file
@@ -340,7 +356,7 @@ export class EpromProgressService {
       dataEkstra.tanggal = tanggalDipilih;
     } else if (tipe === 'progress-mingguan') {
       dataEkstra.namaPekerjaan = dto.namaPekerjaan!.trim();
-      dataEkstra.mingguKe = mingguProyek(tanggalDipilih, project.kontrak.tanggalMulai);
+      dataEkstra.mingguKe = dto.mingguKe;
       dataEkstra.planned = dto.planned;
       dataEkstra.actual = dto.actual;
     } else if (tipe === 'progress-bulanan' || tipe === 'tta' || tipe === 'kta') {
@@ -386,6 +402,19 @@ export class EpromProgressService {
       if (dto.planned === undefined || dto.actual === undefined) {
         throw new BadRequestException('Planned dan Actual wajib diisi');
       }
+      if (dto.mingguKe === undefined) throw new BadRequestException('Week laporan wajib dipilih');
+
+      const project = await this.prisma.project.findUnique({
+        where: { id: item.projectId },
+        select: { kontrak: { select: { tanggalMulai: true, tanggalSelesai: true } } },
+      });
+      if (!project?.kontrak?.tanggalMulai || !project.kontrak.tanggalSelesai) {
+        throw new BadRequestException('Periode project belum lengkap');
+      }
+      const totalMinggu = jumlahMingguProyek(project.kontrak.tanggalMulai, project.kontrak.tanggalSelesai);
+      if (dto.mingguKe > totalMinggu) {
+        throw new BadRequestException(`Week laporan harus antara 1 sampai ${totalMinggu}`);
+      }
     }
     const data: Record<string, unknown> = {};
     if (dto.tanggal) {
@@ -401,6 +430,7 @@ export class EpromProgressService {
     }
     if (tipe === 'progress-mingguan') {
       data.namaPekerjaan = dto.namaPekerjaan!.trim();
+      data.mingguKe = dto.mingguKe;
       data.planned = dto.planned;
       data.actual = dto.actual;
     }
