@@ -24,6 +24,7 @@ import { RequireAccessKey } from '../../auth/require-access-key.decorator';
 import { Aktor } from '../common/eprom-aktor';
 import type { AktorEprom } from '../common/eprom-aktor';
 import { BuatOpnameDto, EpromFinancialService, ReviewOpnameDto, UbahOpnameDto } from './eprom-financial.service';
+import { ApproveEngineerDto } from '../engineer/eprom-engineer.service';
 
 @Controller('eprom/financial')
 @UseGuards(JwtAuthGuard)
@@ -39,6 +40,26 @@ export class EpromFinancialController {
   @Get('opname')
   daftar(@Aktor() aktor: AktorEprom, @Query('projectId', ParseIntPipe) projectId: number) {
     return this.service.daftar(aktor, projectId);
+  }
+
+  @Get('signatures/available')
+  tandaTangan(@Aktor() aktor: AktorEprom) {
+    return this.service.daftarTandaTangan(aktor);
+  }
+
+  @Get('opname/:id/approval')
+  detailApproval(@Aktor() aktor: AktorEprom, @Param('id', ParseIntPipe) id: number) {
+    return this.service.detailApproval(aktor, id);
+  }
+
+  @Post('opname/:id/approve')
+  approve(@Aktor() aktor: AktorEprom, @Param('id', ParseIntPipe) id: number, @Body() dto: ApproveEngineerDto) {
+    return this.service.approveDenganTandaTangan(aktor, id, dto);
+  }
+
+  @Post('opname/:id/approve-tanpa-ttd')
+  approveTanpaTandaTangan(@Aktor() aktor: AktorEprom, @Param('id', ParseIntPipe) id: number) {
+    return this.service.approveTanpaTandaTangan(aktor, id);
   }
 
   @Post('opname')
