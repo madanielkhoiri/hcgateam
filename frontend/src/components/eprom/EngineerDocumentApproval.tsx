@@ -37,6 +37,10 @@ const DEFAULT_PLACEMENT: Pick<Placement, "x" | "y" | "width" | "height"> = {
 };
 
 function namaPekerjaan(detail: EngineerApprovalDetail): string {
+  if (detail.documentType === "OPNAME_PEKERJAAN") {
+    const item = detail.item as EngineerApprovalDetail["item"] & { progressPersen?: string };
+    return `Progress ${item.progressPersen ?? "-"}%`;
+  }
   return (
     detail.item.namaPekerjaan ??
     detail.item.namaMaterial ??
@@ -57,10 +61,12 @@ export function EngineerDocumentApproval({
   projectId,
   tipe,
   documentId,
+  mode = "engineer",
 }: {
   projectId: number;
   tipe: TipeEngineer;
   documentId: number;
+  mode?: "engineer" | "financial";
 }) {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -91,7 +97,10 @@ export function EngineerDocumentApproval({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
+    Promise.all(mode === "financial" ? [
+      epromApi.financial.detailApproval(documentId),
+      epromApi.financial.daftarTandaTangan(),
+    ] : [
       epromApi.engineer.detailApproval(tipe, documentId),
       epromApi.engineer.daftarTandaTangan(),
     ])
@@ -107,7 +116,7 @@ export function EngineerDocumentApproval({
         setError(err instanceof Error ? err.message : "Gagal memuat approval"),
       )
       .finally(() => setLoading(false));
-  }, [documentId, projectId, tipe]);
+  }, [documentId, mode, projectId, tipe]);
 
   const pdfUrl = detail?.item.effectiveFileUrl ?? detail?.item.fileUrl;
 
@@ -473,7 +482,7 @@ export function EngineerDocumentApproval({
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.engineer.approveDenganTandaTangan(tipe, documentId, {
+      const payload = {
         placements: penempatanEfektif.map((placement) => ({
           signatureFile: placement.signatureFile,
           signaturePage: placement.page,
@@ -500,9 +509,11 @@ export function EngineerDocumentApproval({
             size,
           }),
         ),
-      });
+      };
+      if (mode === "financial") await epromApi.financial.approveDenganTandaTangan(documentId, payload);
+      else await epromApi.engineer.approveDenganTandaTangan(tipe, documentId, payload);
       window.dispatchEvent(new Event("eprom-engineer-updated"));
-      router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.push(mode === "financial" ? `/civil/project/financial/${projectId}` : tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Approval gagal diproses");
@@ -516,27 +527,24 @@ export function EngineerDocumentApproval({
     if (!komentar?.trim()) return;
     setSubmitting(true); setError(null);
     try {
-      await epromApi.engineer.reject(
-        tipe,
-        documentId,
-        komentar.trim(),
-        inkStrokes.map(({ page, color, width, points }) => ({
+      const annotations = inkStrokes.map(({ page, color, width, points }) => ({
           page,
           color,
           width,
           points,
-        })),
-        textAnnotations.map(({ page, text, x, y, rotation, size }) => ({
+        }));
+      const texts = textAnnotations.map(({ page, text, x, y, rotation, size }) => ({
           page,
           text,
           x,
           y,
           rotation,
           size,
-        })),
-      );
+        }));
+      if (mode === "financial") await epromApi.financial.review(documentId, "REJECTED", komentar.trim(), annotations, texts);
+      else await epromApi.engineer.reject(tipe, documentId, komentar.trim(), annotations, texts);
       window.dispatchEvent(new Event("eprom-engineer-updated"));
-      router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.push(mode === "financial" ? `/civil/project/financial/${projectId}` : tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
     } catch (err) { setError(err instanceof Error ? err.message : "Dokumen gagal ditolak"); }
     finally { setSubmitting(false); }
@@ -547,9 +555,10 @@ export function EngineerDocumentApproval({
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.engineer.approveTanpaTandaTangan(tipe, documentId);
+      if (mode === "financial") await epromApi.financial.approveTanpaTandaTangan(documentId);
+      else await epromApi.engineer.approveTanpaTandaTangan(tipe, documentId);
       window.dispatchEvent(new Event("eprom-engineer-updated"));
-      router.push(tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
+      router.push(mode === "financial" ? `/civil/project/financial/${projectId}` : tipe === "checklist-tahapan" ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan` : `/civil/project/engineer/${projectId}?tab=${tipe}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Approval gagal diproses");
@@ -561,7 +570,9 @@ export function EngineerDocumentApproval({
   const selectedPlacement = placements.find(
     (item) => item.id === selectedPlacementId,
   );
-  const backUrl = tipe === "checklist-tahapan"
+  const backUrl = mode === "financial"
+    ? `/civil/project/financial/${projectId}`
+    : tipe === "checklist-tahapan"
     ? `/civil/project/konstruksi/${projectId}?tab=checklist-tahapan`
     : `/civil/project/engineer/${projectId}?tab=${tipe}`;
 

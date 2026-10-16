@@ -339,7 +339,8 @@ export type EngineerDocumentApproval = {
     | 'SERTIFIKASI_PEKERJAAN'
     | 'DAFTAR_PERALATAN'
     | 'KOMISIONING_ALAT_BERAT'
-    | 'CHECKLIST_TAHAPAN';
+    | 'CHECKLIST_TAHAPAN'
+    | 'OPNAME_PEKERJAAN';
   approvedAt: string;
   adaTandaTangan: boolean;
   signatureFile: string | null;
@@ -492,6 +493,10 @@ export type OpnameItem = {
   projectId: number;
   progressPersen: string;
   fileUrl: string | null;
+  effectiveFileUrl?: string | null;
+  latestApproval?: EngineerDocumentApproval | null;
+  revisionRootId?: number | null;
+  revision?: number;
   status: StatusApprovalEprom;
   komentar: string | null;
   createdAt: string;
@@ -1126,18 +1131,25 @@ export const epromApi = {
 
   financial: {
     daftar: (projectId: number) => request<OpnameItem[]>(`/financial/opname?projectId=${projectId}`),
-    buat: (data: { projectId: number; progressPersen: number }, file: File | null) => {
+    buat: (data: { projectId: number; progressPersen: number; revisiDariId?: number }, file: File | null) => {
       const form = new FormData();
       form.append('projectId', String(data.projectId));
       form.append('progressPersen', String(data.progressPersen));
+      if (data.revisiDariId) form.append('revisiDariId', String(data.revisiDariId));
       if (file) form.append('file', file);
       return request<OpnameItem>('/financial/opname', { method: 'POST', body: form });
     },
-    review: (id: number, status: 'APPROVED' | 'REJECTED', komentar?: string) =>
+    review: (id: number, status: 'APPROVED' | 'REJECTED', komentar?: string, annotations?: EngineerInkAnnotation[], textAnnotations?: EngineerTextAnnotation[]) =>
       request<OpnameItem>(`/financial/opname/${id}/review`, {
         method: 'PATCH',
-        body: JSON.stringify({ status, komentar }),
+        body: JSON.stringify({ status, komentar, annotations, textAnnotations }),
       }),
+    detailApproval: (id: number) => request<EngineerApprovalDetail>(`/financial/opname/${id}/approval`),
+    daftarTandaTangan: () => request<EngineerSignature[]>('/financial/signatures/available'),
+    approveDenganTandaTangan: (id: number, payload: { placements: EngineerSignaturePosition[]; annotations?: EngineerInkAnnotation[]; textAnnotations?: EngineerTextAnnotation[] }) =>
+      request<OpnameItem>(`/financial/opname/${id}/approve`, { method: 'POST', body: JSON.stringify(payload) }),
+    approveTanpaTandaTangan: (id: number) =>
+      request<OpnameItem>(`/financial/opname/${id}/approve-tanpa-ttd`, { method: 'POST' }),
     ubah: (id: number, data: { progressPersen: number }) =>
       request<OpnameItem>(`/financial/opname/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     hapus: (id: number) => request<{ message: string }>(`/financial/opname/${id}`, { method: 'DELETE' }),

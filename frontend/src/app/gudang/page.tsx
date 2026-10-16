@@ -135,7 +135,7 @@ function GudangPageInner() {
     }
 
     setUser(stored);
-    setTaker(stored.name);
+    setTaker('');
     setSiapDicek(true);
 
     const scopeAwal = searchParams.get('scope');
@@ -244,6 +244,11 @@ function GudangPageInner() {
   async function submitCheckout() {
     if (!scope) return;
 
+    if (!taker.trim()) {
+      setSubmitError('Nama pengambil wajib diisi');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
@@ -265,6 +270,10 @@ function GudangPageInner() {
       setNamaPengambilSukses(namaPengambil);
       setWaktuTransaksi(waktu);
       setNomorTransaksi(`SO-${tanggalRingkas}-${String(idAcuan).padStart(4, '0')}`);
+      setCart({});
+      setNrp('');
+      setTaker('');
+      setDepartment('');
       setLangkah('sukses');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Checkout gagal, coba lagi');
@@ -676,7 +685,7 @@ function GudangPageInner() {
 
             <div className={styles.field}>
               <label>Nama pengambil *</label>
-              <input className={styles.input} value={taker} onChange={(event) => setTaker(event.target.value)} placeholder="Nama lengkap" />
+              <input className={styles.input} value={taker} onChange={(event) => setTaker(event.target.value)} placeholder="Nama lengkap" required autoComplete="off" />
             </div>
 
             <div className={styles.field}>

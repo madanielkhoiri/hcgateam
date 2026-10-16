@@ -1812,6 +1812,7 @@ enum EngineerDocumentType {
   DAFTAR_PERALATAN
   KOMISIONING_ALAT_BERAT
   CHECKLIST_TAHAPAN
+  OPNAME_PEKERJAAN
 }
 
 /**
@@ -2535,12 +2536,14 @@ model OpnamePekerjaan {
   fileUrl        String?             @map("file_url")
   status         StatusApprovalEprom @default(PENDING)
   komentar       String?             @db.Text
+  revisionRootId Int?                @map("revision_root_id")
   createdAt      DateTime            @default(now()) @map("created_at")
   updatedAt      DateTime            @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, status])
+  @@index([revisionRootId])
   @@map("eprom_opname_pekerjaan")
 }
 

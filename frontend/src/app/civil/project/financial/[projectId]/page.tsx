@@ -35,7 +35,7 @@ export default function FinancialDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [progressPersen, setProgressPersen] = useState("");
   const [fileBaru, setFileBaru] = useState<File[]>([]);
-  const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
+  const [revisiItem, setRevisiItem] = useState<OpnameItem | null>(null);
   const [editItem, setEditItem] = useState<OpnameItem | null>(null);
   const [editPersen, setEditPersen] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -68,12 +68,14 @@ export default function FinancialDetailPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const daftarFile: Array<File | null> = fileBaru.length ? fileBaru : [null];
+      if (revisiItem && fileBaru.length === 0) throw new Error("File revisi wajib dipilih");
+      const daftarFile: Array<File | null> = revisiItem ? [fileBaru[0]] : fileBaru.length ? fileBaru : [null];
       await Promise.all(daftarFile.map((file) =>
-        epromApi.financial.buat({ projectId, progressPersen: Number(progressPersen) }, file),
+        epromApi.financial.buat({ projectId, progressPersen: Number(progressPersen), revisiDariId: revisiItem?.id }, file),
       ));
       setProgressPersen("");
       setFileBaru([]);
+      setRevisiItem(null);
       muatItems();
       window.dispatchEvent(new Event("eprom-financial-updated"));
     } catch (err) {
@@ -83,15 +85,11 @@ export default function FinancialDetailPage() {
     }
   }
 
-  async function review(item: OpnameItem, status: "APPROVED" | "REJECTED") {
-    const komentar = komentarInput[item.id];
-    try {
-      await epromApi.financial.review(item.id, status, komentar || undefined);
-      muatItems();
-      window.dispatchEvent(new Event("eprom-financial-updated"));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menyimpan review");
-    }
+  function mulaiRevisi(item: OpnameItem) {
+    setRevisiItem(item);
+    setProgressPersen(String(item.progressPersen));
+    setFileBaru([]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function bukaEdit(item: OpnameItem) {
@@ -158,6 +156,11 @@ export default function FinancialDetailPage() {
 
         {(boleh || vendorSaya) && (
           <form className={engineerStyles.formCard} onSubmit={tambah} style={{ marginBottom: 18 }}>
+            {revisiItem && (
+              <div style={{ width: "100%", color: "#b45309", fontWeight: 700 }}>
+                Upload revisi R{String((revisiItem.revision ?? 0) + 1).padStart(2, "0")} dari Opname progress {revisiItem.progressPersen}%
+              </div>
+            )}
             <label>
               Progress (%)
               <input
@@ -174,15 +177,20 @@ export default function FinancialDetailPage() {
               File Pendukung
               <input
                 type="file"
-                multiple
+                multiple={!revisiItem}
                 accept="*/*"
                 onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
               />
               {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
             </label>
             <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
-              {submitting ? "Menyimpan..." : "Unggah Baru"}
+              {submitting ? "Menyimpan..." : revisiItem ? "Upload Revisi" : "Unggah Baru"}
             </button>
+            {revisiItem && (
+              <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setRevisiItem(null); setProgressPersen(""); setFileBaru([]); }}>
+                Batal Revisi
+              </button>
+            )}
           </form>
         )}
 
@@ -197,15 +205,17 @@ export default function FinancialDetailPage() {
               className={`${engineerStyles.itemRow} ${engineerStyles[`itemStatus_${item.status}`]}`}
             >
               <div className={engineerStyles.itemRowTop}>
-                <strong>Progress {item.progressPersen}%</strong>
+                <strong>
+                  Progress {item.progressPersen}%{item.revision && item.revision > 0 ? ` - R${String(item.revision).padStart(2, "0")}` : ""}
+                </strong>
                 <span className={`${engineerStyles.statusPill} ${engineerStyles[`status_${item.status}`]}`}>
                   {LABEL_STATUS_APPROVAL[item.status]}
                 </span>
               </div>
 
               <div className={engineerStyles.itemRowMeta}>
-                {item.fileUrl ? (
-                  <a href={urlFileEprom(item.fileUrl)} target="_blank" rel="noreferrer">
+                {item.effectiveFileUrl ?? item.fileUrl ? (
+                  <a href={urlFileEprom(item.effectiveFileUrl ?? item.fileUrl!)} target="_blank" rel="noreferrer">
                     <FileText size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />
                     Lihat File
                   </a>
@@ -218,27 +228,12 @@ export default function FinancialDetailPage() {
 
               {boleh && item.status === "PENDING" && (
                 <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
-                  <input
-                    placeholder="Komentar (opsional)"
-                    value={komentarInput[item.id] ?? ""}
-                    onChange={(e) =>
-                      setKomentarInput((cur) => ({ ...cur, [item.id]: e.target.value }))
-                    }
-                  />
-                  <button
-                    type="button"
-                    className={engineerStyles.secondaryButton}
-                    onClick={() => review(item, "APPROVED")}
+                  <Link
+                    className={engineerStyles.primaryButton}
+                    href={`/civil/project/financial/${projectId}/approval/${item.id}`}
                   >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    className={engineerStyles.dangerButton}
-                    onClick={() => review(item, "REJECTED")}
-                  >
-                    Reject
-                  </button>
+                    Review Dokumen
+                  </Link>
                 </div>
               )}
 
@@ -261,6 +256,17 @@ export default function FinancialDetailPage() {
                     <Trash2 size={13} />
                   </button>
                 </div>
+              )}
+
+              {item.status === "REJECTED" && (boleh || vendorSaya) && (
+                <button
+                  type="button"
+                  className={engineerStyles.secondaryButton}
+                  style={{ marginTop: 10 }}
+                  onClick={() => mulaiRevisi(item)}
+                >
+                  Upload Revisi
+                </button>
               )}
             </div>
           ))}
