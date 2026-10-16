@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query,
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { Aktor, type AktorPostingan } from '../postingan/postingan-aktor';
-import { BarangRkbDto, SimpanMonitoringRkbDto, TambahBarangRkbDto } from './dto/monitoring-rkb.dto';
+import { BarangRkbDto, SimpanMonitoringRkbDto, SimpanProjectRkbDto, TambahBarangRkbDto } from './dto/monitoring-rkb.dto';
 import { MonitoringRkbService } from './monitoring-rkb.service';
 
 @Controller('monitoring-rkb')
@@ -10,7 +10,12 @@ import { MonitoringRkbService } from './monitoring-rkb.service';
 @RequireAccessKey('GA_MONITORING_RKB')
 export class MonitoringRkbController {
   constructor(private readonly service: MonitoringRkbService) {}
-  @Get() daftar(@Query('kategori') kategori?: string, @Query('status') status?: string, @Query('cari') cari?: string) { return this.service.daftar(kategori, status, cari); }
+  @Get() daftar(@Query('kategori') kategori?: string, @Query('status') status?: string, @Query('cari') cari?: string, @Query('projectId') projectId?: string) { return this.service.daftar(kategori, status, cari, projectId ? Number(projectId) : undefined); }
+  @Get('projects') daftarProject() { return this.service.daftarProject(); }
+  @Get('projects/:id') detailProject(@Param('id', ParseIntPipe) id: number) { return this.service.detailProject(id); }
+  @Post('projects') buatProject(@Aktor() aktor: AktorPostingan, @Body() dto: SimpanProjectRkbDto) { return this.service.buatProject(aktor.id, dto); }
+  @Patch('projects/:id') ubahProject(@Param('id', ParseIntPipe) id: number, @Body() dto: SimpanProjectRkbDto) { return this.service.ubahProject(id, dto); }
+  @Delete('projects/:id') hapusProject(@Param('id', ParseIntPipe) id: number) { return this.service.hapusProject(id); }
   @Get(':id') detail(@Param('id', ParseIntPipe) id: number) { return this.service.detail(id); }
   @Post() buat(@Aktor() aktor: AktorPostingan, @Body() dto: SimpanMonitoringRkbDto) { return this.service.buat(aktor.id, dto); }
   @Post(':id/barang') tambahBarang(@Param('id', ParseIntPipe) id: number, @Body() dto: TambahBarangRkbDto) { return this.service.tambahBarang(id, dto.barang); }

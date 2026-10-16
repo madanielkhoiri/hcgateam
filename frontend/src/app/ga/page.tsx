@@ -45,7 +45,7 @@ const gaTree: MenuTreeNode[] = [
     title: 'Monitoring RKB',
     description: 'Pantau RKB Project dan Maintenance lengkap dengan rincian barang serta status pengadaan.',
     status: 'Tersedia',
-    href: '/ga/monitoring-rkb',
+    href: '/ga/monitoring-rkb/dashboard',
     icon: ClipboardList,
     accessKey: ACCESS_KEYS.GA_MONITORING_RKB,
     accent: '#0868f6',

@@ -2,7 +2,7 @@ import { KategoriRkb, StatusRkb } from '@prisma/client';
 import { MonitoringRkbService } from './monitoring-rkb.service';
 
 const dto = (jumlah = 2) => ({
-  tanggal: '2026-10-16', nomorRkb: 'RKB-001', kategori: KategoriRkb.PROJECT, status: StatusRkb.WAITING_APPROVAL,
+  projectId: 10, tanggal: '2026-10-16', nomorRkb: 'RKB-001', kategori: KategoriRkb.PROJECT, status: StatusRkb.WAITING_APPROVAL,
   barang: Array.from({ length: jumlah }, (_, i) => ({ namaBarang: `Barang ${i + 1}`, qty: i + 1, satuan: 'PCS' })),
 });
 
@@ -10,9 +10,10 @@ describe('MonitoringRkbService', () => {
   function setup() {
     const model = { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
     const item = { deleteMany: jest.fn(), createMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() };
-    const prisma: any = { monitoringRkb: model, monitoringRkbBarang: item };
+    const project = { findMany: jest.fn(), findUnique: jest.fn().mockResolvedValue({ id: 10, kategori: KategoriRkb.PROJECT, rkb: [] }), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
+    const prisma: any = { monitoringRkb: model, monitoringRkbBarang: item, monitoringRkbProject: project };
     prisma.$transaction = jest.fn((callback) => callback(prisma));
-    return { service: new MonitoringRkbService(prisma), model, item };
+    return { service: new MonitoringRkbService(prisma), model, item, project };
   }
 
   it('menyimpan seluruh barang tanpa batas tetap', async () => {
