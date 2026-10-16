@@ -139,37 +139,25 @@
 .canvasArea {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   max-height: 74vh;
   padding: 24px;
   overflow: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
-}
-.canvasArea:has(.inkLayer[style*="auto"]) {
-  touch-action: none;
 }
 .pageSurface {
   position: relative;
   width: fit-content;
   flex: 0 0 auto;
   align-self: flex-start;
+  margin-inline: auto;
   background: #fff;
   box-shadow: 0 8px 28px rgb(0 0 0 / 24%);
-}
-.pageSurface:has(.canvasFit) {
-  width: 100%;
-  max-width: 100%;
 }
 .canvas {
   display: block;
   width: auto;
   max-width: none;
   height: auto;
-}
-.canvasFit {
-  width: 100%;
-  max-width: 100%;
 }
 .inkLayer {
   position: absolute;
@@ -180,11 +168,11 @@
   pointer-events: none;
 }
 .inkLayer:has(polyline) { pointer-events: auto; }
-.textAnnotation { position: absolute; z-index: 6; min-width: 80px; max-width: 38%; padding: 4px 7px; color: #111; background: rgb(255 255 170 / 90%); border: 1px dashed #b08b00; cursor: move; overflow: visible; white-space: pre-wrap; user-select: none; touch-action: none; }
+.textAnnotation { position: absolute; z-index: 6; min-width: 80px; max-width: 38%; padding: 4px 7px; color: #111; background: rgb(255 255 170 / 90%); border: 1px dashed #b08b00; cursor: move; overflow: visible; white-space: pre-wrap; user-select: none; }
 .textAnnotationActive { border: 2px solid #ef7100; box-shadow: 0 0 0 2px rgb(239 113 0 / 20%); }
 .textResizeHandle,.textRotateHandle { position: absolute; left: 50%; z-index: 2; display: block; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px #555; }
-.textResizeHandle { right: -8px; bottom: -8px; left: auto; width: 16px; height: 16px; background: #ef7100; cursor: nwse-resize; touch-action: none; }
-.textRotateHandle { top: -28px; width: 14px; height: 14px; background: #0868f6; cursor: grab; touch-action: none; }
+.textResizeHandle { right: -8px; bottom: -8px; left: auto; width: 16px; height: 16px; background: #ef7100; cursor: nwse-resize; }
+.textRotateHandle { top: -28px; width: 14px; height: 14px; background: #0868f6; cursor: grab; }
 .colorControl { flex: 0 0 auto !important; align-items: center; }
 .colorControl input { width: 38px; height: 30px; padding: 0; border: 0; background: transparent; }
 .brushControl { flex: 0 0 120px !important; }
@@ -192,11 +180,9 @@
   position: absolute;
   z-index: 2;
   box-sizing: border-box;
-  touch-action: none;
   cursor: move;
   border: 1px dashed #ef7100;
   user-select: none;
-  touch-action: none;
 }
 .signatureOverlayActive {
   z-index: 3;
@@ -345,9 +331,5 @@
   }
   .actions {
     flex-direction: column;
-  }
-  .actions button {
-    width: 100%;
-    min-height: 44px;
   }
 }
