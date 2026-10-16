@@ -30,9 +30,6 @@ export class SimpanMonitoringRkbDto {
   @IsNotEmpty()
   nomorRkb: string;
 
-  @IsEnum(KategoriRkb)
-  kategori: KategoriRkb;
-
   @IsEnum(StatusRkb)
   status: StatusRkb;
 
