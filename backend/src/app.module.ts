@@ -63,6 +63,7 @@ import { IrModule } from './ir/ir.module';
 import { PostinganModule } from './postingan/postingan.module';
 import { AktivitasModule } from './aktivitas/aktivitas.module';
 import { CivilTps3rModule } from './civil-tps3r/civil-tps3r.module';
+import { MonitoringRkbModule } from './monitoring-rkb/monitoring-rkb.module';
 import { DriveModule } from './drive/drive.module';
 import { AlbumModule } from './album/album.module';
 import { KipModule } from './kip/kip.module';
@@ -131,6 +132,7 @@ import { KwitansiObatModule } from './kwitansi-obat/kwitansi-obat.module';
     PostinganModule,
     AktivitasModule,
     CivilTps3rModule,
+    MonitoringRkbModule,
     DriveModule,
     AlbumModule,
     KipModule,

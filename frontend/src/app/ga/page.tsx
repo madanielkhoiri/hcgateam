@@ -13,6 +13,7 @@ import {
   HardHat,
   Home,
   MessageSquareText,
+  ClipboardList,
   Scissors,
   Ticket,
   TreePine,
@@ -39,6 +40,17 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 const gaTree: MenuTreeNode[] = [
+  {
+    key: 'GA_MONITORING_RKB',
+    title: 'Monitoring RKB',
+    description: 'Pantau RKB Project dan Maintenance lengkap dengan rincian barang serta status pengadaan.',
+    status: 'Tersedia',
+    href: '/ga/monitoring-rkb',
+    icon: ClipboardList,
+    accessKey: ACCESS_KEYS.GA_MONITORING_RKB,
+    accent: '#0868f6',
+    soft: '#eaf2ff',
+  },
   {
     key: 'GA_INVENTORY',
     title: 'Inventory',
