@@ -1005,7 +1005,7 @@ export const epromApi = {
       tipe: TipeProgress,
       projectId: number,
       file: File | null,
-      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number; tanggal?: string },
+      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number; tanggal?: string; mingguKe?: number },
     ) => {
       const form = new FormData();
       if (file) form.append('file', file);
@@ -1014,6 +1014,7 @@ export const epromApi = {
         form.append('planned', String(dataMingguan.planned));
         form.append('actual', String(dataMingguan.actual));
         if (dataMingguan.tanggal) form.append('tanggal', dataMingguan.tanggal);
+        if (dataMingguan.mingguKe !== undefined) form.append('mingguKe', String(dataMingguan.mingguKe));
       }
       return request<ProgressItem>(`/progress/${tipe}?projectId=${projectId}`, {
         method: 'POST',
@@ -1032,7 +1033,7 @@ export const epromApi = {
       tipe: TipeProgress,
       id: number,
       file: File | null,
-      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number; tanggal?: string },
+      dataMingguan?: { namaPekerjaan: string; planned: number; actual: number; tanggal?: string; mingguKe?: number },
     ) => {
       const form = new FormData();
       if (file) form.append('file', file);
@@ -1041,6 +1042,7 @@ export const epromApi = {
         form.append('planned', String(dataMingguan.planned));
         form.append('actual', String(dataMingguan.actual));
         if (dataMingguan.tanggal) form.append('tanggal', dataMingguan.tanggal);
+        if (dataMingguan.mingguKe !== undefined) form.append('mingguKe', String(dataMingguan.mingguKe));
       }
       return request<ProgressItem>(`/progress/${tipe}/${id}`, { method: 'PATCH', body: form });
     },

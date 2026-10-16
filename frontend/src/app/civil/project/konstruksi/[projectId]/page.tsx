@@ -156,7 +156,7 @@ export default function KonstruksiDetailPage() {
         <PerformaTab tipe={tab as "tta" | "kta"} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
       )}
       {tab && (TAB_PROGRESS_LAINNYA as string[]).includes(tab) && (
-        <ProgressTab tipe={tab as TipeProgress} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
+        <ProgressTab tipe={tab as TipeProgress} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} project={project} />
       )}
       {tab === "sosialisasi-jsa" && (
         <SosialisasiTab projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
@@ -442,7 +442,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   );
 }
 
-function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: TipeProgress }) {
+function ProgressTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps & { tipe: TipeProgress; project: Project | null }) {
   const mingguan = tipe === "progress-mingguan";
   const formTerstruktur = tipe === "inspeksi-area" || tipe === "progress-harian";
 
@@ -456,6 +456,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [planned, setPlanned] = useState("");
   const [actual, setActual] = useState("");
   const [tanggalUpload, setTanggalUpload] = useState(() => new Date().toISOString().slice(0, 10));
+  const [mingguKe, setMingguKe] = useState("");
   const [editProgressId, setEditProgressId] = useState<number | null>(null);
 
   const muat = useCallback(() => {
@@ -476,6 +477,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setPlanned("");
     setActual("");
     setTanggalUpload(new Date().toISOString().slice(0, 10));
+    setMingguKe("");
     setEditProgressId(null);
   }, [muat]);
 
@@ -489,8 +491,8 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     event.preventDefault();
 
     if (mingguan) {
-      if (!namaPekerjaan.trim() || planned === "" || actual === "") {
-        setError("Nama Pekerjaan, Planned, dan Actual wajib diisi");
+      if (!mingguKe || !namaPekerjaan.trim() || planned === "" || actual === "") {
+        setError("Week, Nama Pekerjaan, Planned, dan Actual wajib diisi");
         return;
       }
     } else if (fileBaru.length === 0 && editProgressId === null) {
@@ -502,7 +504,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setError(null);
     try {
       const data = mingguan
-          ? { namaPekerjaan: namaPekerjaan.trim(), planned: Number(planned), actual: Number(actual), tanggal: tanggalUpload }
+          ? { namaPekerjaan: namaPekerjaan.trim(), planned: Number(planned), actual: Number(actual), mingguKe: Number(mingguKe) }
           : { namaPekerjaan: "", planned: 0, actual: 0, tanggal: tanggalUpload };
       if (editProgressId !== null) {
         await epromApi.progress.ubah(tipe, editProgressId, fileBaru[0] ?? null, data);
@@ -516,6 +518,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
       setPlanned("");
       setActual("");
       setTanggalUpload(new Date().toISOString().slice(0, 10));
+      setMingguKe("");
       setEditProgressId(null);
       muat();
     } catch (err) {
@@ -531,6 +534,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     setPlanned(item.planned === undefined ? "" : String(item.planned));
     setActual(item.actual === undefined ? "" : String(item.actual));
     setTanggalUpload((item.uploadedAt ?? item.tanggal ?? new Date().toISOString()).slice(0, 10));
+    setMingguKe(item.mingguKe === undefined ? "" : String(item.mingguKe));
     setFileBaru([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -549,6 +553,22 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
       setError(err instanceof Error ? err.message : "Gagal menghapus data");
     }
   }
+
+  const pilihanMinggu = (() => {
+    if (!mingguan || !project?.kontrak.tanggalMulai || !project.kontrak.tanggalSelesai) return [];
+    const mulai = new Date(`${project.kontrak.tanggalMulai.slice(0, 10)}T00:00:00`);
+    const selesai = new Date(`${project.kontrak.tanggalSelesai.slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(mulai.getTime()) || Number.isNaN(selesai.getTime()) || selesai < mulai) return [];
+    const total = Math.max(1, Math.ceil((Math.floor((selesai.getTime() - mulai.getTime()) / 86400000) + 1) / 7));
+    return Array.from({ length: total }, (_, index) => {
+      const awal = new Date(mulai);
+      awal.setDate(mulai.getDate() + index * 7);
+      const akhir = new Date(awal);
+      akhir.setDate(awal.getDate() + 6);
+      if (akhir > selesai) akhir.setTime(selesai.getTime());
+      return { nomor: index + 1, label: `Week ${index + 1} (${formatTanggal(awal.toISOString())} - ${formatTanggal(akhir.toISOString())})` };
+    });
+  })();
 
   return (
     <div className={engineerStyles.panel}>
@@ -575,6 +595,13 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
         <form className={engineerStyles.formCard} onSubmit={unggah} style={{ marginBottom: 18 }}>
           {mingguan && (
             <>
+              <label>
+                Week Laporan
+                <select value={mingguKe} onChange={(e) => setMingguKe(e.target.value)} disabled={terkunci || pilihanMinggu.length === 0} required>
+                  <option value="">Pilih week project</option>
+                  {pilihanMinggu.map((week) => <option key={week.nomor} value={week.nomor}>{week.label}</option>)}
+                </select>
+              </label>
               <label>
                 Nama Pekerjaan
                 <input
@@ -613,10 +640,10 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
               </label>
             </>
           )}
-          <label>
+          {!mingguan && <label>
             Tanggal Upload
             <input type="date" value={tanggalUpload} onChange={(e) => setTanggalUpload(e.target.value)} disabled={terkunci} required />
-          </label>
+          </label>}
           <label>
             File {mingguan && "(opsional)"}
             <input
@@ -631,7 +658,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             {submitting ? "Menyimpan..." : editProgressId !== null ? "Simpan Perubahan" : mingguan ? "Simpan Update" : "Unggah"}
           </button>
           {editProgressId !== null && (
-            <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setEditProgressId(null); setNamaPekerjaan(""); setPlanned(""); setActual(""); setFileBaru([]); }}>
+            <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setEditProgressId(null); setNamaPekerjaan(""); setPlanned(""); setActual(""); setMingguKe(""); setFileBaru([]); }}>
               Batal Edit
             </button>
           )}
@@ -647,8 +674,9 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
           <table className={engineerStyles.table}>
             <thead>
               <tr>
+                <th>Week</th>
                 <th>Pekerjaan</th>
-                <th>Tanggal</th>
+                <th>Tanggal Upload</th>
                 <th>Planned</th>
                 <th>Actual</th>
                 <th>Deviasi</th>
@@ -660,6 +688,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             <tbody>
               {items.map((item) => (
                 <tr key={item.id} className={terlambat(item) ? engineerStyles.rowLate : undefined}>
+                  <td>Week {item.mingguKe ?? "-"}</td>
                   <td>{item.namaPekerjaan}</td>
                   <td>{formatTanggal(item.uploadedAt)}</td>
                   <td>{item.planned}%</td>
