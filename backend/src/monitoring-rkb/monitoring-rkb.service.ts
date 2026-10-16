@@ -3,18 +3,22 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SimpanMonitoringRkbDto } from './dto/monitoring-rkb.dto';
 
-const includeBarang = { barang: { orderBy: { urutan: 'asc' as const } } };
+const includeBarang = { barang: { orderBy: { urutan: 'asc' as const } }, project: true };
 
 @Injectable()
 export class MonitoringRkbService {
   constructor(private readonly prisma: PrismaService) {}
 
-  daftar(kategori?: string, status?: string, cari?: string) {
+  daftar(kategori?: string, status?: string, cari?: string, projectId?: number) {
     return this.prisma.monitoringRkb.findMany({
       where: {
         ...(kategori ? { kategori: kategori as any } : {}),
         ...(status ? { status: status as any } : {}),
-        ...(cari?.trim() ? { nomorRkb: { contains: cari.trim(), mode: 'insensitive' as const } } : {}),
+        ...(projectId ? { projectId } : {}),
+        ...(cari?.trim() ? { OR: [
+          { nomorRkb: { contains: cari.trim(), mode: 'insensitive' as const } },
+          { project: { namaProject: { contains: cari.trim(), mode: 'insensitive' as const } } },
+        ] } : {}),
       },
       include: includeBarang,
       orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
@@ -28,12 +32,14 @@ export class MonitoringRkbService {
   }
 
   async buat(createdById: number, dto: SimpanMonitoringRkbDto) {
+    const project = await this.detailProject(dto.projectId);
     try {
       return await this.prisma.monitoringRkb.create({
         data: {
           tanggal: new Date(dto.tanggal),
+          projectId: dto.projectId,
           nomorRkb: dto.nomorRkb.trim(),
-          kategori: dto.kategori,
+          kategori: project.kategori,
           status: dto.status,
           createdById,
           barang: { create: (dto.barang ?? []).map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), urutan })) },
@@ -45,6 +51,7 @@ export class MonitoringRkbService {
 
   async ubah(id: number, dto: SimpanMonitoringRkbDto) {
     await this.detail(id);
+    const project = await this.detailProject(dto.projectId);
     try {
       return await this.prisma.$transaction(async (tx) => {
         if (dto.barang !== undefined) {
@@ -53,7 +60,7 @@ export class MonitoringRkbService {
         return tx.monitoringRkb.update({
           where: { id },
           data: {
-            tanggal: new Date(dto.tanggal), nomorRkb: dto.nomorRkb.trim(), kategori: dto.kategori, status: dto.status,
+            tanggal: new Date(dto.tanggal), projectId: dto.projectId, nomorRkb: dto.nomorRkb.trim(), kategori: project.kategori, status: dto.status,
             ...(dto.barang !== undefined ? { barang: { create: dto.barang.map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), urutan })) } } : {}),
           },
           include: includeBarang,
@@ -66,6 +73,40 @@ export class MonitoringRkbService {
     await this.detail(id);
     await this.prisma.monitoringRkb.delete({ where: { id } });
     return { message: 'Data RKB berhasil dihapus' };
+  }
+
+  daftarProject() {
+    return this.prisma.monitoringRkbProject.findMany({
+      include: { rkb: { include: { barang: true }, orderBy: [{ tanggal: 'desc' }, { id: 'desc' }] } },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  async detailProject(id: number) {
+    const project = await this.prisma.monitoringRkbProject.findUnique({
+      where: { id },
+      include: { rkb: { include: { barang: { orderBy: { urutan: 'asc' } } }, orderBy: [{ tanggal: 'desc' }, { id: 'desc' }] } },
+    });
+    if (!project) throw new NotFoundException('Project RKB tidak ditemukan');
+    return project;
+  }
+
+  buatProject(createdById: number, dto: { namaProject: string; kategori: any }) {
+    return this.prisma.monitoringRkbProject.create({ data: { namaProject: dto.namaProject.trim(), kategori: dto.kategori, createdById }, include: { rkb: true } });
+  }
+
+  async ubahProject(id: number, dto: { namaProject: string; kategori: any }) {
+    await this.detailProject(id);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.monitoringRkb.updateMany({ where: { projectId: id }, data: { kategori: dto.kategori } });
+      return tx.monitoringRkbProject.update({ where: { id }, data: { namaProject: dto.namaProject.trim(), kategori: dto.kategori }, include: { rkb: true } });
+    });
+  }
+
+  async hapusProject(id: number) {
+    await this.detailProject(id);
+    await this.prisma.monitoringRkbProject.delete({ where: { id } });
+    return { message: 'Project RKB berhasil dihapus' };
   }
 
   async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: string }[]) {

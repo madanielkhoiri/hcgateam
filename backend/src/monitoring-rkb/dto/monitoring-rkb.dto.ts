@@ -18,6 +18,11 @@ export class BarangRkbDto {
 }
 
 export class SimpanMonitoringRkbDto {
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  projectId: number;
+
   @IsDateString()
   tanggal: string;
 
@@ -36,6 +41,15 @@ export class SimpanMonitoringRkbDto {
   @ValidateNested({ each: true })
   @Type(() => BarangRkbDto)
   barang?: BarangRkbDto[];
+}
+
+export class SimpanProjectRkbDto {
+  @IsString()
+  @IsNotEmpty()
+  namaProject: string;
+
+  @IsEnum(KategoriRkb)
+  kategori: KategoriRkb;
 }
 
 export class TambahBarangRkbDto {

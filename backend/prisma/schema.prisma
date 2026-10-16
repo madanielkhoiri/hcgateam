@@ -3209,8 +3209,22 @@ enum StatusRkb {
   CLOSE
 }
 
+model MonitoringRkbProject {
+  id          Int             @id @default(autoincrement())
+  namaProject String          @map("nama_project")
+  kategori    KategoriRkb
+  createdById Int             @map("created_by_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  rkb         MonitoringRkb[]
+
+  @@index([kategori])
+  @@map("ga_monitoring_rkb_project")
+}
+
 model MonitoringRkb {
   id          Int                   @id @default(autoincrement())
+  projectId   Int                   @map("project_id")
   tanggal     DateTime              @db.Date
   nomorRkb    String                @unique @map("nomor_rkb")
   kategori    KategoriRkb
@@ -3219,8 +3233,9 @@ model MonitoringRkb {
   createdAt   DateTime              @default(now()) @map("created_at")
   updatedAt   DateTime              @updatedAt @map("updated_at")
   barang      MonitoringRkbBarang[]
+  project     MonitoringRkbProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([kategori, status])
+  @@index([projectId, status])
   @@index([tanggal])
   @@map("ga_monitoring_rkb")
 }
