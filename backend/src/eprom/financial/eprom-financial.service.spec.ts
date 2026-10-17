@@ -90,12 +90,14 @@ describe('EpromFinancialService.review', () => {
     );
   });
 
-  it('menolak review ulang item yang sudah tidak PENDING', async () => {
-    const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
+  it('mengizinkan Owner mengubah status item yang sudah direview', async () => {
+    const { service, update } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(service.review(aktor(UserRole.OWNER), 1, { status: 'REJECTED' } as any)).rejects.toThrow(
-      'sudah direview sebelumnya',
-    );
+    await service.review(aktor(UserRole.OWNER), 1, { status: 'REJECTED', komentar: 'Revisi' } as any);
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 1 },
+      data: expect.objectContaining({ status: 'REJECTED', komentar: 'Revisi' }),
+    }));
   });
 
   it('berhasil review dengan komentar ter-trim', async () => {
@@ -117,10 +119,11 @@ describe('EpromFinancialService.hapus', () => {
     await expect(service.hapus(aktor(UserRole.OWNER), 1)).rejects.toThrow(NotFoundException);
   });
 
-  it('menolak hapus item yang sudah direview', async () => {
-    const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
+  it('mengizinkan Owner menghapus item yang sudah direview', async () => {
+    const { service, deleteFn } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(service.hapus(aktor(UserRole.OWNER), 1)).rejects.toThrow('sudah direview tidak dapat dihapus');
+    await service.hapus(aktor(UserRole.OWNER), 1);
+    expect(deleteFn).toHaveBeenCalledWith({ where: { id: 1 } });
   });
 
   it('berhasil hapus item PENDING dan file fisiknya', async () => {
@@ -160,12 +163,11 @@ describe('EpromFinancialService.ubah', () => {
     );
   });
 
-  it('menolak ubah opname yang sudah direview', async () => {
-    const { service } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
+  it('mengizinkan Owner mengubah opname yang sudah direview', async () => {
+    const { service, update } = buatService({ item: itemFixture({ status: StatusApprovalEprom.APPROVED }) });
 
-    await expect(service.ubah(aktor(UserRole.OWNER), 1, { progressPersen: 60 })).rejects.toThrow(
-      'sudah direview tidak dapat diubah',
-    );
+    await service.ubah(aktor(UserRole.OWNER), 1, { progressPersen: 60 });
+    expect(update).toHaveBeenCalledWith({ where: { id: 1 }, data: { progressPersen: 60 } });
   });
 
   it('berhasil mengubah progressPersen opname PENDING', async () => {

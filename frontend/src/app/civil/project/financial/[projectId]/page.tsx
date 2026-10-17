@@ -228,12 +228,18 @@ export default function FinancialDetailPage() {
 
               {boleh && item.status === "PENDING" && (
                 <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
-                  <Link
-                    className={engineerStyles.primaryButton}
-                    href={`/civil/project/financial/${projectId}/approval/${item.id}`}
-                  >
-                    Review Dokumen
-                  </Link>
+                  {item.fileUrl?.toLowerCase().endsWith(".pdf") ? (
+                    <Link
+                      className={engineerStyles.primaryButton}
+                      href={`/civil/project/financial/${projectId}/approval/${item.id}`}
+                    >
+                      Review Dokumen
+                    </Link>
+                  ) : (
+                    <button type="button" className={engineerStyles.secondaryButton} disabled>
+                      Review Dokumen
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -258,7 +264,7 @@ export default function FinancialDetailPage() {
                 </div>
               )}
 
-              {item.status === "REJECTED" && (boleh || vendorSaya) && (
+              {item.status === "REJECTED" && vendorSaya && (
                 <button
                   type="button"
                   className={engineerStyles.secondaryButton}
@@ -267,6 +273,35 @@ export default function FinancialDetailPage() {
                 >
                   Upload Revisi
                 </button>
+              )}
+
+              {boleh && item.status !== "PENDING" && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  {item.fileUrl?.toLowerCase().endsWith(".pdf") && (
+                    <Link
+                      className={engineerStyles.secondaryButton}
+                      href={`/civil/project/financial/${projectId}/approval/${item.id}`}
+                    >
+                      Edit Status
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className={engineerStyles.iconButton}
+                    onClick={() => bukaEdit(item)}
+                    title="Edit"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className={engineerStyles.iconButtonDanger}
+                    onClick={() => hapus(item)}
+                    title="Hapus"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
