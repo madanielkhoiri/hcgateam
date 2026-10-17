@@ -5,6 +5,7 @@ export const TAHAPAN_PROJECT_TAMBANG = [
   'reviewApprovalAi',
   'pengecekanArea',
   'dokumenProject',
+  'dokumenProjectTidakBerlaku',
   'kickOffMeeting',
   'pelaksanaan',
   'komisioning',

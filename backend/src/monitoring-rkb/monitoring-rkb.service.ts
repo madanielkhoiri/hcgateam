@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, StatusRkb } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SimpanMonitoringRkbDto } from './dto/monitoring-rkb.dto';
 
@@ -74,6 +74,11 @@ export class MonitoringRkbService {
     await this.detail(id);
     await this.prisma.monitoringRkb.delete({ where: { id } });
     return { message: 'Data RKB berhasil dihapus' };
+  }
+
+  async ubahStatus(id: number, status: StatusRkb) {
+    await this.detail(id);
+    return this.prisma.monitoringRkb.update({ where: { id }, data: { status }, include: includeBarang });
   }
 
   daftarProject() {

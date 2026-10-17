@@ -55,3 +55,8 @@ export class TambahBarangRkbDto {
   @Type(() => BarangRkbDto)
   barang: BarangRkbDto[];
 }
+
+export class UbahStatusRkbDto {
+  @IsEnum(StatusRkb)
+  status: StatusRkb;
+}

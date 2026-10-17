@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowLeft, Edit3, History, Plus, Trash2, X } from 'lucide-react';
+import { Check, Edit3, History, Plus, Trash2, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ACCESS_KEYS, clearSession, getAccessToken, getStoredUser, hasAccess } from '@/lib/access-control';
@@ -9,6 +8,7 @@ import {
   civilMonitoringProjectApi,
   TAHAPAN_PROJECT_TAMBANG,
   type MonitoringProjectTambang,
+  type FieldProjectTambang,
   type RiwayatMonitoringProject,
   type TahapanProjectTambang,
 } from '@/lib/civil-monitoring-project-api';
@@ -17,7 +17,7 @@ import styles from './monitoring-project.module.css';
 const LABEL: Record<TahapanProjectTambang, string> = {
   pengajuanProjectCharter: 'Pengajuan Project Charter',
   reviewApprovalAi: 'Review Approval AI',
-  pengecekanArea: 'Pengecekan Area',
+  pengecekanArea: 'Pengecekan Izin Area',
   dokumenProject: 'Dokumen Project',
   kickOffMeeting: 'Kick Off Meeting',
   pelaksanaan: 'Pelaksanaan',
@@ -77,10 +77,14 @@ export default function MonitoringProjectInfrastrukturTambangPage() {
     finally { setMenyimpan(false); }
   }
 
-  async function toggle(item: MonitoringProjectTambang, field: TahapanProjectTambang) {
+  async function toggle(item: MonitoringProjectTambang, field: FieldProjectTambang) {
     const key = `${item.id}-${field}`;
     setMengubah(key); setError('');
-    setData((current) => current.map((row) => row.id === item.id ? { ...row, [field]: !row[field] } : row));
+    setData((current) => current.map((row) => row.id === item.id ? {
+      ...row, [field]: !row[field],
+      ...(field === 'dokumenProject' && !row[field] ? { dokumenProjectTidakBerlaku: false } : {}),
+      ...(field === 'dokumenProjectTidakBerlaku' && !row[field] ? { dokumenProject: false } : {}),
+    } : row));
     try {
       const hasil = await civilMonitoringProjectApi.ubahTahapan(item.id, field, !item[field]);
       setData((current) => current.map((row) => row.id === item.id ? hasil : row));
@@ -106,18 +110,11 @@ export default function MonitoringProjectInfrastrukturTambangPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <div>
-          <Link href="/civil" className={styles.back}><ArrowLeft size={16} /> Pilihan Civil</Link>
           <h1>Monitoring Project Infrastruktur Tambang</h1>
           <p>Pantau setiap tahapan pekerjaan dari Project Charter sampai selesai.</p>
         </div>
         <button className={styles.primary} onClick={bukaTambah}><Plus size={17} /> Tambah Pekerjaan</button>
       </div>
-
-      <section className={styles.summary}>
-        <div><span>Total Pekerjaan</span><strong>{data.length}</strong></div>
-        <div><span>Sedang Berjalan</span><strong>{data.filter((item) => !item.selesai).length}</strong></div>
-        <div><span>Selesai</span><strong>{data.filter((item) => item.selesai).length}</strong></div>
-      </section>
 
       <section className={styles.panel}>
         <div className={styles.toolbar}>
@@ -130,12 +127,13 @@ export default function MonitoringProjectInfrastrukturTambangPage() {
               <thead><tr><th>No</th><th className={styles.namaCol}>Nama Pekerjaan</th>{TAHAPAN_PROJECT_TAMBANG.map((field) => <th key={field}>{LABEL[field]}</th>)}<th>Progress</th><th>Terakhir Diubah</th><th>Aksi</th></tr></thead>
               <tbody>
                 {tampil.map((item, index) => {
+                  const totalDinilai = TAHAPAN_PROJECT_TAMBANG.length - (item.dokumenProjectTidakBerlaku ? 1 : 0);
                   const selesai = TAHAPAN_PROJECT_TAMBANG.filter((field) => item[field]).length;
-                  const persen = Math.round((selesai / TAHAPAN_PROJECT_TAMBANG.length) * 100);
+                  const persen = Math.round((selesai / totalDinilai) * 100);
                   return <tr key={item.id}>
                     <td>{index + 1}</td><td className={styles.nama}><strong>{item.namaPekerjaan}</strong></td>
-                    {TAHAPAN_PROJECT_TAMBANG.map((field) => <td key={field} className={styles.checkCell}><input type="checkbox" checked={item[field]} disabled={mengubah === `${item.id}-${field}`} onChange={() => toggle(item, field)} aria-label={`${LABEL[field]} ${item.namaPekerjaan}`} /></td>)}
-                    <td><div className={styles.progress}><span style={{ width: `${persen}%` }} /></div><small>{selesai}/8 ({persen}%)</small></td>
+                    {TAHAPAN_PROJECT_TAMBANG.map((field) => <td key={field} className={styles.checkCell}>{field === 'dokumenProject' ? <div className={styles.documentChoice}><button className={item.dokumenProject ? styles.choiceActive : ''} disabled={mengubah?.startsWith(`${item.id}-`)} onClick={() => toggle(item, 'dokumenProject')} title="Checklist"><Check size={15}/></button><button className={item.dokumenProjectTidakBerlaku ? styles.choiceRejected : ''} disabled={mengubah?.startsWith(`${item.id}-`)} onClick={() => toggle(item, 'dokumenProjectTidakBerlaku')} title="Tidak berlaku"><X size={15}/></button></div> : <input type="checkbox" checked={item[field]} disabled={mengubah === `${item.id}-${field}`} onChange={() => toggle(item, field)} aria-label={`${LABEL[field]} ${item.namaPekerjaan}`} />}</td>)}
+                    <td><div className={styles.progress}><span style={{ width: `${persen}%` }} /></div><small>{selesai}/{totalDinilai} ({persen}%)</small></td>
                     <td><span>{item.updatedByName}</span><small>{formatWaktu(item.updatedAt)} WITA</small></td>
                     <td><div className={styles.actions}><button onClick={() => bukaEdit(item)} title="Edit nama"><Edit3 size={15} /></button><button onClick={() => bukaRiwayat(item)} title="Riwayat"><History size={15} /></button><button className={styles.danger} onClick={() => hapus(item)} title="Hapus"><Trash2 size={15} /></button></div></td>
                   </tr>;

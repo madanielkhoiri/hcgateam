@@ -34,6 +34,7 @@ export const monitoringRkbApi = {
   buat: (data: MonitoringRkbInput) => request<MonitoringRkb>('', { method: 'POST', body: JSON.stringify(data) }),
   detail: (id: number) => request<MonitoringRkb>(`/${id}`),
   ubah: (id: number, data: MonitoringRkbInput) => request<MonitoringRkb>(`/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  ubahStatus: (id: number, status: StatusRkb) => request<MonitoringRkb>(`/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
   tambahBarang: (id: number, barang: BarangRkb[]) => request<MonitoringRkb>(`/${id}/barang`, { method: 'POST', body: JSON.stringify({ barang }) }),
   ubahBarang: (id: number, barangId: number, barang: BarangRkb) => request<MonitoringRkb>(`/${id}/barang/${barangId}`, { method: 'PATCH', body: JSON.stringify(barang) }),

@@ -3376,6 +3376,7 @@ model MonitoringProjectTambang {
   reviewApprovalAi         Boolean  @default(false) @map("review_approval_ai")
   pengecekanArea           Boolean  @default(false) @map("pengecekan_area")
   dokumenProject           Boolean  @default(false) @map("dokumen_project")
+  dokumenProjectTidakBerlaku Boolean @default(false) @map("dokumen_project_tidak_berlaku")
   kickOffMeeting           Boolean  @default(false) @map("kick_off_meeting")
   pelaksanaan              Boolean  @default(false)
   komisioning              Boolean  @default(false)
