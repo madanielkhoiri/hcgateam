@@ -71,14 +71,25 @@ export class CivilMonitoringProjectService {
     const nilaiLama = Boolean(lama[dto.field as TahapanProjectTambang]);
     if (nilaiLama === dto.value) return lama;
     const actorName = this.namaAktor(aktor);
+    const pasangan = dto.field === 'dokumenProject' ? 'dokumenProjectTidakBerlaku'
+      : dto.field === 'dokumenProjectTidakBerlaku' ? 'dokumenProject' : null;
+    const data: Record<string, boolean | number | string> = {
+      [dto.field]: dto.value, updatedById: aktor.id, updatedByName: actorName,
+    };
+    if (pasangan && dto.value) data[pasangan] = false;
     return this.prisma.$transaction(async (tx) => {
       const project = await tx.monitoringProjectTambang.update({
         where: { id },
-        data: { [dto.field]: dto.value, updatedById: aktor.id, updatedByName: actorName },
+        data,
       });
       await tx.monitoringProjectTambangRiwayat.create({
         data: { projectId: id, field: dto.field, nilaiSebelum: String(nilaiLama), nilaiSesudah: String(dto.value), actorId: aktor.id, actorName },
       });
+      if (pasangan && dto.value && Boolean(lama[pasangan])) {
+        await tx.monitoringProjectTambangRiwayat.create({
+          data: { projectId: id, field: pasangan, nilaiSebelum: 'true', nilaiSesudah: 'false', actorId: aktor.id, actorName },
+        });
+      }
       return project;
     });
   }

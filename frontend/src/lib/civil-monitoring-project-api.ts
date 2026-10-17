@@ -7,6 +7,7 @@ export const TAHAPAN_PROJECT_TAMBANG = [
   'kickOffMeeting', 'pelaksanaan', 'komisioning', 'selesai',
 ] as const;
 export type TahapanProjectTambang = (typeof TAHAPAN_PROJECT_TAMBANG)[number];
+export type FieldProjectTambang = TahapanProjectTambang | 'dokumenProjectTidakBerlaku';
 
 export type MonitoringProjectTambang = {
   id: number;
@@ -15,6 +16,7 @@ export type MonitoringProjectTambang = {
   reviewApprovalAi: boolean;
   pengecekanArea: boolean;
   dokumenProject: boolean;
+  dokumenProjectTidakBerlaku: boolean;
   kickOffMeeting: boolean;
   pelaksanaan: boolean;
   komisioning: boolean;
@@ -51,7 +53,7 @@ export const civilMonitoringProjectApi = {
   daftar: () => request<MonitoringProjectTambang[]>(''),
   buat: (namaPekerjaan: string) => request<MonitoringProjectTambang>('', { method: 'POST', body: JSON.stringify({ namaPekerjaan }) }),
   ubahNama: (id: number, namaPekerjaan: string) => request<MonitoringProjectTambang>(`/${id}/nama`, { method: 'PATCH', body: JSON.stringify({ namaPekerjaan }) }),
-  ubahTahapan: (id: number, field: TahapanProjectTambang, value: boolean) => request<MonitoringProjectTambang>(`/${id}/tahapan`, { method: 'PATCH', body: JSON.stringify({ field, value }) }),
+  ubahTahapan: (id: number, field: FieldProjectTambang, value: boolean) => request<MonitoringProjectTambang>(`/${id}/tahapan`, { method: 'PATCH', body: JSON.stringify({ field, value }) }),
   hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
   riwayat: (id: number) => request<RiwayatMonitoringProject[]>(`/${id}/riwayat`),
 };

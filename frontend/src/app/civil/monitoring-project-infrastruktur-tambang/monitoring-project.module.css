@@ -19,6 +19,10 @@
 .nama strong { font-size: 13px; }
 .checkCell { text-align: center !important; }
 .checkCell input { width: 19px; height: 19px; accent-color: #087a70; cursor: pointer; }
+.documentChoice { display: flex; justify-content: center; gap: 5px; }
+.documentChoice button { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid #d6e1ec; border-radius: 7px; color: #73849a; background: #fff; cursor: pointer; }
+.documentChoice .choiceActive { color: #fff; border-color: #087a70; background: #087a70; }
+.documentChoice .choiceRejected { color: #fff; border-color: #dc3030; background: #dc3030; }
 .progress { width: 105px; height: 7px; background: #e2eaf3; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
 .progress span { display: block; height: 100%; background: #10a275; }
 .actions { display: flex; gap: 6px; }
@@ -51,6 +55,12 @@
 .projectCard span, .projectCard small { color: #6b7f9e; font-size: 11px; }
 .cardProgress { height: 8px; margin: 16px 0 8px; background: #e2eaf3; border-radius: 10px; overflow: hidden; }
 .cardProgress span { display: block; height: 100%; background: #10a275; }
+.chartPanel { margin-bottom: 16px; }
+.stageChart { display: grid; gap: 12px; padding: 20px; }
+.chartRow { display: grid; grid-template-columns: minmax(180px, 240px) 1fr 45px; align-items: center; gap: 12px; font-size: 12px; }
+.chartRow > div { height: 12px; overflow: hidden; border-radius: 999px; background: #e2eaf3; }
+.chartRow i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #087a70, #14b889); }
+.chartRow strong { text-align: right; }
 @media (max-width: 760px) {
   .page { padding: 16px; }
   .header { align-items: stretch; flex-direction: column; }
