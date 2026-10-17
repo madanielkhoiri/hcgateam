@@ -203,6 +203,7 @@ export default function DaftarRkbProject() {
                         }
                       />
                       <select
+                        className={`${styles.statusSelect} ${styles[classes[b.status ?? "WAITING_APPROVAL"]]}`}
                         value={b.status ?? "WAITING_APPROVAL"}
                         onChange={(e) => ubahBarang(i, "status", e.target.value)}
                       >

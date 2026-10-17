@@ -16,6 +16,11 @@ const label: Record<StatusRkb, string> = {
   WAITING_SUPPLY: "Waiting Supply",
   CLOSE: "Close",
 };
+const statusClass: Record<StatusRkb, string> = {
+  WAITING_APPROVAL: "waitingApproval",
+  WAITING_SUPPLY: "waitingSupply",
+  CLOSE: "close",
+};
 
 export default function DetailRkb() {
   const p = useParams<{ id: string; rkbId: string }>(),
@@ -140,7 +145,7 @@ export default function DetailRkb() {
                     <td>{b.satuan}</td>
                     <td>
                       <select
-                        className={styles.statusSelect}
+                        className={`${styles.statusSelect} ${styles[statusClass[b.status ?? "WAITING_APPROVAL"]]}`}
                         value={b.status ?? "WAITING_APPROVAL"}
                         disabled={statusDiproses === b.id}
                         onChange={(e) => void setStatusBarang(b.id!, e.target.value as StatusRkb)}
