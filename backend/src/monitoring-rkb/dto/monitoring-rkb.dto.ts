@@ -15,6 +15,10 @@ export class BarangRkbDto {
   @IsString()
   @IsNotEmpty()
   satuan: string;
+
+  @IsOptional()
+  @IsEnum(StatusRkb)
+  status?: StatusRkb;
 }
 
 export class SimpanMonitoringRkbDto {

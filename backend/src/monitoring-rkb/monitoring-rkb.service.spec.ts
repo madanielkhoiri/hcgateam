@@ -9,7 +9,7 @@ const dto = (jumlah = 2) => ({
 describe('MonitoringRkbService', () => {
   function setup() {
     const model = { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
-    const item = { deleteMany: jest.fn(), createMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() };
+    const item = { deleteMany: jest.fn(), createMany: jest.fn(), findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]), update: jest.fn() };
     const project = { findMany: jest.fn(), findUnique: jest.fn().mockResolvedValue({ id: 10, kategori: KategoriRkb.PROJECT, rkb: [] }), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
     const prisma: any = { monitoringRkb: model, monitoringRkbBarang: item, monitoringRkbProject: project };
     prisma.$transaction = jest.fn((callback) => callback(prisma));

@@ -3,7 +3,7 @@ import { getAccessToken } from './access-control';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 export type KategoriRkb = 'PROJECT' | 'MAINTENANCE';
 export type StatusRkb = 'WAITING_APPROVAL' | 'WAITING_SUPPLY' | 'CLOSE';
-export type BarangRkb = { id?: number; namaBarang: string; qty: number; satuan: string };
+export type BarangRkb = { id?: number; namaBarang: string; qty: number; satuan: string; status?: StatusRkb };
 export type ProjectRkb = { id:number; namaProject:string; kategori:KategoriRkb; rkb:MonitoringRkb[]; createdAt:string; updatedAt:string };
 export type MonitoringRkb = { id: number; projectId:number; tanggal: string; nomorRkb: string; kategori: KategoriRkb; status: StatusRkb; barang: BarangRkb[]; project?:ProjectRkb; createdAt: string; updatedAt: string };
 export type MonitoringRkbInput = { projectId:number; tanggal:string; nomorRkb:string; status:StatusRkb; barang?:BarangRkb[] };
@@ -38,6 +38,7 @@ export const monitoringRkbApi = {
   hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
   tambahBarang: (id: number, barang: BarangRkb[]) => request<MonitoringRkb>(`/${id}/barang`, { method: 'POST', body: JSON.stringify({ barang }) }),
   ubahBarang: (id: number, barangId: number, barang: BarangRkb) => request<MonitoringRkb>(`/${id}/barang/${barangId}`, { method: 'PATCH', body: JSON.stringify(barang) }),
+  ubahStatusBarang: (id: number, barangId: number, status: StatusRkb) => request<MonitoringRkb>(`/${id}/barang/${barangId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   hapusBarang: (id: number, barangId: number) => request<{ message: string }>(`/${id}/barang/${barangId}`, { method: 'DELETE' }),
   daftarProject: () => request<ProjectRkb[]>('/projects'),
   detailProject: (id:number) => request<ProjectRkb>(`/projects/${id}`),
