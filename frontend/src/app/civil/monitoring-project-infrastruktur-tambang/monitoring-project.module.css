@@ -56,11 +56,14 @@
 .cardProgress { height: 8px; margin: 16px 0 8px; background: #e2eaf3; border-radius: 10px; overflow: hidden; }
 .cardProgress span { display: block; height: 100%; background: #10a275; }
 .chartPanel { margin-bottom: 16px; }
-.stageChart { display: grid; gap: 12px; padding: 20px; }
-.chartRow { display: grid; grid-template-columns: minmax(180px, 240px) 1fr 45px; align-items: center; gap: 12px; font-size: 12px; }
-.chartRow > div { height: 12px; overflow: hidden; border-radius: 999px; background: #e2eaf3; }
-.chartRow i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #087a70, #14b889); }
-.chartRow strong { text-align: right; }
+.barChart { display: grid; grid-template-columns: 48px 1fr; min-height: 300px; padding: 24px 24px 18px; }
+.chartScale { display: flex; flex-direction: column; justify-content: space-between; height: 230px; color: #71819a; font-size: 11px; text-align: right; padding-right: 10px; }
+.chartPlot { display: flex; align-items: flex-end; gap: 22px; min-width: 0; height: 260px; padding: 0 16px; overflow-x: auto; border-left: 1px solid #dbe5ef; border-bottom: 1px solid #dbe5ef; background: repeating-linear-gradient(to bottom,#fff 0,#fff 56px,#e8eef5 57px,#fff 58px); }
+.chartColumn { flex: 1 0 90px; display: grid; grid-template-rows: 20px 210px 30px; align-items: end; justify-items: center; height: 260px; }
+.chartColumn strong { color: #087a70; font-size: 12px; }
+.chartTrack { position: relative; width: min(54px, 70%); height: 210px; }
+.chartTrack i { position: absolute; inset: auto 0 0; min-height: 2px; border-radius: 8px 8px 2px 2px; background: linear-gradient(180deg,#14b889,#087a70); box-shadow: 0 4px 12px rgba(8,122,112,.2); }
+.chartColumn > span { width: 100%; overflow: hidden; color: #566d89; font-size: 10px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 760px) {
   .page { padding: 16px; }
   .header { align-items: stretch; flex-direction: column; }
