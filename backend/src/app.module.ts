@@ -68,6 +68,7 @@ import { DriveModule } from './drive/drive.module';
 import { AlbumModule } from './album/album.module';
 import { KipModule } from './kip/kip.module';
 import { KwitansiObatModule } from './kwitansi-obat/kwitansi-obat.module';
+import { CivilMonitoringProjectModule } from './civil-monitoring-project/civil-monitoring-project.module';
 
 @Module({
   imports: [
@@ -137,6 +138,7 @@ import { KwitansiObatModule } from './kwitansi-obat/kwitansi-obat.module';
     AlbumModule,
     KipModule,
     KwitansiObatModule,
+    CivilMonitoringProjectModule,
     ApprovalSummaryModule,
     PengaduanLayananModule,
     WebPushModule,

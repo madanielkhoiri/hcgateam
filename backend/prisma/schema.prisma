@@ -3368,6 +3368,45 @@ model PengaduanLayananFoto {
   @@map("pengaduan_layanan_foto")
 }
 
+// Monitoring tahapan Project Infrastruktur Tambang (Civil Infras).
+model MonitoringProjectTambang {
+  id                       Int      @id @default(autoincrement())
+  namaPekerjaan            String   @map("nama_pekerjaan")
+  pengajuanProjectCharter  Boolean  @default(false) @map("pengajuan_project_charter")
+  reviewApprovalAi         Boolean  @default(false) @map("review_approval_ai")
+  pengecekanArea           Boolean  @default(false) @map("pengecekan_area")
+  dokumenProject           Boolean  @default(false) @map("dokumen_project")
+  kickOffMeeting           Boolean  @default(false) @map("kick_off_meeting")
+  pelaksanaan              Boolean  @default(false)
+  komisioning              Boolean  @default(false)
+  selesai                  Boolean  @default(false)
+  createdById              Int      @map("created_by_id")
+  createdByName            String   @map("created_by_name")
+  updatedById              Int      @map("updated_by_id")
+  updatedByName            String   @map("updated_by_name")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+  riwayat                  MonitoringProjectTambangRiwayat[]
+
+  @@index([updatedAt])
+  @@map("monitoring_project_tambang")
+}
+
+model MonitoringProjectTambangRiwayat {
+  id            Int      @id @default(autoincrement())
+  projectId     Int      @map("project_id")
+  field         String
+  nilaiSebelum  String?  @map("nilai_sebelum")
+  nilaiSesudah  String?  @map("nilai_sesudah")
+  actorId       Int      @map("actor_id")
+  actorName     String   @map("actor_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+  project       MonitoringProjectTambang @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("monitoring_project_tambang_riwayat")
+}
+
 // ==================================================
 // SELESAI: PENGADUAN LAYANAN
 // ==================================================

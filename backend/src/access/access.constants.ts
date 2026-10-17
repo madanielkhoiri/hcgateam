@@ -356,6 +356,13 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'section',
   },
   {
+    key: 'CIVIL_MONITORING_PROJECT_TAMBANG',
+    title: 'Monitoring Project Infrastruktur Tambang',
+    description: 'Monitoring tahapan pekerjaan infrastruktur tambang dari Project Charter sampai selesai.',
+    parentKey: 'CIVIL_INFRAS',
+    level: 'section',
+  },
+  {
     key: 'GA_PEKERJAAN',
     title: 'Pekerjaan',
     description: 'Work Order dan Serah Terima Pekerjaan.',

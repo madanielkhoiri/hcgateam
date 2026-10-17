@@ -43,6 +43,7 @@ const DAFTAR_DEPARTEMEN = [
   'ENGINEERING',
   'SHE',
   'ICT MD',
+  'SCM - FAW',
 ];
 
 const LABEL_SCOPE: Record<InventoryScopeGudang, string> = {
