@@ -107,10 +107,6 @@ export class EpromFinancialService {
 
     const item = await this.itemAtauThrow(id);
 
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item ini sudah direview sebelumnya');
-    }
-
     let reviewedFilePath: string | undefined;
     if (
       dto.status === 'REJECTED' &&
@@ -239,15 +235,12 @@ export class EpromFinancialService {
     return { ...updated, effectiveFileUrl: approval.signedFilePath, latestApproval: approval };
   }
 
-  /** Ubah persentase progress opname yang masih PENDING. File tidak diganti. */
+  /** Ubah persentase progress. Setelah direview, hanya Owner yang boleh mengubah. */
   async ubah(aktor: AktorEprom, id: number, dto: UbahOpnameDto) {
     const item = await this.itemAtauThrow(id);
 
     await this.akses.wajibAksesProject(aktor, item.projectId);
-
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item yang sudah direview tidak dapat diubah');
-    }
+    if (item.status !== StatusApprovalEprom.PENDING) this.akses.wajibOwner(aktor);
 
     return this.prisma.opnamePekerjaan.update({
       where: { id },
@@ -259,10 +252,7 @@ export class EpromFinancialService {
     const item = await this.itemAtauThrow(id);
 
     await this.akses.wajibAksesProject(aktor, item.projectId);
-
-    if (item.status !== StatusApprovalEprom.PENDING) {
-      throw new BadRequestException('Item yang sudah direview tidak dapat dihapus');
-    }
+    if (item.status !== StatusApprovalEprom.PENDING) this.akses.wajibOwner(aktor);
 
     await this.prisma.opnamePekerjaan.delete({ where: { id } });
 
@@ -320,7 +310,15 @@ export class EpromFinancialService {
     }
     return items.map((item) => {
       const latestApproval = terbaru.get(item.id) ?? null;
-      return { ...item, revision: nomorRevisi.get(item.id) ?? 0, effectiveFileUrl: latestApproval?.signedFilePath ?? item.fileUrl, latestApproval };
+      return {
+        ...item,
+        revision: nomorRevisi.get(item.id) ?? 0,
+        effectiveFileUrl:
+          item.status === StatusApprovalEprom.APPROVED
+            ? latestApproval?.signedFilePath ?? item.fileUrl
+            : item.fileUrl,
+        latestApproval,
+      };
     });
   }
 
