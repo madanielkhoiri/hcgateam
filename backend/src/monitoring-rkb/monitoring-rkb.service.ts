@@ -41,9 +41,9 @@ export class MonitoringRkbService {
           projectId: dto.projectId,
           nomorRkb: dto.nomorRkb.trim(),
           kategori: project.kategori,
-          status: dto.status,
+          status: this.ringkasStatus((dto.barang ?? []).map((item) => item.status ?? dto.status)),
           createdById,
-          barang: { create: (dto.barang ?? []).map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), urutan })) },
+          barang: { create: (dto.barang ?? []).map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), status: item.status ?? dto.status, urutan })) },
         },
         include: includeBarang,
       });
@@ -62,7 +62,7 @@ export class MonitoringRkbService {
           where: { id },
           data: {
             tanggal: new Date(dto.tanggal), projectId: dto.projectId, nomorRkb: dto.nomorRkb.trim(), kategori: project.kategori, status: dto.status,
-            ...(dto.barang !== undefined ? { barang: { create: dto.barang.map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), urutan })) } } : {}),
+            ...(dto.barang !== undefined ? { barang: { create: dto.barang.map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), status: item.status ?? dto.status, urutan })) } } : {}),
           },
           include: includeBarang,
         });
@@ -115,7 +115,7 @@ export class MonitoringRkbService {
     return { message: 'Project RKB berhasil dihapus' };
   }
 
-  async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: string }[]) {
+  async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: string; status?: StatusRkb }[]) {
     const rkb = await this.detail(rkbId);
     if (barang.length === 0) throw new BadRequestException('Minimal satu barang harus diisi');
     await this.prisma.monitoringRkbBarang.createMany({
@@ -124,19 +124,21 @@ export class MonitoringRkbService {
         namaBarang: item.namaBarang.trim(),
         qty: item.qty,
         satuan: item.satuan.trim(),
+        status: item.status ?? StatusRkb.WAITING_APPROVAL,
         urutan: rkb.barang.length + index,
       })),
     });
+    await this.sinkronStatusRkb(rkbId);
     return this.detail(rkbId);
   }
 
-  async ubahBarang(rkbId: number, barangId: number, barang: { namaBarang: string; qty: number; satuan: string }) {
+  async ubahBarang(rkbId: number, barangId: number, barang: { namaBarang: string; qty: number; satuan: string; status?: StatusRkb }) {
     await this.detail(rkbId);
     const lama = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
     if (!lama) throw new NotFoundException('Barang RKB tidak ditemukan');
     await this.prisma.monitoringRkbBarang.update({
       where: { id: barangId },
-      data: { namaBarang: barang.namaBarang.trim(), qty: barang.qty, satuan: barang.satuan.trim() },
+      data: { namaBarang: barang.namaBarang.trim(), qty: barang.qty, satuan: barang.satuan.trim(), ...(barang.status ? { status: barang.status } : {}) },
     });
     return this.detail(rkbId);
   }
@@ -145,7 +147,28 @@ export class MonitoringRkbService {
     await this.detail(rkbId);
     const hasil = await this.prisma.monitoringRkbBarang.deleteMany({ where: { id: barangId, rkbId } });
     if (hasil.count === 0) throw new NotFoundException('Barang RKB tidak ditemukan');
+    await this.sinkronStatusRkb(rkbId);
     return { message: 'Barang RKB berhasil dihapus' };
+  }
+
+  async ubahStatusBarang(rkbId: number, barangId: number, status: StatusRkb) {
+    await this.detail(rkbId);
+    const barang = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
+    if (!barang) throw new NotFoundException('Barang RKB tidak ditemukan');
+    await this.prisma.monitoringRkbBarang.update({ where: { id: barangId }, data: { status } });
+    await this.sinkronStatusRkb(rkbId);
+    return this.detail(rkbId);
+  }
+
+  private ringkasStatus(statuses: StatusRkb[]) {
+    if (statuses.length > 0 && statuses.every((status) => status === StatusRkb.CLOSE)) return StatusRkb.CLOSE;
+    if (statuses.some((status) => status === StatusRkb.WAITING_APPROVAL)) return StatusRkb.WAITING_APPROVAL;
+    return StatusRkb.WAITING_SUPPLY;
+  }
+
+  private async sinkronStatusRkb(rkbId: number) {
+    const semua = await this.prisma.monitoringRkbBarang.findMany({ where: { rkbId }, select: { status: true } });
+    await this.prisma.monitoringRkb.update({ where: { id: rkbId }, data: { status: this.ringkasStatus(semua.map((item) => item.status)) } });
   }
 
   private tanganiDuplikat(error: unknown): never {

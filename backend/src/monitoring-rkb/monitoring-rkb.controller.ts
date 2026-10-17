@@ -20,6 +20,7 @@ export class MonitoringRkbController {
   @Post() buat(@Aktor() aktor: AktorPostingan, @Body() dto: SimpanMonitoringRkbDto) { return this.service.buat(aktor.id, dto); }
   @Post(':id/barang') tambahBarang(@Param('id', ParseIntPipe) id: number, @Body() dto: TambahBarangRkbDto) { return this.service.tambahBarang(id, dto.barang); }
   @Patch(':id/barang/:barangId') ubahBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @Body() dto: BarangRkbDto) { return this.service.ubahBarang(id, barangId, dto); }
+  @Patch(':id/barang/:barangId/status') ubahStatusBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @Body() dto: UbahStatusRkbDto) { return this.service.ubahStatusBarang(id, barangId, dto.status); }
   @Delete(':id/barang/:barangId') hapusBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number) { return this.service.hapusBarang(id, barangId); }
   @Patch(':id/status') ubahStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UbahStatusRkbDto) { return this.service.ubahStatus(id, dto.status); }
   @Patch(':id') ubah(@Param('id', ParseIntPipe) id: number, @Body() dto: SimpanMonitoringRkbDto) { return this.service.ubah(id, dto); }
