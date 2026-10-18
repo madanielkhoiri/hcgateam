@@ -233,6 +233,7 @@ describe('PengajuanService.buatPengajuan — sukses', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          suratTugasId: 17,
           nomorStd: 'STD/017/IX/2026',
           namaFileStd: 'surat-tugas-017.pdf',
           pathFileStd:

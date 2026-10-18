@@ -423,6 +423,85 @@ export class SuratTugasDinasService {
     return this.cetakUlang(dibuat.id);
   }
 
+  async ubah(id: number, dto: BuatSuratTugasDinasDto, aktor: AktorSurat) {
+    const lama = await this.ambilAtauGagal(id);
+    this.wajibBolehKelola(lama, aktor);
+    if (lama.denganAkomodasi !== (dto.denganAkomodasi === true)) {
+      throw new BadRequestException('Jenis STD tidak dapat diubah');
+    }
+    const nomor = dto.nomor.trim();
+    const duplikat = await this.prisma.suratTugasDinas.findFirst({ where: { nomor, id: { not: id } } });
+    if (duplikat) throw new BadRequestException('Nomor surat sudah digunakan');
+
+    const tanggalMulai = new Date(dto.tanggalMulai);
+    const tanggalSelesai = new Date(dto.tanggalSelesai);
+    if (tanggalSelesai < tanggalMulai) throw new BadRequestException('Tanggal selesai tidak boleh sebelum tanggal mulai');
+    const durasiHari = Math.floor((tanggalSelesai.getTime() - tanggalMulai.getTime()) / 86_400_000) + 1;
+    const laundryTersedia = lama.denganAkomodasi && durasiHari >= 3;
+    const karyawan = dto.karyawan;
+    const nrpUnik = new Set(karyawan.map((item) => item.nrp.trim()));
+    if (nrpUnik.size !== karyawan.length) throw new BadRequestException('Karyawan pada surat tugas duplikat');
+
+    const jumlahAkomodasi = lama.denganAkomodasi ? karyawan.reduce((total, item) => total + (item.uangPerjalananNominal ?? 0) + (item.akomodasiNominal ?? 0) + (laundryTersedia ? (item.laundryNominal ?? 0) : 0), 0) : 0;
+    const total = (field: 'uangPerjalananNominal' | 'akomodasiNominal' | 'laundryNominal') => {
+      if (!lama.denganAkomodasi || (field === 'laundryNominal' && !laundryTersedia)) return null;
+      return karyawan.reduce((sum, item) => sum + (item[field] ?? 0), 0) || null;
+    };
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.suratTugasKaryawan.deleteMany({ where: { suratTugasId: id } });
+      await tx.suratTugasDinas.update({
+        where: { id },
+        data: {
+          nomor,
+          tujuanLokasi: dto.tujuanLokasi.trim(),
+          tanggalMulai,
+          tanggalSelesai,
+          keteranganTugas: dto.keteranganTugas.trim(),
+          penginapanHotel: lama.denganAkomodasi ? dto.penginapanHotel?.trim() || null : null,
+          bantuanTransportasi: lama.denganAkomodasi ? dto.bantuanTransportasi?.trim() || null : null,
+          rutePerjalanan: lama.denganAkomodasi ? dto.rutePerjalanan?.trim() || null : null,
+          uangPerjalananNominal: total('uangPerjalananNominal'),
+          akomodasiNominal: total('akomodasiNominal'),
+          laundryNominal: total('laundryNominal'),
+          jumlahAkomodasi,
+          status: StatusSuratTugas.MENUNGGU_SH,
+          alasanTolak: null,
+          disetujuiShOlehId: null,
+          disetujuiShPada: null,
+          disetujuiPjoOlehId: null,
+          disetujuiPjoPada: null,
+          karyawan: { create: karyawan.map((item, index) => ({
+            urutan: index + 1, nrp: item.nrp.trim(), nama: item.nama.trim(), departemen: item.departemen.trim(), jabatan: item.jabatan.trim(),
+            uangPerjalananNominal: lama.denganAkomodasi ? item.uangPerjalananNominal ?? null : null,
+            akomodasiNominal: lama.denganAkomodasi ? item.akomodasiNominal ?? null : null,
+            laundryNominal: laundryTersedia ? item.laundryNominal ?? null : null,
+            frekuensiMakan: lama.denganAkomodasi ? item.frekuensiMakan ?? null : null,
+            ruteTransportasiLokal: lama.denganAkomodasi ? item.ruteTransportasiLokal?.trim() || null : null,
+          })) },
+        },
+      });
+    });
+    return this.cetakUlang(id);
+  }
+
+  async hapus(id: number, aktor: AktorSurat) {
+    const surat = await this.ambilAtauGagal(id);
+    this.wajibBolehKelola(surat, aktor);
+    if (!surat.denganAkomodasi) {
+      const terkait = await this.prisma.suratTugasDinas.count({ where: { suratTugasAsalId: id } });
+      if (terkait > 0) throw new BadRequestException('STD tidak dapat dihapus karena sudah digunakan oleh STD Akomodasi');
+    }
+    await this.prisma.suratTugasDinas.delete({ where: { id } });
+    return { message: 'Surat tugas berhasil dihapus' };
+  }
+
+  private wajibBolehKelola(surat: { dibuatOlehId: number }, aktor: AktorSurat) {
+    if (!this.isAdmin(aktor) && surat.dibuatOlehId !== aktor.id) {
+      throw new ForbiddenException('Hanya pembuat surat atau Admin yang dapat mengubah dan menghapus surat');
+    }
+  }
+
   async setujui(id: number, aktor: AktorSurat) {
     const surat = await this.ambilAtauGagal(id);
     this.wajibBolehSetujuiTahap(aktor, surat.status);

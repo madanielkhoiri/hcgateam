@@ -166,6 +166,8 @@ export const suratTugasApi = {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }),
 
+  hapus: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+
   urlPdf: (filePdf: string) => urlUploads(filePdf),
 };
 

@@ -113,6 +113,7 @@ export class PengajuanService {
     const pengajuan = await this.prisma.pengajuan.create({
       data: {
         idPengguna: pengguna.id,
+        suratTugasId: stdOtomatis?.suratTugasId ?? null,
         nrp: data.nrp && data.nrp.trim() ? data.nrp.trim() : (pengguna.nrp || ''),
         namaPengguna:
           data.nama_pengguna && data.nama_pengguna.trim()
