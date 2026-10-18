@@ -232,6 +232,27 @@
   background: #f8fbff;
 }
 
+.daftarTable th,
+.daftarTable td {
+  text-align: center;
+}
+
+.daftarTable th {
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+.daftarTable td {
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+.daftarTable .rowAksi {
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
 .tableNama {
   display: flex;
   flex-direction: column;

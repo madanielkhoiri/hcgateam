@@ -215,23 +215,37 @@ export function TugasDinasDaftar({
           />
         ) : (
           <div className={styles.tableWrap}>
-            <table className={styles.table}>
+            <table className={`${styles.table} ${styles.daftarTable}`}>
               <thead>
                 <tr>
-                  <th>Aksi</th>
                   <th>Nomor</th>
                   <th>Tujuan/Lokasi</th>
                   <th>Tanggal Tugas</th>
                   <th>Jumlah Karyawan</th>
                   <th>Dibuat Oleh</th>
                   <th>Status</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
 
               <tbody>
                 {daftar.map((item) => (
                   <tr key={item.id}>
+                    <td>{item.nomor}</td>
+                    <td>{item.tujuanLokasi}</td>
                     <td>
+                      {formatTanggal(item.tanggalMulai)} -{" "}
+                      {formatTanggal(item.tanggalSelesai)}
+                    </td>
+                    <td>{item.karyawan.length} orang</td>
+                    <td>{item.dibuatOleh.name}</td>
+                    <td>
+                      <BadgeStatusSurat
+                        nilai={item.status as StatusSuratTugas}
+                      />
+                    </td>
+                    <td>
+                      <div className={styles.rowAksi}>
                       <Link
                         href={`/hc/tugas-dinas/${item.id}`}
                         className={`${styles.tombol} ${styles.tombolLembut} ${styles.tombolKecil}`}
@@ -245,19 +259,7 @@ export function TugasDinasDaftar({
                       <button type="button" className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`} onClick={() => void hapus(item)}>
                         <Trash2 size={12} /> Hapus
                       </button>
-                    </td>
-                    <td>{item.nomor}</td>
-                    <td>{item.tujuanLokasi}</td>
-                    <td>
-                      {formatTanggal(item.tanggalMulai)} -{" "}
-                      {formatTanggal(item.tanggalSelesai)}
-                    </td>
-                    <td>{item.karyawan.length} orang</td>
-                    <td>{item.dibuatOleh.name}</td>
-                    <td>
-                      <BadgeStatusSurat
-                        nilai={item.status as StatusSuratTugas}
-                      />
+                      </div>
                     </td>
                   </tr>
                 ))}
