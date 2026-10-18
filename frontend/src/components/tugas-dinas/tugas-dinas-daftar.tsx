@@ -9,7 +9,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, Plane, Plus } from "lucide-react";
+import { Eye, Pencil, Plane, Plus, Trash2 } from "lucide-react";
 import {
   BadgeStatusSurat,
   Dialog,
@@ -58,6 +58,7 @@ export function TugasDinasDaftar({
   const [halaman, setHalaman] = useState(1);
   const [totalSurat, setTotalSurat] = useState(0);
   const [dialogBuat, setDialogBuat] = useState(false);
+  const [suratDiedit, setSuratDiedit] = useState<SuratTugasDinas | null>(null);
 
   const judul = withAkomodasi ? "STD Akomodasi" : "Surat Tugas Dinas (STD)";
 
@@ -103,6 +104,17 @@ export function TugasDinasDaftar({
     return Array.from({ length: 7 }, (_, index) => tahunSekarang - 5 + index);
   }, []);
 
+  async function hapus(item: SuratTugasDinas) {
+    if (!window.confirm(`Hapus surat ${item.nomor}? Data yang dihapus tidak dapat dikembalikan.`)) return;
+    setGalat(null);
+    try {
+      await suratTugasApi.hapus<{ message: string }>(`/${item.id}`);
+      await muat();
+    } catch (error) {
+      setGalat((error as Error).message);
+    }
+  }
+
   return (
     <>
       <div className={styles.pageHead}>
@@ -125,7 +137,7 @@ export function TugasDinasDaftar({
           <button
             type="button"
             className={styles.tombol}
-            onClick={() => setDialogBuat(true)}
+            onClick={() => { setSuratDiedit(null); setDialogBuat(true); }}
           >
             <Plus size={15} />
             Tambah
@@ -227,6 +239,12 @@ export function TugasDinasDaftar({
                         <Eye size={12} />
                         Lihat
                       </Link>
+                      <button type="button" className={`${styles.tombol} ${styles.tombolLembut} ${styles.tombolKecil}`} onClick={() => { setSuratDiedit(item); setDialogBuat(true); }}>
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button type="button" className={`${styles.tombol} ${styles.tombolBahaya} ${styles.tombolKecil}`} onClick={() => void hapus(item)}>
+                        <Trash2 size={12} /> Hapus
+                      </button>
                     </td>
                     <td>{item.nomor}</td>
                     <td>{item.tujuanLokasi}</td>
@@ -258,13 +276,15 @@ export function TugasDinasDaftar({
       {dialogBuat ? (
         <Dialog
           lebar
-          judul={withAkomodasi ? "Tambah STD Akomodasi" : "Tambah Surat Tugas Dinas"}
-          keterangan="Setelah dibuat, surat menunggu persetujuan SH lalu PJO."
-          onTutup={() => setDialogBuat(false)}
+          judul={suratDiedit ? `Edit ${withAkomodasi ? "STD Akomodasi" : "Surat Tugas Dinas"}` : withAkomodasi ? "Tambah STD Akomodasi" : "Tambah Surat Tugas Dinas"}
+          keterangan={suratDiedit ? "Perubahan akan mengembalikan surat ke tahap persetujuan SH." : "Setelah dibuat, surat menunggu persetujuan SH lalu PJO."}
+          onTutup={() => { setDialogBuat(false); setSuratDiedit(null); }}
         >
           <TugasDinasBuatForm
             withAkomodasi={withAkomodasi}
-            onBatal={() => setDialogBuat(false)}
+            initialData={suratDiedit}
+            onBatal={() => { setDialogBuat(false); setSuratDiedit(null); }}
+            onTersimpan={() => { setDialogBuat(false); setSuratDiedit(null); void muat(); }}
           />
         </Dialog>
       ) : null}

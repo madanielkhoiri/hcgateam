@@ -1034,6 +1034,7 @@ enum StatusPengajuan {
 
 model Pengajuan {
   id                    Int             @id @default(autoincrement())
+  suratTugasId          Int?            @map("surat_tugas_id")
   idPengguna            Int             @map("id_pengguna")
   nrp                   String          @map("nrp") @db.VarChar(50)
   namaPengguna          String          @map("nama_pengguna") @db.VarChar(150)
@@ -1059,6 +1060,9 @@ model Pengajuan {
   createdAt             DateTime        @default(now()) @map("dibuat_pada")
   updatedAt             DateTime        @updatedAt @map("diperbarui_pada")
 
+  suratTugas            SuratTugasDinas? @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
+
+  @@index([suratTugasId])
   @@map("pengajuan")
 }
 
@@ -1607,6 +1611,7 @@ model SuratTugasDinas {
   suratTugasAsal   SuratTugasDinas?     @relation("AsalStdAkomodasi", fields: [suratTugasAsalId], references: [id], onDelete: Restrict)
   stdAkomodasi     SuratTugasDinas[]    @relation("AsalStdAkomodasi")
   karyawan         SuratTugasKaryawan[]
+  pengajuanOtomatis Pengajuan[]
 
   @@index([status])
   @@index([dibuatOlehId])

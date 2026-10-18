@@ -6,6 +6,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -77,6 +78,16 @@ export class SuratTugasDinasController {
   @Post()
   buat(@Body() dto: BuatSuratTugasDinasDto, @Req() request: AuthRequest) {
     return this.service.buat(dto, request.user);
+  }
+
+  @Patch(':id')
+  ubah(@Param('id', ParseIntPipe) id: number, @Body() dto: BuatSuratTugasDinasDto, @Req() request: AuthRequest) {
+    return this.service.ubah(id, dto, request.user);
+  }
+
+  @Delete(':id')
+  hapus(@Param('id', ParseIntPipe) id: number, @Req() request: AuthRequest) {
+    return this.service.hapus(id, request.user);
   }
 
   @Patch(':id/cetak-ulang')

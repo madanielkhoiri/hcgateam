@@ -46,6 +46,22 @@ export class SaldoService {
       throw new BadRequestException('Tanggal transfer wajib diisi.');
     }
 
+    const saldoAktif = await this.prisma.saldo.findFirst({
+      where: {
+        idPengguna,
+        statusSaldo: { in: ['AKTIF', 'PAS', 'ADA_SISA', 'MELEBIHI_NOMINAL', 'MENUNGGU_PENGEMBALIAN'] },
+      },
+      select: { id: true },
+    });
+    const deklarasiSaldoAktif = saldoAktif ? await this.prisma.deklarasi.findFirst({
+      where: { idSaldo: saldoAktif.id },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, status: true },
+    }) : null;
+    if (saldoAktif && deklarasiSaldoAktif?.status !== 'DISETUJUI') {
+      throw new BadRequestException('Karyawan masih memiliki saldo aktif yang belum selesai dideklarasikan. Selesaikan deklarasi sebelumnya sebelum menambahkan saldo baru.');
+    }
+
     const saldo = await this.prisma.saldo.create({
       data: {
         idPengguna: idPengguna,

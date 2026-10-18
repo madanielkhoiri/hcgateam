@@ -54,23 +54,34 @@ type PilihanKaryawanForm = {
 export function TugasDinasBuatForm({
   withAkomodasi,
   onBatal,
+  initialData,
+  onTersimpan,
 }: {
   withAkomodasi: boolean;
   onBatal: () => void;
+  initialData?: SuratTugasDinas | null;
+  onTersimpan?: () => void;
 }) {
   const router = useRouter();
 
-  const [nomor, setNomor] = useState("");
-  const [tujuanLokasi, setTujuanLokasi] = useState("");
-  const [tanggalMulai, setTanggalMulai] = useState("");
-  const [tanggalSelesai, setTanggalSelesai] = useState("");
-  const [keteranganTugas, setKeteranganTugas] = useState("");
+  const [nomor, setNomor] = useState(initialData?.nomor ?? "");
+  const [tujuanLokasi, setTujuanLokasi] = useState(initialData?.tujuanLokasi ?? "");
+  const [tanggalMulai, setTanggalMulai] = useState(initialData?.tanggalMulai?.slice(0, 10) ?? "");
+  const [tanggalSelesai, setTanggalSelesai] = useState(initialData?.tanggalSelesai?.slice(0, 10) ?? "");
+  const [keteranganTugas, setKeteranganTugas] = useState(initialData?.keteranganTugas ?? "");
 
-  const [penginapanHotel, setPenginapanHotel] = useState("");
-  const [bantuanTransportasi, setBantuanTransportasi] = useState("");
-  const [rutePerjalanan, setRutePerjalanan] = useState("");
-  const [baris, setBaris] = useState<BarisKaryawan[]>([]);
-  const [suratTugasAsalId, setSuratTugasAsalId] = useState<number | null>(null);
+  const [penginapanHotel, setPenginapanHotel] = useState(initialData?.penginapanHotel ?? "");
+  const [bantuanTransportasi, setBantuanTransportasi] = useState(initialData?.bantuanTransportasi ?? "");
+  const [rutePerjalanan, setRutePerjalanan] = useState(initialData?.rutePerjalanan ?? "");
+  const [baris, setBaris] = useState<BarisKaryawan[]>(() => initialData?.karyawan.map((item) => ({
+    nrp: item.nrp, nama: item.nama, departemen: item.departemen, jabatan: item.jabatan,
+    frekuensiMakan: item.frekuensiMakan ? String(item.frekuensiMakan) : "",
+    uangPerMakan: item.frekuensiMakan && item.uangPerjalananNominal ? String(Math.round(item.uangPerjalananNominal / item.frekuensiMakan)) : "",
+    akomodasiNominal: item.akomodasiNominal ? String(item.akomodasiNominal) : "",
+    ruteTransportasiLokal: item.ruteTransportasiLokal ?? "",
+    laundryNominal: item.laundryNominal ? String(item.laundryNominal) : "",
+  })) ?? []);
+  const [suratTugasAsalId, setSuratTugasAsalId] = useState<number | null>(initialData?.suratTugasAsalId ?? null);
   const durasiHari = durasiHariTugas(tanggalMulai, tanggalSelesai);
   const laundryTersedia = durasiHari >= 3;
 
@@ -249,7 +260,7 @@ export function TugasDinasBuatForm({
     setGalat(null);
 
     try {
-      const hasil = await suratTugasApi.kirim<SuratTugasDinas>("", {
+      const payload = {
         nomor: nomor.trim(),
         denganAkomodasi: withAkomodasi,
         tujuanLokasi: tujuanLokasi.trim(),
@@ -287,9 +298,12 @@ export function TugasDinasBuatForm({
               }
             : {}),
         })),
-      });
-
-      router.push(`/hc/tugas-dinas/${hasil.id}`);
+      };
+      const hasil = initialData
+        ? await suratTugasApi.ubah<SuratTugasDinas>(`/${initialData.id}`, payload)
+        : await suratTugasApi.kirim<SuratTugasDinas>("", payload);
+      if (onTersimpan) onTersimpan();
+      else router.push(`/hc/tugas-dinas/${hasil.id}`);
     } catch (error) {
       setGalat((error as Error).message);
     } finally {
@@ -729,7 +743,7 @@ export function TugasDinasBuatForm({
           disabled={proses || !bisaSimpan}
         >
           <Plus size={15} />
-          {proses ? "Menyimpan..." : "Buat Surat Tugas"}
+          {proses ? "Menyimpan..." : initialData ? "Simpan Perubahan" : "Buat Surat Tugas"}
         </button>
       </div>
     </>
