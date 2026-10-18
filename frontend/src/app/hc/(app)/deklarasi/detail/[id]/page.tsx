@@ -828,21 +828,9 @@ export default function HalamanDetailDeklarasi() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [idDeklarasi, router]);
 
- const handleRefresh = async () => {
- try {
+ const handleRefresh = () => {
  setSedangRefresh(true);
- setPesanError("");
- setPesanSukses("");
- await ambilUlangDataDetail();
- } catch (error) {
- setPesanError(
- error instanceof Error
- ? error.message
- : "Terjadi kesalahan refresh data."
- );
- } finally {
- setSedangRefresh(false);
- }
+ window.location.reload();
  };
 
  const handleUbahStatusDeklarasi = async (
@@ -1754,6 +1742,11 @@ export default function HalamanDetailDeklarasi() {
  Boolean(nota.path_file)
  );
 
+ const notaLampiranPerHalaman = Array.from(
+ { length: Math.ceil(notaLampiranPdf.length / 4) },
+ (_, index) => notaLampiranPdf.slice(index * 4, index * 4 + 4),
+ );
+
  const selisihPdf = jumlahUangMukaPdf - totalDeklarasiPdf;
  const nilaiSelisihPdf = Math.abs(selisihPdf);
  const pihakSelisihPdf =
@@ -1807,7 +1800,12 @@ export default function HalamanDetailDeklarasi() {
  hotel: kolom === "hotel" ? nominal : 0,
  lain_lain: kolom === "lain_lain" ? nominal : 0,
  jumlah: nominal,
- keterangan: formatKategoriNota(nota.kategori_nota).toUpperCase(),
+ keterangan:
+ nota.kategori_nota === "MAKAN" && nota.keterangan_settlement
+ ? `MAKAN - ${String(nota.keterangan_settlement)
+ .replace(/^Waktu makan\s*:\s*/i, "")
+ .toUpperCase()}`
+ : formatKategoriNota(nota.kategori_nota).toUpperCase(),
  };
  });
 
@@ -2079,7 +2077,7 @@ export default function HalamanDetailDeklarasi() {
  <RefreshCw
  className={`h-4 w-4 ${sedangRefresh ? "animate-spin" : ""}`}
  />
- Refresh
+ Refresh PDF
  </button>
 
  {bolehEditDeklarasi && (
@@ -3382,13 +3380,24 @@ export default function HalamanDetailDeklarasi() {
  )}
 
  {deklarasi?.status === "DISETUJUI" &&
- notaLampiranPdf.map((nota, index) => (
- <article className="pdf-page pdf-nota-page" key={`lampiran-nota-${nota.id}`}>
+ notaLampiranPerHalaman.map((kelompokNota, halamanIndex) => (
+ <article className="pdf-page pdf-nota-page" key={`lampiran-halaman-${halamanIndex}`}>
+ <div className="pdf-nota-page-heading">
+ LAMPIRAN NOTA • {deklarasi.kode_deklarasi}
+ </div>
+ <div className="pdf-nota-grid">
+ {kelompokNota.map((nota, indexDalamHalaman) => {
+ const nomorNota = halamanIndex * 4 + indexDalamHalaman + 1;
+ return (
+ <section className="pdf-nota-card" key={`lampiran-nota-${nota.id}`}>
  <header className="pdf-nota-header">
  <div>
- <div className="pdf-nota-title">LAMPIRAN NOTA {index + 1}</div>
+ <div className="pdf-nota-title">NOTA {nomorNota}</div>
  <div className="pdf-nota-subtitle">
- {deklarasi.kode_deklarasi} - {formatKategoriNota(nota.kategori_nota)}
+ {formatKategoriNota(nota.kategori_nota)}
+ {nota.kategori_nota === "MAKAN" && nota.keterangan_settlement
+ ? ` • ${String(nota.keterangan_settlement).replace(/^Waktu makan\s*:\s*/i, "")}`
+ : ""}
  </div>
  </div>
  <div className="pdf-nota-meta">
@@ -3396,19 +3405,21 @@ export default function HalamanDetailDeklarasi() {
  <strong>{formatRupiah(nota.nominal_final)}</strong>
  </div>
  </header>
-
  <div className="pdf-nota-image-frame">
  <img
  src={urlFile(nota.path_file)}
- alt={`Nota ${index + 1} - ${formatKategoriNota(nota.kategori_nota)}`}
+ alt={`Nota ${nomorNota} - ${formatKategoriNota(nota.kategori_nota)}`}
  className="pdf-nota-image"
  />
  </div>
-
  <footer className="pdf-nota-footer">
  <span>{deklarasi.nama_pengguna} / {deklarasi.nrp}</span>
  <span>{ambilNamaFile(nota.path_file)}</span>
  </footer>
+ </section>
+ );
+ })}
+ </div>
  </article>
  ))}
 
@@ -3878,10 +3889,13 @@ export default function HalamanDetailDeklarasi() {
 
  .pdf-logo-cell {
  text-align: center !important;
+ vertical-align: middle !important;
  padding: 1px !important;
  }
 
  .pdf-logo {
+ display: block !important;
+ margin: 0 auto !important;
  width: 12mm !important;
  height: 12mm !important;
  object-fit: contain !important;
@@ -4136,9 +4150,34 @@ export default function HalamanDetailDeklarasi() {
  box-sizing: border-box;
  break-before: page;
  page-break-before: always;
+ font-family: Arial, Helvetica, sans-serif;
+ }
+
+ .pdf-nota-page-heading {
+ margin-bottom: 3mm;
+ padding-bottom: 2mm;
+ border-bottom: 1px solid #111;
+ font-size: 12px;
+ font-weight: 700;
+ }
+
+ .pdf-nota-grid {
+ display: grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ grid-auto-rows: 126mm;
+ gap: 5mm;
+ }
+
+ .pdf-nota-card {
+ min-width: 0;
+ min-height: 0;
+ padding: 3mm;
+ border: 1px solid #94a3b8;
+ box-sizing: border-box;
  display: flex;
  flex-direction: column;
- font-family: Arial, Helvetica, sans-serif;
+ break-inside: avoid;
+ page-break-inside: avoid;
  }
 
  .pdf-nota-header {
@@ -4171,9 +4210,9 @@ export default function HalamanDetailDeklarasi() {
  .pdf-nota-image-frame {
  flex: 1;
  min-height: 0;
- margin: 5mm 0 3mm;
- border: 1px solid #cbd5e1;
- padding: 4mm;
+ margin: 3mm 0 2mm;
+ border: 1px solid #dbe3ec;
+ padding: 2mm;
  display: flex;
  align-items: center;
  justify-content: center;
@@ -4184,7 +4223,7 @@ export default function HalamanDetailDeklarasi() {
  .pdf-nota-image {
  display: block;
  max-width: 100%;
- max-height: 244mm;
+ max-height: 99mm;
  width: auto;
  height: auto;
  object-fit: contain;
@@ -4213,9 +4252,12 @@ export default function HalamanDetailDeklarasi() {
  .pdf-logo-cell {
  width: 16mm;
  text-align: center;
+ vertical-align: middle;
  }
 
  .pdf-logo {
+ display: block;
+ margin: 0 auto;
  width: 12mm;
  height: 12mm;
  object-fit: contain;
