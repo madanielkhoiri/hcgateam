@@ -232,17 +232,17 @@
   background: #f8fbff;
 }
 
-.daftarTable th,
-.daftarTable td {
+.table.daftarTable thead th,
+.table.daftarTable tbody td {
   text-align: center;
 }
 
-.daftarTable th {
+.table.daftarTable thead th {
   padding-right: 16px;
   padding-left: 16px;
 }
 
-.daftarTable td {
+.table.daftarTable tbody td {
   padding-right: 16px;
   padding-left: 16px;
 }
