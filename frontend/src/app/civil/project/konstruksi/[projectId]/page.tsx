@@ -238,7 +238,8 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
 
   async function reviewChecklist(item: KonstruksiItem, status: "APPROVED" | "REJECTED") {
     try {
-      const inspector = inspectorInput[item.id]?.trim();
+      const inspectorTersimpan = typeof item.formData?.inspector === "string" ? item.formData.inspector.trim() : "";
+      const inspector = inspectorTersimpan || inspectorInput[item.id]?.trim();
       const komentar = komentarInput[item.id]?.trim();
       if (!inspector) throw new Error("Nama Inspector PPA wajib diisi");
       if (status === "REJECTED" && !komentar) throw new Error("Catatan Inspector wajib diisi untuk Reject");
@@ -389,7 +390,13 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
 
             {boleh && item.status === "PENDING" && tipe === "checklist-tahapan" && (
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
-                <input placeholder="Nama Inspector PPA" value={inspectorInput[item.id] ?? ""} onChange={e=>setInspectorInput(cur=>({...cur,[item.id]:e.target.value}))}/>
+                {!item.formData?.inspector && (
+                  <input
+                    placeholder="Nama Inspector PPA"
+                    value={inspectorInput[item.id] ?? ""}
+                    onChange={(e) => setInspectorInput((cur) => ({ ...cur, [item.id]: e.target.value }))}
+                  />
+                )}
                 <input placeholder="Catatan Inspector (wajib untuk Reject)" value={komentarInput[item.id] ?? ""} onChange={e=>setKomentarInput(cur=>({...cur,[item.id]:e.target.value}))}/>
                 <button type="button" className={engineerStyles.secondaryButton} onClick={()=>reviewChecklist(item,"APPROVED")}>Approve</button>
                 <button type="button" className={engineerStyles.dangerButton} onClick={()=>reviewChecklist(item,"REJECTED")}>Reject</button>
