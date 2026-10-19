@@ -49,8 +49,16 @@ async function bootstrap() {
   const httpsOptions = muatHttpsOptionsLokal();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
     ...(httpsOptions ? { httpsOptions } : {}),
   });
+
+  // Review PDF dapat membawa banyak titik coretan. Parser bawaan Express
+  // hanya menerima sekitar 100 KB dan membuat Reject gagal setelah dokumen
+  // diberi banyak anotasi. Batas ini cukup untuk anotasi tanpa membuka ukuran
+  // request yang tidak terkendali.
+  app.useBodyParser('json', { limit: '50mb' });
+  app.useBodyParser('urlencoded', { limit: '50mb', extended: true });
 
   // ==================================================
   // PREFIX SEMUA ENDPOINT
