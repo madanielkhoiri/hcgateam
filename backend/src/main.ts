@@ -56,9 +56,10 @@ async function bootstrap() {
   // Review PDF dapat membawa banyak titik coretan. Parser bawaan Express
   // hanya menerima sekitar 100 KB dan membuat Reject gagal setelah dokumen
   // diberi banyak anotasi. Batas ini cukup untuk anotasi tanpa membuka ukuran
-  // request yang tidak terkendali.
-  app.useBodyParser('json', { limit: '50mb' });
-  app.useBodyParser('urlencoded', { limit: '50mb', extended: true });
+  // request yang tidak terkendali. Kapasitas 200 MB mengakomodasi anotasi
+  // lengkap pada PDF puluhan halaman tanpa membatasi jumlah coretan di UI.
+  app.useBodyParser('json', { limit: '200mb' });
+  app.useBodyParser('urlencoded', { limit: '200mb', extended: true });
 
   // ==================================================
   // PREFIX SEMUA ENDPOINT
