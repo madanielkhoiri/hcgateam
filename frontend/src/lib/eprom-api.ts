@@ -232,7 +232,7 @@ export type DashboardRingkasanEprom = {
   progressTrend: {
     id: number;
     namaProject: string;
-    data: { bulan: string; planned: number; actual: number; deviasi: number }[];
+    data: { bulan: string; week?: string; planned: number; actual: number; deviasi: number }[];
   }[];
   aktivitasTerbaru: { pesan: string; waktu: string }[];
 };

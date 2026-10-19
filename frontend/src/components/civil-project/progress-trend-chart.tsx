@@ -2,6 +2,7 @@
 import { formatBulanSingkat } from "@/lib/eprom-api";
 type Titik = {
   bulan: string;
+  week?: string;
   planned: number;
   actual: number;
   deviasi: number;
@@ -23,8 +24,9 @@ export function ProgressTrendChart({
   seri: Seri[];
   detail?: boolean;
 }) {
+  const kunciX = (titik: Titik) => detail ? titik.bulan : (titik.week ?? titik.bulan);
   const tanggal = Array.from(
-    new Set(seri.flatMap((s) => s.data.map((d) => d.bulan))),
+    new Set(seri.flatMap((s) => s.data.map(kunciX))),
   ).sort((a, b) => {
     const wa = Number(a.match(/\d+/)?.[0] ?? 0);
     const wb = Number(b.match(/\d+/)?.[0] ?? 0);
@@ -47,7 +49,7 @@ export function ProgressTrendChart({
     y = (v: number) => T + ah - (Math.min(maxY, Math.max(0, v)) / maxY) * ah,
     ticks = Array.from({ length: 5 }, (_, i) => Math.round((maxY * i) / 4)),
     path = (d: Titik[], k: "planned" | "actual") =>
-      d.map((a) => `${x(a.bulan)},${y(a[k])}`).join(" ");
+      d.map((a) => `${x(kunciX(a))},${y(a[k])}`).join(" ");
   return (
     <div style={{ width: "100%", overflowX: "auto" }}>
       <svg
@@ -112,13 +114,13 @@ export function ProgressTrendChart({
                   strokeLinecap="round"
                 />
                 {s.data.map((d) => {
-                  const xp = x(d.bulan),
+                  const xp = x(kunciX(d)),
                     yp = y(d.planned),
                     ya = y(d.actual),
                     positive = d.deviasi >= 0,
                     dev = `${positive ? "+" : ""}${d.deviasi}%`;
                   return (
-                    <g key={d.bulan}>
+                    <g key={kunciX(d)}>
                       <circle
                         cx={xp}
                         cy={yp}
@@ -184,8 +186,8 @@ export function ProgressTrendChart({
                 />
                 {s.data.map((d) => (
                   <circle
-                    key={d.bulan}
-                    cx={x(d.bulan)}
+                    key={kunciX(d)}
+                    cx={x(kunciX(d))}
                     cy={y(d.actual)}
                     r={4}
                     fill={WARNA[si % WARNA.length]}
@@ -195,7 +197,7 @@ export function ProgressTrendChart({
                 ))}
                 {s.data.at(-1) && (
                   <text
-                    x={x(s.data.at(-1)!.bulan) + 8}
+                    x={x(kunciX(s.data.at(-1)!)) + 8}
                     y={y(s.data.at(-1)!.actual) + 4}
                     fontSize={12}
                     fontWeight={800}

@@ -502,7 +502,7 @@ export class EpromProgressService {
     const baris = await this.prisma.progressMingguan.findMany({
       where: { projectId },
       orderBy: [{ mingguKe: 'asc' }, { id: 'asc' }],
-      select: { id: true, mingguKe: true, namaPekerjaan: true, planned: true, actual: true },
+      select: { id: true, mingguKe: true, namaPekerjaan: true, planned: true, actual: true, uploadedAt: true },
     });
 
     const perWeek = new Map<number, (typeof baris)[number]>();
@@ -512,7 +512,8 @@ export class EpromProgressService {
     return [...perWeek.entries()].sort(([a], [b]) => a - b).map(([week, snapshot]) => {
       const planned = Number(snapshot?.planned ?? 0);
       const actual = Number(snapshot?.actual ?? 0);
-      return { bulan: `Week ${week}`, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
+      const bulan = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(snapshot.uploadedAt);
+      return { bulan, week: `Week ${week}`, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
     });
   }
 

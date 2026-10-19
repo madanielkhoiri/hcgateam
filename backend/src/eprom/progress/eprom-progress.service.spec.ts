@@ -307,9 +307,9 @@ describe('EpromProgressService.trendMingguan', () => {
     const hasil = await service.trendMingguan(1);
 
     expect(hasil).toEqual([
-      { bulan: 'Week 1', planned: 20, actual: 20, deviasi: 0 },
-      { bulan: 'Week 2', planned: 40, actual: 30, deviasi: -10 },
-      { bulan: 'Week 3', planned: 60, actual: 50, deviasi: -10 },
+      { bulan: '2026-01-15', week: 'Week 1', planned: 20, actual: 20, deviasi: 0 },
+      { bulan: '2026-01-20', week: 'Week 2', planned: 40, actual: 30, deviasi: -10 },
+      { bulan: '2026-02-01', week: 'Week 3', planned: 60, actual: 50, deviasi: -10 },
     ]);
   });
 });
