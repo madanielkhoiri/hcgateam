@@ -24,12 +24,12 @@ function Results({ items, hasil, setHasil }: { items: ChecklistItem[]; hasil: Re
 
 export function ConstructionChecklistPopupV2({ projectName, vendorName, owner, onSubmit, submitting }: { projectName: string; vendorName: string; owner: boolean; onSubmit: (payload: Payload) => Promise<void>; submitting: boolean }) {
   const [open, setOpen] = useState(false);
-  const [data, setData] = useState<Record<string, string>>({ proyek: projectName, vendor: vendorName, kategori: "Struktur", izinKhusus: "Tidak" });
+  const [data, setData] = useState<Record<string, string>>({ proyek: projectName, vendor: vendorName, kategori: "", izinKhusus: "Tidak" });
   const [hasil, setHasil] = useState<Record<string, string>>({});
   const [file, setFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
   const set = (key: string, value: string) => setData(current => ({ ...current, [key]: value }));
-  const jobs = useMemo(() => CONSTRUCTION_INSPECTION_CATALOG.filter(item => item.category === data.kategori && `${item.id} ${item.name}`.toLowerCase().includes(search.toLowerCase())), [data.kategori, search]);
+  const jobs = useMemo(() => CONSTRUCTION_INSPECTION_CATALOG.filter(item => (!data.kategori || item.category === data.kategori) && `${item.id} ${item.name}`.toLowerCase().includes(search.toLowerCase())), [data.kategori, search]);
   const job = useMemo(() => CONSTRUCTION_INSPECTION_CATALOG.find(item => item.id === data.kodePekerjaan), [data.kodePekerjaan]);
   const groups = useMemo(() => ({
     B: COMMON.map((pertanyaan, i) => ({ key: `common-${i}`, bagian: "B", pertanyaan })),
@@ -39,7 +39,7 @@ export function ConstructionChecklistPopupV2({ projectName, vendorName, owner, o
   const checklist = [...groups.B, ...groups.C, ...groups.E];
   const complete = groups.E.length > 0 && checklist.every(item => hasil[item.key]);
   const chooseCategory = (category: string) => { setData(current => ({ ...current, kategori: category, kodePekerjaan: "", jenisPekerjaan: "" })); setHasil({}); setSearch(""); };
-  const chooseJob = (code: string) => { const selected = CONSTRUCTION_INSPECTION_CATALOG.find(item => item.id === code); setData(current => ({ ...current, kodePekerjaan: code, jenisPekerjaan: selected?.name ?? "" })); setHasil({}); };
+  const chooseJob = (code: string) => { const selected = CONSTRUCTION_INSPECTION_CATALOG.find(item => item.id === code); setData(current => ({ ...current, kodePekerjaan: code, jenisPekerjaan: selected?.name ?? "", kategori: selected?.category ?? current.kategori })); setHasil({}); };
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     await onSubmit({ nama: data.jenisPekerjaan, data: { ...data, checklist: checklist.map(item => ({ bagian: item.bagian, pertanyaan: item.pertanyaan, hasil: hasil[item.key] })), statusKesiapan: complete ? "Siap Review" : "Belum Lengkap" }, files: file ? [file] : [] });
@@ -52,7 +52,7 @@ export function ConstructionChecklistPopupV2({ projectName, vendorName, owner, o
       <form onSubmit={submit} style={{ display: "grid", gap: 13, padding: 16 }}>
         <section style={sectionStyle}><h3>A. Informasi Umum Pekerjaan</h3><div style={gridStyle}>
           <Field label="Nama Proyek"><input style={inputStyle} readOnly value={projectName}/></Field><Field label="Kontraktor / Vendor"><input style={inputStyle} readOnly value={vendorName}/></Field><Field label="Tanggal Inspeksi"><input style={inputStyle} type="date" required value={data.tanggal ?? ""} onChange={e => set("tanggal", e.target.value)}/></Field><Field label="Nomor Inspeksi"><input style={inputStyle} required value={data.nomorInspeksi ?? ""} onChange={e => set("nomorInspeksi", e.target.value)}/></Field>
-          <Field label="Kategori"><select style={inputStyle} value={data.kategori} onChange={e => chooseCategory(e.target.value)}>{["Arsitektur", "Struktur", "Elektrikal", "Plumbing"].map(x => <option key={x}>{x}</option>)}</select></Field><Field label="Cari Jenis Pekerjaan"><input style={inputStyle} placeholder="Contoh: pintu, beton, kabel..." value={search} onChange={e => setSearch(e.target.value)}/></Field><Field label={`Jenis Pekerjaan (${jobs.length} pilihan)`}><select style={inputStyle} required value={data.kodePekerjaan ?? ""} onChange={e => chooseJob(e.target.value)}><option value="">Pilih pekerjaan</option>{jobs.map(item => <option key={item.id} value={item.id}>{item.id} — {item.name}</option>)}</select></Field>
+          <Field label="Kategori"><select style={inputStyle} value={data.kategori} onChange={e => chooseCategory(e.target.value)}><option value="">Semua Kategori (383 pekerjaan)</option>{["Arsitektur", "Struktur", "Elektrikal", "Plumbing"].map(x => <option key={x}>{x}</option>)}</select></Field><Field label="Cari Jenis Pekerjaan"><input style={inputStyle} placeholder="Contoh: pintu, beton, kabel..." value={search} onChange={e => setSearch(e.target.value)}/></Field><Field label={`Jenis Pekerjaan (${jobs.length} dari 383)`}><select style={inputStyle} required value={data.kodePekerjaan ?? ""} onChange={e => chooseJob(e.target.value)}><option value="">Pilih pekerjaan</option>{jobs.map((item, index) => <option key={item.id} value={item.id}>{data.kategori ? "" : `${index + 1}. `}{item.id} — {item.name}</option>)}</select></Field>
           <Field label="Gedung / Area"><input style={inputStyle} required value={data.area ?? ""} onChange={e => set("area", e.target.value)}/></Field><Field label="Lantai / Elevasi / Lokasi"><input style={inputStyle} required value={data.lokasi ?? ""} onChange={e => set("lokasi", e.target.value)}/></Field><Field label="Nomor Shop Drawing / Revisi"><input style={inputStyle} required value={data.shopDrawing ?? ""} onChange={e => set("shopDrawing", e.target.value)}/></Field><Field label="Jumlah Manpower"><input style={inputStyle} type="number" min="0" value={data.manpower ?? ""} onChange={e => set("manpower", e.target.value)}/></Field><Field label="Nama Pengawas Vendor"><input style={inputStyle} required value={data.pengawasVendor ?? ""} onChange={e => set("pengawasVendor", e.target.value)}/></Field><Field label="Peralatan Kerja"><input style={inputStyle} value={data.peralatan ?? ""} onChange={e => set("peralatan", e.target.value)}/></Field>
         </div></section>
         <section style={sectionStyle}><h3>B. Kesiapan dan Keselamatan Kerja</h3><Results items={groups.B} hasil={hasil} setHasil={setHasil}/></section>
