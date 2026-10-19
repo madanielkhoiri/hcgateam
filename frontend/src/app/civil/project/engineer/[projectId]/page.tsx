@@ -30,6 +30,12 @@ const PAKAI_NAMA: Record<TipeEngineer, string | null> = {
   "checklist-tahapan": "Nama Tahap",
 };
 
+const TIPE_TANPA_APPROVAL_CORET = new Set<TipeEngineer>([
+  "sertifikasi-pekerjaan",
+  "peralatan-list",
+  "komisioning-alat-berat",
+]);
+
 function namaItem(item: EngineerItem): string | null {
   return item.namaPekerjaan ?? item.namaMaterial ?? item.namaMetode ?? item.namaTahap ?? null;
 }
@@ -79,6 +85,7 @@ export default function EngineerDetailPage() {
   const [rejectItem, setRejectItem] = useState<EngineerItem | null>(null);
   const [alasanReject, setAlasanReject] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
   const [editItem, setEditItem] = useState<EngineerItem | null>(null);
   const [editNama, setEditNama] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -156,6 +163,19 @@ export default function EngineerDetailPage() {
       setError(err instanceof Error ? err.message : "Gagal menyimpan review");
     } finally {
       setRejecting(false);
+    }
+  }
+
+  async function approveTanpaCoretan(item: EngineerItem) {
+    setApprovingId(item.id);
+    setError(null);
+    try {
+      await epromApi.engineer.approveTanpaTandaTangan(tab, item.id);
+      muatItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyetujui dokumen");
+    } finally {
+      setApprovingId(null);
     }
   }
 
@@ -327,7 +347,16 @@ export default function EngineerDetailPage() {
 
               {boleh && item.status === "PENDING" && (
                 <div className={styles.inlineForm} style={{ marginTop: 10 }}>
-                  {item.fileUrl?.toLowerCase().endsWith(".pdf") ? (
+                  {TIPE_TANPA_APPROVAL_CORET.has(tab) ? (
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      disabled={approvingId === item.id}
+                      onClick={() => approveTanpaCoretan(item)}
+                    >
+                      {approvingId === item.id ? "Memproses..." : "Approve"}
+                    </button>
+                  ) : item.fileUrl?.toLowerCase().endsWith(".pdf") ? (
                     <Link
                       className={styles.secondaryButton}
                       href={`/civil/project/engineer/${projectId}/approval/${tab}/${item.id}`}
@@ -357,6 +386,7 @@ export default function EngineerDetailPage() {
               )}
 
               {boleh &&
+                !TIPE_TANPA_APPROVAL_CORET.has(tab) &&
                 !item.fileUrl?.toLowerCase().endsWith(".pdf") && (
                   <p className={styles.signingHint}>
                     Tanda tangan hanya dapat ditempatkan pada dokumen PDF.
@@ -388,7 +418,29 @@ export default function EngineerDetailPage() {
 
               {boleh && item.status !== "PENDING" && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  {item.fileUrl?.toLowerCase().endsWith(".pdf") && (
+                  {TIPE_TANPA_APPROVAL_CORET.has(tab) ? (
+                    item.status === "REJECTED" ? (
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        disabled={approvingId === item.id}
+                        onClick={() => approveTanpaCoretan(item)}
+                      >
+                        {approvingId === item.id ? "Memproses..." : "Ubah ke Approved"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.dangerButton}
+                        onClick={() => {
+                          setRejectItem(item);
+                          setAlasanReject("");
+                        }}
+                      >
+                        Ubah ke Rejected
+                      </button>
+                    )
+                  ) : item.fileUrl?.toLowerCase().endsWith(".pdf") && (
                     <Link
                       className={styles.secondaryButton}
                       href={`/civil/project/engineer/${projectId}/approval/${tab}/${item.id}`}

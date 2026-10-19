@@ -57,6 +57,32 @@ function idPlacement(): string {
   return cryptoApi.randomUUID?.() ?? `placement-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * Coretan pointer dapat menghasilkan ribuan titik berpresisi panjang.
+ * Bulatkan koordinat dan ambil sampel merata agar bentuk tetap sama secara
+ * visual, tetapi payload approval/reject tidak membengkak tanpa batas.
+ */
+function padatkanTitikCoretan(points: string, maksimumTitik = 5000): string {
+  const daftar = points
+    .trim()
+    .split(/\s+/)
+    .map((point) => point.split(",").map(Number))
+    .filter(
+      (point): point is [number, number] =>
+        point.length === 2 && point.every(Number.isFinite),
+    );
+
+  if (daftar.length === 0) return "";
+  const langkah = Math.max(1, Math.ceil(daftar.length / maksimumTitik));
+  const hasil = daftar.filter(
+    (_, index) => index === 0 || index === daftar.length - 1 || index % langkah === 0,
+  );
+
+  return hasil
+    .map(([x, y]) => `${Number(x.toFixed(2))},${Number(y.toFixed(2))}`)
+    .join(" ");
+}
+
 export function EngineerDocumentApproval({
   projectId,
   tipe,
@@ -259,7 +285,7 @@ export function EngineerDocumentApproval({
       return;
     }
     const rect = surfaceRef.current.getBoundingClientRect();
-    const point = `${((event.clientX - rect.left) / rect.width) * 100},${((event.clientY - rect.top) / rect.height) * 100}`;
+    const point = `${(((event.clientX - rect.left) / rect.width) * 100).toFixed(2)},${(((event.clientY - rect.top) / rect.height) * 100).toFixed(2)}`;
     inkRef.current = { id: idPlacement(), page, color: inkColor, width: inkWidth, points: point };
     (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
     setInkStrokes((items) => [...items, inkRef.current!]);
@@ -269,7 +295,8 @@ export function EngineerDocumentApproval({
     const stroke = inkRef.current;
     if (!stroke || !surfaceRef.current) return;
     const rect = surfaceRef.current.getBoundingClientRect();
-    const point = `${((event.clientX - rect.left) / rect.width) * 100},${((event.clientY - rect.top) / rect.height) * 100}`;
+    const point = `${(((event.clientX - rect.left) / rect.width) * 100).toFixed(2)},${(((event.clientY - rect.top) / rect.height) * 100).toFixed(2)}`;
+    if (stroke.points.endsWith(` ${point}`) || stroke.points === point) return;
     const next = { ...stroke, points: `${stroke.points} ${point}` };
     inkRef.current = next;
     setInkStrokes((items) => items.map((item) => item.id === stroke.id ? next : item));
@@ -289,12 +316,21 @@ export function EngineerDocumentApproval({
     event.stopPropagation();
     setSelectedTextId(id);
     const rect = surfaceRef.current.getBoundingClientRect();
+    const elemenTeks = event.currentTarget;
+    const lebarTeks = elemenTeks.offsetWidth / rect.width;
+    const tinggiTeks = elemenTeks.offsetHeight / rect.height;
+    const batasKanan = Math.max(0, 1 - lebarTeks);
+    const batasBawah = Math.max(0, 1 - tinggiTeks);
     const startX = event.clientX;
     const startY = event.clientY;
     const original = textAnnotations.find((item) => item.id === id);
     if (!original) return;
     const move = (pointer: PointerEvent) => {
-      setTextAnnotations((items) => items.map((item) => item.id === id ? { ...item, x: Math.max(0, Math.min(0.85, original.x + (pointer.clientX - startX) / rect.width)), y: Math.max(0, Math.min(0.95, original.y + (pointer.clientY - startY) / rect.height)) } : item));
+      setTextAnnotations((items) => items.map((item) => item.id === id ? {
+        ...item,
+        x: Math.max(0, Math.min(batasKanan, original.x + (pointer.clientX - startX) / rect.width)),
+        y: Math.max(0, Math.min(batasBawah, original.y + (pointer.clientY - startY) / rect.height)),
+      } : item));
     };
     const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
     window.addEventListener("pointermove", move);
@@ -497,7 +533,7 @@ export function EngineerDocumentApproval({
           page,
           color,
           width,
-          points,
+          points: padatkanTitikCoretan(points),
         })),
         textAnnotations: textAnnotations.map(
           ({ page, text, x, y, rotation, size }) => ({
@@ -531,7 +567,7 @@ export function EngineerDocumentApproval({
           page,
           color,
           width,
-          points,
+          points: padatkanTitikCoretan(points),
         }));
       const texts = textAnnotations.map(({ page, text, x, y, rotation, size }) => ({
           page,

@@ -545,7 +545,19 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  saldo.status_deklarasi_aktif === "DRAFT" ||
  saldo.status_deklarasi_aktif === "DITOLAK")
  );
- setPemberitahuanDeklarasi(saldoBelumAjukan ?? null);
+ const sekarang = new Date();
+ const tanggalHariIni = `${sekarang.getFullYear()}-${String(
+ sekarang.getMonth() + 1
+ ).padStart(2, "0")}-${String(sekarang.getDate()).padStart(2, "0")}`;
+ const kunciPemberitahuan = `hcga_deklarasi_peringatan_terakhir_${idPengguna}`;
+ const sudahDitampilkanHariIni =
+ window.localStorage.getItem(kunciPemberitahuan) === tanggalHariIni;
+ if (saldoBelumAjukan && !sudahDitampilkanHariIni) {
+ window.localStorage.setItem(kunciPemberitahuan, tanggalHariIni);
+ setPemberitahuanDeklarasi(saldoBelumAjukan);
+ } else {
+ setPemberitahuanDeklarasi(null);
+ }
  const mapNota: Record<number, DataNota[]> = {};
  await Promise.all(
  (Array.isArray(dataSaldo) ? dataSaldo : [])
