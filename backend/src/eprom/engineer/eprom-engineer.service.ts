@@ -251,7 +251,7 @@ export class EpromEngineerService {
     tipe: TipeEngineer,
     projectId: number,
     dto: BuatEngineerDto,
-    file?: Express.Multer.File,
+    file?: Express.Multer.File | Express.Multer.File[],
   ) {
     await this.akses.wajibAksesProject(aktor, projectId);
 
@@ -263,13 +263,16 @@ export class EpromEngineerService {
       );
     }
 
-    if (tipe === 'komisioning-alat-berat' && !file) {
+    const files = Array.isArray(file) ? file : file ? [file] : [];
+    const primaryFile = files[0];
+
+    if (tipe === 'komisioning-alat-berat' && !primaryFile) {
       throw new BadRequestException('File Komisioning Alat Berat wajib diunggah');
     }
 
     if (
       tipe === 'komisioning-alat-berat' &&
-      extname(file!.originalname).toLowerCase() !== '.pdf'
+      extname(primaryFile!.originalname).toLowerCase() !== '.pdf'
     ) {
       throw new BadRequestException(
         'File Komisioning Alat Berat harus berformat PDF agar dapat di-approve',
@@ -295,15 +298,22 @@ export class EpromEngineerService {
     }
 
     const nama = namaField ? dto.nama!.trim() : null;
-    const fileUrl = file
-      ? this.file.simpanDokumen(file, `project/${projectId}/engineer/${tipe}`)
-      : null;
+    const folder = `project/${projectId}/engineer/${tipe}`;
+    const fileUrls = files.map((item) => this.file.simpanDokumen(item, folder));
+    const fileUrl = fileUrls[0] ?? null;
+    if (tipe === 'checklist-tahapan' && formData) {
+      formData = {
+        ...formData,
+        fileUrls,
+        originalFileNames: files.map((item) => item.originalname),
+      };
+    }
 
     const hasil = await this.delegate(tipe).create({
       data: {
         projectId,
         fileUrl,
-        originalFileName: file?.originalname || null,
+        originalFileName: primaryFile?.originalname || null,
         ...(tipe === 'checklist-tahapan' ? { formData } : {}),
         ...(namaField ? { [namaField]: nama } : {}),
       },
@@ -634,6 +644,13 @@ export class EpromEngineerService {
 
     if (item.fileUrl) {
       this.file.hapus(item.fileUrl);
+    }
+    if (tipe === 'checklist-tahapan') {
+      const formData = item.formData as { fileUrls?: unknown } | null;
+      const fileUrls = Array.isArray(formData?.fileUrls) ? formData.fileUrls : [];
+      fileUrls
+        .filter((url): url is string => typeof url === 'string' && url !== item.fileUrl)
+        .forEach((url) => this.file.hapus(url));
     }
 
     return { message: 'Item berhasil dihapus' };

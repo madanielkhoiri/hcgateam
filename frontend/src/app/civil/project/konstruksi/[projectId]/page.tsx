@@ -225,7 +225,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
     setSubmitting(true);
     setError(null);
     try {
-      await epromApi.engineer.buat("checklist-tahapan", projectId, payload.nama, payload.files[0] ?? null, payload.data);
+      await epromApi.engineer.buat("checklist-tahapan", projectId, payload.nama, payload.files, payload.data);
       muatItems();
       window.dispatchEvent(new Event("eprom-konstruksi-updated"));
     } catch (err) {

@@ -939,11 +939,11 @@ export const epromApi = {
   engineer: {
     daftar: (tipe: TipeEngineer, projectId: number) =>
       request<EngineerItem[]>(`/engineer/${tipe}?projectId=${projectId}`),
-    buat: (tipe: TipeEngineer, projectId: number, nama: string | undefined, file: File | null, formData?: unknown) => {
+    buat: (tipe: TipeEngineer, projectId: number, nama: string | undefined, file: File | File[] | null, formData?: unknown) => {
       const form = new FormData();
       form.append('projectId', String(projectId));
       if (nama) form.append('nama', nama);
-      if (file) form.append('file', file);
+      for (const item of (Array.isArray(file) ? file : file ? [file] : [])) form.append('file', item);
       if (formData) form.append('formData', JSON.stringify(formData));
       return request<EngineerItem>(`/engineer/${tipe}`, { method: 'POST', body: form });
     },
