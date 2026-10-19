@@ -18,7 +18,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -79,7 +79,7 @@ export class EpromEngineerController {
   }
 
   @Post(':tipe')
-  @UseInterceptors(FilesInterceptor('file', 100, { storage: memoryStorage() }))
+  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage(), limits: { files: 100 } }))
   buat(
     @Aktor() aktor: AktorEprom,
     @Param('tipe') tipeRaw: string,
