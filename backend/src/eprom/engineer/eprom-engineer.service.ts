@@ -85,12 +85,23 @@ export class BuatEngineerDto {
   @IsOptional()
   @IsString()
   nama?: string;
+
+  @IsOptional()
+  @IsString()
+  formData?: string;
 }
 
 export class UbahEngineerDto {
   @IsString()
   @IsNotEmpty()
   nama: string;
+}
+
+export class ReviewChecklistFormDto {
+  @IsString() @IsNotEmpty() inspector: string;
+  @IsIn(['APPROVED', 'REJECTED']) status: 'APPROVED' | 'REJECTED';
+  @IsString() @IsNotEmpty() keputusan: string;
+  @IsOptional() @IsString() catatanInspector?: string;
 }
 
 export class ReviewEngineerDto {
@@ -265,6 +276,24 @@ export class EpromEngineerService {
       );
     }
 
+    let formData: Record<string, unknown> | null = null;
+    if (tipe === 'checklist-tahapan' && dto.formData) {
+      try {
+        formData = JSON.parse(dto.formData) as Record<string, unknown>;
+      } catch {
+        throw new BadRequestException('Data form Construction Inspection tidak valid');
+      }
+      const wajib = ['tanggal', 'nomorInspeksi', 'kategori', 'jenisPekerjaan', 'area', 'lokasi', 'shopDrawing', 'pengawasVendor'];
+      if (wajib.some((field) => !String(formData?.[field] ?? '').trim())) {
+        throw new BadRequestException('Lengkapi seluruh informasi wajib pada bagian A-F');
+      }
+      if (!this.akses.isOwner(aktor)) {
+        delete formData.inspector;
+        delete formData.keputusan;
+        delete formData.catatanInspector;
+      }
+    }
+
     const nama = namaField ? dto.nama!.trim() : null;
     const fileUrl = file
       ? this.file.simpanDokumen(file, `project/${projectId}/engineer/${tipe}`)
@@ -275,6 +304,7 @@ export class EpromEngineerService {
         projectId,
         fileUrl,
         originalFileName: file?.originalname || null,
+        ...(tipe === 'checklist-tahapan' ? { formData } : {}),
         ...(namaField ? { [namaField]: nama } : {}),
       },
     });
@@ -339,6 +369,28 @@ export class EpromEngineerService {
         status: StatusApprovalEprom.REJECTED,
         komentar: dto.komentar.trim(),
         ...(reviewedFilePath ? { fileUrl: reviewedFilePath } : {}),
+      },
+    });
+  }
+
+  async reviewChecklistForm(aktor: AktorEprom, id: number, dto: ReviewChecklistFormDto) {
+    this.akses.wajibOwner(aktor);
+    const item = await this.itemAtauThrow('checklist-tahapan', id);
+    const formLama = item.formData && typeof item.formData === 'object' ? item.formData : {};
+    if (dto.status === 'REJECTED' && !dto.catatanInspector?.trim()) {
+      throw new BadRequestException('Catatan Inspector wajib diisi untuk Reject');
+    }
+    return this.delegate('checklist-tahapan').update({
+      where: { id },
+      data: {
+        status: dto.status === 'APPROVED' ? StatusApprovalEprom.APPROVED : StatusApprovalEprom.REJECTED,
+        komentar: dto.catatanInspector?.trim() || null,
+        formData: {
+          ...(formLama as Record<string, unknown>),
+          inspector: dto.inspector.trim(),
+          keputusan: dto.keputusan,
+          catatanInspector: dto.catatanInspector?.trim() || '',
+        },
       },
     });
   }

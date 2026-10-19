@@ -1060,7 +1060,7 @@ model Pengajuan {
   createdAt             DateTime        @default(now()) @map("dibuat_pada")
   updatedAt             DateTime        @updatedAt @map("diperbarui_pada")
 
-  suratTugas            SuratTugasDinas? @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
+  suratTugas SuratTugasDinas? @relation(fields: [suratTugasId], references: [id], onDelete: Cascade)
 
   @@index([suratTugasId])
   @@map("pengajuan")
@@ -1605,12 +1605,12 @@ model SuratTugasDinas {
   createdAt                DateTime         @default(now()) @map("created_at")
   updatedAt                DateTime         @updatedAt @map("updated_at")
 
-  dibuatOleh       User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
-  disetujuiShOleh  User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
-  disetujuiPjoOleh User?                @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
-  suratTugasAsal   SuratTugasDinas?     @relation("AsalStdAkomodasi", fields: [suratTugasAsalId], references: [id], onDelete: Restrict)
-  stdAkomodasi     SuratTugasDinas[]    @relation("AsalStdAkomodasi")
-  karyawan         SuratTugasKaryawan[]
+  dibuatOleh        User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
+  disetujuiShOleh   User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
+  disetujuiPjoOleh  User?                @relation("PenyetujuPjoSuratTugas", fields: [disetujuiPjoOlehId], references: [id], onDelete: SetNull)
+  suratTugasAsal    SuratTugasDinas?     @relation("AsalStdAkomodasi", fields: [suratTugasAsalId], references: [id], onDelete: Restrict)
+  stdAkomodasi      SuratTugasDinas[]    @relation("AsalStdAkomodasi")
+  karyawan          SuratTugasKaryawan[]
   pengajuanOtomatis Pengajuan[]
 
   @@index([status])
@@ -2296,6 +2296,7 @@ model ChecklistKonstruksi {
   originalFileName String?             @map("original_file_name")
   status           StatusApprovalEprom @default(PENDING)
   komentar         String?             @db.Text
+  formData         Json?               @map("form_data")
   createdAt        DateTime            @default(now()) @map("created_at")
   updatedAt        DateTime            @updatedAt @map("updated_at")
 
@@ -2391,6 +2392,7 @@ model TTA {
   projectId     Int      @map("project_id")
   bulan         String
   fileUrl       String?  @map("file_url")
+  formData      Json?    @map("form_data")
   tanggalUpload DateTime @default(now()) @map("tanggal_upload")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -2407,6 +2409,7 @@ model KTA {
   projectId     Int      @map("project_id")
   bulan         String
   fileUrl       String?  @map("file_url")
+  formData      Json?    @map("form_data")
   tanggalUpload DateTime @default(now()) @map("tanggal_upload")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -3376,39 +3379,39 @@ model PengaduanLayananFoto {
 
 // Monitoring tahapan Project Infrastruktur Tambang (Civil Infras).
 model MonitoringProjectTambang {
-  id                       Int      @id @default(autoincrement())
-  namaPekerjaan            String   @map("nama_pekerjaan")
-  pengajuanProjectCharter  Boolean  @default(false) @map("pengajuan_project_charter")
-  reviewApprovalAi         Boolean  @default(false) @map("review_approval_ai")
-  pengecekanArea           Boolean  @default(false) @map("pengecekan_area")
-  dokumenProject           Boolean  @default(false) @map("dokumen_project")
-  dokumenProjectTidakBerlaku Boolean @default(false) @map("dokumen_project_tidak_berlaku")
-  kickOffMeeting           Boolean  @default(false) @map("kick_off_meeting")
-  pelaksanaan              Boolean  @default(false)
-  komisioning              Boolean  @default(false)
-  selesai                  Boolean  @default(false)
-  createdById              Int      @map("created_by_id")
-  createdByName            String   @map("created_by_name")
-  updatedById              Int      @map("updated_by_id")
-  updatedByName            String   @map("updated_by_name")
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @updatedAt @map("updated_at")
-  riwayat                  MonitoringProjectTambangRiwayat[]
+  id                         Int                               @id @default(autoincrement())
+  namaPekerjaan              String                            @map("nama_pekerjaan")
+  pengajuanProjectCharter    Boolean                           @default(false) @map("pengajuan_project_charter")
+  reviewApprovalAi           Boolean                           @default(false) @map("review_approval_ai")
+  pengecekanArea             Boolean                           @default(false) @map("pengecekan_area")
+  dokumenProject             Boolean                           @default(false) @map("dokumen_project")
+  dokumenProjectTidakBerlaku Boolean                           @default(false) @map("dokumen_project_tidak_berlaku")
+  kickOffMeeting             Boolean                           @default(false) @map("kick_off_meeting")
+  pelaksanaan                Boolean                           @default(false)
+  komisioning                Boolean                           @default(false)
+  selesai                    Boolean                           @default(false)
+  createdById                Int                               @map("created_by_id")
+  createdByName              String                            @map("created_by_name")
+  updatedById                Int                               @map("updated_by_id")
+  updatedByName              String                            @map("updated_by_name")
+  createdAt                  DateTime                          @default(now()) @map("created_at")
+  updatedAt                  DateTime                          @updatedAt @map("updated_at")
+  riwayat                    MonitoringProjectTambangRiwayat[]
 
   @@index([updatedAt])
   @@map("monitoring_project_tambang")
 }
 
 model MonitoringProjectTambangRiwayat {
-  id            Int      @id @default(autoincrement())
-  projectId     Int      @map("project_id")
-  field         String
-  nilaiSebelum  String?  @map("nilai_sebelum")
-  nilaiSesudah  String?  @map("nilai_sesudah")
-  actorId       Int      @map("actor_id")
-  actorName     String   @map("actor_name")
-  createdAt     DateTime @default(now()) @map("created_at")
-  project       MonitoringProjectTambang @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id           Int                      @id @default(autoincrement())
+  projectId    Int                      @map("project_id")
+  field        String
+  nilaiSebelum String?                  @map("nilai_sebelum")
+  nilaiSesudah String?                  @map("nilai_sesudah")
+  actorId      Int                      @map("actor_id")
+  actorName    String                   @map("actor_name")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  project      MonitoringProjectTambang @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
   @@map("monitoring_project_tambang_riwayat")

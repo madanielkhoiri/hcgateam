@@ -398,6 +398,7 @@ export type KonstruksiItem = {
   updatedAt: string;
   namaTahap?: string;
   namaPekerjaan?: string;
+  formData?: Record<string, unknown> | null;
 };
 
 export type RingkasanPendingKonstruksi = Record<TipeKonstruksi, number>;
@@ -427,6 +428,7 @@ export type ProgressItem = {
   actual?: string;
   deviasi?: number;
   status?: StatusDeviasi;
+  formData?: Record<string, unknown> | null;
 };
 
 export type JamUploadInfo = {
@@ -937,11 +939,12 @@ export const epromApi = {
   engineer: {
     daftar: (tipe: TipeEngineer, projectId: number) =>
       request<EngineerItem[]>(`/engineer/${tipe}?projectId=${projectId}`),
-    buat: (tipe: TipeEngineer, projectId: number, nama: string | undefined, file: File | null) => {
+    buat: (tipe: TipeEngineer, projectId: number, nama: string | undefined, file: File | null, formData?: unknown) => {
       const form = new FormData();
       form.append('projectId', String(projectId));
       if (nama) form.append('nama', nama);
       if (file) form.append('file', file);
+      if (formData) form.append('formData', JSON.stringify(formData));
       return request<EngineerItem>(`/engineer/${tipe}`, { method: 'POST', body: form });
     },
     reject: (tipe: TipeEngineer, id: number, komentar: string, annotations?: EngineerInkAnnotation[], textAnnotations?: EngineerTextAnnotation[]) =>
@@ -965,6 +968,11 @@ export const epromApi = {
     approveTanpaTandaTangan: (tipe: TipeEngineer, id: number) =>
       request<EngineerItem>(`/engineer/${tipe}/${id}/approve-tanpa-ttd`, {
         method: 'POST',
+      }),
+    reviewChecklistForm: (id: number, payload: { inspector: string; status: 'APPROVED' | 'REJECTED'; keputusan: string; catatanInspector?: string }) =>
+      request<EngineerItem>(`/engineer/checklist-tahapan/${id}/form-review`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
       }),
     ubah: (tipe: TipeEngineer, id: number, nama: string) =>
       request<EngineerItem>(`/engineer/${tipe}/${id}`, {
@@ -1026,7 +1034,7 @@ export const epromApi = {
         body: form,
       });
     },
-    buatForm: (tipe: 'inspeksi-area' | 'progress-harian', projectId: number, data: unknown, files: File[] = []) => {
+    buatForm: (tipe: 'inspeksi-area' | 'progress-harian' | 'tta' | 'kta', projectId: number, data: unknown, files: File[] = []) => {
       const form = new FormData();
       form.append('formData', JSON.stringify(data));
       files.forEach((file) => form.append('file', file));

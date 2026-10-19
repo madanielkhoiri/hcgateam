@@ -177,8 +177,8 @@ export class EpromProgressService {
     formDataRaw: string,
     files: Express.Multer.File[] = [],
   ) {
-    if (tipe !== 'inspeksi-area' && tipe !== 'progress-harian') {
-      throw new BadRequestException('Form terstruktur hanya tersedia untuk Inspeksi Area dan Laporan Harian');
+    if (!['inspeksi-area', 'progress-harian', 'tta', 'kta'].includes(tipe)) {
+      throw new BadRequestException('Form terstruktur tidak tersedia untuk tipe ini');
     }
     await this.akses.wajibAksesProject(aktor, projectId);
     this.wajibDalamJamUpload(aktor, tipe);
@@ -200,29 +200,50 @@ export class EpromProgressService {
         throw new BadRequestException('Tim dokumentasi Daily Report tidak valid');
       }
     }
+    if ((tipe === 'tta' || tipe === 'kta') && (!formData?.tanggalWaktu || !formData?.lokasi || !formData?.kategori || !formData?.temuan || !formData?.uraian || !formData?.risiko)) {
+      throw new BadRequestException('Tanggal, lokasi, kategori, temuan, uraian, dan tingkat risiko wajib diisi');
+    }
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
     });
     if (!project) throw new NotFoundException('Project tidak ditemukan');
-    const pdf = tipe === 'progress-harian'
-      ? await this.reportPdf.daily(formData, project, files)
-      : await this.reportPdf.inspection(formData, project);
-    const fileUrl = this.file.simpanBuffer(
-      pdf,
-      `${tipe}-${formData.tanggal || Date.now()}.pdf`,
-      `project/${projectId}/progress/${tipe}`,
-    );
+    const formSafety = tipe === 'tta' || tipe === 'kta';
+    const fileUrls = formSafety
+      ? files.map((item) => this.file.simpanDokumen(item, `project/${projectId}/progress/${tipe}`))
+      : [];
+    const pdf = formSafety
+      ? null
+      : tipe === 'progress-harian'
+        ? await this.reportPdf.daily(formData, project, files)
+        : await this.reportPdf.inspection(formData, project);
+    const fileUrl = formSafety
+      ? fileUrls[0] ?? null
+      : this.file.simpanBuffer(
+          pdf!,
+          `${tipe}-${formData.tanggal || Date.now()}.pdf`,
+          `project/${projectId}/progress/${tipe}`,
+        );
     try {
-      const data: Record<string, unknown> = { projectId, fileUrl, uploadedAt: new Date(), formData };
+      const dataForm = formSafety ? { ...formData, fileUrls } : formData;
+      const data: Record<string, unknown> = { projectId, fileUrl, formData: dataForm };
       if (tipe === 'progress-harian') {
+        data.uploadedAt = new Date();
         const tanggal = new Date(`${formData.tanggal}T12:00:00.000Z`);
         if (Number.isNaN(tanggal.getTime())) throw new BadRequestException('Tanggal laporan tidak valid');
         data.tanggal = tanggal;
+      } else if (tipe === 'inspeksi-area') {
+        data.uploadedAt = new Date();
+      } else {
+        const tanggal = new Date(formData.tanggalWaktu);
+        if (Number.isNaN(tanggal.getTime())) throw new BadRequestException('Tanggal observasi tidak valid');
+        data.tanggalUpload = tanggal;
+        data.bulan = bulanDariTanggalWITA(tanggal);
       }
       return await this.delegate(tipe).create({ data });
     } catch (error) {
-      this.file.hapus(fileUrl);
+      fileUrls.forEach((path) => this.file.hapus(path));
+      if (!formSafety && fileUrl) this.file.hapus(fileUrl);
       throw error;
     }
   }
@@ -388,6 +409,12 @@ export class EpromProgressService {
     if (item.fileUrl) {
       this.file.hapus(item.fileUrl);
     }
+    const formData = item.formData as { fileUrls?: unknown } | null | undefined;
+    if (Array.isArray(formData?.fileUrls)) {
+      formData.fileUrls
+        .filter((path): path is string => typeof path === 'string' && path !== item.fileUrl)
+        .forEach((path) => this.file.hapus(path));
+    }
 
     return { message: 'Item berhasil dihapus' };
   }
@@ -470,21 +497,22 @@ export class EpromProgressService {
     return Math.round([...terbaruPerPekerjaan.values()].reduce((a, b) => a + b, 0) * 10) / 10;
   }
 
-  /** Kurva-S mingguan: planned dan actual kumulatif per tanggal upload. */
+  /** Kurva-S per Week project. Semua project selalu mulai dari Week 1. */
   async trendMingguan(projectId: number) {
     const baris = await this.prisma.progressMingguan.findMany({
       where: { projectId },
-      orderBy: [{ uploadedAt: 'asc' }, { mingguKe: 'asc' }, { id: 'asc' }],
-      select: { uploadedAt: true, namaPekerjaan: true, planned: true, actual: true },
+      orderBy: [{ mingguKe: 'asc' }, { id: 'asc' }],
+      select: { id: true, mingguKe: true, namaPekerjaan: true, planned: true, actual: true },
     });
 
-    const urut = baris.slice().sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime());
-    const tanggal = [...new Set(urut.map((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt)))].sort();
-    return tanggal.map((hari) => {
-      const snapshot = urut.filter((b) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(b.uploadedAt) === hari).at(-1);
+    const perWeek = new Map<number, (typeof baris)[number]>();
+    for (const item of baris) {
+      perWeek.set(nomorWeekLaporan(item.namaPekerjaan, item.mingguKe), item);
+    }
+    return [...perWeek.entries()].sort(([a], [b]) => a - b).map(([week, snapshot]) => {
       const planned = Number(snapshot?.planned ?? 0);
       const actual = Number(snapshot?.actual ?? 0);
-      return { bulan: hari, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
+      return { bulan: `Week ${week}`, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
     });
   }
 

@@ -25,7 +25,11 @@ export function ProgressTrendChart({
 }) {
   const tanggal = Array.from(
     new Set(seri.flatMap((s) => s.data.map((d) => d.bulan))),
-  ).sort();
+  ).sort((a, b) => {
+    const wa = Number(a.match(/\d+/)?.[0] ?? 0);
+    const wb = Number(b.match(/\d+/)?.[0] ?? 0);
+    return wa - wb || a.localeCompare(b);
+  });
   if (!tanggal.length) return null;
   const nilai = seri.flatMap((s) =>
     s.data.flatMap((d) => (detail ? [d.planned, d.actual] : [d.actual])),
@@ -86,7 +90,7 @@ export function ProgressTrendChart({
             fontSize={10}
             fill="#71839a"
           >
-            {formatBulanSingkat(t)}
+            {/^week\s+\d+$/i.test(t) ? t : formatBulanSingkat(t)}
           </text>
         ))}
         {seri.map((s, si) => (

@@ -6,6 +6,7 @@ import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/civil-project/modal";
 import { DailyReportForm, InspectionForm } from "@/components/eprom/EpromStructuredReportForm";
+import { ConstructionChecklistPopup, KtaTtaPopup } from "@/components/eprom/EpromSafetyForms";
 import { getStoredUser } from "@/lib/access-control";
 import {
   epromApi,
@@ -150,10 +151,10 @@ export default function KonstruksiDetailPage() {
       {projectError && <p className={engineerStyles.errorText}>{projectError}</p>}
 
       {tab && (TAB_APPROVAL as string[]).includes(tab) && (
-        <ApprovalTab tipe={tab as TipeKonstruksi} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
+        <ApprovalTab tipe={tab as TipeKonstruksi} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} project={project} />
       )}
       {tab && (TAB_PERFORMA as string[]).includes(tab) && (
-        <PerformaTab tipe={tab as "tta" | "kta"} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} />
+        <PerformaTab tipe={tab as "tta" | "kta"} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} project={project} />
       )}
       {tab && (TAB_PROGRESS_LAINNYA as string[]).includes(tab) && (
         <ProgressTab tipe={tab as TipeProgress} projectId={projectId} boleh={boleh} vendorSaya={vendorSaya} project={project} />
@@ -167,7 +168,7 @@ export default function KonstruksiDetailPage() {
 
 type TabProps = { projectId: number; boleh: boolean; vendorSaya: boolean };
 
-function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: TipeKonstruksi }) {
+function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps & { tipe: TipeKonstruksi; project: Project | null }) {
   const [items, setItems] = useState<KonstruksiItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +176,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   const [namaBaru, setNamaBaru] = useState("");
   const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
+  const [inspectorInput, setInspectorInput] = useState<Record<number, string>>({});
   const [editItem, setEditItem] = useState<KonstruksiItem | null>(null);
   const [editNama, setEditNama] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -216,6 +218,40 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
       setError(err instanceof Error ? err.message : "Gagal menambah data");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function tambahChecklistForm(payload: { nama: string; data: Record<string, unknown>; files: File[] }) {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await epromApi.engineer.buat("checklist-tahapan", projectId, payload.nama, payload.files[0] ?? null, payload.data);
+      muatItems();
+      window.dispatchEvent(new Event("eprom-konstruksi-updated"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyimpan checklist");
+      throw err;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function reviewChecklist(item: KonstruksiItem, status: "APPROVED" | "REJECTED") {
+    try {
+      const inspector = inspectorInput[item.id]?.trim();
+      const komentar = komentarInput[item.id]?.trim();
+      if (!inspector) throw new Error("Nama Inspector PPA wajib diisi");
+      if (status === "REJECTED" && !komentar) throw new Error("Catatan Inspector wajib diisi untuk Reject");
+      await epromApi.engineer.reviewChecklistForm(item.id, {
+        inspector,
+        status,
+        keputusan: status === "APPROVED" ? (komentar ? "Approve dengan Catatan" : "Approve Langsung") : "Reject dengan Catatan",
+        catatanInspector: komentar,
+      });
+      muatItems();
+      window.dispatchEvent(new Event("eprom-konstruksi-updated"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyimpan review");
     }
   }
 
@@ -271,7 +307,19 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     <div className={engineerStyles.panel}>
       <h2 className={engineerStyles.sectionTitle}>{LABEL_TIPE_KONSTRUKSI[tipe]}</h2>
 
-      {(boleh || vendorSaya) && (
+      {tipe === "checklist-tahapan" && (boleh || vendorSaya) && (
+        <div style={{ marginBottom: 18 }}>
+          <ConstructionChecklistPopup
+            projectName={project?.namaProject ?? "Project aktif"}
+            vendorName={project?.kontrak.vendor.namaVendor ?? "Vendor project"}
+            owner={boleh}
+            onSubmit={tambahChecklistForm}
+            submitting={submitting}
+          />
+        </div>
+      )}
+
+      {(boleh || vendorSaya) && tipe !== "checklist-tahapan" && (
         <form id="konstruksi-upload" className={engineerStyles.formCard} onSubmit={tambahItem} style={{ marginBottom: 18 }}>
           {namaField && (
             <label>
@@ -325,14 +373,26 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
 
             {item.komentar && <div className={engineerStyles.komentarBox}>&ldquo;{item.komentar}&rdquo;</div>}
 
-            {boleh && item.status === "PENDING" && tipe === "checklist-tahapan" && item.fileUrl?.toLowerCase().endsWith(".pdf") && (
+            {tipe === "checklist-tahapan" && item.formData && (
+              <details style={{ marginTop: 10, padding: 10, borderRadius: 9, background: "#f4f8fc" }}>
+                <summary style={{ cursor: "pointer", fontWeight: 800 }}>Lihat isian Construction Inspection</summary>
+                <div style={{ display: "grid", gap: 5, marginTop: 10, fontSize: 13 }}>
+                  <span>Nomor: {String(item.formData.nomorInspeksi ?? "-")}</span>
+                  <span>Kategori: {String(item.formData.kategori ?? "-")}</span>
+                  <span>Area/Lokasi: {String(item.formData.area ?? "-")} / {String(item.formData.lokasi ?? "-")}</span>
+                  <span>Pengawas Vendor: {String(item.formData.pengawasVendor ?? "-")}</span>
+                  <span>Status Kesiapan: {String(item.formData.statusKesiapan ?? "-")}</span>
+                  {item.formData.inspector ? <span>Inspector PPA: {String(item.formData.inspector)}</span> : null}
+                </div>
+              </details>
+            )}
+
+            {boleh && item.status === "PENDING" && tipe === "checklist-tahapan" && (
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
-                <Link className={engineerStyles.secondaryButton} href={`/civil/project/konstruksi/${projectId}/approval/checklist-tahapan/${item.id}`}>
-                  Approve
-                </Link>
-                <Link className={engineerStyles.dangerButton} href={`/civil/project/konstruksi/${projectId}/approval/checklist-tahapan/${item.id}`}>
-                  Reject
-                </Link>
+                <input placeholder="Nama Inspector PPA" value={inspectorInput[item.id] ?? ""} onChange={e=>setInspectorInput(cur=>({...cur,[item.id]:e.target.value}))}/>
+                <input placeholder="Catatan Inspector (wajib untuk Reject)" value={komentarInput[item.id] ?? ""} onChange={e=>setKomentarInput(cur=>({...cur,[item.id]:e.target.value}))}/>
+                <button type="button" className={engineerStyles.secondaryButton} onClick={()=>reviewChecklist(item,"APPROVED")}>Approve</button>
+                <button type="button" className={engineerStyles.dangerButton} onClick={()=>reviewChecklist(item,"REJECTED")}>Reject</button>
               </div>
             )}
 
@@ -787,7 +847,7 @@ function ProgressTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
   );
 }
 
-function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: "tta" | "kta" }) {
+function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps & { tipe: "tta" | "kta"; project: Project | null }) {
   const [items, setItems] = useState<ProgressItem[]>([]);
   const [performa, setPerforma] = useState<PerformaBulanIni | null>(null);
   const [loading, setLoading] = useState(true);
@@ -831,6 +891,13 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
     }
   }
 
+  async function simpanForm(payload: { data: Record<string, unknown>; files: File[] }) {
+    setSubmitting(true); setError(null);
+    try { await epromApi.progress.buatForm(tipe, projectId, payload.data, payload.files); muat(); }
+    catch (err) { setError(err instanceof Error ? err.message : "Gagal menyimpan form"); throw err; }
+    finally { setSubmitting(false); }
+  }
+
   async function hapus(item: ProgressItem) {
     if (
       !confirm(
@@ -849,6 +916,10 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
   return (
     <div className={engineerStyles.panel}>
       <h2 className={engineerStyles.sectionTitle}>{LABEL_TIPE_PROGRESS[tipe]}</h2>
+
+      {(boleh || vendorSaya) && (
+        <div style={{ marginBottom: 18 }}><KtaTtaPopup tipe={tipe.toUpperCase() as "KTA"|"TTA"} projectName={project?.namaProject ?? "Project aktif"} vendorName={project?.kontrak.vendor.namaVendor ?? "Vendor project"} onSubmit={simpanForm} submitting={submitting}/></div>
+      )}
 
       {performa && (
         <div className={`${styles.performaWrap} ${performa.persen >= 100 ? styles.performaFull : ""}`}>
@@ -869,7 +940,7 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
         </div>
       )}
 
-      {(boleh || vendorSaya) && (
+      {false && (boleh || vendorSaya) && (
         <form className={engineerStyles.formCard} onSubmit={unggah} style={{ marginBottom: 18 }}>
           <label>
             File
@@ -908,6 +979,19 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya }: TabProps & { tipe: 
             <div className={engineerStyles.itemRowMeta}>
               <span>Diunggah {formatWaktuWITA(item.uploadedAt ?? item.tanggalUpload)}</span>
             </div>
+
+            {item.formData && (
+              <details style={{ marginTop: 10, padding: 10, borderRadius: 9, background: "#f4f8fc" }}>
+                <summary style={{ cursor: "pointer", fontWeight: 800 }}>Lihat detail observasi</summary>
+                <div style={{ display: "grid", gap: 5, marginTop: 10, fontSize: 13 }}>
+                  <span>Pelapor: {String(item.formData.pelapor ?? "-")}</span>
+                  <span>Area/Lokasi: {String(item.formData.area ?? "-")} / {String(item.formData.lokasi ?? "-")}</span>
+                  <span>Temuan: {String(item.formData.kategori ?? "-")} — {String(item.formData.temuan ?? "-")}</span>
+                  <span>Risiko: {String(item.formData.risiko ?? "-")}</span>
+                  <span>Status tindak lanjut: {String(item.formData.statusTindakLanjut ?? "-")}</span>
+                </div>
+              </details>
+            )}
 
             {(boleh || vendorSaya) && (
               <button
