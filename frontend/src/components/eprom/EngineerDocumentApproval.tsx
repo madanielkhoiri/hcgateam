@@ -58,11 +58,10 @@ function idPlacement(): string {
 }
 
 /**
- * Coretan pointer dapat menghasilkan ribuan titik berpresisi panjang.
- * Bulatkan koordinat dan ambil sampel merata agar bentuk tetap sama secara
- * visual, tetapi payload approval/reject tidak membengkak tanpa batas.
+ * Simpan seluruh titik coretan agar anotasi PDF panjang dan banyak halaman
+ * tidak kehilangan detail. Koordinat hanya dinormalisasi ke dua desimal.
  */
-function padatkanTitikCoretan(points: string, maksimumTitik = 5000): string {
+function normalisasiTitikCoretan(points: string): string {
   const daftar = points
     .trim()
     .split(/\s+/)
@@ -73,12 +72,7 @@ function padatkanTitikCoretan(points: string, maksimumTitik = 5000): string {
     );
 
   if (daftar.length === 0) return "";
-  const langkah = Math.max(1, Math.ceil(daftar.length / maksimumTitik));
-  const hasil = daftar.filter(
-    (_, index) => index === 0 || index === daftar.length - 1 || index % langkah === 0,
-  );
-
-  return hasil
+  return daftar
     .map(([x, y]) => `${Number(x.toFixed(2))},${Number(y.toFixed(2))}`)
     .join(" ");
 }
@@ -533,7 +527,7 @@ export function EngineerDocumentApproval({
           page,
           color,
           width,
-          points: padatkanTitikCoretan(points),
+          points: normalisasiTitikCoretan(points),
         })),
         textAnnotations: textAnnotations.map(
           ({ page, text, x, y, rotation, size }) => ({
@@ -567,7 +561,7 @@ export function EngineerDocumentApproval({
           page,
           color,
           width,
-          points: padatkanTitikCoretan(points),
+          points: normalisasiTitikCoretan(points),
         }));
       const texts = textAnnotations.map(({ page, text, x, y, rotation, size }) => ({
           page,
