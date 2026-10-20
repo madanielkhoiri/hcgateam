@@ -92,8 +92,7 @@ export class EpromReportPdfService {
 
   async tenderEvaluation(report: any) {
     const money = (value: unknown) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
-    const yes = (value: unknown) => value === true ? 'Ya' : value === false ? 'Tidak' : '-';
-    const questions: [string, string][] = [['method', 'Metode kerja'], ['hsePresentation', 'Pengendalian K3'], ['finance', 'Kapasitas finansial'], ['warranty', 'Garansi'], ['experience', 'Pengalaman project'], ['boq', 'Penguasaan item pekerjaan'], ['organization', 'Struktur organisasi project']];
+    const questions: [string, string][] = [['method', 'Metode kerja'], ['hsePresentation', 'Pengendalian K3'], ['finance', 'Kapasitas finansial'], ['warranty', 'Garansi'], ['experience', 'Pengalaman project'], ['boq', 'Penguasaan item pekerjaan'], ['organization', 'Struktur organisasi project'], ['equipmentReadiness', 'Kesiapan peralatan dan sumber daya'], ['workSchedule', 'Jadwal dan tahapan pelaksanaan'], ['mobilization', 'Mobilisasi manpower, material, peralatan'], ['riskMitigation', 'Risiko, kendala, dan mitigasi'], ['progressReporting', 'Koordinasi dan pelaporan progres']];
     return this.document((doc) => {
       this.header(doc, 'EVALUASI TENDER PPA');
       this.section(doc, 'IDENTITAS & PARAMETER TENDER');
@@ -112,8 +111,8 @@ export class EpromReportPdfService {
         this.section(doc, 'B. PENAWARAN HARGA & DURASI');
         (d.sphRounds ?? []).forEach((r: any, i: number) => this.field(doc, `SPH Putaran ${i + 1}`, `${money(r.value)} | Deadline ${r.deadline || '-'} | Diterima ${r.receivedAt || '-'} | Verifikasi ${r.verification || '-'}`));
         this.field(doc, 'SPH Terakhir Sah', money(d.finalSph)); this.field(doc, 'Durasi Ditawarkan', `${d.durationDays || '-'} hari`);
-        this.section(doc, 'C. DOKUMEN PENDUKUNG'); this.field(doc, 'Company Profile', `${d.adminScore || 0}/100 | ${vendor.evaluasi?.dokumenAdminFiles?.length || 0} file`); this.field(doc, 'Komitmen K3 / SHE', `${d.hseScore || 0}/100 | ${vendor.evaluasi?.dokumenHseFiles?.length || 0} file`);
-        this.section(doc, 'D. PRESENTASI & PEMAHAMAN'); questions.forEach(([key, label]) => this.field(doc, label, yes(d.presentation?.[key]))); this.field(doc, 'Catatan Presentasi', d.presentationNotes || '-');
+        this.section(doc, 'C. DOKUMEN PENDUKUNG'); this.field(doc, 'Company Profile', `${d.adminScore || 0}/10 | ${vendor.evaluasi?.dokumenAdminFiles?.length || 0} file`); this.field(doc, 'Komitmen K3 / SHE', `${d.hseScore || 0}/10 | ${vendor.evaluasi?.dokumenHseFiles?.length || 0} file`);
+        this.section(doc, 'D. PRESENTASI & PEMAHAMAN'); questions.forEach(([key, label]) => { const raw = d.presentation?.[key]; const score = raw === true ? 10 : raw === false ? 1 : Number(raw); this.field(doc, label, Number.isInteger(score) && score >= 1 && score <= 10 ? `${score}/10` : '-'); }); this.field(doc, 'Catatan Presentasi', d.presentationNotes || '-');
         this.section(doc, 'E. MANPOWER & PEMBERDAYAAN LOKAL'); this.field(doc, 'Manpower Ditawarkan', d.manpowerOffered || 0); this.field(doc, 'Tenaga Lokal', d.localWorkers || 0); this.field(doc, 'Tenaga Nonlokal', d.nonLocalWorkers || 0); this.field(doc, 'Persentase Lokal', `${vendor.localPercent}%`);
         this.section(doc, 'F. REKOMENDASI TENDER'); this.field(doc, 'Status', d.recommendationStatus === 'recommended' ? 'DIREKOMENDASIKAN' : 'TIDAK DIREKOMENDASIKAN'); this.field(doc, 'Catatan Keputusan', d.decisionNotes || '-'); this.field(doc, 'Skor Akhir', vendor.score === null ? 'Tidak memenuhi syarat' : `${vendor.score}/100`);
       }
@@ -212,6 +211,68 @@ export class EpromReportPdfService {
           }
         });
       }
+    });
+  }
+
+  async safetyObservation(
+    type: 'KTA' | 'TTA',
+    data: any,
+    project: ProjectInfo,
+    initialPhotos: Buffer[],
+    closingPhotos: Buffer[] = [],
+  ) {
+    const prepare = async (photos: Buffer[]) => (
+      await Promise.all(photos.map(async (photo) => {
+        try { return await siapkanBufferGambarUntukPdfKit(photo); } catch { return null; }
+      }))
+    ).filter((photo): photo is Buffer => Buffer.isBuffer(photo));
+    const [initial, closing] = await Promise.all([prepare(initialPhotos), prepare(closingPhotos)]);
+    return this.document((doc) => {
+      this.header(doc, `FORM OBSERVASI ${type}`);
+      this.section(doc, 'A. INFORMASI OBSERVASI');
+      this.field(doc, 'Jenis Observasi', type === 'KTA' ? 'Kondisi Tidak Aman (KTA)' : 'Tindakan Tidak Aman (TTA)');
+      this.field(doc, 'Nama Proyek', project.namaProject);
+      this.field(doc, 'Kontraktor / Vendor', project.kontrak.vendor.namaVendor);
+      this.field(doc, 'Tanggal dan Waktu', data.tanggalWaktu);
+      this.field(doc, 'Nama Pelapor', data.pelapor);
+      this.field(doc, 'Area / Lokasi', `${data.area || '-'} / ${data.lokasi || '-'}`);
+      this.section(doc, 'B. KLASIFIKASI TEMUAN');
+      this.field(doc, 'Tingkat Risiko Awal', data.risiko);
+      this.field(doc, 'Kategori', data.kategori);
+      this.field(doc, 'Temuan', data.temuan);
+      this.field(doc, 'Potensi Akibat / Bahaya', data.bahaya || '-');
+      this.field(doc, 'Uraian', data.uraian);
+      this.section(doc, 'C. TINDAKAN LANGSUNG');
+      this.field(doc, 'Tindakan Pengamanan Awal', data.tindakanAwal || '-');
+      this.field(doc, 'Status Tindakan Langsung', data.statusTindakan || '-');
+      this.field(doc, 'Uraian Tindakan Langsung', data.uraianTindakan || '-');
+      this.section(doc, 'D. TINDAK LANJUT TEMUAN');
+      this.field(doc, 'PIC Tindak Lanjut', data.pic || '-');
+      this.field(doc, 'Target Penyelesaian', data.target || '-');
+      this.field(doc, 'Rencana Tindakan Perbaikan', data.rencana || '-');
+      this.field(doc, 'Status Tindak Lanjut', data.statusTindakLanjut || 'Open');
+      if (data.closedAt) this.field(doc, 'Tanggal Closed', new Date(data.closedAt).toLocaleString('id-ID', { timeZone: 'Asia/Makassar' }));
+
+      const drawPhotos = (title: string, photos: Buffer[]) => {
+        if (!photos.length) return;
+        const columns = 2; const rows = 2; const gap = 12;
+        const cardWidth = (531 - gap) / columns; const cardHeight = 310;
+        photos.forEach((photo, index) => {
+          const slot = index % (columns * rows);
+          if (slot === 0) {
+            doc.addPage(); this.header(doc, `FORM OBSERVASI ${type}`);
+            this.section(doc, `${title} (${index + 1}-${Math.min(index + columns * rows, photos.length)} DARI ${photos.length})`);
+          }
+          const x = 32 + (slot % columns) * (cardWidth + gap);
+          const y = 108 + Math.floor(slot / columns) * (cardHeight + gap);
+          doc.roundedRect(x, y, cardWidth, cardHeight, 5).fillAndStroke('#ffffff', '#ccd7e5');
+          doc.font('Helvetica-Bold').fontSize(7).fillColor('#243b5a').text(`Foto ${index + 1}`, x + 8, y + 8, { width: cardWidth - 16 });
+          try { doc.image(photo, x + 8, y + 25, { fit: [cardWidth - 16, cardHeight - 33], align: 'center', valign: 'center' }); }
+          catch { doc.font('Helvetica').fontSize(7).fillColor('#b42318').text('Foto tidak dapat ditampilkan', x + 8, y + 40, { width: cardWidth - 16, align: 'center' }); }
+        });
+      };
+      drawPhotos('E. DOKUMENTASI TEMUAN', initial);
+      drawPhotos('F. DOKUMENTASI PENUTUPAN / PERBAIKAN', closing);
     });
   }
 

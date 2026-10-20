@@ -209,7 +209,7 @@ export type TenderEvaluationData = {
   invitationDate?: string; responseDate?: string; response?: '' | 'ikut' | 'tidak';
   sphRounds?: Array<{ deadline?: string; receivedAt?: string; value?: number; verification?: '' | 'pending' | 'yes' | 'no' }>;
   finalSph?: number; durationDays?: number; adminScore?: number; hseScore?: number;
-  presentation?: Record<string, boolean>; presentationNotes?: string;
+  presentation?: Record<string, number | boolean>; presentationNotes?: string;
   manpowerOffered?: number; localWorkers?: number; nonLocalWorkers?: number;
   recommendationStatus?: '' | 'recommended' | 'not_recommended'; decisionNotes?: string;
 };

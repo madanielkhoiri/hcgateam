@@ -15,23 +15,25 @@ export const KODE_EVALUASI_VENDOR = {};
 export class UbahEvaluasiVendorDto { config?: Record<string, unknown>; data?: Record<string, unknown>; }
 
 type Data = Record<string, any>;
-const QUESTIONS = ['method', 'hsePresentation', 'finance', 'warranty', 'experience', 'boq', 'organization'];
+const QUESTIONS = ['method', 'hsePresentation', 'finance', 'warranty', 'experience', 'boq', 'organization', 'equipmentReadiness', 'workSchedule', 'mobilization', 'riskMitigation', 'progressReporting'];
 const n = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : 0;
 
 function calculate(rows: any[], config: Data) {
   const price = (d: Data) => { const rounds = Array.isArray(d.sphRounds) ? d.sphRounds : []; const last = rounds.at(-1); return last?.verification === 'yes' && n(last?.value) > 0 ? n(last.value) : 0; };
-  const eligible = rows.filter((r) => { const d = (r.evaluasi?.evaluasiData ?? {}) as Data; return n(d.adminScore) >= 70 && r.evaluasi?.dokumenAdminFiles?.length && n(d.hseScore) >= 70 && r.evaluasi?.dokumenHseFiles?.length && d.response === 'ikut' && price(d) > 0 && n(d.durationDays) > 0; });
-  const minPrice = Math.min(...eligible.map((r) => price(r.evaluasi.evaluasiData as Data)), Infinity);
-  const minDuration = Math.min(...eligible.map((r) => n(r.evaluasi.evaluasiData.durationDays)), Infinity);
+  const participants = rows.filter((r) => ((r.evaluasi?.evaluasiData ?? {}) as Data).response !== 'tidak');
+  const priceDurationReady = participants.length > 0 && participants.every((r) => { const d = (r.evaluasi?.evaluasiData ?? {}) as Data; return price(d) > 0 && n(d.durationDays) > 0; });
+  const eligible = participants.filter((r) => { const d = (r.evaluasi?.evaluasiData ?? {}) as Data; return price(d) > 0 && n(d.durationDays) > 0; });
+  const minPrice = priceDurationReady ? Math.min(...eligible.map((r) => price(r.evaluasi.evaluasiData as Data)), Infinity) : Infinity;
+  const minDuration = priceDurationReady ? Math.min(...eligible.map((r) => n(r.evaluasi.evaluasiData.durationDays)), Infinity) : Infinity;
   return rows.map((r) => {
     const data = (r.evaluasi?.evaluasiData ?? {}) as Data;
-    const ok = eligible.includes(r), rounds = Array.isArray(data.sphRounds) ? data.sphRounds : [];
-    const ontime = rounds.filter((x: any) => x.deadline && x.receivedAt && new Date(x.receivedAt) <= new Date(x.deadline)).length;
-    const presentation = QUESTIONS.filter((q) => data.presentation?.[q] === true).length;
-    const responseValid = data.response === 'ikut' && data.invitationDate && data.responseDate && new Date(data.responseDate) >= new Date(data.invitationDate);
-    const req = n(config.manpowerRequirement);
-    const components = ok ? { price: minPrice / price(data) * 35, duration: minDuration / n(data.durationDays) * 15, presentation: presentation / 7 * 40, punctuality: (rounds.length ? ontime / rounds.length : 0) * 5, response: responseValid ? 3 : 0, manpower: (req ? Math.min(1, n(data.manpowerOffered) / req) : 1) * 2 } : null;
-    const score = components ? Object.values(components).reduce((a, b) => a + b, 0) : null;
+    const ok = eligible.includes(r);
+    const presentationValues = QUESTIONS.map((q) => data.presentation?.[q] === true ? 10 : data.presentation?.[q] === false ? 1 : Number(data.presentation?.[q]));
+    const presentation = presentationValues.every((value) => Number.isInteger(value) && value >= 1 && value <= 10) ? presentationValues.reduce((sum, value) => sum + value, 0) / (QUESTIONS.length * 10) : null;
+    const documentValues = [Number(data.adminScore), Number(data.hseScore)].map((value) => value > 10 ? value / 10 : value);
+    const documents = documentValues.every((value) => Number.isInteger(value) && value >= 1 && value <= 10) ? documentValues.reduce((sum, value) => sum + value, 0) / 20 : null;
+    const components = ok ? { documents: documents === null ? null : documents * 20, presentation: presentation === null ? null : presentation * 40, price: priceDurationReady ? minPrice / price(data) * 30 : null, duration: priceDurationReady ? minDuration / n(data.durationDays) * 10 : null } : null;
+    const score = components && Object.values(components).every((value) => value !== null) ? Object.values(components).reduce<number>((sum, value) => sum + Number(value), 0) : null;
     return { vendorId: r.vendor.id, namaVendor: r.vendor.namaVendor, evaluasi: r.evaluasi, data, eligible: ok, components, score: score === null ? null : Math.round(score * 100) / 100, localPercent: n(data.manpowerOffered) ? Math.round(n(data.localWorkers) / n(data.manpowerOffered) * 10000) / 100 : 0 };
   }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
 }

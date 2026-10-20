@@ -13,6 +13,7 @@ import { EpromAksesService } from '../common/eprom-akses.service';
 import { EpromFileService } from '../common/eprom-file.service';
 import { EpromReportPdfService } from '../reports/eprom-report-pdf.service';
 import { AktorEprom } from '../common/eprom-aktor';
+import { readFileSync } from 'node:fs';
 
 export type StatusDeviasi = 'ON_TRACK' | 'WASPADA' | 'TERLAMBAT';
 
@@ -215,20 +216,28 @@ export class EpromProgressService {
     const fileUrls = formSafety
       ? files.map((item) => this.file.simpanDokumen(item, `project/${projectId}/progress/${tipe}`))
       : [];
+    const directClosed = formSafety && formData?.statusTindakLanjut === 'Closed';
+    const safetyPdf = formSafety
+      ? await this.reportPdf.safetyObservation(
+          tipe.toUpperCase() as 'KTA' | 'TTA',
+          formData,
+          project,
+          directClosed ? [] : files.map((item) => item.buffer),
+          directClosed ? files.map((item) => item.buffer) : [],
+        )
+      : null;
     const pdf = formSafety
-      ? null
+      ? safetyPdf
       : tipe === 'progress-harian'
         ? await this.reportPdf.daily(formData, project, files)
         : await this.reportPdf.inspection(formData, project);
-    const fileUrl = formSafety
-      ? fileUrls[0] ?? null
-      : this.file.simpanBuffer(
+    const fileUrl = this.file.simpanBuffer(
           pdf!,
           `${tipe}-${formData.tanggal || Date.now()}.pdf`,
           `project/${projectId}/progress/${tipe}`,
         );
     try {
-      const dataForm = formSafety ? { ...formData, fileUrls } : formData;
+      const dataForm = formSafety ? { ...formData, fileUrls, ...(directClosed ? { closeFileUrls: fileUrls, closedAt: new Date().toISOString() } : {}) } : formData;
       const data: Record<string, unknown> = { projectId, fileUrl, formData: dataForm };
       if (tipe === 'progress-harian') {
         data.uploadedAt = new Date();
@@ -246,7 +255,7 @@ export class EpromProgressService {
       return await this.delegate(tipe).create({ data });
     } catch (error) {
       fileUrls.forEach((path) => this.file.hapus(path));
-      if (!formSafety && fileUrl) this.file.hapus(fileUrl);
+      if (fileUrl) this.file.hapus(fileUrl);
       throw error;
     }
   }
@@ -446,13 +455,26 @@ export class EpromProgressService {
     const closeFileUrls = status === 'closed'
       ? files.map((file) => this.file.simpanDokumen(file, `project/${item.projectId}/progress/${tipe}/closing`))
       : [];
+    let generatedPdfUrl: string | null = null;
     try {
+      const project = await this.prisma.project.findUnique({
+        where: { id: item.projectId },
+        select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
+      });
+      if (!project) throw new NotFoundException('Project tidak ditemukan');
+      const closedAt = new Date().toISOString();
+      const nextFormData = { ...lama, statusTindakLanjut: status === 'closed' ? 'Closed' : 'Open', closeFileUrls: status === 'closed' ? closeFileUrls : [], closedAt: status === 'closed' ? closedAt : null };
+      const initialUrls = Array.isArray((lama as any).fileUrls) ? (lama as any).fileUrls.filter((url: unknown): url is string => typeof url === 'string') : [];
+      const initialPhotos = initialUrls.map((url: string) => { try { return readFileSync(this.file.resolveAbsolut(url)); } catch { return null; } }).filter((buffer: Buffer | null): buffer is Buffer => Buffer.isBuffer(buffer));
+      const pdf = await this.reportPdf.safetyObservation(tipe.toUpperCase() as 'KTA' | 'TTA', nextFormData, project, initialPhotos, status === 'closed' ? files.map((file) => file.buffer) : []);
+      generatedPdfUrl = this.file.simpanBuffer(pdf, `${tipe}-${id}-${status}.pdf`, `project/${item.projectId}/progress/${tipe}`);
       return await this.delegate(tipe).update({
         where: { id },
-        data: { formData: { ...lama, statusTindakLanjut: status === 'closed' ? 'Closed' : 'Open', ...(status === 'closed' ? { closeFileUrls, closedAt: new Date().toISOString() } : {}) } },
+        data: { fileUrl: generatedPdfUrl, formData: nextFormData },
       });
     } catch (error) {
       closeFileUrls.forEach((path) => this.file.hapus(path));
+      if (generatedPdfUrl) this.file.hapus(generatedPdfUrl);
       throw error;
     }
   }
