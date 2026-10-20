@@ -8,7 +8,7 @@ import { EpromEvaluasiVendorService } from './eprom-evaluasi-vendor.service';
 export class EpromEvaluasiVendorController {
   constructor(private readonly service: EpromEvaluasiVendorService) {}
   @Get() daftar(@Param('tenderId', ParseIntPipe) id: number) { return this.service.daftar(id); }
-  @Patch(':vendorId') @UseInterceptors(FileFieldsInterceptor([{ name: 'admin', maxCount: 10 }, { name: 'hse', maxCount: 10 }], { limits: { fileSize: 2 * 1024 * 1024 } }))
+  @Patch(':vendorId') @UseInterceptors(FileFieldsInterceptor([{ name: 'admin', maxCount: 50 }, { name: 'hse', maxCount: 50 }], { limits: { fileSize: 2 * 1024 * 1024 } }))
   ubah(@Param('tenderId', ParseIntPipe) id: number, @Param('vendorId', ParseIntPipe) vendorId: number, @Body() body: any, @UploadedFiles() files: any) { return this.service.ubah(id, vendorId, { config: JSON.parse(body.config || '{}'), data: JSON.parse(body.data || '{}') }, files); }
   @Delete(':vendorId/dokumen')
   hapusDokumen(@Param('tenderId', ParseIntPipe) id: number, @Param('vendorId', ParseIntPipe) vendorId: number, @Query('jenis') jenis: string, @Query('index', ParseIntPipe) index: number) { return this.service.hapusDokumen(id, vendorId, jenis, index); }
