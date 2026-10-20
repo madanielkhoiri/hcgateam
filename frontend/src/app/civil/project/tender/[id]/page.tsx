@@ -462,6 +462,7 @@ export default function TenderDetailPage() {
 
       {tab === "sph" && (
         <div className={styles.panel}>
+          {false && <>
           <p className={styles.emptyText} style={{ marginBottom: 14 }}>
             Harga penawaran opsional di setiap SPH dan bisa diganti-ganti (tambah SPH baru untuk
             negosiasi ulang). Kalau harga semua vendor sudah oke, klik tombol Final di bawah untuk
@@ -687,6 +688,7 @@ export default function TenderDetailPage() {
               </div>
             );
           })}
+          </>}
 
           {boleh && detail.undangan.length > 0 && <TenderEvaluationForm tenderId={tenderId} styles={styles} />}
 
@@ -779,31 +781,6 @@ export default function TenderDetailPage() {
             </>
           )}
 
-          {boleh && detail.undangan.length > 0 && (
-            <div className={styles.finalisasiBar}>
-              {vendorBelumSiapFinal.length > 0 ? (
-                <p className={styles.emptyText}>
-                  Menunggu harga penawaran dari: {vendorBelumSiapFinal.map((v) => v.vendor.namaVendor).join(", ")}
-                </p>
-              ) : semuaVendorSudahFinal ? (
-                <p className={styles.emptyText}>
-                  Semua vendor sudah final. Pilih pemenang lewat tombol "Tetapkan sebagai Pemenang"
-                  di masing-masing vendor di atas.
-                </p>
-              ) : (
-                <p className={styles.emptyText}>Semua vendor sudah isi harga, siap difinalisasi.</p>
-              )}
-
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={finalisasiTender}
-                disabled={submitting || vendorBelumSiapFinal.length > 0 || semuaVendorSudahFinal}
-              >
-                Final SPH
-              </button>
-            </div>
-          )}
         </div>
       )}
 
