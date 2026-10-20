@@ -176,7 +176,10 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
   const [namaBaru, setNamaBaru] = useState("");
   const [fileBaru, setFileBaru] = useState<File[]>([]);
   const [komentarInput, setKomentarInput] = useState<Record<number, string>>({});
-  const [inspectorInput, setInspectorInput] = useState<Record<number, string>>({});
+  const [reviewItem, setReviewItem] = useState<KonstruksiItem | null>(null);
+  const [reviewRows, setReviewRows] = useState<Array<{ bagian?: string; pertanyaan: string; hasil: string; catatan?: string }>>([]);
+  const [reviewInspector, setReviewInspector] = useState("");
+  const [reviewCatatan, setReviewCatatan] = useState("");
   const [editItem, setEditItem] = useState<KonstruksiItem | null>(null);
   const [editNama, setEditNama] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -236,19 +239,32 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
     }
   }
 
-  async function reviewChecklist(item: KonstruksiItem, status: "APPROVED" | "REJECTED") {
+  function bukaReviewChecklist(item: KonstruksiItem) {
+    const rows = Array.isArray(item.formData?.checklist) ? item.formData.checklist : [];
+    setReviewRows(rows.map((row) => {
+      const value = row && typeof row === "object" ? row as Record<string, unknown> : {};
+      return { bagian: String(value.bagian ?? "E"), pertanyaan: String(value.pertanyaan ?? "-"), hasil: String(value.hasil ?? ""), catatan: String(value.catatan ?? "") };
+    }));
+    setReviewInspector(typeof item.formData?.inspector === "string" ? item.formData.inspector : "");
+    setReviewCatatan(typeof item.formData?.catatanInspector === "string" ? item.formData.catatanInspector : "");
+    setReviewItem(item);
+  }
+
+  async function reviewChecklist(status: "APPROVED" | "REJECTED") {
+    if (!reviewItem) return;
     try {
-      const inspectorTersimpan = typeof item.formData?.inspector === "string" ? item.formData.inspector.trim() : "";
-      const inspector = inspectorTersimpan || inspectorInput[item.id]?.trim();
-      const komentar = komentarInput[item.id]?.trim();
+      const inspector = reviewInspector.trim();
+      const komentar = reviewCatatan.trim();
       if (!inspector) throw new Error("Nama Inspector PPA wajib diisi");
       if (status === "REJECTED" && !komentar) throw new Error("Catatan Inspector wajib diisi untuk Reject");
-      await epromApi.engineer.reviewChecklistForm(item.id, {
+      await epromApi.engineer.reviewChecklistForm(reviewItem.id, {
         inspector,
         status,
         keputusan: status === "APPROVED" ? (komentar ? "Approve dengan Catatan" : "Approve Langsung") : "Reject dengan Catatan",
         catatanInspector: komentar,
+        checklist: reviewRows,
       });
+      setReviewItem(null);
       muatItems();
       window.dispatchEvent(new Event("eprom-konstruksi-updated"));
     } catch (err) {
@@ -390,16 +406,7 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
 
             {boleh && item.status === "PENDING" && tipe === "checklist-tahapan" && (
               <div className={engineerStyles.inlineForm} style={{ marginTop: 10 }}>
-                {!item.formData?.inspector && (
-                  <input
-                    placeholder="Nama Inspector PPA"
-                    value={inspectorInput[item.id] ?? ""}
-                    onChange={(e) => setInspectorInput((cur) => ({ ...cur, [item.id]: e.target.value }))}
-                  />
-                )}
-                <input placeholder="Catatan Inspector (wajib untuk Reject)" value={komentarInput[item.id] ?? ""} onChange={e=>setKomentarInput(cur=>({...cur,[item.id]:e.target.value}))}/>
-                <button type="button" className={engineerStyles.secondaryButton} onClick={()=>reviewChecklist(item,"APPROVED")}>Approve</button>
-                <button type="button" className={engineerStyles.dangerButton} onClick={()=>reviewChecklist(item,"REJECTED")}>Reject</button>
+                <button type="button" className={engineerStyles.secondaryButton} onClick={() => bukaReviewChecklist(item)}>Buka & Review Checklist</button>
               </div>
             )}
 
@@ -480,6 +487,33 @@ function ApprovalTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
           </div>
         ))}
       </div>
+
+      {reviewItem && (
+        <Modal title="Review Construction Inspection Checklist" onClose={() => setReviewItem(null)}>
+          <div style={{ display: "grid", gap: 14, maxHeight: "76vh", overflow: "auto", paddingRight: 4 }}>
+            <div style={{ padding: 12, borderRadius: 10, background: "#f4f8fc", display: "grid", gap: 4 }}>
+              <strong>{reviewItem.namaTahap ?? reviewItem.namaPekerjaan}</strong>
+              <span>Nomor: {String(reviewItem.formData?.nomorInspeksi ?? "-")}</span>
+              <span>Area: {String(reviewItem.formData?.area ?? "-")} / {String(reviewItem.formData?.lokasi ?? "-")}</span>
+            </div>
+            {reviewRows.map((row, index) => (
+              <div key={`${row.bagian}-${index}`} style={{ padding: 12, border: "1px solid #dce5ef", borderRadius: 10, display: "grid", gap: 8 }}>
+                <strong>{row.bagian}.{index + 1} {row.pertanyaan}</strong>
+                <select value={row.hasil} onChange={(event) => setReviewRows(current => current.map((item, rowIndex) => rowIndex === index ? { ...item, hasil: event.target.value } : item))} style={{ padding: 9, border: "1px solid #cbd5e1", borderRadius: 8 }}>
+                  <option value="">Pilih</option><option>OK</option><option>Tidak OK</option><option>N/A</option>
+                </select>
+                <input placeholder="Catatan temuan pada poin ini" value={row.catatan ?? ""} onChange={(event) => setReviewRows(current => current.map((item, rowIndex) => rowIndex === index ? { ...item, catatan: event.target.value } : item))} style={{ padding: 9, border: "1px solid #cbd5e1", borderRadius: 8 }}/>
+              </div>
+            ))}
+            <label style={{ display: "grid", gap: 6, fontWeight: 700 }}>Nama Inspector PPA<input value={reviewInspector} onChange={(event) => setReviewInspector(event.target.value)} style={{ padding: 10, border: "1px solid #cbd5e1", borderRadius: 8 }}/></label>
+            <label style={{ display: "grid", gap: 6, fontWeight: 700 }}>Catatan Inspector<textarea value={reviewCatatan} onChange={(event) => setReviewCatatan(event.target.value)} style={{ padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, minHeight: 80 }}/></label>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" className={engineerStyles.dangerButton} onClick={() => reviewChecklist("REJECTED")}>Simpan Koreksi & Reject</button>
+              <button type="button" className={engineerStyles.primaryButton} onClick={() => reviewChecklist("APPROVED")}>Approve & Buat PDF</button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {editItem && namaField && (
         <Modal title={`Edit ${LABEL_TIPE_KONSTRUKSI[tipe]}`} onClose={() => setEditItem(null)}>

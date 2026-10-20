@@ -90,6 +90,39 @@ export class EpromReportPdfService {
     doc.y = y + 11;
   }
 
+  async constructionChecklist(data: any, project: ProjectInfo) {
+    return this.document((doc) => {
+      this.header(doc, 'CONSTRUCTION INSPECTION CHECKLIST');
+      this.section(doc, 'A. INFORMASI UMUM PEKERJAAN');
+      this.field(doc, 'Nama Proyek', project.namaProject);
+      this.field(doc, 'Kontraktor / Vendor', project.kontrak.vendor.namaVendor);
+      this.field(doc, 'Nomor Inspeksi', data.nomorInspeksi);
+      this.field(doc, 'Tanggal Inspeksi', data.tanggal);
+      this.field(doc, 'Kategori', data.kategori);
+      this.field(doc, 'Jenis Pekerjaan', data.jenisPekerjaan);
+      this.field(doc, 'Area / Lokasi', `${data.area || '-'} / ${data.lokasi || '-'}`);
+      this.field(doc, 'Shop Drawing', data.shopDrawing);
+      this.field(doc, 'Pengawas Vendor', data.pengawasVendor);
+      const groups = new Map<string, any[]>();
+      for (const row of Array.isArray(data.checklist) ? data.checklist : []) {
+        const key = String(row?.bagian || 'E');
+        groups.set(key, [...(groups.get(key) ?? []), row]);
+      }
+      for (const [bagian, rows] of groups) {
+        this.section(doc, `${bagian}. CHECKLIST`);
+        rows.forEach((row, index) => {
+          const note = row?.catatan ? ` | Catatan: ${row.catatan}` : '';
+          this.field(doc, `${index + 1}. ${row?.hasil || '-'}`, `${row?.pertanyaan || '-'}${note}`);
+        });
+      }
+      this.section(doc, 'G. REVIEW & APPROVAL INSPECTOR (OWNER)');
+      this.field(doc, 'Inspector PPA', data.inspector);
+      this.field(doc, 'Keputusan', data.keputusan);
+      this.field(doc, 'Catatan Inspector', data.catatanInspector || '-');
+      this.field(doc, 'Status', 'APPROVED');
+    });
+  }
+
   async daily(data: any, project: ProjectInfo, photos: Express.Multer.File[]) {
     const preparedPhotos = await Promise.all(photos.map(async photo => {
       try {

@@ -33,6 +33,7 @@ import { EpromFileService } from '../common/eprom-file.service';
 import { AktorEprom } from '../common/eprom-aktor';
 import { EpromEngineerSigningService } from './eprom-engineer-signing.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
+import { EpromReportPdfService } from '../reports/eprom-report-pdf.service';
 
 export const TIPE_ENGINEER = [
   'shop-drawing',
@@ -102,6 +103,7 @@ export class ReviewChecklistFormDto {
   @IsIn(['APPROVED', 'REJECTED']) status: 'APPROVED' | 'REJECTED';
   @IsString() @IsNotEmpty() keputusan: string;
   @IsOptional() @IsString() catatanInspector?: string;
+  @IsOptional() @IsArray() checklist?: Array<Record<string, unknown>>;
 }
 
 export class ReviewEngineerDto {
@@ -186,6 +188,7 @@ export class EpromEngineerService {
     private readonly file: EpromFileService,
     private readonly signing: EpromEngineerSigningService,
     private readonly whatsapp: WhatsappService,
+    private readonly reportPdf: EpromReportPdfService,
   ) {}
 
   validasiTipe(tipe: string): TipeEngineer {
@@ -390,17 +393,30 @@ export class EpromEngineerService {
     if (dto.status === 'REJECTED' && !dto.catatanInspector?.trim()) {
       throw new BadRequestException('Catatan Inspector wajib diisi untuk Reject');
     }
+    const formData = {
+      ...(formLama as Record<string, unknown>),
+      ...(dto.checklist ? { checklist: dto.checklist } : {}),
+      inspector: dto.inspector.trim(),
+      keputusan: dto.keputusan,
+      catatanInspector: dto.catatanInspector?.trim() || '',
+    };
+    let pdfUrl: string | undefined;
+    if (dto.status === 'APPROVED') {
+      const project = await this.prisma.project.findUnique({
+        where: { id: item.projectId },
+        select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
+      });
+      if (!project?.kontrak) throw new BadRequestException('Data project atau vendor tidak lengkap');
+      const pdf = await this.reportPdf.constructionChecklist(formData, project as any);
+      pdfUrl = this.file.simpanBuffer(pdf, `construction-checklist-${id}.pdf`, `project/${item.projectId}/engineer/checklist-tahapan`);
+    }
     return this.delegate('checklist-tahapan').update({
       where: { id },
       data: {
         status: dto.status === 'APPROVED' ? StatusApprovalEprom.APPROVED : StatusApprovalEprom.REJECTED,
         komentar: dto.catatanInspector?.trim() || null,
-        formData: {
-          ...(formLama as Record<string, unknown>),
-          inspector: dto.inspector.trim(),
-          keputusan: dto.keputusan,
-          catatanInspector: dto.catatanInspector?.trim() || '',
-        },
+        formData,
+        ...(pdfUrl ? { fileUrl: pdfUrl, originalFileName: `construction-checklist-${id}.pdf` } : {}),
       },
     });
   }

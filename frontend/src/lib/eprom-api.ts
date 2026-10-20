@@ -969,7 +969,7 @@ export const epromApi = {
       request<EngineerItem>(`/engineer/${tipe}/${id}/approve-tanpa-ttd`, {
         method: 'POST',
       }),
-    reviewChecklistForm: (id: number, payload: { inspector: string; status: 'APPROVED' | 'REJECTED'; keputusan: string; catatanInspector?: string }) =>
+    reviewChecklistForm: (id: number, payload: { inspector: string; status: 'APPROVED' | 'REJECTED'; keputusan: string; catatanInspector?: string; checklist?: Array<Record<string, unknown>> }) =>
       request<EngineerItem>(`/engineer/checklist-tahapan/${id}/form-review`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
