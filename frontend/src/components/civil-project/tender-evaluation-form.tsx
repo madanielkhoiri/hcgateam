@@ -41,6 +41,17 @@ const empty: TenderEvaluationData = {
   presentation: {},
   recommendationStatus: "",
 };
+const normalizeEvaluation = (
+  value?: TenderEvaluationData | null,
+): TenderEvaluationData => ({
+  ...empty,
+  ...(value || {}),
+  sphRounds:
+    Array.isArray(value?.sphRounds) && value.sphRounds.length > 0
+      ? value.sphRounds
+      : [{ deadline: "", receivedAt: "", value: undefined, verification: "pending" }],
+  presentation: value?.presentation || {},
+});
 const box: React.CSSProperties = {
   background: "#fff",
   border: "1px solid #d9e3f0",
@@ -160,7 +171,9 @@ export function TenderEvaluationForm({
         setConfig(r.config || {});
         const id = selected ?? r.vendors[0]?.vendorId ?? null;
         setSelected(id);
-        setData(r.vendors.find((v) => v.vendorId === id)?.data || empty);
+      setData(
+        normalizeEvaluation(r.vendors.find((v) => v.vendorId === id)?.data),
+      );
       })
       .catch((e) => setError(e.message));
   useEffect(() => {
@@ -172,7 +185,7 @@ export function TenderEvaluationForm({
   const choose = (id: number) => {
     const v = report?.vendors.find((x) => x.vendorId === id);
     setSelected(id);
-    setData(v?.data || empty);
+    setData(normalizeEvaluation(v?.data));
     setAdmin([]);
     setHse([]);
   };
@@ -271,7 +284,11 @@ export function TenderEvaluationForm({
         hse,
       );
       setReport(r);
-      setData(r.vendors.find((v) => v.vendorId === selected)?.data || adjusted);
+      setData(
+        normalizeEvaluation(
+          r.vendors.find((v) => v.vendorId === selected)?.data || adjusted,
+        ),
+      );
       setAdmin([]);
       setHse([]);
     } catch (e) {
@@ -761,7 +778,15 @@ export function TenderEvaluationForm({
                 </tbody>
               </table>
             </div>
-            <div style={{ ...grid, marginTop: 14 }}>
+            <div
+              className="evaluation-b-summary"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 13,
+                marginTop: 14,
+              }}
+            >
               <div style={metric}>
                 <small>Harga SPH Terakhir Sah</small>
                 <strong style={{ display: "block", fontSize: 18 }}>
@@ -1235,6 +1260,9 @@ export function TenderEvaluationForm({
           }
           .evaluation-aside {
             position: static !important;
+          }
+          .evaluation-b-summary {
+            grid-template-columns: 1fr !important;
           }
         }
         @media print {
