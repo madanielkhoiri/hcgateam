@@ -19,8 +19,9 @@ const QUESTIONS = ['method', 'hsePresentation', 'finance', 'warranty', 'experien
 const n = (v: unknown) => Number.isFinite(Number(v)) ? Number(v) : 0;
 
 function calculate(rows: any[], config: Data) {
-  const eligible = rows.filter((r) => { const d = (r.evaluasi?.evaluasiData ?? {}) as Data; return n(d.adminScore) >= 70 && r.evaluasi?.dokumenAdminFiles?.length && n(d.hseScore) >= 70 && r.evaluasi?.dokumenHseFiles?.length && d.response === 'ikut' && n(d.finalSph) > 0 && n(d.durationDays) > 0; });
-  const minPrice = Math.min(...eligible.map((r) => n(r.evaluasi.evaluasiData.finalSph)), Infinity);
+  const price = (d: Data) => { const rounds = Array.isArray(d.sphRounds) ? d.sphRounds : []; const last = rounds.at(-1); return last?.verification === 'yes' && n(last?.value) > 0 ? n(last.value) : 0; };
+  const eligible = rows.filter((r) => { const d = (r.evaluasi?.evaluasiData ?? {}) as Data; return n(d.adminScore) >= 70 && r.evaluasi?.dokumenAdminFiles?.length && n(d.hseScore) >= 70 && r.evaluasi?.dokumenHseFiles?.length && d.response === 'ikut' && price(d) > 0 && n(d.durationDays) > 0; });
+  const minPrice = Math.min(...eligible.map((r) => price(r.evaluasi.evaluasiData as Data)), Infinity);
   const minDuration = Math.min(...eligible.map((r) => n(r.evaluasi.evaluasiData.durationDays)), Infinity);
   return rows.map((r) => {
     const data = (r.evaluasi?.evaluasiData ?? {}) as Data;
@@ -29,7 +30,7 @@ function calculate(rows: any[], config: Data) {
     const presentation = QUESTIONS.filter((q) => data.presentation?.[q] === true).length;
     const responseValid = data.response === 'ikut' && data.invitationDate && data.responseDate && new Date(data.responseDate) >= new Date(data.invitationDate);
     const req = n(config.manpowerRequirement);
-    const components = ok ? { price: minPrice / n(data.finalSph) * 35, duration: minDuration / n(data.durationDays) * 15, presentation: presentation / 7 * 40, punctuality: (rounds.length ? ontime / rounds.length : 0) * 5, response: responseValid ? 3 : 0, manpower: (req ? Math.min(1, n(data.manpowerOffered) / req) : 1) * 2 } : null;
+    const components = ok ? { price: minPrice / price(data) * 35, duration: minDuration / n(data.durationDays) * 15, presentation: presentation / 7 * 40, punctuality: (rounds.length ? ontime / rounds.length : 0) * 5, response: responseValid ? 3 : 0, manpower: (req ? Math.min(1, n(data.manpowerOffered) / req) : 1) * 2 } : null;
     const score = components ? Object.values(components).reduce((a, b) => a + b, 0) : null;
     return { vendorId: r.vendor.id, namaVendor: r.vendor.namaVendor, evaluasi: r.evaluasi, data, eligible: ok, components, score: score === null ? null : Math.round(score * 100) / 100, localPercent: n(data.manpowerOffered) ? Math.round(n(data.localWorkers) / n(data.manpowerOffered) * 10000) / 100 : 0 };
   }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
@@ -46,6 +47,18 @@ export class EpromEvaluasiVendorService {
     const save = (f: Express.Multer.File) => this.file.simpan(f, `tender/${id}/evaluasi`, this.file.tebakTipe(f.originalname));
     const admin = [...(old?.dokumenAdminFiles ?? []), ...(files.admin ?? []).map(save)], hse = [...(old?.dokumenHseFiles ?? []), ...(files.hse ?? []).map(save)];
     await this.prisma.$transaction([this.prisma.tenderProcess.update({ where: { id }, data: { evaluasiConfig: (dto.config ?? tender.evaluasiConfig ?? {}) as Prisma.InputJsonValue } }), this.prisma.evaluasiVendor.upsert({ where: { tenderId_vendorId: { tenderId: id, vendorId } }, create: { tenderId: id, vendorId, evaluasiData: (dto.data ?? {}) as Prisma.InputJsonValue, dokumenAdminFiles: admin, dokumenHseFiles: hse }, update: { evaluasiData: (dto.data ?? old?.evaluasiData ?? {}) as Prisma.InputJsonValue, dokumenAdminFiles: admin, dokumenHseFiles: hse } })]);
+    return this.daftar(id);
+  }
+  async hapusDokumen(id: number, vendorId: number, jenis: string, index: number) {
+    await this.tender(id);
+    if (!['admin', 'hse'].includes(jenis)) throw new BadRequestException('Jenis dokumen tidak valid');
+    const row = await this.prisma.evaluasiVendor.findUnique({ where: { tenderId_vendorId: { tenderId: id, vendorId } } });
+    if (!row) throw new NotFoundException('Evaluasi vendor tidak ditemukan');
+    const files = [...(jenis === 'admin' ? row.dokumenAdminFiles : row.dokumenHseFiles)];
+    const [removed] = files.splice(index, 1);
+    if (!removed) throw new NotFoundException('Dokumen tidak ditemukan');
+    await this.prisma.evaluasiVendor.update({ where: { tenderId_vendorId: { tenderId: id, vendorId } }, data: jenis === 'admin' ? { dokumenAdminFiles: files } : { dokumenHseFiles: files } });
+    this.file.hapus(removed);
     return this.daftar(id);
   }
   async pdfBuffer(id: number) { return this.pdf.tenderEvaluation(await this.daftar(id)); }

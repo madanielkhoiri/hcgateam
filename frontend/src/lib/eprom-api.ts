@@ -815,6 +815,8 @@ export const epromApi = {
           body: form,
         }); },
       pdf: (tenderId: number) => unduhBlob(`/tender/${tenderId}/evaluasi-vendor/pdf/final`),
+      hapusDokumen: (tenderId: number, vendorId: number, jenis: 'admin' | 'hse', index: number) =>
+        request<TenderEvaluationReport>(`/tender/${tenderId}/evaluasi-vendor/${vendorId}/dokumen?jenis=${jenis}&index=${index}`, { method: 'DELETE' }),
     },
     /** Chat undangan tender (khusus Owner) â€” vendor tetap balas lewat email biasa. */
     pesan: {
