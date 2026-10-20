@@ -121,6 +121,31 @@ export class EpromReportPdfService {
   }
 
   async constructionChecklist(data: any, project: ProjectInfo) {
+    const photoUrls = Array.isArray(data?.fileUrls)
+      ? data.fileUrls.filter((url: unknown): url is string => typeof url === 'string' && url.trim().length > 0)
+      : [];
+    const photos = (
+      await Promise.all(
+        photoUrls.map(async (url) => {
+          try {
+            const cleanPath = url.replace(/\\/g, '/').replace(/^\/+/, '');
+            if (!cleanPath.startsWith('eprom/')) return null;
+            const uploadsRoot = resolve(join(process.cwd(), 'uploads'));
+            const absolutePath = resolve(join(uploadsRoot, cleanPath));
+            if (!absolutePath.startsWith(uploadsRoot) || !existsSync(absolutePath)) return null;
+            return await sharp(readFileSync(absolutePath))
+              .rotate()
+              .flatten({ background: '#ffffff' })
+              .jpeg({ quality: 78, mozjpeg: true })
+              .toBuffer();
+          } catch {
+            // Lampiran non-gambar atau rusak tetap tidak menggagalkan pembuatan PDF.
+            return null;
+          }
+        }),
+      )
+    ).filter((photo): photo is Buffer => Buffer.isBuffer(photo));
+
     return this.document((doc) => {
       this.header(doc, 'CONSTRUCTION INSPECTION CHECKLIST');
       this.section(doc, 'A. INFORMASI UMUM PEKERJAAN');
@@ -150,6 +175,43 @@ export class EpromReportPdfService {
       this.field(doc, 'Keputusan', data.keputusan);
       this.field(doc, 'Catatan Inspector', data.catatanInspector || '-');
       this.field(doc, 'Status', 'APPROVED');
+
+      if (photos.length > 0) {
+        const columns = 2;
+        const rows = 2;
+        const gap = 12;
+        const cardWidth = (531 - gap) / columns;
+        const cardHeight = 310;
+
+        photos.forEach((photo, index) => {
+          const slot = index % (columns * rows);
+          if (slot === 0) {
+            doc.addPage();
+            this.header(doc, 'CONSTRUCTION INSPECTION CHECKLIST');
+            this.section(doc, `LAMPIRAN DOKUMENTASI FOTO (${index + 1}-${Math.min(index + columns * rows, photos.length)} DARI ${photos.length})`);
+          }
+          const column = slot % columns;
+          const row = Math.floor(slot / columns);
+          const x = 32 + column * (cardWidth + gap);
+          const y = 108 + row * (cardHeight + gap);
+          doc.roundedRect(x, y, cardWidth, cardHeight, 5).fillAndStroke('#ffffff', '#ccd7e5');
+          doc.font('Helvetica-Bold').fontSize(7).fillColor('#243b5a').text(`Foto ${index + 1}`, x + 8, y + 8, {
+            width: cardWidth - 16,
+          });
+          try {
+            doc.image(photo, x + 8, y + 25, {
+              fit: [cardWidth - 16, cardHeight - 33],
+              align: 'center',
+              valign: 'center',
+            });
+          } catch {
+            doc.font('Helvetica').fontSize(7).fillColor('#b42318').text('Foto tidak dapat ditampilkan', x + 8, y + 40, {
+              width: cardWidth - 16,
+              align: 'center',
+            });
+          }
+        });
+      }
     });
   }
 
