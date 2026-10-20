@@ -782,6 +782,7 @@ export function TenderEvaluationForm({
                   style={input}
                   type="number"
                   min="0"
+                  placeholder="Harga acuan internal paket tender"
                   value={config.internalPrice ?? ""}
                   onChange={(e) =>
                     setConfig((c) => ({
@@ -797,6 +798,7 @@ export function TenderEvaluationForm({
                   style={input}
                   type="number"
                   min="1"
+                  placeholder="Misal: 90"
                   value={data.durationDays ?? ""}
                   onChange={(e) => set("durationDays", Number(e.target.value))}
                 />
@@ -809,7 +811,7 @@ export function TenderEvaluationForm({
                     : "—"}
                 </strong>
                 <small>
-                  (Harga internal − SPH final) / Harga internal × 100%
+                  (Harga internal − SPH terakhir sah) / Harga internal × 100%
                 </small>
               </div>
             </div>
@@ -826,6 +828,13 @@ export function TenderEvaluationForm({
                 ? `Durasi ditawarkan: ${data.durationDays} hari. Perbandingan durasi dilakukan antarvendor dengan jadwal yang layak diverifikasi.`
                 : "Durasi pekerjaan belum diisi."}
             </div>
+            <p style={{ color: "#62748c", fontSize: 12, marginBottom: 0 }}>
+              Harga internal bersifat rahasia dan hanya boleh diakses tim
+              berwenang. Margin positif berarti SPH lebih rendah dari harga
+              internal, bukan margin laba vendor. Durasi lebih cepat mendapat
+              nilai lebih tinggi hanya jika realistis, memenuhi batas minimum
+              keselamatan, dan didukung rencana kerja.
+            </p>
           </section>
           <section id="eval-C" style={box}>
             <h2>C. Penilaian Dokumen Pendukung (1–100)</h2>
