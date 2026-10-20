@@ -1888,6 +1888,7 @@ model TenderProcess {
   tanggalSelesai DateTime?    @map("tanggal_selesai") @db.Date
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
+  evaluasiConfig Json?        @map("evaluasi_config")
 
   documentFolders DocumentFolder[]
   undangan        TenderUndangan[]
@@ -1932,6 +1933,9 @@ model EvaluasiVendor {
   hargaNegosiasi      Decimal? @map("harga_negosiasi") @db.Decimal(4, 2)
   sheSkor             Decimal? @map("she_skor") @db.Decimal(4, 2)
   legalitasSkor       Decimal? @map("legalitas_skor") @db.Decimal(4, 2)
+  evaluasiData        Json?    @map("evaluasi_data")
+  dokumenAdminFiles   String[] @default([]) @map("dokumen_admin_files")
+  dokumenHseFiles     String[] @default([]) @map("dokumen_hse_files")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

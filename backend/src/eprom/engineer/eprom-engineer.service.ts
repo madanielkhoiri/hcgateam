@@ -19,6 +19,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Min,
@@ -104,6 +105,12 @@ export class ReviewChecklistFormDto {
   @IsString() @IsNotEmpty() keputusan: string;
   @IsOptional() @IsString() catatanInspector?: string;
   @IsOptional() @IsArray() checklist?: Array<Record<string, unknown>>;
+  @IsOptional() @IsObject() formData?: Record<string, unknown>;
+}
+
+export class RevisionChecklistFormDto {
+  @IsObject() formData: Record<string, unknown>;
+  @IsArray() checklist: Array<Record<string, unknown>>;
 }
 
 export class ReviewEngineerDto {
@@ -395,6 +402,7 @@ export class EpromEngineerService {
     }
     const formData = {
       ...(formLama as Record<string, unknown>),
+      ...(dto.formData ?? {}),
       ...(dto.checklist ? { checklist: dto.checklist } : {}),
       inspector: dto.inspector.trim(),
       keputusan: dto.keputusan,
@@ -417,6 +425,32 @@ export class EpromEngineerService {
         komentar: dto.catatanInspector?.trim() || null,
         formData,
         ...(pdfUrl ? { fileUrl: pdfUrl, originalFileName: `construction-checklist-${id}.pdf` } : {}),
+      },
+    });
+  }
+
+  async revisionChecklistForm(aktor: AktorEprom, id: number, dto: RevisionChecklistFormDto) {
+    const item = await this.itemAtauThrow('checklist-tahapan', id);
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+    if (item.status !== StatusApprovalEprom.REJECTED) {
+      throw new BadRequestException('Hanya checklist berstatus Reject yang dapat direvisi');
+    }
+    const formLama = item.formData && typeof item.formData === 'object' ? item.formData as Record<string, unknown> : {};
+    const riwayatReview = Array.isArray(formLama.riwayatReview) ? formLama.riwayatReview : [];
+    return this.delegate('checklist-tahapan').update({
+      where: { id },
+      data: {
+        status: StatusApprovalEprom.PENDING,
+        komentar: null,
+        formData: {
+          ...formLama,
+          ...dto.formData,
+          checklist: dto.checklist,
+          riwayatReview: [...riwayatReview, { inspector: formLama.inspector, keputusan: formLama.keputusan, catatan: formLama.catatanInspector, pada: new Date().toISOString() }],
+          inspector: '',
+          keputusan: '',
+          catatanInspector: '',
+        },
       },
     });
   }

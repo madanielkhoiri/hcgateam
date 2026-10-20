@@ -17,38 +17,20 @@ import {
   KODE_EVALUASI_VENDOR,
   LABEL_ITEM_TEKNIS,
   LABEL_KATEGORI_EVALUASI_VENDOR,
-  LABEL_ROUND_TEKNIS,
   LABEL_STATUS_TENDER,
-  type EvaluasiVendorItem,
-  type KategoriEvaluasiTeknis,
-  type KategoriEvaluasiVendor,
   type TenderDetail,
   type Vendor,
 } from "@/lib/eprom-api";
 import { FolderExplorer } from "@/components/civil-project/folder-explorer";
 import { Modal } from "@/components/civil-project/modal";
 import { TenderChatPanel } from "@/components/civil-project/tender-chat-panel";
+import { TenderEvaluationForm } from "@/components/civil-project/tender-evaluation-form";
 import styles from "../tender.module.css";
 
 type Tab = "dokumen" | "undangan" | "sph";
+const statusEvaluasi = (_value: unknown) => ({ label: "-", kelas: "statusKosong" });
+const statusTeknis = (_value: unknown) => ({ label: "-", kelas: "statusKosong" });
 
-type KategoriGabungan = KategoriEvaluasiVendor | KategoriEvaluasiTeknis;
-
-const KATEGORI_SEMUA: KategoriGabungan[] = [...KATEGORI_EVALUASI_VENDOR, ...KATEGORI_EVALUASI_TEKNIS];
-
-function statusEvaluasi(nilaiAvg: number | null): { label: string; kelas: string } {
-  if (nilaiAvg === null) return { label: "Belum Dinilai", kelas: "statusKosong" };
-  if (nilaiAvg >= 75) return { label: "Baik", kelas: "statusBaik" };
-  if (nilaiAvg >= 50) return { label: "Cukup", kelas: "statusCukup" };
-  return { label: "Kurang", kelas: "statusKurang" };
-}
-
-function statusTeknis(roundTeknis: number | null): { label: string; kelas: string } {
-  if (roundTeknis === null) return { label: "Belum Dinilai", kelas: "statusKosong" };
-  if (roundTeknis >= 3) return { label: LABEL_ROUND_TEKNIS[3], kelas: "statusBaik" };
-  if (roundTeknis === 2) return { label: LABEL_ROUND_TEKNIS[2], kelas: "statusCukup" };
-  return { label: LABEL_ROUND_TEKNIS[1], kelas: "statusKurang" };
-}
 
 export default function TenderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -72,11 +54,13 @@ export default function TenderDetailPage() {
   const [editingRoundId, setEditingRoundId] = useState<number | null>(null);
   const [editRoundFile, setEditRoundFile] = useState<File[]>([]);
   const [editRoundHarga, setEditRoundHarga] = useState("");
-  const [evaluasiVendorList, setEvaluasiVendorList] = useState<EvaluasiVendorItem[]>([]);
-  const [formOpen, setFormOpen] = useState(false);
-  const [formVendorId, setFormVendorId] = useState<number | null>(null);
-  const [formKode, setFormKode] = useState<Partial<Record<KategoriGabungan, string>>>({});
   const [chatVendor, setChatVendor] = useState<{ vendorId: number; namaVendor: string } | null>(null);
+  const evaluasiVendorList: any[] = [];
+  const formOpen = false, formVendorId: number | null = null;
+  const formKode: Record<string, string> = {};
+  const bukaFormTambah = () => undefined, bukaFormEdit = (_item: any) => undefined;
+  const pilihVendorForm = (_id: string) => undefined, simpanForm = async () => undefined;
+  const setFormOpen = (_value: boolean) => undefined, setFormKode = (_value: any) => undefined;
 
   function muatUlang() {
     epromApi.tender
@@ -85,73 +69,15 @@ export default function TenderDetailPage() {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Gagal memuat tender"));
   }
 
-  function muatEvaluasiVendor() {
-    epromApi.tender.evaluasiVendor
-      .daftar(tenderId)
-      .then(setEvaluasiVendorList)
-      .catch(() => setEvaluasiVendorList([]));
-  }
 
   useEffect(() => {
     muatUlang();
     if (boleh) {
       epromApi.vendor.daftar(true).then(setVendorList).catch(() => setVendorList([]));
-      muatEvaluasiVendor();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenderId]);
 
-  function kodeKeString(item?: EvaluasiVendorItem): Partial<Record<KategoriGabungan, string>> {
-    const hasil: Partial<Record<KategoriGabungan, string>> = {};
-    for (const kategori of KATEGORI_SEMUA) {
-      const nilai = item?.evaluasi?.[kategori];
-      if (nilai !== null && nilai !== undefined) hasil[kategori] = String(nilai);
-    }
-    return hasil;
-  }
-
-  function bukaFormTambah() {
-    setFormVendorId(null);
-    setFormKode({});
-    setFormOpen(true);
-  }
-
-  function bukaFormEdit(item: EvaluasiVendorItem) {
-    setFormVendorId(item.vendorId);
-    setFormKode(kodeKeString(item));
-    setFormOpen(true);
-  }
-
-  function pilihVendorForm(vendorId: string) {
-    const id = vendorId ? Number(vendorId) : null;
-    setFormVendorId(id);
-    setFormKode(kodeKeString(evaluasiVendorList.find((v) => v.vendorId === id)));
-  }
-
-  async function simpanForm() {
-    if (!formVendorId) {
-      setError("Pilih vendor terlebih dahulu");
-      return;
-    }
-
-    const data: Partial<Record<KategoriGabungan, number | null>> = {};
-    for (const kategori of KATEGORI_SEMUA) {
-      const nilai = formKode[kategori];
-      data[kategori] = nilai ? Number(nilai) : null;
-    }
-
-    setSubmitting(true);
-    setError(null);
-    try {
-      await epromApi.tender.evaluasiVendor.ubah(tenderId, formVendorId, data);
-      setFormOpen(false);
-      muatEvaluasiVendor();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menyimpan evaluasi vendor");
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   async function tetapkanPemenang(vendorId: number, namaVendor: string) {
     if (!confirm(`Tetapkan "${namaVendor}" sebagai pemenang tender ini?`)) return;
@@ -747,7 +673,9 @@ export default function TenderDetailPage() {
             );
           })}
 
-          {boleh && detail.undangan.length > 0 && (
+          {boleh && detail.undangan.length > 0 && <TenderEvaluationForm tenderId={tenderId} styles={styles} />}
+
+          {false && boleh && detail!.undangan.length > 0 && (
             <>
               <div className={styles.headerRow} style={{ marginTop: 28 }}>
                 <div>
@@ -864,7 +792,7 @@ export default function TenderDetailPage() {
         </div>
       )}
 
-      {formOpen && (
+      {false && formOpen && (
         <Modal
           title={formVendorId ? "Edit Penilaian Vendor" : "Tambah Penilaian Vendor"}
           onClose={() => setFormOpen(false)}
@@ -878,7 +806,7 @@ export default function TenderDetailPage() {
               onChange={(e) => pilihVendorForm(e.target.value)}
             >
               <option value="">Pilih vendor...</option>
-              {detail.undangan.map((u) => (
+              {detail!.undangan.map((u) => (
                 <option key={u.vendorId} value={u.vendorId}>
                   {u.vendor.namaVendor}
                 </option>
@@ -902,7 +830,7 @@ export default function TenderDetailPage() {
                     }`}
                     value={kodeTerpilih}
                     onChange={(e) =>
-                      setFormKode((cur) => ({ ...cur, [kategori]: e.target.value }))
+                      setFormKode((cur: Record<string, string>) => ({ ...cur, [kategori]: e.target.value }))
                     }
                     disabled={!formVendorId}
                   >
@@ -938,7 +866,7 @@ export default function TenderDetailPage() {
                   style={{ width: "100%" }}
                   value={formKode[kategori] ?? ""}
                   onChange={(e) =>
-                    setFormKode((cur) => ({ ...cur, [kategori]: e.target.value }))
+                    setFormKode((cur: Record<string, string>) => ({ ...cur, [kategori]: e.target.value }))
                   }
                   disabled={!formVendorId}
                   placeholder="mis. 2.5"
@@ -959,10 +887,10 @@ export default function TenderDetailPage() {
         </Modal>
       )}
 
-      {evaluasiVendorList.length > 0 && (
+      {false && evaluasiVendorList.length > 0 && (
         <div className={styles.cetakArea}>
           <h1 className={styles.cetakJudul}>
-            REKAP PENILAIAN EVALUASI MATERI TENDER PROYEK {detail.namaTender.toUpperCase()}
+            REKAP PENILAIAN EVALUASI MATERI TENDER PROYEK {detail!.namaTender.toUpperCase()}
           </h1>
 
           <table className={styles.cetakTable}>

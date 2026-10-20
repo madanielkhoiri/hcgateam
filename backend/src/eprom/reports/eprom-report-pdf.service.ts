@@ -90,6 +90,36 @@ export class EpromReportPdfService {
     doc.y = y + 11;
   }
 
+  async tenderEvaluation(report: any) {
+    const money = (value: unknown) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+    const yes = (value: unknown) => value === true ? 'Ya' : value === false ? 'Tidak' : '-';
+    const questions: [string, string][] = [['method', 'Metode kerja'], ['hsePresentation', 'Pengendalian K3'], ['finance', 'Kapasitas finansial'], ['warranty', 'Garansi'], ['experience', 'Pengalaman project'], ['boq', 'Penguasaan item pekerjaan'], ['organization', 'Struktur organisasi project']];
+    return this.document((doc) => {
+      this.header(doc, 'EVALUASI TENDER PPA');
+      this.section(doc, 'IDENTITAS & PARAMETER TENDER');
+      this.field(doc, 'Nama Paket Tender', report.namaTender);
+      this.field(doc, 'HPS / Harga Internal', money(report.config?.internalPrice));
+      this.field(doc, 'Minimum Manpower', report.config?.manpowerRequirement ?? '-');
+      this.field(doc, 'Evaluator', report.config?.evaluatorName ?? '-');
+      this.field(doc, 'Pejabat Penetap', report.config?.approverName ?? '-');
+      this.section(doc, 'RANKING HASIL EVALUASI');
+      report.vendors.forEach((v: any, i: number) => this.field(doc, `${i + 1}. ${v.namaVendor}`, v.eligible ? `Skor ${v.score}/100 | SPH ${money(v.data.finalSph)} | ${v.data.durationDays || '-'} hari | ${v.data.recommendationStatus === 'recommended' ? 'Direkomendasikan' : 'Tidak direkomendasikan'}` : 'Tidak memenuhi syarat wajib'));
+      for (const vendor of report.vendors) {
+        doc.addPage(); this.header(doc, `EVALUASI - ${String(vendor.namaVendor).toUpperCase()}`);
+        const d = vendor.data ?? {};
+        this.section(doc, 'A. IDENTITAS TENDER & RESPONS UNDANGAN');
+        this.field(doc, 'Nama Vendor', vendor.namaVendor); this.field(doc, 'Undangan Dikirim', d.invitationDate || '-'); this.field(doc, 'Respons Diterima', d.responseDate || '-'); this.field(doc, 'Respons Vendor', d.response || '-');
+        this.section(doc, 'B. PENAWARAN HARGA & DURASI');
+        (d.sphRounds ?? []).forEach((r: any, i: number) => this.field(doc, `SPH Putaran ${i + 1}`, `${money(r.value)} | Deadline ${r.deadline || '-'} | Diterima ${r.receivedAt || '-'} | Verifikasi ${r.verification || '-'}`));
+        this.field(doc, 'SPH Terakhir Sah', money(d.finalSph)); this.field(doc, 'Durasi Ditawarkan', `${d.durationDays || '-'} hari`);
+        this.section(doc, 'C. DOKUMEN PENDUKUNG'); this.field(doc, 'Company Profile', `${d.adminScore || 0}/100 | ${vendor.evaluasi?.dokumenAdminFiles?.length || 0} file`); this.field(doc, 'Komitmen K3 / SHE', `${d.hseScore || 0}/100 | ${vendor.evaluasi?.dokumenHseFiles?.length || 0} file`);
+        this.section(doc, 'D. PRESENTASI & PEMAHAMAN'); questions.forEach(([key, label]) => this.field(doc, label, yes(d.presentation?.[key]))); this.field(doc, 'Catatan Presentasi', d.presentationNotes || '-');
+        this.section(doc, 'E. MANPOWER & PEMBERDAYAAN LOKAL'); this.field(doc, 'Manpower Ditawarkan', d.manpowerOffered || 0); this.field(doc, 'Tenaga Lokal', d.localWorkers || 0); this.field(doc, 'Tenaga Nonlokal', d.nonLocalWorkers || 0); this.field(doc, 'Persentase Lokal', `${vendor.localPercent}%`);
+        this.section(doc, 'F. REKOMENDASI TENDER'); this.field(doc, 'Status', d.recommendationStatus === 'recommended' ? 'DIREKOMENDASIKAN' : 'TIDAK DIREKOMENDASIKAN'); this.field(doc, 'Catatan Keputusan', d.decisionNotes || '-'); this.field(doc, 'Skor Akhir', vendor.score === null ? 'Tidak memenuhi syarat' : `${vendor.score}/100`);
+      }
+    });
+  }
+
   async constructionChecklist(data: any, project: ProjectInfo) {
     return this.document((doc) => {
       this.header(doc, 'CONSTRUCTION INSPECTION CHECKLIST');

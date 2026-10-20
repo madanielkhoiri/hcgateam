@@ -1,136 +1,20 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { BadRequestException } from '@nestjs/common';
 import { EpromEvaluasiVendorService } from './eprom-evaluasi-vendor.service';
 
-function buatService(overrides: {
-  tender?: unknown;
-  undangan?: unknown;
-  undanganList?: unknown[];
-  evaluasiList?: unknown[];
-  upsert?: jest.Mock;
-} = {}) {
-  const upsert = overrides.upsert ?? jest.fn(({ create, update }) => Promise.resolve({ tenderId: 1, vendorId: 1, ...create, ...update }));
-
-  const prisma = {
-    tenderProcess: {
-      findUnique: jest.fn().mockResolvedValue('tender' in overrides ? overrides.tender : { id: 1 }),
-    },
-    tenderUndangan: {
-      findUnique: jest.fn().mockResolvedValue('undangan' in overrides ? overrides.undangan : { tenderId: 1, vendorId: 1 }),
-      findMany: jest.fn().mockResolvedValue(overrides.undanganList ?? []),
-    },
-    evaluasiVendor: {
-      findMany: jest.fn().mockResolvedValue(overrides.evaluasiList ?? []),
-      upsert,
-    },
-  } as unknown as PrismaService;
-
-  const service = new EpromEvaluasiVendorService(prisma);
-
-  return { service, prisma, upsert };
+const complete = { adminScore: 80, hseScore: 85, response: 'ikut', invitationDate: '2026-01-01', responseDate: '2026-01-02', finalSph: 100, durationDays: 10, sphRounds: [{ deadline: '2026-01-03', receivedAt: '2026-01-02' }], presentation: { method: true, hsePresentation: true, finance: true, warranty: true, experience: true, boq: true, organization: true }, manpowerOffered: 10, localWorkers: 8 };
+function service(tender: any) {
+  const prisma: any = { tenderProcess: { findUnique: jest.fn().mockResolvedValue(tender) } };
+  return new EpromEvaluasiVendorService(prisma, {} as any, {} as any);
 }
 
-describe('EpromEvaluasiVendorService.daftar — nilaiAvg eksternal', () => {
-  it('vendor tanpa evaluasi sama sekali menghasilkan evaluasi & nilaiAvg null', async () => {
-    const { service } = buatService({
-      undanganList: [{ vendor: { id: 1, namaVendor: 'PT A' } }],
-      evaluasiList: [],
-    });
-
-    const [hasil] = await service.daftar(1);
-
-    expect(hasil.evaluasi).toBeNull();
-    expect(hasil.nilaiAvg).toBeNull();
-    expect(hasil.nilaiTeknis).toBeNull();
+describe('EpromEvaluasiVendorService - format Revisi 5', () => {
+  it('menghitung ranking lengkap menjadi 100', async () => {
+    const evaluasi = { vendorId: 1, evaluasiData: complete, dokumenAdminFiles: ['a.pdf'], dokumenHseFiles: ['h.pdf'] };
+    const hasil = await service({ id: 1, namaTender: 'Tender', jenisTender: 'VENDOR', evaluasiConfig: { manpowerRequirement: 10 }, undangan: [{ vendorId: 1, vendor: { id: 1, namaVendor: 'PT A' } }], evaluasiVendor: [evaluasi] }).daftar(1);
+    expect(hasil.vendors[0]).toMatchObject({ eligible: true, score: 100, localPercent: 80 });
   });
 
-  it('menghitung rata-rata bobot kode 1-4 dengan benar', async () => {
-    const { service } = buatService({
-      undanganList: [{ vendor: { id: 1, namaVendor: 'PT A' } }],
-      evaluasiList: [{ vendorId: 1, bumdesKode: 1, bupatiDprKode: 2 }],
-    });
-
-    const [hasil] = await service.daftar(1);
-
-    expect(hasil.nilaiAvg).toBe(87.5);
-  });
-
-  it('kode 4 (Track Record Tidak Baik) bernilai bobot 0', async () => {
-    const { service } = buatService({
-      undanganList: [{ vendor: { id: 1, namaVendor: 'PT A' } }],
-      evaluasiList: [{ vendorId: 1, bumdesKode: 4 }],
-    });
-
-    const [hasil] = await service.daftar(1);
-
-    expect(hasil.nilaiAvg).toBe(0);
-  });
-});
-
-describe('EpromEvaluasiVendorService.daftar — nilaiTeknis berbobot', () => {
-  it('menghitung nilaiTeknis berbobot penuh saat kelima kriteria terisi', async () => {
-    const { service } = buatService({
-      undanganList: [{ vendor: { id: 1, namaVendor: 'PT A' } }],
-      evaluasiList: [{
-        vendorId: 1,
-        teknikalMetode: 8, teknikalAlatKerja: 8, teknikalSpesifikasi: 8, teknikalPengalaman: 8, teknikalKomunikatif: 8,
-        scheduleSkor: 6,
-        hargaKetepatanWaktu: 10, hargaNegosiasi: 10,
-        sheSkor: 4,
-        legalitasSkor: 10,
-      }],
-    });
-
-    const [hasil] = await service.daftar(1);
-
-    expect(hasil.teknikalAvg).toBe(8);
-    expect(hasil.hargaAvg).toBe(10);
-    expect(hasil.nilaiTeknis).toBe(7.5);
-    expect(hasil.roundTeknis).toBe(8);
-  });
-
-  it('hanya menghitung dari kriteria yang terisi kalau sebagian kosong', async () => {
-    const { service } = buatService({
-      undanganList: [{ vendor: { id: 1, namaVendor: 'PT A' } }],
-      evaluasiList: [{
-        vendorId: 1,
-        teknikalMetode: 8, teknikalAlatKerja: 8, teknikalSpesifikasi: 8, teknikalPengalaman: 8, teknikalKomunikatif: 8,
-      }],
-    });
-
-    const [hasil] = await service.daftar(1);
-
-    expect(hasil.teknikalAvg).toBe(8);
-    expect(hasil.nilaiTeknis).toBe(8);
-    expect(hasil.roundTeknis).toBe(8);
-  });
-});
-
-describe('EpromEvaluasiVendorService.ubah', () => {
-  it('melempar NotFoundException kalau tender tidak ada', async () => {
-    const { service } = buatService({ tender: null });
-
-    await expect(service.ubah(1, 1, {} as any)).rejects.toThrow(NotFoundException);
-  });
-
-  it('menolak kalau vendor belum diundang pada tender tersebut', async () => {
-    const { service } = buatService({ undangan: null });
-
-    await expect(service.ubah(1, 1, {} as any)).rejects.toThrow(BadRequestException);
-  });
-
-  it('upsert evaluasi dan mengembalikan skor terhitung', async () => {
-    const { service, upsert } = buatService();
-
-    const hasil = await service.ubah(1, 1, { bumdesKode: 1 } as any);
-
-    expect(upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { tenderId_vendorId: { tenderId: 1, vendorId: 1 } },
-        create: { tenderId: 1, vendorId: 1, bumdesKode: 1 },
-        update: { bumdesKode: 1 },
-      }),
-    );
-    expect(hasil.nilaiAvg).toBe(100);
+  it('menolak evaluasi untuk tender internal', async () => {
+    await expect(service({ id: 1, jenisTender: 'INTERNAL' }).daftar(1)).rejects.toBeInstanceOf(BadRequestException);
   });
 });

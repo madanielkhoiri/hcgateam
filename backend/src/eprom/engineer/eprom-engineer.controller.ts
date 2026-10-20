@@ -30,6 +30,7 @@ import {
   EpromEngineerService,
   ReviewEngineerDto,
   ReviewChecklistFormDto,
+  RevisionChecklistFormDto,
   UbahEngineerDto,
 } from './eprom-engineer.service';
 
@@ -117,6 +118,15 @@ export class EpromEngineerController {
     @Body() dto: ReviewChecklistFormDto,
   ) {
     return this.service.reviewChecklistForm(aktor, id, dto);
+  }
+
+  @Patch('checklist-tahapan/:id/form-revision')
+  revisionChecklistForm(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RevisionChecklistFormDto,
+  ) {
+    return this.service.revisionChecklistForm(aktor, id, dto);
   }
 
   @Post(':tipe/:id/approve')

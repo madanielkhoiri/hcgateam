@@ -205,6 +205,16 @@ export type EvaluasiVendorItem = {
   roundTeknis: number | null;
 };
 
+export type TenderEvaluationData = {
+  invitationDate?: string; responseDate?: string; response?: '' | 'ikut' | 'tidak';
+  sphRounds?: Array<{ deadline?: string; receivedAt?: string; value?: number; verification?: '' | 'pending' | 'yes' | 'no' }>;
+  finalSph?: number; durationDays?: number; adminScore?: number; hseScore?: number;
+  presentation?: Record<string, boolean>; presentationNotes?: string;
+  manpowerOffered?: number; localWorkers?: number; nonLocalWorkers?: number;
+  recommendationStatus?: '' | 'recommended' | 'not_recommended'; decisionNotes?: string;
+};
+export type TenderEvaluationReport = { tenderId: number; namaTender: string; config: Record<string, any>; vendors: Array<{ vendorId: number; namaVendor: string; evaluasi: ({ dokumenAdminFiles: string[]; dokumenHseFiles: string[] } & Record<string, any>) | null; data: TenderEvaluationData; eligible: boolean; score: number | null; localPercent: number }> };
+
 export type Kontrak = {
   id: number;
   tenderId: number;
@@ -795,16 +805,16 @@ export const epromApi = {
       request<TenderDetail>(`/tender/${tenderId}/tetapkan-pemenang/${vendorId}`, { method: 'POST' }),
     evaluasiVendor: {
       daftar: (tenderId: number) =>
-        request<EvaluasiVendorItem[]>(`/tender/${tenderId}/evaluasi-vendor`),
+        request<TenderEvaluationReport>(`/tender/${tenderId}/evaluasi-vendor`),
       ubah: (
         tenderId: number,
         vendorId: number,
-        data: Partial<Record<KategoriEvaluasiVendor | KategoriEvaluasiTeknis, number | null>>,
-      ) =>
-        request<EvaluasiVendorDetail>(`/tender/${tenderId}/evaluasi-vendor/${vendorId}`, {
+        data: TenderEvaluationData, config: Record<string, any>, admin: File[] = [], hse: File[] = [],
+      ) => { const form = new FormData(); form.append('data', JSON.stringify(data)); form.append('config', JSON.stringify(config)); admin.forEach((f) => form.append('admin', f)); hse.forEach((f) => form.append('hse', f)); return request<TenderEvaluationReport>(`/tender/${tenderId}/evaluasi-vendor/${vendorId}`, {
           method: 'PATCH',
-          body: JSON.stringify(data),
-        }),
+          body: form,
+        }); },
+      pdf: (tenderId: number) => unduhBlob(`/tender/${tenderId}/evaluasi-vendor/pdf/final`),
     },
     /** Chat undangan tender (khusus Owner) â€” vendor tetap balas lewat email biasa. */
     pesan: {
@@ -969,8 +979,13 @@ export const epromApi = {
       request<EngineerItem>(`/engineer/${tipe}/${id}/approve-tanpa-ttd`, {
         method: 'POST',
       }),
-    reviewChecklistForm: (id: number, payload: { inspector: string; status: 'APPROVED' | 'REJECTED'; keputusan: string; catatanInspector?: string; checklist?: Array<Record<string, unknown>> }) =>
+    reviewChecklistForm: (id: number, payload: { inspector: string; status: 'APPROVED' | 'REJECTED'; keputusan: string; catatanInspector?: string; checklist?: Array<Record<string, unknown>>; formData?: Record<string, unknown> }) =>
       request<EngineerItem>(`/engineer/checklist-tahapan/${id}/form-review`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }),
+    revisionChecklistForm: (id: number, payload: { formData: Record<string, unknown>; checklist: Array<Record<string, unknown>> }) =>
+      request<EngineerItem>(`/engineer/checklist-tahapan/${id}/form-revision`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       }),
