@@ -627,7 +627,10 @@ export function TenderEvaluationForm({
                         style={{
                           padding: 9,
                           textAlign: "left",
-                          background: "#f5f8fd",
+                          background:
+                            x === "Verifikasi" ? "#fff1df" : "#f5f8fd",
+                          color:
+                            x === "Verifikasi" ? "#a64b00" : "#162b48",
                         }}
                       >
                         {x}
@@ -638,10 +641,10 @@ export function TenderEvaluationForm({
                 <tbody>
                   {rounds.map((r, i) => (
                     <tr key={i}>
-                      <td>
+                      <td data-label="Putaran">
                         <b>SPH {i + 1}</b>
                       </td>
-                      <td>
+                      <td data-label="Deadline">
                         <input
                           style={input}
                           type="datetime-local"
@@ -658,7 +661,7 @@ export function TenderEvaluationForm({
                           }
                         />
                       </td>
-                      <td>
+                      <td data-label="Diterima">
                         <input
                           style={input}
                           type="datetime-local"
@@ -675,7 +678,7 @@ export function TenderEvaluationForm({
                           }
                         />
                       </td>
-                      <td>
+                      <td data-label="Nilai SPH (Rp)">
                         <input
                           style={input}
                           type="number"
@@ -693,7 +696,7 @@ export function TenderEvaluationForm({
                           }
                         />
                       </td>
-                      <td>
+                      <td data-label="Verifikasi">
                         <select
                           aria-label={`Verifikasi SPH ${i + 1}`}
                           style={{
@@ -732,14 +735,14 @@ export function TenderEvaluationForm({
                           <option value="no">SPH tidak sah</option>
                         </select>
                       </td>
-                      <td>
+                      <td data-label="Ketepatan">
                         {ontime(r) === null
                           ? pill("Belum lengkap", "warn")
                           : ontime(r)
                             ? pill("Tepat waktu", "good")
                             : pill("Terlambat", "bad")}
                       </td>
-                      <td>
+                      <td data-label="Aksi">
                         <button
                           style={{ ...btn, color: "#b22e37" }}
                           disabled={rounds.length === 1}
