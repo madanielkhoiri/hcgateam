@@ -526,15 +526,47 @@ export class EpromTenderService {
   async tetapkanPemenang(tenderId: number, vendorId: number) {
     await this.wajibTenderVendor(tenderId);
 
-    const roundFinal = await this.prisma.tenderSPH.findFirst({
+    const undangan = await this.prisma.tenderUndangan.findUnique({
+      where: { tenderId_vendorId: { tenderId, vendorId } },
+    });
+    if (!undangan) {
+      throw new BadRequestException('Vendor bukan peserta tender ini');
+    }
+
+    let roundFinal = await this.prisma.tenderSPH.findFirst({
       where: { tenderId, vendorId, isFinal: true, hargaPenawaran: { not: null } },
       orderBy: { roundKe: 'desc' },
     });
 
     if (!roundFinal) {
-      throw new BadRequestException(
-        'Vendor ini belum memiliki SPH final berharga — finalisasi SPH terlebih dahulu',
-      );
+      const evaluasi = await this.prisma.evaluasiVendor.findUnique({
+        where: { tenderId_vendorId: { tenderId, vendorId } },
+      });
+      const data = (evaluasi?.evaluasiData ?? {}) as Record<string, any>;
+      const rounds = Array.isArray(data.sphRounds) ? data.sphRounds : [];
+      const last = rounds.at(-1);
+      const harga = last?.verification === 'yes' && Number(last?.value) > 0
+        ? Number(last.value)
+        : Number(data.finalSph) > 0 ? Number(data.finalSph) : null;
+
+      if (!harga) {
+        throw new BadRequestException(
+          'Vendor ini belum memiliki SPH sah dan berharga pada evaluasi',
+        );
+      }
+
+      const latest = await this.prisma.tenderSPH.findFirst({
+        where: { tenderId, vendorId },
+        orderBy: { roundKe: 'desc' },
+      });
+      roundFinal = latest
+        ? await this.prisma.tenderSPH.update({
+            where: { id: latest.id },
+            data: { hargaPenawaran: harga, isFinal: true },
+          })
+        : await this.prisma.tenderSPH.create({
+            data: { tenderId, vendorId, roundKe: 1, hargaPenawaran: harga, isFinal: true },
+          });
     }
 
     await this.prisma.$transaction(async (tx) => {

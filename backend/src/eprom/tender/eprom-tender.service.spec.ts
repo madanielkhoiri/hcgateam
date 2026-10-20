@@ -11,6 +11,7 @@ function buatService(overrides: {
   undangan?: unknown;
   jumlahSph?: number;
   roundTerakhir?: unknown;
+  evaluasiVendor?: unknown;
   undanganList?: unknown[];
   roundByIdMap?: Record<number, unknown>;
   vendorList?: unknown[];
@@ -69,6 +70,9 @@ function buatService(overrides: {
       update: sphUpdate,
       updateMany: sphUpdateMany,
       delete: sphDelete,
+    },
+    evaluasiVendor: {
+      findUnique: jest.fn().mockResolvedValue(overrides.evaluasiVendor ?? null),
     },
     $transaction: jest.fn((arg) => {
       if (Array.isArray(arg)) {
@@ -460,7 +464,7 @@ describe('EpromTenderService.tetapkanPemenang', () => {
   it('menolak kalau vendor belum punya SPH final berharga', async () => {
     const { service } = buatService({ roundTerakhir: null });
 
-    await expect(service.tetapkanPemenang(1, 1)).rejects.toThrow('belum memiliki SPH final berharga');
+    await expect(service.tetapkanPemenang(1, 1)).rejects.toThrow('belum memiliki SPH sah dan berharga');
   });
 
   it('reset pemenang lama, set pemenang baru, dan set status tender SELESAI', async () => {
@@ -475,6 +479,31 @@ describe('EpromTenderService.tetapkanPemenang', () => {
       data: { statusPemenang: false },
     });
     expect(sphUpdate).toHaveBeenCalledWith({ where: { id: 10 }, data: { statusPemenang: true } });
+    expect(tenderUpdate).toHaveBeenCalledWith({ where: { id: 1 }, data: { status: StatusTender.SELESAI } });
+  });
+
+  it('membuat SPH final dari evaluasi lalu menetapkan vendor sebagai pemenang', async () => {
+    const { service, sphCreate, sphUpdateMany, tenderUpdate } = buatService({
+      roundTerakhir: null,
+      evaluasiVendor: {
+        evaluasiData: {
+          sphRounds: [{ value: 1250000, verification: 'yes' }],
+        },
+      },
+    });
+
+    await service.tetapkanPemenang(1, 1);
+
+    expect(sphCreate).toHaveBeenCalledWith({
+      data: {
+        tenderId: 1,
+        vendorId: 1,
+        roundKe: 1,
+        hargaPenawaran: 1250000,
+        isFinal: true,
+      },
+    });
+    expect(sphUpdateMany).toHaveBeenCalled();
     expect(tenderUpdate).toHaveBeenCalledWith({ where: { id: 1 }, data: { status: StatusTender.SELESAI } });
   });
 });

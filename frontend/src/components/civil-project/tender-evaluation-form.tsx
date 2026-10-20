@@ -323,21 +323,36 @@ export function TenderEvaluationForm({
     }
   };
   const finalizeTender = async () => {
-    if (!selected) return;
+    if (!selected || !report) return;
     const decision = config.decision || { mode: "fair", vendorId: leader?.vendorId ? String(leader.vendorId) : "", approver: "", reference: "", reason: "" };
-    const participants = results.filter((r) => r.data.response !== "tidak");
-    if (!participants.length || !participants.every((r) => r.score !== null)) return setError("Belum semua peserta memiliki nilai final lengkap.");
     const chosen = results.find((r) => String(r.vendorId) === String(decision.vendorId));
     if (!chosen) return setError("Pilih vendor yang ditetapkan.");
+    if (chosen.data.response === "tidak") return setError("Vendor yang tidak mengikuti tender tidak dapat ditetapkan sebagai pemenang.");
+    if (finalPrice(chosen.data) === null || Number(chosen.data.durationDays) <= 0) return setError("Vendor terpilih wajib memiliki SPH sah dan durasi pekerjaan.");
     if (!String(decision.approver || "").trim()) return setError("Nama penetap / pemberi persetujuan wajib diisi.");
     if (decision.mode === "fair" && chosen.vendorId !== leader?.vendorId) return setError("Jalur mengikuti evaluasi harus memilih vendor ranking 1.");
     if (decision.mode === "management" && !String(decision.reason || "").trim()) return setError("Alasan keputusan khusus manajemen wajib diisi.");
     const nextConfig = { ...config, decision, finalDecision: { ...decision, vendorName: chosen.namaVendor, score: chosen.score, timestamp: new Date().toISOString() } };
     setSaving(true); setError("");
     try {
-      const adjusted = { ...data, finalSph: finalPrice(data) ?? undefined };
-      const response = await epromApi.tender.evaluasiVendor.ubah(tenderId, selected, adjusted, nextConfig, admin, hse);
-      setConfig(response.config || nextConfig); setReport(response);
+      for (const row of report.vendors) {
+        const vendorData = drafts[row.vendorId] || row.data;
+        await epromApi.tender.evaluasiVendor.ubah(
+          tenderId,
+          row.vendorId,
+          { ...vendorData, finalSph: finalPrice(vendorData) ?? undefined },
+          nextConfig,
+          adminDrafts[row.vendorId] || [],
+          hseDrafts[row.vendorId] || [],
+        );
+      }
+      await epromApi.tender.tetapkanPemenang(tenderId, chosen.vendorId);
+      const refreshed = await epromApi.tender.evaluasiVendor.daftar(tenderId);
+      setConfig(refreshed.config || nextConfig);
+      setReport(refreshed);
+      setDrafts(Object.fromEntries(refreshed.vendors.map((row) => [row.vendorId, normalizeEvaluation(row.data)])));
+      setAdminDrafts({});
+      setHseDrafts({});
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal memfinalkan keputusan"); }
     finally { setSaving(false); }
   };
@@ -1144,7 +1159,7 @@ export function TenderEvaluationForm({
           </section>
           <section id="eval-finalisasi" style={box}>
             <h2>Finalisasi Tender & Keputusan Manajemen</h2>
-            <p style={{color:"#62748c",fontSize:12}}>Ranking objektif tidak diubah. Pilih jalur keputusan, kemudian finalkan. Catatan persetujuan tetap diperlukan untuk keputusan khusus.</p>
+            <p style={{color:"#62748c",fontSize:12}}>Ranking objektif tidak diubah. Vendor berstatus hijau maupun kuning dapat ditetapkan. Gunakan keputusan khusus manajemen jika memilih selain ranking 1.</p>
             <div style={grid}>
               <label>Jalur keputusan<select style={input} value={config.decision?.mode || "fair"} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:e.target.value,vendorId:e.target.value === "fair" && leader ? String(leader.vendorId) : c.decision?.vendorId || ""}}))}><option value="fair">Mengikuti hasil evaluasi (ranking 1)</option><option value="management">Keputusan khusus manajemen</option></select></label>
               <label>Vendor yang ditetapkan<select style={input} value={config.decision?.vendorId || (config.decision?.mode !== "management" && leader ? String(leader.vendorId) : "")} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",vendorId:e.target.value}}))}><option value="">Pilih vendor</option>{results.map((r)=><option key={r.vendorId} value={r.vendorId}>{r.namaVendor}{r.score !== null ? ` — ${r.score.toFixed(2)}/100` : " — belum lengkap"}</option>)}</select></label>
@@ -1153,8 +1168,8 @@ export function TenderEvaluationForm({
             </div>
             <label style={{display:"block",marginTop:12}}>Alasan dan dasar keputusan {config.decision?.mode === "management" ? "(wajib)" : ""}<textarea style={{...input,minHeight:65}} value={config.decision?.reason || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reason:e.target.value}}))} placeholder="Wajib diisi jika memilih vendor di luar hasil ranking objektif" /></label>
             <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${leader.score?.toFixed(2)}/100` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
-            <button style={primary} onClick={finalizeTender} disabled={saving}>Finalkan Keputusan</button>
-            {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score}/100<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
+            <button style={primary} onClick={finalizeTender} disabled={saving}>{saving ? "Memfinalkan..." : "Finalkan & Tetapkan Pemenang"}</button>
+            {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
           </section>
         </main>
       </div>
