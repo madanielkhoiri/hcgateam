@@ -980,6 +980,16 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
     }
   }
 
+  async function ubahStatusTindakLanjut(item: ProgressItem, status: "Open" | "Closed") {
+    setError(null);
+    try {
+      await epromApi.progress.ubahStatusTindakLanjut(tipe, item.id, status);
+      muat();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengubah status tindak lanjut");
+    }
+  }
+
   return (
     <div className={engineerStyles.panel}>
       <h2 className={engineerStyles.sectionTitle}>{LABEL_TIPE_PROGRESS[tipe]}</h2>
@@ -1055,7 +1065,17 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
                   <span>Area/Lokasi: {String(item.formData.area ?? "-")} / {String(item.formData.lokasi ?? "-")}</span>
                   <span>Temuan: {String(item.formData.kategori ?? "-")} — {String(item.formData.temuan ?? "-")}</span>
                   <span>Risiko: {String(item.formData.risiko ?? "-")}</span>
-                  <span>Status tindak lanjut: {String(item.formData.statusTindakLanjut ?? "-")}</span>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    Status tindak lanjut:
+                    <select
+                      value={String(item.formData.statusTindakLanjut ?? "Open")}
+                      onChange={(event) => ubahStatusTindakLanjut(item, event.target.value as "Open" | "Closed")}
+                      style={{ padding: "7px 10px", border: "1px solid #cbd8e6", borderRadius: 8 }}
+                    >
+                      <option value="Open">Open</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </label>
                 </div>
               </details>
             )}

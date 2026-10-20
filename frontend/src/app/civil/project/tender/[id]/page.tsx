@@ -194,6 +194,21 @@ export default function TenderDetailPage() {
     }
   }
 
+  async function bukaFileSph(path: string) {
+    const tab = window.open("", "_blank");
+    try {
+      const response = await fetch(urlUploads(path), { cache: "no-store" });
+      if (!response.ok) throw new Error(`File tidak dapat dibuka (${response.status})`);
+      const blobUrl = URL.createObjectURL(await response.blob());
+      if (tab) tab.location.href = blobUrl;
+      else window.location.href = blobUrl;
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (err) {
+      tab?.close();
+      setError(err instanceof Error ? err.message : "File SPH tidak dapat dibuka");
+    }
+  }
+
   async function batalkanUndangan(vendorId: number, namaVendor: string) {
     if (!confirm(`Batalkan undangan untuk "${namaVendor}"?`)) return;
     setError(null);
@@ -555,7 +570,7 @@ export default function TenderDetailPage() {
                         {(round.fileSphFiles?.length || round.fileSph) ? (
                           <span className={styles.roundFiles}>
                             {(round.fileSphFiles?.length ? round.fileSphFiles : [round.fileSph]).map((file, index) => file && (
-                              <a key={`${file}-${index}`} href={urlUploads(file)} target="_blank" rel="noreferrer">Lihat File {index + 1}</a>
+                              <button key={`${file}-${index}`} type="button" className={styles.secondaryButton} onClick={() => bukaFileSph(file)}>Lihat File {index + 1}</button>
                             ))}
                           </span>
                         ) : null}

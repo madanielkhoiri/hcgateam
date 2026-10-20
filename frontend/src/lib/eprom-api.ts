@@ -1057,6 +1057,11 @@ export const epromApi = {
     },
     hapus: (tipe: TipeProgress, id: number) =>
       request<{ message: string }>(`/progress/${tipe}/${id}`, { method: 'DELETE' }),
+    ubahStatusTindakLanjut: (tipe: 'tta' | 'kta', id: number, status: 'Open' | 'Closed') =>
+      request<ProgressItem>(`/progress/${tipe}/${id}/status-tindak-lanjut`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
     ubah: (
       tipe: TipeProgress,
       id: number,

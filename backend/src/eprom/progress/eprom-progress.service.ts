@@ -419,6 +419,29 @@ export class EpromProgressService {
     return { message: 'Item berhasil dihapus' };
   }
 
+  async ubahStatusTindakLanjut(
+    aktor: AktorEprom,
+    tipe: TipeProgress,
+    id: number,
+    statusRaw: string,
+  ) {
+    if (tipe !== 'tta' && tipe !== 'kta') {
+      throw new BadRequestException('Status tindak lanjut hanya tersedia untuk KTA/TTA');
+    }
+    const status = String(statusRaw || '').trim().toLowerCase();
+    if (!['open', 'closed'].includes(status)) {
+      throw new BadRequestException('Status harus Open atau Closed');
+    }
+    const item = await this.delegate(tipe).findUnique({ where: { id } });
+    if (!item) throw new NotFoundException(`${LABEL_TIPE[tipe]} tidak ditemukan`);
+    await this.akses.wajibAksesProject(aktor, item.projectId);
+    const lama = item.formData && typeof item.formData === 'object' ? item.formData : {};
+    return this.delegate(tipe).update({
+      where: { id },
+      data: { formData: { ...lama, statusTindakLanjut: status === 'closed' ? 'Closed' : 'Open' } },
+    });
+  }
+
   async ubah(
     aktor: AktorEprom,
     tipe: TipeProgress,

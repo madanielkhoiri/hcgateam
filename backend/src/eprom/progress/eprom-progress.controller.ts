@@ -105,6 +105,21 @@ export class EpromProgressController {
     return this.service.hapus(aktor, this.service.validasiTipe(tipeRaw), id);
   }
 
+  @Patch(':tipe/:id/status-tindak-lanjut')
+  ubahStatusTindakLanjut(
+    @Aktor() aktor: AktorEprom,
+    @Param('tipe') tipeRaw: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('status') status: string,
+  ) {
+    return this.service.ubahStatusTindakLanjut(
+      aktor,
+      this.service.validasiTipe(tipeRaw),
+      id,
+      status,
+    );
+  }
+
   @Patch(':tipe/:id')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   ubah(
