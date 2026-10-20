@@ -921,6 +921,8 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fileBaru, setFileBaru] = useState<File[]>([]);
+  const [itemAkanDitutup, setItemAkanDitutup] = useState<ProgressItem | null>(null);
+  const [filePenutupan, setFilePenutupan] = useState<File[]>([]);
 
   const muat = useCallback(() => {
     setLoading(true);
@@ -980,10 +982,12 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
     }
   }
 
-  async function ubahStatusTindakLanjut(item: ProgressItem, status: "Open" | "Closed") {
+  async function ubahStatusTindakLanjut(item: ProgressItem, status: "Open" | "Closed", files: File[] = []) {
     setError(null);
     try {
-      await epromApi.progress.ubahStatusTindakLanjut(tipe, item.id, status);
+      await epromApi.progress.ubahStatusTindakLanjut(tipe, item.id, status, files);
+      setItemAkanDitutup(null);
+      setFilePenutupan([]);
       muat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengubah status tindak lanjut");
@@ -996,6 +1000,18 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
 
       {(boleh || vendorSaya) && (
         <div style={{ marginBottom: 18 }}><KtaTtaPopup tipe={tipe.toUpperCase() as "KTA"|"TTA"} projectName={project?.namaProject ?? "Project aktif"} vendorName={project?.kontrak.vendor.namaVendor ?? "Vendor project"} onSubmit={simpanForm} submitting={submitting}/></div>
+      )}
+
+      {itemAkanDitutup && (
+        <div style={{position:"fixed",inset:0,zIndex:1300,background:"rgba(8,24,48,.65)",display:"grid",placeItems:"center",padding:18}}>
+          <form onSubmit={(event)=>{event.preventDefault();if(filePenutupan.length===0){setError("Dokumentasi penutupan wajib dipilih");return;}void ubahStatusTindakLanjut(itemAkanDitutup,"Closed",filePenutupan)}} style={{width:"min(620px,96vw)",background:"white",borderRadius:14,padding:18,display:"grid",gap:14}}>
+            <h3 style={{margin:0}}>Tutup Temuan {tipe.toUpperCase()}</h3>
+            <p style={{margin:0,color:"#64748b"}}>Unggah foto bukti penyelesaian. Bisa memilih lebih dari satu foto.</p>
+            <input type="file" accept="image/*" multiple onChange={(event)=>{const next=Array.from(event.target.files??[]);setFilePenutupan(current=>[...current,...next]);event.target.value=""}}/>
+            {filePenutupan.map((file,index)=><div key={`${file.name}-${file.lastModified}-${index}`} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"8px 10px",border:"1px solid #dce5ef",borderRadius:8}}><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span><button type="button" onClick={()=>setFilePenutupan(current=>current.filter((_,i)=>i!==index))}>Hapus</button></div>)}
+            <div style={{display:"flex",justifyContent:"flex-end",gap:10}}><button type="button" onClick={()=>{setItemAkanDitutup(null);setFilePenutupan([])}}>Batal</button><button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>Simpan & Closed</button></div>
+          </form>
+        </div>
       )}
 
       {performa && (
@@ -1069,7 +1085,15 @@ function PerformaTab({ tipe, projectId, boleh, vendorSaya, project }: TabProps &
                     Status tindak lanjut:
                     <select
                       value={String(item.formData.statusTindakLanjut ?? "Open")}
-                      onChange={(event) => ubahStatusTindakLanjut(item, event.target.value as "Open" | "Closed")}
+                      onChange={(event) => {
+                        const status = event.target.value as "Open" | "Closed";
+                        if (status === "Closed") {
+                          setItemAkanDitutup(item);
+                          setFilePenutupan([]);
+                        } else {
+                          void ubahStatusTindakLanjut(item, "Open");
+                        }
+                      }}
                       style={{ padding: "7px 10px", border: "1px solid #cbd8e6", borderRadius: 8 }}
                     >
                       <option value="Open">Open</option>

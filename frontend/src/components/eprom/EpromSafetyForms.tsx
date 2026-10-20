@@ -51,7 +51,16 @@ export function KtaTtaPopup({ tipe, projectName, vendorName, onSubmit, submittin
   const kategori = Object.keys(KATALOG[tipe]);
   const temuan = data.kategori ? [...KATALOG[tipe][data.kategori as keyof typeof KATALOG[typeof tipe]]] : [];
   const set = (key: string, value: string) => setData((current) => ({ ...current, [key]: value }));
-  async function submit(e: React.FormEvent) { e.preventDefault(); await onSubmit({ data, files }); setOpen(false); }
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (data.statusTindakLanjut === "Closed" && files.length === 0) {
+      alert("Dokumentasi wajib diunggah jika status langsung Closed.");
+      return;
+    }
+    await onSubmit({ data, files });
+    setFiles([]);
+    setOpen(false);
+  }
   return <>
     <button type="button" onClick={() => setOpen(true)} style={{ display: "inline-flex", gap: 7, alignItems: "center", padding: "11px 15px", border: 0, borderRadius: 9, background: "#0868f6", color: "white", fontWeight: 800 }}><Plus size={17}/> Tambah {tipe}</button>
     {open && <ModalForm title={`Form Observasi ${tipe}`} onClose={() => setOpen(false)}><form onSubmit={submit} style={{ display: "grid", gap: 13, padding: 16 }}>
@@ -67,8 +76,8 @@ export function KtaTtaPopup({ tipe, projectName, vendorName, onSubmit, submittin
         <Field label="Potensi akibat / bahaya"><input style={inputStyle} required value={data.bahaya ?? ""} onChange={e=>set("bahaya",e.target.value)}/></Field>
       </div><Field label="Uraian kondisi atau tindakan"><textarea style={inputStyle} required value={data.uraian ?? ""} onChange={e=>set("uraian",e.target.value)}/></Field></section>
       <section style={sectionStyle}><h3>C. Tindakan Langsung</h3><div style={gridStyle}><Field label="Tindakan pengamanan awal"><input style={inputStyle} value={data.tindakanAwal ?? ""} onChange={e=>set("tindakanAwal",e.target.value)}/></Field><Field label="Status tindakan langsung"><select style={inputStyle} value={data.statusTindakan} onChange={e=>set("statusTindakan",e.target.value)}><option>Belum dilakukan</option><option>Dalam proses</option><option>Sudah dilakukan</option></select></Field></div><Field label="Uraian tindakan langsung"><textarea style={inputStyle} value={data.uraianTindakan ?? ""} onChange={e=>set("uraianTindakan",e.target.value)}/></Field></section>
-      <section style={sectionStyle}><h3>D. Tindak Lanjut Temuan</h3><div style={gridStyle}><Field label="PIC tindak lanjut"><input style={inputStyle} value={data.pic ?? ""} onChange={e=>set("pic",e.target.value)}/></Field><Field label="Target penyelesaian"><input style={inputStyle} type="date" value={data.target ?? ""} onChange={e=>set("target",e.target.value)}/></Field><Field label="Status tindak lanjut"><select style={inputStyle} value={data.statusTindakLanjut} onChange={e=>set("statusTindakLanjut",e.target.value)}><option>Open</option><option>On Progress</option><option>Menunggu Verifikasi</option><option>Closed</option></select></Field><Field label="Rencana tindakan perbaikan"><input style={inputStyle} value={data.rencana ?? ""} onChange={e=>set("rencana",e.target.value)}/></Field></div></section>
-      <section style={sectionStyle}><h3>E. Dokumentasi</h3><Field label="File temuan dan perbaikan (dapat memilih lebih dari satu, semua jenis file)"><input style={inputStyle} type="file" multiple onChange={e=>setFiles(Array.from(e.target.files ?? []))}/></Field></section>
+      <section style={sectionStyle}><h3>D. Tindak Lanjut Temuan</h3><div style={gridStyle}><Field label="PIC tindak lanjut"><input style={inputStyle} value={data.pic ?? ""} onChange={e=>set("pic",e.target.value)}/></Field><Field label="Target penyelesaian"><input style={inputStyle} type="date" value={data.target ?? ""} onChange={e=>set("target",e.target.value)}/></Field><Field label="Status tindak lanjut"><select style={inputStyle} value={data.statusTindakLanjut} onChange={e=>set("statusTindakLanjut",e.target.value)}><option>Open</option><option>Closed</option></select></Field><Field label="Rencana tindakan perbaikan"><input style={inputStyle} value={data.rencana ?? ""} onChange={e=>set("rencana",e.target.value)}/></Field></div></section>
+      <section style={sectionStyle}><h3>E. Dokumentasi</h3><Field label="Foto/file temuan dan perbaikan (bisa lebih dari satu)"><input style={inputStyle} type="file" accept="image/*" multiple onChange={e=>{const next=Array.from(e.target.files??[]);setFiles(current=>[...current,...next]);e.target.value=""}}/></Field>{files.length>0&&<div style={{display:"grid",gap:8,marginTop:10}}>{files.map((file,index)=><div key={`${file.name}-${file.lastModified}-${index}`} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"8px 10px",border:"1px solid #dce5ef",borderRadius:8}}><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span><button type="button" onClick={()=>setFiles(current=>current.filter((_,i)=>i!==index))} style={{border:"1px solid #fecaca",background:"#fff1f2",color:"#dc2626",borderRadius:7,padding:"6px 9px"}}>Hapus</button></div>)}</div>}</section>
       <button disabled={submitting} style={{ padding: 12, border: 0, borderRadius: 9, background: "#0868f6", color: "white", fontWeight: 800 }}>{submitting ? "Menyimpan..." : "Simpan Form"}</button>
     </form></ModalForm>}
   </>;

@@ -203,6 +203,9 @@ export class EpromProgressService {
     if ((tipe === 'tta' || tipe === 'kta') && (!formData?.tanggalWaktu || !formData?.lokasi || !formData?.kategori || !formData?.temuan || !formData?.uraian || !formData?.risiko)) {
       throw new BadRequestException('Tanggal, lokasi, kategori, temuan, uraian, dan tingkat risiko wajib diisi');
     }
+    if ((tipe === 'tta' || tipe === 'kta') && formData?.statusTindakLanjut === 'Closed' && files.length === 0) {
+      throw new BadRequestException('Dokumentasi wajib diunggah jika status langsung Closed');
+    }
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } },
@@ -424,6 +427,7 @@ export class EpromProgressService {
     tipe: TipeProgress,
     id: number,
     statusRaw: string,
+    files: Express.Multer.File[] = [],
   ) {
     if (tipe !== 'tta' && tipe !== 'kta') {
       throw new BadRequestException('Status tindak lanjut hanya tersedia untuk KTA/TTA');
@@ -436,10 +440,21 @@ export class EpromProgressService {
     if (!item) throw new NotFoundException(`${LABEL_TIPE[tipe]} tidak ditemukan`);
     await this.akses.wajibAksesProject(aktor, item.projectId);
     const lama = item.formData && typeof item.formData === 'object' ? item.formData : {};
-    return this.delegate(tipe).update({
-      where: { id },
-      data: { formData: { ...lama, statusTindakLanjut: status === 'closed' ? 'Closed' : 'Open' } },
-    });
+    if (status === 'closed' && files.length === 0) {
+      throw new BadRequestException('Dokumentasi penutupan wajib diunggah');
+    }
+    const closeFileUrls = status === 'closed'
+      ? files.map((file) => this.file.simpanDokumen(file, `project/${item.projectId}/progress/${tipe}/closing`))
+      : [];
+    try {
+      return await this.delegate(tipe).update({
+        where: { id },
+        data: { formData: { ...lama, statusTindakLanjut: status === 'closed' ? 'Closed' : 'Open', ...(status === 'closed' ? { closeFileUrls, closedAt: new Date().toISOString() } : {}) } },
+      });
+    } catch (error) {
+      closeFileUrls.forEach((path) => this.file.hapus(path));
+      throw error;
+    }
   }
 
   async ubah(

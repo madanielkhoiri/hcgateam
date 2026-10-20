@@ -106,17 +106,20 @@ export class EpromProgressController {
   }
 
   @Patch(':tipe/:id/status-tindak-lanjut')
+  @UseInterceptors(FilesInterceptor('file', 100, { storage: memoryStorage() }))
   ubahStatusTindakLanjut(
     @Aktor() aktor: AktorEprom,
     @Param('tipe') tipeRaw: string,
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: string,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     return this.service.ubahStatusTindakLanjut(
       aktor,
       this.service.validasiTipe(tipeRaw),
       id,
       status,
+      files,
     );
   }
 

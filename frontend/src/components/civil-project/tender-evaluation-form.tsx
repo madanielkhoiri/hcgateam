@@ -158,9 +158,10 @@ export function TenderEvaluationForm({
   const [report, setReport] = useState<TenderEvaluationReport | null>(null),
     [selected, setSelected] = useState<number | null>(null),
     [data, setData] = useState<TenderEvaluationData>(empty),
+    [drafts, setDrafts] = useState<Record<number, TenderEvaluationData>>({}),
     [config, setConfig] = useState<Record<string, any>>({}),
-    [admin, setAdmin] = useState<File[]>([]),
-    [hse, setHse] = useState<File[]>([]),
+    [adminDrafts, setAdminDrafts] = useState<Record<number, File[]>>({}),
+    [hseDrafts, setHseDrafts] = useState<Record<number, File[]>>({}),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
   const load = () =>
@@ -170,43 +171,64 @@ export function TenderEvaluationForm({
         setReport(r);
         setConfig(r.config || {});
         const id = selected ?? r.vendors[0]?.vendorId ?? null;
+        setDrafts((current) => {
+          const next = { ...current };
+          r.vendors.forEach((vendor) => {
+            if (!next[vendor.vendorId])
+              next[vendor.vendorId] = normalizeEvaluation(vendor.data);
+          });
+          return next;
+        });
         setSelected(id);
-      setData(
-        normalizeEvaluation(r.vendors.find((v) => v.vendorId === id)?.data),
-      );
+        setData(
+          id !== null && drafts[id]
+            ? drafts[id]
+            : normalizeEvaluation(r.vendors.find((v) => v.vendorId === id)?.data),
+        );
       })
       .catch((e) => setError(e.message));
   useEffect(() => {
     void load();
   }, [tenderId]);
   const vendor = report?.vendors.find((v) => v.vendorId === selected);
+  const admin = selected === null ? [] : adminDrafts[selected] || [];
+  const hse = selected === null ? [] : hseDrafts[selected] || [];
+  const setAdmin = (updater: File[] | ((current: File[]) => File[])) => {
+    if (selected === null) return;
+    setAdminDrafts((all) => ({ ...all, [selected]: typeof updater === "function" ? updater(all[selected] || []) : updater }));
+  };
+  const setHse = (updater: File[] | ((current: File[]) => File[])) => {
+    if (selected === null) return;
+    setHseDrafts((all) => ({ ...all, [selected]: typeof updater === "function" ? updater(all[selected] || []) : updater }));
+  };
+  const updateData = (updater: (current: TenderEvaluationData) => TenderEvaluationData) =>
+    setData((current) => {
+      const next = updater(current);
+      if (selected !== null) setDrafts((all) => ({ ...all, [selected]: next }));
+      return next;
+    });
   const set = (k: keyof TenderEvaluationData, v: any) =>
-    setData((d) => ({ ...d, [k]: v }));
+    updateData((d) => ({ ...d, [k]: v }));
   const choose = (id: number) => {
     const v = report?.vendors.find((x) => x.vendorId === id);
     setSelected(id);
-    setData(normalizeEvaluation(v?.data));
-    setAdmin([]);
-    setHse([]);
+    setData(drafts[id] || normalizeEvaluation(v?.data));
   };
   const results = useMemo(() => {
     if (!report) return [];
-    const pool = report.vendors.filter(
-      (v) =>
-        gate(v) === "pass" &&
-        v.data.response === "ikut" &&
-        finalPrice(v.data) !== null &&
-        Number(v.data.durationDays) > 0,
-    );
+    const pool = report.vendors.filter((v) => {
+      const draft = drafts[v.vendorId] || v.data;
+      return gate({ ...v, data: draft }) === "pass" && draft.response === "ikut" && finalPrice(draft) !== null && Number(draft.durationDays) > 0;
+    });
     const minP = pool.length
-        ? Math.min(...pool.map((v) => finalPrice(v.data)!))
+        ? Math.min(...pool.map((v) => finalPrice(drafts[v.vendorId] || v.data)!))
         : null,
       minD = pool.length
-        ? Math.min(...pool.map((v) => Number(v.data.durationDays)))
+        ? Math.min(...pool.map((v) => Number((drafts[v.vendorId] || v.data).durationDays)))
         : null;
     return report.vendors
       .map((v) => {
-        const d = v.vendorId === selected ? data : v.data,
+        const d = drafts[v.vendorId] || (v.vendorId === selected ? data : v.data),
           price = finalPrice(d),
           rounds = d.sphRounds || [],
           pres = questions.map(([k]) => (d.presentation as any)?.[k]),
@@ -265,7 +287,7 @@ export function TenderEvaluationForm({
         };
       })
       .sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
-  }, [report, selected, data, config]);
+  }, [report, selected, data, config, drafts]);
   const qualified = results.filter((r) => r.score !== null),
     leader = qualified[0],
     current = results.find((r) => r.vendorId === selected);
@@ -284,13 +306,13 @@ export function TenderEvaluationForm({
         hse,
       );
       setReport(r);
-      setData(
-        normalizeEvaluation(
-          r.vendors.find((v) => v.vendorId === selected)?.data || adjusted,
-        ),
+      const saved = normalizeEvaluation(
+        r.vendors.find((v) => v.vendorId === selected)?.data || adjusted,
       );
-      setAdmin([]);
-      setHse([]);
+      setData(saved);
+      setDrafts((all) => ({ ...all, [selected]: saved }));
+      setAdminDrafts((all) => ({ ...all, [selected]: [] }));
+      setHseDrafts((all) => ({ ...all, [selected]: [] }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal menyimpan");
     } finally {

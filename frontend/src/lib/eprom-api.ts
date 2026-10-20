@@ -1059,11 +1059,12 @@ export const epromApi = {
     },
     hapus: (tipe: TipeProgress, id: number) =>
       request<{ message: string }>(`/progress/${tipe}/${id}`, { method: 'DELETE' }),
-    ubahStatusTindakLanjut: (tipe: 'tta' | 'kta', id: number, status: 'Open' | 'Closed') =>
-      request<ProgressItem>(`/progress/${tipe}/${id}/status-tindak-lanjut`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      }),
+    ubahStatusTindakLanjut: (tipe: 'tta' | 'kta', id: number, status: 'Open' | 'Closed', files: File[] = []) => {
+      const form = new FormData();
+      form.append('status', status);
+      files.forEach((file) => form.append('file', file));
+      return request<ProgressItem>(`/progress/${tipe}/${id}/status-tindak-lanjut`, { method: 'PATCH', body: form });
+    },
     ubah: (
       tipe: TipeProgress,
       id: number,
