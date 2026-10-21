@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Nunito } from 'next/font/google';
 import './globals.css';
+import { GlobalRouteTransition } from '@/components/global-route-transition/global-route-transition';
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -31,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={nunito.variable}>
-      <body>{children}</body>
+      <body>
+        <GlobalRouteTransition />
+        {children}
+      </body>
     </html>
   );
 }
