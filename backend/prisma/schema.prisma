@@ -190,12 +190,14 @@ model User {
 
 model MessRoom {
   id        Int                   @id @default(autoincrement())
-  number    String                @unique @map("room_number")
+  building  String                @default("1")
+  number    String                @map("room_number")
   createdAt DateTime              @default(now()) @map("created_at")
   updatedAt DateTime              @updatedAt @map("updated_at")
   occupants MessOccupant[]
   cleanings MessCleaningSession[]
 
+  @@unique([building, number])
   @@map("mess_rooms")
 }
 

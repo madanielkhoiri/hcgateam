@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MessOccupantShift } from '@prisma/client';
 
@@ -9,12 +9,14 @@ export class MessOccupantDto {
 }
 
 export class CreateMessRoomDto {
+  @IsString() @Matches(/^([1-3]|[A-F])$/) building!: string;
   @IsString() @IsNotEmpty() number!: string;
   @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => MessOccupantDto)
   occupants?: MessOccupantDto[];
 }
 
 export class UpdateMessRoomDto {
+  @IsString() @Matches(/^([1-3]|[A-F])$/) building!: string;
   @IsString() @IsNotEmpty() number!: string;
 }
 

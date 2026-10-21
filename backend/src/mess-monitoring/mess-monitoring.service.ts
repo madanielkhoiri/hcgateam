@@ -23,7 +23,7 @@ export class MessMonitoringService {
   private async rows() {
     const rooms = await this.prisma.messRoom.findMany({
       include: { occupants: { orderBy: { name: 'asc' } }, cleanings: { orderBy: { startedAt: 'desc' }, take: 1, include: { houseMan: { select: { id: true, name: true, nrp: true } } } } },
-      orderBy: { number: 'asc' },
+      orderBy: [{ building: 'asc' }, { number: 'asc' }],
     });
     const today = this.dayKey(new Date());
     return rooms.map(({ cleanings, ...room }) => {
@@ -50,13 +50,13 @@ export class MessMonitoringService {
     this.require(actor, ADMINS);
     const number = dto.number.trim();
     if (!number) throw new BadRequestException('Nomor kamar wajib diisi');
-    return this.prisma.messRoom.create({ data: { number, occupants: { create: (dto.occupants ?? []).map(this.cleanOccupant) } }, include: { occupants: true } });
+    return this.prisma.messRoom.create({ data: { building: dto.building, number, occupants: { create: (dto.occupants ?? []).map(this.cleanOccupant) } }, include: { occupants: true } });
   }
 
-  async updateRoom(actor: AktorPostingan, id: number, number: string) {
+  async updateRoom(actor: AktorPostingan, id: number, building: string, number: string) {
     this.require(actor, ADMINS);
     await this.findRoom(id);
-    return this.prisma.messRoom.update({ where: { id }, data: { number: number.trim() } });
+    return this.prisma.messRoom.update({ where: { id }, data: { building, number: number.trim() } });
   }
   async deleteRoom(actor: AktorPostingan, id: number) { this.require(actor, ADMINS); await this.findRoom(id); return this.prisma.messRoom.delete({ where: { id } }); }
   async addOccupant(actor: AktorPostingan, roomId: number, dto: MessOccupantDto) { this.require(actor, ADMINS); await this.findRoom(roomId); return this.prisma.messOccupant.create({ data: { roomId, ...this.cleanOccupant(dto) } }); }

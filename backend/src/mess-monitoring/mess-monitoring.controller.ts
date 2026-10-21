@@ -12,7 +12,7 @@ export class MessMonitoringController {
   @Get('rooms') rooms(@Aktor() a: AktorPostingan) { return this.service.list(a); }
   @Get('operations') operations(@Aktor() a: AktorPostingan) { return this.service.operations(a); }
   @Post('rooms') create(@Aktor() a: AktorPostingan, @Body() d: CreateMessRoomDto) { return this.service.createRoom(a, d); }
-  @Patch('rooms/:id') update(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number, @Body() d: UpdateMessRoomDto) { return this.service.updateRoom(a, id, d.number); }
+  @Patch('rooms/:id') update(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number, @Body() d: UpdateMessRoomDto) { return this.service.updateRoom(a, id, d.building, d.number); }
   @Delete('rooms/:id') remove(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number) { return this.service.deleteRoom(a, id); }
   @Post('rooms/:id/occupants') addOccupant(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number, @Body() d: MessOccupantDto) { return this.service.addOccupant(a, id, d); }
   @Patch('occupants/:id') updateOccupant(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number, @Body() d: UpdateMessOccupantDto) { return this.service.updateOccupant(a, id, d); }
