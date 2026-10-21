@@ -11,6 +11,7 @@ export function GlobalRouteTransition() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>(pathname === '/login' ? 'hidden' : 'buffering');
   const targetRef = useRef<string | null>(null);
+  const previousPathRef = useRef<string | null>(null);
   const timersRef = useRef<number[]>([]);
 
   function clearTimers() {
@@ -24,7 +25,13 @@ export function GlobalRouteTransition() {
   }
 
   useEffect(() => {
-    if (pathname === '/login') return;
+    const previousPath = previousPathRef.current;
+    previousPathRef.current = pathname;
+
+    if (pathname === '/login') {
+      setPhase('hidden');
+      return;
+    }
     clearTimers();
 
     if (targetRef.current) {
@@ -34,11 +41,15 @@ export function GlobalRouteTransition() {
       return;
     }
 
-    // Refresh / akses URL langsung: buffering, logo, lalu halaman.
-    setPhase('buffering');
-    later(() => setPhase('logo'), 320);
-    later(() => setPhase('leaving'), 980);
-    later(() => setPhase('hidden'), 1260);
+    // Logo hanya untuk refresh/akses URL langsung dan sesudah login.
+    if (previousPath === null || previousPath === '/login') {
+      setPhase('buffering');
+      later(() => setPhase('logo'), 280);
+      later(() => setPhase('leaving'), 850);
+      later(() => setPhase('hidden'), 1100);
+    } else {
+      setPhase('hidden');
+    }
     return clearTimers;
   }, [pathname]);
 
@@ -57,10 +68,9 @@ export function GlobalRouteTransition() {
       targetRef.current = `${destination.pathname}${destination.search}${destination.hash}`;
       setPhase('buffering');
       router.prefetch(targetRef.current);
-      later(() => setPhase('logo'), 320);
       later(() => {
         if (targetRef.current) router.push(targetRef.current);
-      }, 980);
+      }, 360);
       // Pengaman jika route tujuan tidak memicu perubahan pathname.
       later(() => {
         if (targetRef.current) {
@@ -82,7 +92,7 @@ export function GlobalRouteTransition() {
 
   return (
     <div className={`${styles.overlay} ${phase === 'leaving' ? styles.leaving : ''}`} role="status" aria-live="polite">
-      {phase === 'buffering' ? (
+      {phase !== 'logo' ? (
         <div className={styles.buffering}>
           <span className={styles.spinner}><i /><i /><i /></span>
           <strong>Memuat halaman</strong>

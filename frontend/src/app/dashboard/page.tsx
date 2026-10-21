@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAnimatedVisibility } from '@/components/animated-modal/use-animated-visibility';
 import { ACCESS_KEYS, hasAccess, saveStoredUser } from '@/lib/access-control';
 import {
@@ -802,11 +803,10 @@ export default function DashboardPage() {
               const Icon = department.icon;
 
               return (
-                <button
+                <Link
                   key={department.key}
-                  type="button"
+                  href={department.href}
                   className={`${styles.departmentCard} ${styles[department.cardClass]}`}
-                  onClick={() => router.push(department.href)}
                 >
                   <div className={styles.departmentTop}>
                     <div className={styles.departmentIcon}>
@@ -819,7 +819,7 @@ export default function DashboardPage() {
                     <strong>{department.title}</strong>
                     <span>{department.description}</span>
                   </div>
-                </button>
+                </Link>
               );
             })}
         </section>

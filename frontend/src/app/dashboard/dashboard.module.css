@@ -384,6 +384,7 @@
   border-radius: 18px;
   font: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition:
     transform 0.2s ease,

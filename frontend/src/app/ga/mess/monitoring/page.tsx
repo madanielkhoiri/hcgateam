@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getStoredUser } from '@/lib/access-control';
 import { messApi, type MessRoom, type ShiftMess } from '@/lib/mess-monitoring-api';
 import styles from '../mess.module.css';
@@ -18,10 +18,29 @@ export default function Monitoring() {
   const [people, setPeople] = useState<PersonForm[]>([emptyPerson()]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filterBuilding, setFilterBuilding] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterShift, setFilterShift] = useState('ALL');
   const admin = ['ADMIN', 'SUPER_ADMIN'].includes(getStoredUser()?.role ?? '');
   const load = () => messApi.rooms().then(setRows).catch((e) => setError(e.message));
 
   useEffect(() => { void load(); }, []);
+
+  const filteredRows = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return rows.filter((room) => {
+      const matchesQuery = !keyword || room.number.toLowerCase().includes(keyword)
+        || `gedung ${room.building}`.toLowerCase().includes(keyword)
+        || room.occupants.some((person) => person.name.toLowerCase().includes(keyword) || person.nrp.toLowerCase().includes(keyword));
+      return matchesQuery
+        && (filterBuilding === 'ALL' || room.building === filterBuilding)
+        && (filterStatus === 'ALL' || room.cleanliness === filterStatus)
+        && (filterShift === 'ALL' || room.occupants.some((person) => person.shift === filterShift));
+    });
+  }, [rows, query, filterBuilding, filterStatus, filterShift]);
+
+  const resetFilters = () => { setQuery(''); setFilterBuilding('ALL'); setFilterStatus('ALL'); setFilterShift('ALL'); };
 
   function openCreate() {
     setEditing(null); setBuilding('1'); setNumber(''); setPeople([emptyPerson()]); setError(''); setOpen(true);
@@ -61,10 +80,18 @@ export default function Monitoring() {
       {admin && <button onClick={openCreate}>+ Tambah Kamar</button>}
     </header>
     {error && !open && <div className={styles.error}>{error}</div>}
+    <section className={styles.filters}>
+      <label className={styles.filterSearch}>Cari Kamar / Karyawan<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nomor kamar, nama, atau NRP..." /></label>
+      <label>Gedung<select value={filterBuilding} onChange={(event) => setFilterBuilding(event.target.value)}><option value="ALL">Semua Gedung</option>{BUILDINGS.map((item) => <option key={item} value={item}>Gedung {item}</option>)}</select></label>
+      <label>Status Kamar<select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}><option value="ALL">Semua Status</option><option value="BELUM">Belum</option><option value="SUDAH">Sudah</option></select></label>
+      <label>Shift<select value={filterShift} onChange={(event) => setFilterShift(event.target.value)}><option value="ALL">Semua Shift</option><option value="PAGI">Shift Pagi</option><option value="MALAM">Shift Malam</option><option value="CUTI">Cuti</option></select></label>
+      <button className={styles.filterReset} onClick={resetFilters} disabled={!query && filterBuilding === 'ALL' && filterStatus === 'ALL' && filterShift === 'ALL'}>Reset</button>
+    </section>
+    <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
     <section className={styles.tableWrap}>
       <table>
         <thead><tr><th>No</th><th>Gedung</th><th>Kamar</th><th>Karyawan</th><th>Status Kamar</th>{admin && <th>Aksi</th>}</tr></thead>
-        <tbody>{rows.map((room, index) => <tr key={room.id}>
+        <tbody>{filteredRows.map((room, index) => <tr key={room.id}>
           <td>{index + 1}</td><td><b>Gedung {room.building}</b></td><td><b>Kamar {room.number}</b></td>
           <td><div className={styles.peopleCompact}>
             {room.occupants.map((person) => <div key={person.id} className={styles.personCompact}>
@@ -79,6 +106,7 @@ export default function Monitoring() {
         </tr>)}</tbody>
       </table>
       {!rows.length && <div className={styles.empty}>Belum ada kamar. Tambahkan kamar pertama.</div>}
+      {!!rows.length && !filteredRows.length && <div className={styles.empty}>Tidak ada kamar yang sesuai dengan filter.</div>}
     </section>
 
     {open && <div className={styles.modalBackdrop}><div className={styles.modal}>
