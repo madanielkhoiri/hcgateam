@@ -48,6 +48,14 @@ enum UserRole {
   // Koordinator Lapangan — ikut boleh kelola (approve/hold/reject) Aduan
   // Layanan bersama Admin/Section Head/Elektrik.
   KORLAP
+  // Petugas kebersihan kamar Mess.
+  HOUSE_MAN
+}
+
+enum MessOccupantShift {
+  PAGI
+  MALAM
+  CUTI
 }
 
 enum StatusKwitansiObat {
@@ -98,8 +106,9 @@ model User {
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  workOrders WorkOrder[]
-  handovers  Handover[]
+  workOrders           WorkOrder[]
+  handovers            Handover[]
+  messCleaningSessions MessCleaningSession[] @relation("MessCleaningHouseMan")
 
   pengaduanLayanan         PengaduanLayanan[] @relation("PengaduanPengirim")
   pengaduanLayananDiproses PengaduanLayanan[] @relation("PengaduanDiproses")
@@ -177,6 +186,47 @@ model User {
   fotoPenyerahanDibuat     FotoPenyerahanTps3r[]  @relation("FotoPenyerahanTps3rCreator")
 
   @@map("users")
+}
+
+model MessRoom {
+  id        Int                   @id @default(autoincrement())
+  number    String                @unique @map("room_number")
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+  occupants MessOccupant[]
+  cleanings MessCleaningSession[]
+
+  @@map("mess_rooms")
+}
+
+model MessOccupant {
+  id        Int               @id @default(autoincrement())
+  roomId    Int               @map("room_id")
+  nrp       String
+  name      String
+  shift     MessOccupantShift @default(PAGI)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  room      MessRoom          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, nrp])
+  @@index([roomId])
+  @@map("mess_occupants")
+}
+
+model MessCleaningSession {
+  id          Int       @id @default(autoincrement())
+  roomId      Int       @map("room_id")
+  houseManId  Int       @map("house_man_id")
+  startedAt   DateTime  @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+  durationSec Int?      @map("duration_sec")
+  room        MessRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  houseMan    User      @relation("MessCleaningHouseMan", fields: [houseManId], references: [id], onDelete: Restrict)
+
+  @@index([roomId, startedAt])
+  @@index([houseManId, startedAt])
+  @@map("mess_cleaning_sessions")
 }
 
 model WebPushSubscription {

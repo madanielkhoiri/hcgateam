@@ -11,7 +11,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
 
@@ -26,6 +26,18 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashLeaving, setSplashLeaving] = useState(false);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const leaveTimer = window.setTimeout(() => setSplashLeaving(true), reducedMotion ? 180 : 1900);
+    const hideTimer = window.setTimeout(() => setShowSplash(false), reducedMotion ? 380 : 2550);
+    return () => {
+      window.clearTimeout(leaveTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,7 +96,24 @@ export default function LoginPage() {
   }
 
   return (
-    <main className={`${styles.page} ${leaving ? styles.pageLeaving : ''}`}>
+    <>
+      {showSplash && (
+        <div className={`${styles.splash} ${splashLeaving ? styles.splashLeaving : ''}`} role="status" aria-label="Memuat HCGA Connect">
+          <div className={`${styles.splashCircuit} ${styles.splashCircuitTopLeft}`} />
+          <div className={`${styles.splashCircuit} ${styles.splashCircuitTopRight}`} />
+          <div className={`${styles.splashCircuit} ${styles.splashCircuitBottomLeft}`} />
+          <div className={`${styles.splashCircuit} ${styles.splashCircuitBottomRight}`} />
+          <div className={styles.splashStage}>
+            <span className={styles.splashRingOuter} />
+            <span className={styles.splashRingInner} />
+            <span className={styles.splashPulse} />
+            <div className={styles.splashLogo}><img src="/logos/hcga-connect.png" alt="" /></div>
+            <p>ONE CONNECTION · ONE COLLABORATION</p>
+          </div>
+          <span className={styles.splashProgress} />
+        </div>
+      )}
+      <main className={`${styles.page} ${leaving ? styles.pageLeaving : ''}`}>
       <header className={styles.header}>
       </header>
 
@@ -277,7 +306,8 @@ export default function LoginPage() {
         <span className={styles.separator}>|</span>
         <span>v1.0.0</span>
       </footer>
-    </main>
+      </main>
+    </>
   );
 }
 

@@ -32,6 +32,7 @@ export const ACCESS_KEYS = {
   GA_AKTIVITAS_HARIAN: 'GA_AKTIVITAS_HARIAN',
   GA_PROJECT: 'GA_PROJECT',
   GA_MONITORING_RKB: 'GA_MONITORING_RKB',
+  GA_MESS: 'GA_MESS',
   GA_TRANSPORT_SECTION: 'GA_TRANSPORT_SECTION',
   GA_TRANSPORT: 'GA_TRANSPORT',
   GA_TRANSPORT_TIKET: 'GA_TRANSPORT_TIKET',
@@ -164,6 +165,10 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
+  if (user.role === 'HOUSE_MAN') {
+    return accessKey === ACCESS_KEYS.GA || accessKey === ACCESS_KEYS.GA_MESS;
+  }
+
   if (user.role === 'ADMIN_DEPT' && accessKey === ACCESS_KEYS.HC_KWITANSI_OBAT) {
     return false;
   }
@@ -279,6 +284,8 @@ export function formatRole(role?: string): string {
   if (role === 'KORLAP') {
     return 'Koordinator Lapangan';
   }
+
+  if (role === 'HOUSE_MAN') return 'House Man';
 
   return role
     .toLowerCase()

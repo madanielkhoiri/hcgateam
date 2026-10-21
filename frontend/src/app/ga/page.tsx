@@ -41,6 +41,17 @@ const API_URL =
 
 const gaTree: MenuTreeNode[] = [
   {
+    key: 'GA_MESS',
+    title: 'Mess',
+    description: 'Monitoring penghuni, shift, dan kebersihan setiap kamar Mess.',
+    status: 'Tersedia',
+    href: '/ga/mess/dashboard',
+    icon: Home,
+    accessKey: ACCESS_KEYS.GA_MESS,
+    accent: '#0f766e',
+    soft: '#e6f7f5',
+  },
+  {
     key: 'GA_MONITORING_RKB',
     title: 'Monitoring RKB',
     description: 'Pantau RKB Project dan Maintenance lengkap dengan rincian barang serta status pengadaan.',

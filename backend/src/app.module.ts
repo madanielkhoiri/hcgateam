@@ -69,6 +69,7 @@ import { AlbumModule } from './album/album.module';
 import { KipModule } from './kip/kip.module';
 import { KwitansiObatModule } from './kwitansi-obat/kwitansi-obat.module';
 import { CivilMonitoringProjectModule } from './civil-monitoring-project/civil-monitoring-project.module';
+import { MessMonitoringModule } from './mess-monitoring/mess-monitoring.module';
 
 @Module({
   imports: [
@@ -139,6 +140,7 @@ import { CivilMonitoringProjectModule } from './civil-monitoring-project/civil-m
     KipModule,
     KwitansiObatModule,
     CivilMonitoringProjectModule,
+    MessMonitoringModule,
     ApprovalSummaryModule,
     PengaduanLayananModule,
     WebPushModule,
