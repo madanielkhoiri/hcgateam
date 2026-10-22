@@ -451,12 +451,41 @@ describe('SuratTugasDinasService.setujui — alur SH -> PJO', () => {
 
     expect(kirimWhatsapp).toHaveBeenCalledWith(
       '08123456789',
-      expect.stringContaining('telah mendapatkan persetujuan lengkap'),
-      expect.objectContaining({
-        url: 'https://example.test/std-001.pdf',
-      }),
+      expect.stringContaining(
+        'telah disetujui oleh PJO dan sudah tersedia di akun HCGA CONNECT Anda',
+      ),
+      undefined,
       'HC',
     );
+    expect(kirimWhatsapp.mock.calls[0][1]).toContain('*Budi*');
+    expect(kirimWhatsapp.mock.calls[0][1]).not.toContain('terlampir');
+  });
+
+  it('tidak mengirim WA untuk persetujuan final STD Akomodasi', async () => {
+    const suratFinal = {
+      ...buatSurat({ status: StatusSuratTugas.DISETUJUI }),
+      denganAkomodasi: true,
+      karyawan: [{ nrp: '111', nama: 'Budi' }],
+    };
+    const findUnique = jest.fn().mockResolvedValue({
+      ...buatSurat({ status: StatusSuratTugas.MENUNGGU_PJO }),
+      denganAkomodasi: true,
+    });
+    const update = jest
+      .fn()
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce(suratFinal);
+    const kirimWhatsapp = jest.fn().mockResolvedValue(true);
+    const { service, karyawanFindMany } = buatService({
+      findUnique,
+      update,
+      kirimWhatsapp,
+    });
+
+    await service.setujui(1, PJO);
+
+    expect(karyawanFindMany).not.toHaveBeenCalled();
+    expect(kirimWhatsapp).not.toHaveBeenCalled();
   });
 
   it('menolak SH menyetujui tahap MENUNGGU_PJO (bukan tahapnya)', async () => {

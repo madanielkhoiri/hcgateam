@@ -624,7 +624,9 @@ export class SuratTugasDinasService {
       include: typeof SURAT_INCLUDE;
     }>,
   ): Promise<void> {
-    if (!surat.karyawan?.length) {
+    // Notifikasi final hanya untuk Surat Tugas Dinas utama. STD Akomodasi
+    // mengikuti surat induknya dan tidak mengirim pesan tambahan.
+    if (surat.denganAkomodasi || !surat.karyawan?.length) {
       return;
     }
 
@@ -649,16 +651,6 @@ export class SuratTugasDinasService {
           month: 'long',
           year: 'numeric',
         }).format(tanggal);
-      const urlPdf = surat.filePdf
-        ? this.whatsapp.urlPublikLampiran(surat.filePdf)
-        : null;
-      const lampiran = urlPdf
-        ? {
-            url: urlPdf,
-            namaFile: `Surat Tugas Dinas ${surat.nomor}.pdf`,
-          }
-        : undefined;
-
       await Promise.allSettled(
         surat.karyawan.map(async (penerima) => {
           const master = dataPerNrp.get(penerima.nrp);
@@ -672,22 +664,23 @@ export class SuratTugasDinasService {
           }
 
           const pesan = [
-            '*SURAT TUGAS DINAS DISETUJUI*',
+            '*SURAT TUGAS DINAS TERSEDIA*',
             '',
-            `Halo ${sapaanKaryawan(master?.gender)} ${penerima.nama},`,
-            'Surat Tugas Dinas Anda telah mendapatkan persetujuan lengkap.',
+            `Yth. ${sapaanKaryawan(master?.gender)} *${penerima.nama}*,`,
             '',
-            `Nomor: ${surat.nomor}`,
-            `Tujuan/Lokasi: ${surat.tujuanLokasi}`,
-            `Tanggal: ${formatTanggal(surat.tanggalMulai)} - ${formatTanggal(surat.tanggalSelesai)}`,
-            `Keterangan: ${surat.keteranganTugas}`,
+            'Surat Tugas Dinas Anda telah disetujui oleh PJO dan sudah tersedia di akun HCGA CONNECT Anda.',
             '',
-            urlPdf
-              ? 'PDF Surat Tugas Dinas terlampir pada pesan ini.'
-              : 'Silakan buka HCGA CONNECT untuk melihat PDF Surat Tugas Dinas.',
+            `*Nomor Surat:* ${surat.nomor}`,
+            `*Tujuan/Lokasi:* ${surat.tujuanLokasi}`,
+            `*Periode:* ${formatTanggal(surat.tanggalMulai)} - ${formatTanggal(surat.tanggalSelesai)}`,
+            `*Keterangan:* ${surat.keteranganTugas}`,
+            '',
+            'Silakan buka akun HCGA CONNECT Anda untuk melihat Surat Tugas Dinas tersebut.',
+            '',
+            'Terima kasih.',
           ].join('\n');
 
-          await this.whatsapp.kirim(nomor, pesan, lampiran, 'HC');
+          await this.whatsapp.kirim(nomor, pesan, undefined, 'HC');
         }),
       );
     } catch (error) {

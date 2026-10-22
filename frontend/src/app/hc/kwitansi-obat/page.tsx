@@ -7,6 +7,10 @@ import {
   BellRing,
   CheckCircle2,
   CircleX,
+  FileSpreadsheet,
+  Plus,
+  Send,
+  Trash2,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +31,37 @@ type Log = {
   createdAt: string;
   karyawan?: { nama: string; nik: string } | null;
 };
+type BarisBlast = {
+  key: number;
+  nrp: string;
+  nama: string;
+  status: "DISETUJUI" | "DITRANSFER";
+  nominal: string;
+};
+type PreviewImport = {
+  totalBaris: number;
+  totalKaryawan: number;
+  totalCocok: number;
+  totalTidakCocok: number;
+  totalNominal: number;
+  data: Array<{
+    nrp: string;
+    namaExcel: string;
+    namaDatabase: string | null;
+    karyawanId: number | null;
+    jumlah: number;
+    jumlahKwitansi: number;
+    cocok: boolean;
+  }>;
+};
+
+const barisKosong = (key: number): BarisBlast => ({
+  key,
+  nrp: "",
+  nama: "",
+  status: "DISETUJUI",
+  nominal: "",
+});
 
 export default function KwitansiObatPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -38,6 +73,11 @@ export default function KwitansiObatPage() {
   const [pesan, setPesan] = useState("");
   const [logs, setLogs] = useState<Log[]>([]);
   const [tab, setTab] = useState<"input" | "rekap">("input");
+  const [barisBlast, setBarisBlast] = useState<BarisBlast[]>([
+    barisKosong(Date.now()),
+  ]);
+  const [prosesBlast, setProsesBlast] = useState(false);
+  const [pesanBlast, setPesanBlast] = useState("");
   const token = getAccessToken();
   const muatData = () => {
     const headers = { Authorization: `Bearer ${token}` };
@@ -106,6 +146,122 @@ export default function KwitansiObatPage() {
         : "Status gagal diperbarui.",
     );
     muatData();
+  }
+
+  function ubahBaris(key: number, perubahan: Partial<BarisBlast>) {
+    setBarisBlast((lama) =>
+      lama.map((item) =>
+        item.key === key
+          ? {
+              ...item,
+              ...perubahan,
+              ...(perubahan.status === "DISETUJUI" ? { nominal: "" } : {}),
+            }
+          : item,
+      ),
+    );
+  }
+
+  function pilihKaryawan(key: number, value: string) {
+    const cocok = employees.find(
+      (item) =>
+        `${item.nama} — ${item.nik}`.toLowerCase() === value.toLowerCase() ||
+        item.nik === value.trim(),
+    );
+    ubahBaris(
+      key,
+      cocok ? { nrp: cocok.nik, nama: cocok.nama } : { nrp: "", nama: value },
+    );
+  }
+
+  async function previewExcel(file?: File) {
+    if (!file) return;
+    setProsesBlast(true);
+    setPesanBlast("Membaca sheet Template HO...");
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const response = await fetch(`${API}/kwitansi-obat/preview-import`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const hasil = (await response.json()) as PreviewImport & {
+        message?: string | string[];
+      };
+      if (!response.ok) {
+        throw new Error(
+          Array.isArray(hasil.message)
+            ? hasil.message.join(", ")
+            : hasil.message || "Gagal membaca Excel",
+        );
+      }
+      setBarisBlast(
+        hasil.data
+          .filter((item) => item.cocok)
+          .map((item, index) => ({
+            key: Date.now() + index,
+            nrp: item.nrp,
+            nama: item.namaDatabase || item.namaExcel,
+            status: "DITRANSFER",
+            nominal: String(item.jumlah),
+          })),
+      );
+      setPesanBlast(
+        `${hasil.totalCocok} karyawan cocok dari ${hasil.totalKaryawan}; ${hasil.totalTidakCocok} NRP tidak ditemukan. Total Rp ${hasil.totalNominal.toLocaleString("id-ID")}.`,
+      );
+    } catch (error) {
+      setPesanBlast((error as Error).message);
+    } finally {
+      setProsesBlast(false);
+    }
+  }
+
+  async function kirimBlast() {
+    const data = barisBlast
+      .filter((item) => item.nrp)
+      .map((item) => ({
+        nrp: item.nrp,
+        status: item.status,
+        ...(item.status === "DITRANSFER"
+          ? { nominal: Number(item.nominal) }
+          : {}),
+      }));
+    if (!data.length) {
+      setPesanBlast("Tambahkan minimal satu karyawan.");
+      return;
+    }
+    if (
+      data.some(
+        (item) =>
+          item.status === "DITRANSFER" && (!item.nominal || item.nominal <= 0),
+      )
+    ) {
+      setPesanBlast("Nominal wajib diisi untuk semua status Ditransfer.");
+      return;
+    }
+    setProsesBlast(true);
+    setPesanBlast("Menyimpan dan mengirim notifikasi...");
+    try {
+      const response = await fetch(`${API}/kwitansi-obat/massal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ data, kirimNotifikasi: true }),
+      });
+      const hasil = await response.json();
+      if (!response.ok) throw new Error(hasil.message || "Blast gagal");
+      setPesanBlast(
+        `${hasil.tersimpan} data tersimpan. WA terkirim ${hasil.notifikasi?.terkirim ?? 0}, gagal ${hasil.notifikasi?.gagal ?? 0}, tanpa nomor ${hasil.notifikasi?.tanpaNomor ?? 0}.`,
+      );
+      muatData();
+    } catch (error) {
+      setPesanBlast((error as Error).message);
+    } finally {
+      setProsesBlast(false);
+    }
   }
   const bulan = new Intl.DateTimeFormat("id-ID", {
     month: "long",
@@ -249,6 +405,234 @@ export default function KwitansiObatPage() {
             <p style={{ margin: 0, opacity: 0.88 }}>
               Kelola status dan kirim notifikasi WhatsApp kepada karyawan.
             </p>
+          </div>
+        </section>
+        <section
+          style={{
+            display: tab === "input" ? "block" : "none",
+            marginTop: 22,
+            background: "#fff",
+            border: "1px solid #dce7f5",
+            borderRadius: 16,
+            padding: 24,
+            boxShadow: "0 6px 18px rgba(20,63,120,.06)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <h2 style={{ margin: 0, fontSize: 19 }}>Blast Kwitansi Obat</h2>
+              <p style={{ color: "#7185a3", margin: "7px 0 0" }}>
+                Tambahkan beberapa karyawan atau isi otomatis dari sheet
+                Template HO.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <label
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 14px",
+                  border: "1px solid #b9d3f4",
+                  borderRadius: 9,
+                  color: "#1769e0",
+                  fontWeight: 700,
+                  cursor: prosesBlast ? "wait" : "pointer",
+                }}
+              >
+                <FileSpreadsheet size={17} /> Import Template HO
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  disabled={prosesBlast}
+                  onChange={(event) => {
+                    void previewExcel(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                  style={{ display: "none" }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  setBarisBlast((lama) => [...lama, barisKosong(Date.now())])
+                }
+                style={{
+                  border: 0,
+                  borderRadius: 9,
+                  background: "#eaf3ff",
+                  color: "#1769e0",
+                  padding: "10px 14px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <Plus size={17} style={{ verticalAlign: "middle" }} /> Tambah
+                Karyawan
+              </button>
+            </div>
+          </div>
+
+          <datalist id="daftar-karyawan-blast">
+            {employees.map((item) => (
+              <option key={item.id} value={`${item.nama} — ${item.nik}`} />
+            ))}
+          </datalist>
+
+          <div style={{ overflowX: "auto", marginTop: 20 }}>
+            <table
+              style={{
+                width: "100%",
+                minWidth: 820,
+                borderCollapse: "collapse",
+                fontSize: 14,
+              }}
+            >
+              <thead>
+                <tr style={{ background: "#f3f7fd" }}>
+                  {[
+                    "No",
+                    "NRP / Nama Karyawan",
+                    "Status",
+                    "Nominal Transfer",
+                    "Aksi",
+                  ].map((judul) => (
+                    <th
+                      key={judul}
+                      style={{
+                        padding: 11,
+                        textAlign: "left",
+                        color: "#56708f",
+                      }}
+                    >
+                      {judul}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {barisBlast.map((item, index) => (
+                  <tr
+                    key={item.key}
+                    style={{ borderBottom: "1px solid #edf2f8" }}
+                  >
+                    <td style={{ padding: 9 }}>{index + 1}</td>
+                    <td style={{ padding: 9, minWidth: 310 }}>
+                      <input
+                        value={
+                          item.nrp ? `${item.nama} — ${item.nrp}` : item.nama
+                        }
+                        onChange={(event) =>
+                          pilihKaryawan(item.key, event.target.value)
+                        }
+                        list="daftar-karyawan-blast"
+                        placeholder="Ketik nama atau NRP"
+                        style={inputStyle}
+                      />
+                    </td>
+                    <td style={{ padding: 9 }}>
+                      <select
+                        value={item.status}
+                        onChange={(event) =>
+                          ubahBaris(item.key, {
+                            status: event.target.value as BarisBlast["status"],
+                          })
+                        }
+                        style={{ ...inputStyle, minWidth: 145 }}
+                      >
+                        <option value="DISETUJUI">Disetujui</option>
+                        <option value="DITRANSFER">Ditransfer</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 9 }}>
+                      {item.status === "DITRANSFER" ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.nominal}
+                          onChange={(event) =>
+                            ubahBaris(item.key, { nominal: event.target.value })
+                          }
+                          placeholder="Rp"
+                          style={{ ...inputStyle, minWidth: 155 }}
+                        />
+                      ) : (
+                        <span style={{ color: "#91a3bd" }}>
+                          Belum ditransfer
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: 9 }}>
+                      <button
+                        type="button"
+                        aria-label="Hapus karyawan"
+                        onClick={() =>
+                          setBarisBlast((lama) => {
+                            const hasil = lama.filter(
+                              (baris) => baris.key !== item.key,
+                            );
+                            return hasil.length
+                              ? hasil
+                              : [barisKosong(Date.now())];
+                          })
+                        }
+                        style={{
+                          border: 0,
+                          borderRadius: 8,
+                          padding: 9,
+                          color: "#d9485f",
+                          background: "#fff0f2",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 14,
+              marginTop: 18,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ color: "#56708f", fontSize: 13 }}>{pesanBlast}</div>
+            <button
+              type="button"
+              disabled={prosesBlast}
+              onClick={() => void kirimBlast()}
+              style={{
+                border: 0,
+                borderRadius: 10,
+                background: prosesBlast ? "#91a3bd" : "#0879e8",
+                color: "#fff",
+                padding: "12px 18px",
+                fontWeight: 700,
+                cursor: prosesBlast ? "wait" : "pointer",
+              }}
+            >
+              <Send
+                size={17}
+                style={{ verticalAlign: "middle", marginRight: 7 }}
+              />
+              Simpan & Kirim Semua Notifikasi
+            </button>
           </div>
         </section>
         <div
