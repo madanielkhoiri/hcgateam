@@ -48,6 +48,9 @@ import {
 } from '@/lib/aktivitas-api';
 import styles from './dashboard.module.css';
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+
 // ==================================================
 // TIPE DATA USER LOGIN
 // ==================================================
@@ -230,7 +233,7 @@ export default function DashboardPage() {
 
       setUser(parsedUser);
 
-      void fetch('http://localhost:3001/api/auth/profile', {
+      void fetch(`${API_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
         cache: 'no-store',
       })
@@ -439,7 +442,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        'http://localhost:3001/api/auth/profile',
+        `${API_URL}/auth/profile`,
         {
           method: 'PATCH',
           headers: {
@@ -495,7 +498,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        'http://localhost:3001/api/auth/change-password',
+        `${API_URL}/auth/change-password`,
         {
           method: 'PATCH',
           headers: {
