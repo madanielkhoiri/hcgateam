@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import {
-  ArrowLeft,
   BellRing,
   CheckCircle2,
   CircleX,
@@ -13,7 +12,6 @@ import {
   Trash2,
   WalletCards,
 } from "lucide-react";
-import Link from "next/link";
 import { getAccessToken } from "@/lib/access-control";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -96,6 +94,14 @@ export default function KwitansiObatPage() {
   useEffect(() => {
     muatData();
   }, [token]);
+
+  useEffect(() => {
+    const sinkronkanTab = () =>
+      setTab(window.location.hash === "#rekap" ? "rekap" : "input");
+    sinkronkanTab();
+    window.addEventListener("hashchange", sinkronkanTab);
+    return () => window.removeEventListener("hashchange", sinkronkanTab);
+  }, []);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setPesan("Menyimpan...");
@@ -292,91 +298,11 @@ export default function KwitansiObatPage() {
       style={{
         minHeight: "100vh",
         background: "#f3f7fd",
-        padding: "34px 24px 34px 270px",
+        padding: "34px 24px",
         color: "#102d59",
       }}
     >
-      <aside
-        style={{
-          position: "fixed",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 230,
-          background: "#fff",
-          borderRight: "1px solid #dce7f5",
-          padding: "34px 18px",
-          zIndex: 2,
-        }}
-      >
-        <div
-          style={{
-            fontWeight: 800,
-            fontSize: 18,
-            color: "#102d59",
-            marginBottom: 30,
-          }}
-        >
-          Kwitansi Obat
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: "#91a3bd",
-            fontWeight: 700,
-            letterSpacing: 1,
-            marginBottom: 10,
-          }}
-        >
-          MENU COMBEN
-        </div>
-        <a
-          href="#input"
-          onClick={() => setTab("input")}
-          style={{
-            display: "block",
-            padding: "13px 14px",
-            borderRadius: 9,
-            background: tab === "input" ? "#eaf3ff" : "transparent",
-            color: tab === "input" ? "#1769e0" : "#56708f",
-            textDecoration: "none",
-            fontWeight: 700,
-            marginBottom: 6,
-          }}
-        >
-          Input Kwitansi
-        </a>
-        <a
-          href="#rekap"
-          onClick={() => setTab("rekap")}
-          style={{
-            display: "block",
-            padding: "13px 14px",
-            borderRadius: 9,
-            background: tab === "rekap" ? "#eaf3ff" : "transparent",
-            color: tab === "rekap" ? "#1769e0" : "#56708f",
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
-        >
-          Rekap Bulanan
-        </a>
-      </aside>
       <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-        <Link
-          href="/hc"
-          style={{
-            display: "inline-flex",
-            gap: 8,
-            alignItems: "center",
-            color: "#1769e0",
-            textDecoration: "none",
-            fontWeight: 600,
-            marginBottom: 22,
-          }}
-        >
-          <ArrowLeft size={17} /> Kembali ke HC
-        </Link>
         <section
           style={{
             background: "linear-gradient(135deg,#075dcc,#0879e8)",

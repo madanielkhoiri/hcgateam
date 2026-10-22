@@ -27,6 +27,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { PageTransition } from '@/components/page-transition/page-transition';
+import { ProfileMenu } from '@/components/profile-menu/profile-menu';
+import { getStoredUser, type PortalUser } from '@/lib/access-control';
 import styles from './module-shell.module.css';
 
 export type ModuleShellMenuItem = {
@@ -72,12 +74,26 @@ export function ModuleShell({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [user, setUser] = useState<PortalUser | null>(null);
+  const [currentHash, setCurrentHash] = useState('');
+
+  useEffect(() => {
+    setUser(getStoredUser());
+    const syncHash = () => setCurrentHash(window.location.hash);
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
 
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
   function isActive(item: ModuleShellMenuItem) {
+    const [itemPath, itemHash = ''] = item.href.split('#');
+    if (itemHash) {
+      return pathname === itemPath && (currentHash === `#${itemHash}` || (!currentHash && itemHash === 'input'));
+    }
     return item.exact
       ? pathname === item.href
       : pathname === item.href || pathname?.startsWith(`${item.href}/`);
@@ -174,6 +190,14 @@ export function ModuleShell({
         </div>
       </aside>
 
+      <header className={styles.topHeader}>
+        <div className={styles.topHeaderTitle}>
+          <span>{subtitle || 'HCGA CONNECT'}</span>
+          <strong>{title}</strong>
+        </div>
+        {user && <ProfileMenu user={user} />}
+      </header>
+
       <div className={styles.mobileTopBar}>
         <button
           type="button"
@@ -195,6 +219,10 @@ export function ModuleShell({
         <div className={styles.mobileBrandText}>
           <strong>{title}</strong>
           {subtitle && <span>{subtitle}</span>}
+        </div>
+
+        <div className={styles.mobileProfile}>
+          {user && <ProfileMenu user={user} />}
         </div>
       </div>
 

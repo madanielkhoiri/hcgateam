@@ -13,14 +13,12 @@ import {
   PanelLeftClose,
   Ticket,
   Truck,
-  UsersRound,
   X,
 } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
 import {
   ACCESS_KEYS,
   clearSession,
-  formatRole,
   getAccessToken,
   getStoredUser,
   hasAccess,
@@ -28,6 +26,7 @@ import {
 } from '@/lib/access-control';
 import { MobileBottomNav } from '@/components/module-shell/mobile-bottom-nav';
 import { PageTransition } from '@/components/page-transition/page-transition';
+import { ProfileMenu } from '@/components/profile-menu/profile-menu';
 import { buatInisial } from '@/lib/buat-inisial';
 import styles from './transport-layout.module.css';
 
@@ -208,15 +207,7 @@ export default function TransportLayout({ children }: { children: ReactNode }) {
             <small>GA</small>
             <strong>{LABEL_SCOPE[scope]}</strong>
           </div>
-          <div className={styles.user}>
-            <span>
-              <UsersRound size={20} />
-            </span>
-            <div>
-              <strong>{user?.name ?? 'Pengguna'}</strong>
-              <small>{formatRole(user?.role)}</small>
-            </div>
-          </div>
+          {user && <ProfileMenu user={user} />}
         </header>
         <main className={styles.main}>
           <PageTransition>{children}</PageTransition>
