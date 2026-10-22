@@ -7,7 +7,26 @@ export class KwitansiObatService {
   constructor(private readonly prisma: PrismaService, private readonly whatsapp: WhatsappService) {}
 
   async daftarKaryawan(cari?: string) {
-    return this.prisma.karyawan.findMany({ where: { statusKerja: 'AKTIF', ...(cari ? { OR: [{ nama: { contains: cari, mode: 'insensitive' } }, { nik: { contains: cari, mode: 'insensitive' } }] } : {}) }, select: { id: true, nik: true, nama: true, gender: true, noTelepon: true }, orderBy: { nama: 'asc' }, take: 100 });
+    return this.prisma.karyawan.findMany({
+      where: {
+        ...(cari
+          ? {
+              OR: [
+                { nama: { contains: cari, mode: 'insensitive' } },
+                { nik: { contains: cari, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        nik: true,
+        nama: true,
+        gender: true,
+        noTelepon: true,
+      },
+      orderBy: [{ nama: 'asc' }, { nik: 'asc' }],
+    });
   }
 
   async daftar() {
