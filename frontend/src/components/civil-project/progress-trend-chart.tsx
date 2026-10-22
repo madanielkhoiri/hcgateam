@@ -50,6 +50,24 @@ export function ProgressTrendChart({
     ticks = Array.from({ length: 5 }, (_, i) => Math.round((maxY * i) / 4)),
     path = (d: Titik[], k: "planned" | "actual") =>
       d.map((a) => `${x(kunciX(a))},${y(a[k])}`).join(" ");
+  const posisiLabelTerakhir = new Map<number, number>();
+  if (!detail) {
+    const label = seri
+      .map((s) => ({ id: s.id, raw: y(s.data.at(-1)?.actual ?? 0) }))
+      .sort((a, b) => a.raw - b.raw);
+    const jarakMinimum = 20;
+    const batasAtas = T + 8;
+    const batasBawah = H - B - 8;
+    const posisi = label.map((item, index) =>
+      index === 0 ? Math.max(batasAtas, item.raw) : Math.max(item.raw, 0),
+    );
+    for (let index = 1; index < posisi.length; index += 1) {
+      posisi[index] = Math.max(posisi[index], posisi[index - 1] + jarakMinimum);
+    }
+    const kelebihan = Math.max(0, (posisi.at(-1) ?? batasBawah) - batasBawah);
+    for (let index = 0; index < posisi.length; index += 1) posisi[index] -= kelebihan;
+    label.forEach((item, index) => posisiLabelTerakhir.set(item.id, posisi[index]));
+  }
   return (
     <div style={{ width: "100%", overflowX: "auto" }}>
       <svg
@@ -195,17 +213,19 @@ export function ProgressTrendChart({
                     strokeWidth={2}
                   />
                 ))}
-                {s.data.at(-1) && (
-                  <text
-                    x={x(kunciX(s.data.at(-1)!)) + 8}
-                    y={y(s.data.at(-1)!.actual) + 4}
-                    fontSize={12}
-                    fontWeight={800}
-                    fill={WARNA[si % WARNA.length]}
-                  >
-                    {s.data.at(-1)!.actual}%
-                  </text>
-                )}
+                {s.data.at(-1) && (() => {
+                  const terakhir = s.data.at(-1)!;
+                  const titikX = x(kunciX(terakhir));
+                  const titikY = y(terakhir.actual);
+                  const labelY = posisiLabelTerakhir.get(s.id) ?? titikY;
+                  const teks = `${terakhir.actual}%`;
+                  const lebar = Math.max(38, teks.length * 7 + 12);
+                  return <g>
+                    <line x1={titikX + 4} y1={titikY} x2={titikX + 10} y2={labelY} stroke={WARNA[si % WARNA.length]} strokeWidth={1.5} />
+                    <rect x={titikX + 8} y={labelY - 11} width={lebar} height={20} rx={7} fill="white" stroke={WARNA[si % WARNA.length]} strokeWidth={1.5} />
+                    <text x={titikX + 8 + lebar / 2} y={labelY + 4} textAnchor="middle" fontSize={11} fontWeight={800} fill={WARNA[si % WARNA.length]}>{teks}</text>
+                  </g>;
+                })()}
               </>
             )}
           </g>

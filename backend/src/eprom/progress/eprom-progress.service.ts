@@ -565,15 +565,35 @@ export class EpromProgressService {
       select: { id: true, mingguKe: true, namaPekerjaan: true, planned: true, actual: true, uploadedAt: true },
     });
 
-    const perWeek = new Map<number, (typeof baris)[number]>();
-    for (const item of baris) {
-      perWeek.set(nomorWeekLaporan(item.namaPekerjaan, item.mingguKe), item);
+    const nomorWeek = (item: (typeof baris)[number]) =>
+      nomorWeekLaporan(item.namaPekerjaan, item.mingguKe);
+    const daftarWeek = [...new Set(baris.map(nomorWeek))].sort((a, b) => a - b);
+    const formatTanggal = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' });
+
+    // Data lama "LAPORAN WEEK n" sudah berupa snapshot total project.
+    if (baris.every((item) => /^laporan\s+week\s+/i.test(item.namaPekerjaan))) {
+      const perWeek = new Map<number, (typeof baris)[number]>();
+      for (const item of baris) perWeek.set(nomorWeek(item), item);
+      return daftarWeek.map((week) => {
+        const snapshot = perWeek.get(week)!;
+        const planned = Number(snapshot.planned);
+        const actual = Number(snapshot.actual);
+        return { bulan: formatTanggal.format(snapshot.uploadedAt), week: `Week ${week}`, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
+      });
     }
-    return [...perWeek.entries()].sort(([a], [b]) => a - b).map(([week, snapshot]) => {
-      const planned = Number(snapshot?.planned ?? 0);
-      const actual = Number(snapshot?.actual ?? 0);
-      const bulan = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(snapshot.uploadedAt);
-      return { bulan, week: `Week ${week}`, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
+
+    // Setiap titik Week adalah total kumulatif: nilai terbaru tiap pekerjaan
+    // sampai Week tersebut dijumlahkan. Pekerjaan yang tidak di-update pada
+    // Week berikutnya tetap membawa nilai terakhirnya.
+    const terbaruPerPekerjaan = new Map<string, (typeof baris)[number]>();
+    return daftarWeek.map((week) => {
+      const padaWeekIni = baris.filter((item) => nomorWeek(item) === week);
+      for (const item of padaWeekIni) terbaruPerPekerjaan.set(item.namaPekerjaan, item);
+      const nilai = [...terbaruPerPekerjaan.values()];
+      const planned = nilai.reduce((total, item) => total + Number(item.planned), 0);
+      const actual = nilai.reduce((total, item) => total + Number(item.actual), 0);
+      const tanggalTerakhir = padaWeekIni.at(-1)?.uploadedAt ?? nilai.at(-1)!.uploadedAt;
+      return { bulan: formatTanggal.format(tanggalTerakhir), week: `Week ${week}`, planned: Math.round(planned * 10) / 10, actual: Math.round(actual * 10) / 10, deviasi: Math.round((actual - planned) * 10) / 10 };
     });
   }
 

@@ -312,6 +312,22 @@ describe('EpromProgressService.trendMingguan', () => {
       { bulan: '2026-02-01', week: 'Week 3', planned: 60, actual: 50, deviasi: -10 },
     ]);
   });
+
+  it('menjumlahkan actual terbaru seluruh pekerjaan pada setiap Week', async () => {
+    const { service } = buatService({
+      progressMingguan: [
+        { id: 1, mingguKe: 1, uploadedAt: new Date('2026-01-01T01:00:00Z'), namaPekerjaan: 'A', planned: 4, actual: 3 },
+        { id: 2, mingguKe: 1, uploadedAt: new Date('2026-01-01T02:00:00Z'), namaPekerjaan: 'B', planned: 3, actual: 2 },
+        { id: 3, mingguKe: 2, uploadedAt: new Date('2026-01-08T01:00:00Z'), namaPekerjaan: 'A', planned: 8, actual: 7 },
+        { id: 4, mingguKe: 2, uploadedAt: new Date('2026-01-08T02:00:00Z'), namaPekerjaan: 'B', planned: 4, actual: 3 },
+      ],
+    });
+
+    await expect(service.trendMingguan(1)).resolves.toEqual([
+      { bulan: '2026-01-01', week: 'Week 1', planned: 7, actual: 5, deviasi: -2 },
+      { bulan: '2026-01-08', week: 'Week 2', planned: 12, actual: 10, deviasi: -2 },
+    ]);
+  });
 });
 
 describe('EpromProgressService.progresMingguanTerbaru', () => {

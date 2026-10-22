@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/access-control';
 import { messApi } from '@/lib/mess-monitoring-api';
-import { MonitoringKamar } from '@/components/mess/monitoring-kamar';
 import styles from '../mess.module.css';
 
 type DashboardData = {
@@ -46,7 +45,7 @@ export default function Dashboard() {
 
   return <>
     <header className={styles.heading}>
-      <div><span>GENERAL AFFAIRS</span><h1>Monitoring Kamar Mess</h1><p>Ringkasan hunian, shift, kebersihan, dan data kamar dalam satu halaman.</p></div>
+      <div><span>GENERAL AFFAIRS</span><h1>Dashboard Monitoring Mess</h1><p>Ringkasan hunian, shift, dan kebersihan kamar hari ini.</p></div>
     </header>
     <section className={styles.cards}>
       {summary.map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}
@@ -55,6 +54,5 @@ export default function Dashboard() {
       <h2>Komposisi Shift Penghuni</h2>
       {shifts.map(([name, value, color]) => <div className={styles.chartRow} key={name}><span>{name}</span><div><i style={{ width: `${value / maximum * 100}%`, background: color }} /></div><b>{value}</b></div>)}
     </section>
-    <MonitoringKamar hideHeader />
   </>;
 }

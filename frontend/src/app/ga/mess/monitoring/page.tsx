@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { MonitoringKamar } from '@/components/mess/monitoring-kamar';
 
 export default function Monitoring() {
-  redirect('/ga/mess/dashboard');
+  return <MonitoringKamar />;
 }
