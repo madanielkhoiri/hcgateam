@@ -112,14 +112,14 @@ export default function LayoutTugasDinas({
 
   if (!user) {
     return (
-      <main className={styles.memuat}>Memuat modul Form Tugas Dinas...</main>
+      <main className={styles.memuat}>Memuat modul Surat Tugas Dinas...</main>
     );
   }
 
   return (
     <TugasDinasContext.Provider value={{ user }}>
       <ModuleShell
-        title="Form Tugas Dinas"
+        title="Surat Tugas Dinas"
         subtitle="Human Capital"
         deptBadge={{ text: 'HC', color: '#0868f6', soft: '#eaf2ff' }}
         menuItems={MENU_TUGAS_DINAS}

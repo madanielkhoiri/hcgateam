@@ -140,6 +140,19 @@ function buatHcTree(approval: RingkasanApproval | null, mcuRingkasan: RingkasanM
     soft: '#fff2df',
     children: [
       {
+        key: 'HC_TUGAS_DINAS',
+        title: 'Surat Tugas Dinas',
+        description:
+          'Buat Surat Tugas Dinas otomatis jadi PDF, lengkap alur persetujuan SH & PJO.',
+        status: 'Tersedia',
+        href: '/hc/tugas-dinas',
+        icon: Plane,
+        accessKey: ACCESS_KEYS.HC_TUGAS_DINAS,
+        accent: '#d97706',
+        soft: '#fff2df',
+        pendingCount: approval?.suratTugasDinas,
+      },
+      {
         key: 'HC_DEKLARASI',
         title: 'Deklarasi Dinas',
         description:
@@ -153,19 +166,6 @@ function buatHcTree(approval: RingkasanApproval | null, mcuRingkasan: RingkasanM
         pendingCount: approval
           ? approval.deklarasiPengajuan + approval.deklarasiNota + approval.deklarasiSaldo
           : undefined,
-      },
-      {
-        key: 'HC_TUGAS_DINAS',
-        title: 'Form Tugas Dinas',
-        description:
-          'Buat Surat Tugas Dinas otomatis jadi PDF, lengkap alur persetujuan SH & PJO.',
-        status: 'Tersedia',
-        href: '/hc/tugas-dinas',
-        icon: Plane,
-        accessKey: ACCESS_KEYS.HC_TUGAS_DINAS,
-        accent: '#d97706',
-        soft: '#fff2df',
-        pendingCount: approval?.suratTugasDinas,
       },
       {
         key: 'HC_ANAK_MAGANG',

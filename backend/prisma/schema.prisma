@@ -1627,35 +1627,41 @@ enum StatusSuratTugas {
   DITOLAK
 }
 
+enum JenisPelaksanaanTugas {
+  ONLINE
+  OFFLINE
+}
+
 model SuratTugasDinas {
-  id                       Int              @id @default(autoincrement())
-  nomor                    String           @unique
-  denganAkomodasi          Boolean          @default(false) @map("dengan_akomodasi")
-  suratTugasAsalId         Int?             @map("surat_tugas_asal_id")
-  tujuanLokasi             String           @map("tujuan_lokasi")
-  tanggalMulai             DateTime         @map("tanggal_mulai") @db.Date
-  tanggalSelesai           DateTime         @map("tanggal_selesai") @db.Date
-  keteranganTugas          String           @map("keterangan_tugas") @db.Text
-  penginapanHotel          String?          @map("penginapan_hotel")
-  bantuanTransportasi      String?          @map("bantuan_transportasi") @db.Text
-  rutePerjalanan           String?          @map("rute_perjalanan") @db.Text
-  uangPerjalananNominal    Int?             @map("uang_perjalanan_nominal")
-  uangPerjalananKeterangan String?          @map("uang_perjalanan_keterangan") @db.Text
-  akomodasiNominal         Int?             @map("akomodasi_nominal")
-  akomodasiKeterangan      String?          @map("akomodasi_keterangan") @db.Text
-  laundryNominal           Int?             @map("laundry_nominal")
-  laundryKeterangan        String?          @map("laundry_keterangan") @db.Text
-  jumlahAkomodasi          Int              @default(0) @map("jumlah_akomodasi")
-  status                   StatusSuratTugas @default(MENUNGGU_SH)
-  filePdf                  String?          @map("file_pdf")
-  dibuatOlehId             Int              @map("dibuat_oleh_id")
-  disetujuiShOlehId        Int?             @map("disetujui_sh_oleh_id")
-  disetujuiShPada          DateTime?        @map("disetujui_sh_pada")
-  disetujuiPjoOlehId       Int?             @map("disetujui_pjo_oleh_id")
-  disetujuiPjoPada         DateTime?        @map("disetujui_pjo_pada")
-  alasanTolak              String?          @map("alasan_tolak") @db.Text
-  createdAt                DateTime         @default(now()) @map("created_at")
-  updatedAt                DateTime         @updatedAt @map("updated_at")
+  id                       Int                   @id @default(autoincrement())
+  nomor                    String
+  denganAkomodasi          Boolean               @default(false) @map("dengan_akomodasi")
+  jenisPelaksanaan         JenisPelaksanaanTugas @default(OFFLINE) @map("jenis_pelaksanaan")
+  suratTugasAsalId         Int?                  @map("surat_tugas_asal_id")
+  tujuanLokasi             String                @map("tujuan_lokasi")
+  tanggalMulai             DateTime              @map("tanggal_mulai") @db.Date
+  tanggalSelesai           DateTime              @map("tanggal_selesai") @db.Date
+  keteranganTugas          String                @map("keterangan_tugas") @db.Text
+  penginapanHotel          String?               @map("penginapan_hotel")
+  bantuanTransportasi      String?               @map("bantuan_transportasi") @db.Text
+  rutePerjalanan           String?               @map("rute_perjalanan") @db.Text
+  uangPerjalananNominal    Int?                  @map("uang_perjalanan_nominal")
+  uangPerjalananKeterangan String?               @map("uang_perjalanan_keterangan") @db.Text
+  akomodasiNominal         Int?                  @map("akomodasi_nominal")
+  akomodasiKeterangan      String?               @map("akomodasi_keterangan") @db.Text
+  laundryNominal           Int?                  @map("laundry_nominal")
+  laundryKeterangan        String?               @map("laundry_keterangan") @db.Text
+  jumlahAkomodasi          Int                   @default(0) @map("jumlah_akomodasi")
+  status                   StatusSuratTugas      @default(MENUNGGU_SH)
+  filePdf                  String?               @map("file_pdf")
+  dibuatOlehId             Int                   @map("dibuat_oleh_id")
+  disetujuiShOlehId        Int?                  @map("disetujui_sh_oleh_id")
+  disetujuiShPada          DateTime?             @map("disetujui_sh_pada")
+  disetujuiPjoOlehId       Int?                  @map("disetujui_pjo_oleh_id")
+  disetujuiPjoPada         DateTime?             @map("disetujui_pjo_pada")
+  alasanTolak              String?               @map("alasan_tolak") @db.Text
+  createdAt                DateTime              @default(now()) @map("created_at")
+  updatedAt                DateTime              @updatedAt @map("updated_at")
 
   dibuatOleh        User                 @relation("PembuatSuratTugas", fields: [dibuatOlehId], references: [id], onDelete: Restrict)
   disetujuiShOleh   User?                @relation("PenyetujuShSuratTugas", fields: [disetujuiShOlehId], references: [id], onDelete: SetNull)
@@ -1665,6 +1671,7 @@ model SuratTugasDinas {
   karyawan          SuratTugasKaryawan[]
   pengajuanOtomatis Pengajuan[]
 
+  @@unique([nomor, denganAkomodasi])
   @@index([status])
   @@index([dibuatOlehId])
   @@index([suratTugasAsalId])

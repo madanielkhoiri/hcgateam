@@ -12,6 +12,7 @@ export type { HasilHalaman } from "./pagination";
 
 export type StatusSuratTugas =
   "MENUNGGU_SH" | "MENUNGGU_PJO" | "DISETUJUI" | "DITOLAK";
+export type JenisPelaksanaanTugas = "ONLINE" | "OFFLINE";
 
 export type KaryawanTugas = {
   id: number;
@@ -53,6 +54,7 @@ export type SuratTugasDinas = {
   id: number;
   nomor: string;
   denganAkomodasi: boolean;
+  jenisPelaksanaan: JenisPelaksanaanTugas;
   suratTugasAsalId: number | null;
   tujuanLokasi: string;
   tanggalMulai: string;

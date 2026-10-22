@@ -18,6 +18,7 @@ import {
   formatRupiah,
   suratTugasApi,
   type PilihanKaryawanAkomodasi,
+  type JenisPelaksanaanTugas,
   type SuratTugasDinas,
 } from "@/lib/surat-tugas-dinas-api";
 import styles from "@/app/hc/tugas-dinas/tugas-dinas.module.css";
@@ -65,6 +66,7 @@ export function TugasDinasBuatForm({
   const router = useRouter();
 
   const [nomor, setNomor] = useState(initialData?.nomor ?? "");
+  const [jenisPelaksanaan, setJenisPelaksanaan] = useState<JenisPelaksanaanTugas>(initialData?.jenisPelaksanaan ?? "OFFLINE");
   const [tujuanLokasi, setTujuanLokasi] = useState(initialData?.tujuanLokasi ?? "");
   const [tanggalMulai, setTanggalMulai] = useState(initialData?.tanggalMulai?.slice(0, 10) ?? "");
   const [tanggalSelesai, setTanggalSelesai] = useState(initialData?.tanggalSelesai?.slice(0, 10) ?? "");
@@ -191,6 +193,8 @@ export function TugasDinasBuatForm({
       }
 
       setSuratTugasAsalId(item.suratTugasId);
+      setNomor(item.nomorSurat ?? "");
+      setJenisPelaksanaan("OFFLINE");
       setTujuanLokasi(item.tujuanLokasi);
       setTanggalMulai(item.tanggalMulai.slice(0, 10));
       setTanggalSelesai(item.tanggalSelesai.slice(0, 10));
@@ -248,6 +252,7 @@ export function TugasDinasBuatForm({
 
     if (withAkomodasi && tersisa.length === 0) {
       setSuratTugasAsalId(null);
+      setNomor("");
       setTujuanLokasi("");
       setTanggalMulai("");
       setTanggalSelesai("");
@@ -263,6 +268,7 @@ export function TugasDinasBuatForm({
       const payload = {
         nomor: nomor.trim(),
         denganAkomodasi: withAkomodasi,
+        jenisPelaksanaan: withAkomodasi ? "OFFLINE" : jenisPelaksanaan,
         tujuanLokasi: tujuanLokasi.trim(),
         tanggalMulai,
         tanggalSelesai,
@@ -324,7 +330,8 @@ export function TugasDinasBuatForm({
     <>
       {galat ? <Pesan jenis="error">{galat}</Pesan> : null}
 
-      <section className={styles.panel}>
+      <div className={styles.formSections}>
+      <section className={styles.panel} style={{ order: withAkomodasi ? 2 : 1 }}>
         <div className={styles.panelHead}>
           <div>
             <h2>Detail Surat</h2>
@@ -332,11 +339,20 @@ export function TugasDinasBuatForm({
         </div>
 
         <div className={styles.formGrid}>
+          {!withAkomodasi ? (
+            <Field label="Jenis Pelaksanaan">
+              <select className={styles.input} value={jenisPelaksanaan} onChange={(event) => setJenisPelaksanaan(event.target.value as JenisPelaksanaanTugas)}>
+                <option value="OFFLINE">Offline — mendapatkan akomodasi</option>
+                <option value="ONLINE">Online — tanpa akomodasi</option>
+              </select>
+            </Field>
+          ) : null}
           <Field label="Nomor Surat">
             <input
               className={styles.input}
               value={nomor}
               onChange={(event) => setNomor(event.target.value)}
+              readOnly={withAkomodasi}
               placeholder="12/S-Out/HCGA/PPA-Adw/VIII/2026"
             />
           </Field>
@@ -383,7 +399,7 @@ export function TugasDinasBuatForm({
         </div>
       </section>
 
-      <section className={styles.panel}>
+      <section className={styles.panel} style={{ order: withAkomodasi ? 1 : 2 }}>
         <div className={styles.panelHead}>
           <div>
             <h2>Diberikan Kepada</h2>
@@ -501,7 +517,7 @@ export function TugasDinasBuatForm({
       </section>
 
       {withAkomodasi ? (
-        <section className={styles.panel}>
+        <section className={styles.panel} style={{ order: 3 }}>
           <div className={styles.panelHead}>
             <div>
               <h2>Akomodasi</h2>
@@ -726,7 +742,7 @@ export function TugasDinasBuatForm({
         </section>
       ) : null}
 
-      <div className={styles.headActions} style={{ marginTop: 18 }}>
+      <div className={styles.headActions} style={{ order: 4 }}>
         <button
           type="button"
           className={`${styles.tombol} ${styles.tombolNetral}`}
@@ -745,6 +761,7 @@ export function TugasDinasBuatForm({
           <Plus size={15} />
           {proses ? "Menyimpan..." : initialData ? "Simpan Perubahan" : "Buat Surat Tugas"}
         </button>
+      </div>
       </div>
     </>
   );

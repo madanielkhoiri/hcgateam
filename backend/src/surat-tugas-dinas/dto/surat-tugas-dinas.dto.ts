@@ -9,6 +9,7 @@ import {
   IsBoolean,
   IsDateString,
   IsInt,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -16,6 +17,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { JenisPelaksanaanTugas } from '@prisma/client';
 
 export class KaryawanTugasDto {
   @IsString()
@@ -84,6 +86,10 @@ export class BuatSuratTugasDinasDto {
   @IsNotEmpty({ message: 'Nomor surat wajib diisi' })
   @MaxLength(120)
   nomor: string;
+
+  @IsOptional()
+  @IsEnum(JenisPelaksanaanTugas)
+  jenisPelaksanaan?: JenisPelaksanaanTugas;
 
   @IsOptional()
   @IsBoolean()

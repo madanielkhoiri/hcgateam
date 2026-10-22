@@ -41,17 +41,17 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'section',
   },
   {
-    key: 'HC_DEKLARASI',
-    title: 'Deklarasi Dinas',
-    description: 'Pengelolaan deklarasi perjalanan dinas dan uang operasional.',
+    key: 'HC_TUGAS_DINAS',
+    title: 'Surat Tugas Dinas',
+    description:
+      'Pembuatan Surat Tugas Dinas otomatis jadi PDF, lengkap dengan alur persetujuan SH & PJO.',
     parentKey: 'HC_RND',
     level: 'card',
   },
   {
-    key: 'HC_TUGAS_DINAS',
-    title: 'Form Tugas Dinas',
-    description:
-      'Pembuatan Surat Tugas Dinas otomatis jadi PDF, lengkap dengan alur persetujuan SH & PJO.',
+    key: 'HC_DEKLARASI',
+    title: 'Deklarasi Dinas',
+    description: 'Pengelolaan deklarasi perjalanan dinas dan uang operasional.',
     parentKey: 'HC_RND',
     level: 'card',
   },

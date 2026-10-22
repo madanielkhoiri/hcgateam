@@ -111,7 +111,7 @@ export default function DashboardTugasDinasPage() {
   return (
     <div style={{ padding: '22px 24px 40px', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#10244a' }}>Dashboard Form Tugas Dinas</h1>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#10244a' }}>Dashboard Surat Tugas Dinas</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, fontWeight: 600, color: '#6f819d' }}>
           Ringkasan surat tugas dinas dan status persetujuan
         </p>

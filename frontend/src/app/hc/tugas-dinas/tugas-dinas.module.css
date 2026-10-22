@@ -164,6 +164,16 @@
   margin-top: 18px;
 }
 
+.formSections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.formSections > .panel {
+  margin-top: 0;
+}
+
 .panelHead {
   display: flex;
   align-items: flex-start;

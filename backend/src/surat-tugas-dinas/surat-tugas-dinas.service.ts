@@ -13,7 +13,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, StatusSuratTugas, UserRole } from '@prisma/client';
+import { JenisPelaksanaanTugas, Prisma, StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { hasilHalaman, paramHalaman } from '../common/pagination.util';
 import { sapaanKaryawan } from '../common/sapaan.util';
@@ -167,6 +167,7 @@ export class SuratTugasDinasService {
       where: {
         status: StatusSuratTugas.DISETUJUI,
         denganAkomodasi: false,
+        jenisPelaksanaan: JenisPelaksanaanTugas.OFFLINE,
         ...(cari
           ? {
               OR: [
@@ -247,16 +248,9 @@ export class SuratTugasDinasService {
   }
 
   async buat(dto: BuatSuratTugasDinasDto, aktor: AktorSurat) {
-    const nomor = dto.nomor.trim();
+    let nomor = dto.nomor.trim();
     const denganAkomodasi = dto.denganAkomodasi === true;
-
-    const duplikat = await this.prisma.suratTugasDinas.findUnique({
-      where: { nomor },
-    });
-
-    if (duplikat) {
-      throw new BadRequestException('Nomor surat sudah digunakan');
-    }
+    let jenisPelaksanaan = dto.jenisPelaksanaan ?? JenisPelaksanaanTugas.OFFLINE;
 
     let tujuanLokasi = dto.tujuanLokasi.trim();
     let tanggalMulai = new Date(dto.tanggalMulai);
@@ -276,6 +270,7 @@ export class SuratTugasDinasService {
         where: {
           id: dto.suratTugasAsalId,
           denganAkomodasi: false,
+          jenisPelaksanaan: JenisPelaksanaanTugas.OFFLINE,
           status: StatusSuratTugas.DISETUJUI,
         },
         include: { karyawan: true },
@@ -306,6 +301,8 @@ export class SuratTugasDinasService {
       }
 
       suratTugasAsalId = suratAsal.id;
+      nomor = suratAsal.nomor;
+      jenisPelaksanaan = JenisPelaksanaanTugas.OFFLINE;
       tujuanLokasi = suratAsal.tujuanLokasi;
       tanggalMulai = suratAsal.tanggalMulai;
       tanggalSelesai = suratAsal.tanggalSelesai;
@@ -320,6 +317,19 @@ export class SuratTugasDinasService {
           jabatan: sumber.jabatan,
         };
       });
+    }
+
+    const duplikat = await this.prisma.suratTugasDinas.findUnique({
+      where: {
+        nomor_denganAkomodasi: { nomor, denganAkomodasi },
+      },
+    });
+    if (duplikat) {
+      throw new BadRequestException(
+        denganAkomodasi
+          ? 'Akomodasi untuk nomor Surat Tugas Dinas ini sudah dibuat'
+          : 'Nomor surat sudah digunakan',
+      );
     }
 
     if (tanggalSelesai < tanggalMulai) {
@@ -366,6 +376,7 @@ export class SuratTugasDinasService {
       data: {
         nomor,
         denganAkomodasi,
+        jenisPelaksanaan,
         suratTugasAsalId,
         tujuanLokasi,
         tanggalMulai,
@@ -429,8 +440,13 @@ export class SuratTugasDinasService {
     if (lama.denganAkomodasi !== (dto.denganAkomodasi === true)) {
       throw new BadRequestException('Jenis STD tidak dapat diubah');
     }
-    const nomor = dto.nomor.trim();
-    const duplikat = await this.prisma.suratTugasDinas.findFirst({ where: { nomor, id: { not: id } } });
+    const nomor = lama.denganAkomodasi && lama.suratTugasAsal
+      ? lama.suratTugasAsal.nomor
+      : dto.nomor.trim();
+    const jenisPelaksanaan = lama.denganAkomodasi
+      ? JenisPelaksanaanTugas.OFFLINE
+      : dto.jenisPelaksanaan ?? lama.jenisPelaksanaan;
+    const duplikat = await this.prisma.suratTugasDinas.findFirst({ where: { nomor, denganAkomodasi: lama.denganAkomodasi, id: { not: id } } });
     if (duplikat) throw new BadRequestException('Nomor surat sudah digunakan');
 
     const tanggalMulai = new Date(dto.tanggalMulai);
@@ -454,6 +470,7 @@ export class SuratTugasDinasService {
         where: { id },
         data: {
           nomor,
+          jenisPelaksanaan,
           tujuanLokasi: dto.tujuanLokasi.trim(),
           tanggalMulai,
           tanggalSelesai,
