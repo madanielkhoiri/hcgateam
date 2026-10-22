@@ -35,6 +35,7 @@ type BarisBlast = {
   key: number;
   nrp: string;
   nama: string;
+  cocok: boolean;
   status: "DISETUJUI" | "DITRANSFER";
   nominal: string;
 };
@@ -59,6 +60,7 @@ const barisKosong = (key: number): BarisBlast => ({
   key,
   nrp: "",
   nama: "",
+  cocok: false,
   status: "DISETUJUI",
   nominal: "",
 });
@@ -170,7 +172,9 @@ export default function KwitansiObatPage() {
     );
     ubahBaris(
       key,
-      cocok ? { nrp: cocok.nik, nama: cocok.nama } : { nrp: "", nama: value },
+      cocok
+        ? { nrp: cocok.nik, nama: cocok.nama, cocok: true }
+        : { nrp: "", nama: value, cocok: false },
     );
   }
 
@@ -197,15 +201,14 @@ export default function KwitansiObatPage() {
         );
       }
       setBarisBlast(
-        hasil.data
-          .filter((item) => item.cocok)
-          .map((item, index) => ({
-            key: Date.now() + index,
-            nrp: item.nrp,
-            nama: item.namaDatabase || item.namaExcel,
-            status: "DITRANSFER",
-            nominal: String(item.jumlah),
-          })),
+        hasil.data.map((item, index) => ({
+          key: Date.now() + index,
+          nrp: item.nrp,
+          nama: item.namaDatabase || item.namaExcel,
+          cocok: item.cocok,
+          status: "DITRANSFER",
+          nominal: String(item.jumlah),
+        })),
       );
       setPesanBlast(
         `${hasil.totalCocok} karyawan cocok dari ${hasil.totalKaryawan}; ${hasil.totalTidakCocok} NRP tidak ditemukan. Total Rp ${hasil.totalNominal.toLocaleString("id-ID")}.`,
@@ -218,6 +221,13 @@ export default function KwitansiObatPage() {
   }
 
   async function kirimBlast() {
+    const belumCocok = barisBlast.filter((item) => item.nrp && !item.cocok);
+    if (belumCocok.length) {
+      setPesanBlast(
+        `${belumCocok.length} NRP belum cocok dengan Database Karyawan. Perbaiki pilihan karyawan atau hapus baris tersebut.`,
+      );
+      return;
+    }
     const data = barisBlast
       .filter((item) => item.nrp)
       .map((item) => ({
@@ -535,8 +545,27 @@ export default function KwitansiObatPage() {
                         }
                         list="daftar-karyawan-blast"
                         placeholder="Ketik nama atau NRP"
-                        style={inputStyle}
+                        style={{
+                          ...inputStyle,
+                          borderColor:
+                            item.nrp && !item.cocok ? "#ef5b70" : "#cddcf0",
+                          background:
+                            item.nrp && !item.cocok ? "#fff4f5" : "#fbfdff",
+                        }}
                       />
+                      {item.nrp && !item.cocok && (
+                        <small
+                          style={{
+                            display: "block",
+                            color: "#d9485f",
+                            marginTop: 5,
+                            fontWeight: 700,
+                          }}
+                        >
+                          NRP {item.nrp} tidak ditemukan — pilih karyawan yang
+                          benar atau hapus baris.
+                        </small>
+                      )}
                     </td>
                     <td style={{ padding: 9 }}>
                       <select
