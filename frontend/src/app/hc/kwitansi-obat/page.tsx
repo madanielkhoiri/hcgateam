@@ -42,6 +42,7 @@ type BarisBlast = {
 type PreviewImport = {
   totalBaris: number;
   totalKaryawan: number;
+  totalKaryawanUnik?: number;
   totalCocok: number;
   totalTidakCocok: number;
   totalNominal: number;
@@ -211,7 +212,7 @@ export default function KwitansiObatPage() {
         })),
       );
       setPesanBlast(
-        `${hasil.totalCocok} karyawan cocok dari ${hasil.totalKaryawan}; ${hasil.totalTidakCocok} NRP tidak ditemukan. Total Rp ${hasil.totalNominal.toLocaleString("id-ID")}.`,
+        `${hasil.totalCocok} baris cocok dari ${hasil.totalKaryawan} baris Excel (${hasil.totalKaryawanUnik ?? "-"} NRP unik); ${hasil.totalTidakCocok} baris tidak cocok. Total Rp ${hasil.totalNominal.toLocaleString("id-ID")}.`,
       );
     } catch (error) {
       setPesanBlast((error as Error).message);

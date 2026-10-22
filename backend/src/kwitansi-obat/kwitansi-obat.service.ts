@@ -87,10 +87,12 @@ export class KwitansiObatService {
     const jumlahIndex = header.findIndex(
       (item) => item === 'JUMLAH RP' || item === 'JUMLAH',
     );
-    const gabungan = new Map<
-      string,
-      { nrp: string; namaExcel: string; jumlah: number; jumlahKwitansi: number }
-    >();
+    const barisExcel: Array<{
+      nrp: string;
+      namaExcel: string;
+      jumlah: number;
+      jumlahKwitansi: number;
+    }> = [];
 
     for (const row of rows.slice(headerIndex + 1)) {
       const nrp = String(row[nrpIndex] ?? '')
@@ -106,27 +108,26 @@ export class KwitansiObatService {
       if (!nrp || !namaExcel || !Number.isFinite(jumlah) || jumlah <= 0)
         continue;
 
-      const sebelumnya = gabungan.get(nrp);
-      gabungan.set(nrp, {
+      barisExcel.push({
         nrp,
-        namaExcel: sebelumnya?.namaExcel ?? namaExcel,
-        jumlah: (sebelumnya?.jumlah ?? 0) + Math.round(jumlah),
-        jumlahKwitansi: (sebelumnya?.jumlahKwitansi ?? 0) + 1,
+        namaExcel,
+        jumlah: Math.round(jumlah),
+        jumlahKwitansi: 1,
       });
     }
 
-    if (!gabungan.size) {
+    if (!barisExcel.length) {
       throw new BadRequestException(
         'Tidak ada data kwitansi yang valid pada sheet Template HO',
       );
     }
 
     const karyawan = await this.prisma.karyawan.findMany({
-      where: { nik: { in: [...gabungan.keys()] } },
+      where: { nik: { in: [...new Set(barisExcel.map((item) => item.nrp))] } },
       select: { id: true, nik: true, nama: true },
     });
     const perNrp = new Map(karyawan.map((item) => [item.nik, item] as const));
-    const data: BarisImportKwitansi[] = [...gabungan.values()].map((item) => {
+    const data: BarisImportKwitansi[] = barisExcel.map((item) => {
       const master = perNrp.get(item.nrp);
       return {
         ...item,
@@ -138,8 +139,9 @@ export class KwitansiObatService {
 
     return {
       sheet: 'Template HO',
-      totalBaris: data.reduce((total, item) => total + item.jumlahKwitansi, 0),
+      totalBaris: data.length,
       totalKaryawan: data.length,
+      totalKaryawanUnik: new Set(data.map((item) => item.nrp)).size,
       totalCocok: data.filter((item) => item.cocok).length,
       totalTidakCocok: data.filter((item) => !item.cocok).length,
       totalNominal: data
@@ -161,10 +163,11 @@ export class KwitansiObatService {
     dibuatOlehId: number,
   ) {
     const input = Array.isArray(dto.data) ? dto.data : [];
-    const dataPerNrp = new Map<
-      string,
-      { status: 'DISETUJUI' | 'DITRANSFER'; nominal?: number }
-    >();
+    const dataValid: Array<{
+      nrp: string;
+      status: 'DISETUJUI' | 'DITRANSFER';
+      nominal?: number;
+    }> = [];
     for (const item of input) {
       const nrp = String(item.nrp ?? '').trim();
       const status = item.status;
@@ -178,16 +181,18 @@ export class KwitansiObatService {
           `Nominal transfer wajib diisi untuk NRP ${nrp}`,
         );
       }
-      dataPerNrp.set(nrp, {
+      dataValid.push({
+        nrp,
         status,
         ...(status === 'DITRANSFER' ? { nominal } : {}),
       });
     }
-    if (!dataPerNrp.size)
+    if (!dataValid.length)
       throw new BadRequestException('Tidak ada data valid untuk disimpan');
 
+    const nrpUnik = [...new Set(dataValid.map((item) => item.nrp))];
     const karyawan = await this.prisma.karyawan.findMany({
-      where: { nik: { in: [...dataPerNrp.keys()] } },
+      where: { nik: { in: nrpUnik } },
       select: {
         id: true,
         nik: true,
@@ -199,10 +204,16 @@ export class KwitansiObatService {
     });
     if (!karyawan.length)
       throw new BadRequestException('NRP tidak cocok dengan Database Karyawan');
+    const karyawanPerNrp = new Map(
+      karyawan.map((item) => [item.nik, item] as const),
+    );
+    const dataTersimpan = dataValid.filter((item) =>
+      karyawanPerNrp.has(item.nrp),
+    );
 
     await this.prisma.kwitansiObatNotifikasi.createMany({
-      data: karyawan.map((item) => {
-        const nilai = dataPerNrp.get(item.nik)!;
+      data: dataTersimpan.map((nilai) => {
+        const item = karyawanPerNrp.get(nilai.nrp)!;
         return {
           karyawanId: item.id,
           status: nilai.status,
@@ -216,14 +227,28 @@ export class KwitansiObatService {
     let gagal = 0;
     let tanpaNomor = 0;
     if (dto.kirimNotifikasi) {
+      const ringkasanPerNrp = new Map<
+        string,
+        { status: 'DISETUJUI' | 'DITRANSFER'; nominal: number }
+      >();
+      for (const nilai of dataTersimpan) {
+        const lama = ringkasanPerNrp.get(nilai.nrp);
+        ringkasanPerNrp.set(nilai.nrp, {
+          status:
+            nilai.status === 'DITRANSFER' || lama?.status === 'DITRANSFER'
+              ? 'DITRANSFER'
+              : 'DISETUJUI',
+          nominal: (lama?.nominal ?? 0) + (nilai.nominal ?? 0),
+        });
+      }
       const hasil = await Promise.allSettled(
-        karyawan.map(async (item) => {
+        [...ringkasanPerNrp.entries()].map(async ([nrp, nilai]) => {
+          const item = karyawanPerNrp.get(nrp)!;
           const nomor = item.noTelepon || item.akun?.phoneNumber;
           if (!nomor?.trim()) {
             tanpaNomor += 1;
             return;
           }
-          const nilai = dataPerNrp.get(item.nik)!;
           const sapaan =
             item.gender === 'LAKI_LAKI'
               ? 'Bapak'
@@ -270,8 +295,8 @@ export class KwitansiObatService {
     }
 
     return {
-      tersimpan: karyawan.length,
-      tidakDitemukan: dataPerNrp.size - karyawan.length,
+      tersimpan: dataTersimpan.length,
+      tidakDitemukan: dataValid.length - dataTersimpan.length,
       notifikasi: dto.kirimNotifikasi ? { terkirim, gagal, tanpaNomor } : null,
     };
   }
