@@ -47,6 +47,7 @@ const gaTree: MenuTreeNode[] = [
     accessKey: ACCESS_KEYS.GA_MESS,
     accent: '#0f766e',
     soft: '#e6f7f5',
+    displayMode: 'section',
     children: [
       {
         key: 'GA_MESS_MONITORING',

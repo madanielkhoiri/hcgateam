@@ -28,6 +28,8 @@ export type MenuTreeNode = {
   /** Jumlah item yang menunggu approval dari akun yang sedang login (misal Work Order menunggu SH). Badge cuma tampil kalau > 0. */
   pendingCount?: number;
   children?: MenuTreeNode[];
+  /** Pertahankan node sebagai panel grup walaupun hanya memiliki satu anak. */
+  displayMode?: 'section';
 };
 
 type MenuTreeProps = {
@@ -60,7 +62,7 @@ function collapseNode(node: MenuTreeNode, kickers: string[] = []): Collapsed {
     return { type: 'leaf', node, kickers };
   }
 
-  if (node.children.length === 1) {
+  if (node.children.length === 1 && node.displayMode !== 'section') {
     return collapseNode(node.children[0], [...kickers, node.title]);
   }
 
