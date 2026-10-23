@@ -27,6 +27,7 @@ type Log = {
   status: string;
   nominal?: string | number | null;
   createdAt: string;
+  tanggalStatus?: string;
   karyawan?: { nama: string; nik: string } | null;
 };
 type BarisBlast = {
@@ -171,8 +172,12 @@ export default function KwitansiObatPage() {
           ? {
               ...item,
               ...perubahan,
-              ...(perubahan.status !== "DITRANSFER" ? { tanggalTransfer: "" } : {}),
-              ...(perubahan.status !== "DITOLAK" ? { alasan: "" } : {}),
+              ...(perubahan.status !== undefined && perubahan.status !== "DITRANSFER"
+                ? { tanggalTransfer: "" }
+                : {}),
+              ...(perubahan.status !== undefined && perubahan.status !== "DITOLAK"
+                ? { alasan: "" }
+                : {}),
             }
           : item,
       ),
@@ -302,10 +307,20 @@ export default function KwitansiObatPage() {
     month: "long",
     year: "numeric",
   }).format(new Date());
+  const tanggalHariIni = new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Makassar",
+  }).format(new Date());
   const bulanLogs = logs.filter(
-    (l) =>
-      new Date(l.createdAt).getMonth() === new Date().getMonth() &&
-      new Date(l.createdAt).getFullYear() === new Date().getFullYear(),
+    (l) => {
+      const tanggal = new Date(l.tanggalStatus || l.createdAt);
+      return (
+        tanggal.getMonth() === new Date().getMonth() &&
+        tanggal.getFullYear() === new Date().getFullYear()
+      );
+    },
   );
   const total = bulanLogs.reduce(
     (sum, l) => sum + (l.status === "DITRANSFER" ? Number(l.nominal || 0) : 0),
@@ -458,7 +473,7 @@ export default function KwitansiObatPage() {
                     "NRP / Nama Karyawan",
                     "Status",
                     "Nominal Kwitansi",
-                    "Tanggal / Alasan",
+                    "Detail Status",
                     "Aksi",
                   ].map((judul) => (
                     <th
@@ -556,7 +571,7 @@ export default function KwitansiObatPage() {
                           style={{ ...inputStyle, minWidth: 210 }}
                         />
                       ) : (
-                        <span style={{ color: "#0a9b61", fontWeight: 700 }}>Tanggal input otomatis</span>
+                        <span style={{ color: "#0a9b61", fontWeight: 700 }}>{tanggalHariIni}</span>
                       )}
                     </td>
                     <td style={{ padding: 9 }}>
@@ -859,7 +874,12 @@ export default function KwitansiObatPage() {
                 logs.map((l) => (
                   <tr key={l.id} style={{ borderBottom: "1px solid #edf2f8" }}>
                     <td style={{ padding: 12 }}>
-                      {new Date(l.createdAt).toLocaleDateString("id-ID")}
+                      {new Date(l.tanggalStatus || l.createdAt).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        timeZone: "Asia/Makassar",
+                      })}
                     </td>
                     <td style={{ padding: 12, fontWeight: 600 }}>
                       {l.karyawan?.nama || "-"}
