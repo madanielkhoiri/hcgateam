@@ -1162,13 +1162,13 @@ export const epromApi = {
 
   financial: {
     daftar: (projectId: number) => request<OpnameItem[]>(`/financial/opname?projectId=${projectId}`),
-    buat: (data: { projectId: number; progressPersen: number; revisiDariId?: number }, file: File | null) => {
+    buat: (data: { projectId: number; progressPersen: number; revisiDariId?: number }, files: File[]) => {
       const form = new FormData();
       form.append('projectId', String(data.projectId));
       form.append('progressPersen', String(data.progressPersen));
       if (data.revisiDariId) form.append('revisiDariId', String(data.revisiDariId));
-      if (file) form.append('file', file);
-      return request<OpnameItem>('/financial/opname', { method: 'POST', body: form });
+      files.forEach((file) => form.append('file', file));
+      return request<OpnameItem[]>('/financial/opname', { method: 'POST', body: form });
     },
     review: (id: number, status: 'APPROVED' | 'REJECTED', komentar?: string, annotations?: EngineerInkAnnotation[], textAnnotations?: EngineerTextAnnotation[]) =>
       request<OpnameItem>(`/financial/opname/${id}/review`, {

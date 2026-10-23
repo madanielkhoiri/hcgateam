@@ -13,11 +13,11 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../../auth/require-access-key.decorator';
@@ -63,13 +63,13 @@ export class EpromFinancialController {
   }
 
   @Post('opname')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('file', 50, { storage: memoryStorage() }))
   buat(
     @Aktor() aktor: AktorEprom,
     @Body() dto: BuatOpnameDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[] = [],
   ) {
-    return this.service.buat(aktor, dto, file);
+    return this.service.buat(aktor, dto, files);
   }
 
   @Patch('opname/:id/review')

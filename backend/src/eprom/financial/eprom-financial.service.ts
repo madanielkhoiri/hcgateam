@@ -15,6 +15,7 @@ import { EpromFileService } from '../common/eprom-file.service';
 import { AktorEprom } from '../common/eprom-aktor';
 import { ApproveEngineerDto } from '../engineer/eprom-engineer.service';
 import { EpromEngineerSigningService } from '../engineer/eprom-engineer-signing.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 
 export class BuatOpnameDto {
   @Type(() => Number)
@@ -60,6 +61,7 @@ export class EpromFinancialService {
     private readonly akses: EpromAksesService,
     private readonly file: EpromFileService,
     private readonly signing: EpromEngineerSigningService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   async daftar(aktor: AktorEprom, projectId: number) {
@@ -72,12 +74,12 @@ export class EpromFinancialService {
     return this.denganApproval(items);
   }
 
-  async buat(aktor: AktorEprom, dto: BuatOpnameDto, file?: Express.Multer.File) {
+  async buat(aktor: AktorEprom, dto: BuatOpnameDto, files: Express.Multer.File[] = []) {
     await this.akses.wajibAksesProject(aktor, dto.projectId);
 
     let revisionRootId: number | null = null;
     if (dto.revisiDariId) {
-      if (!file) throw new BadRequestException('File revisi wajib diunggah');
+      if (!files.length) throw new BadRequestException('File revisi wajib diunggah');
       const sumber = await this.itemAtauThrow(dto.revisiDariId);
       if (sumber.projectId !== dto.projectId) {
         throw new BadRequestException('Dokumen revisi tidak termasuk dalam project ini');
@@ -88,18 +90,51 @@ export class EpromFinancialService {
       revisionRootId = sumber.revisionRootId ?? sumber.id;
     }
 
-    const fileUrl = file
-      ? this.file.simpanDokumen(file, `project/${dto.projectId}/financial/opname`)
-      : null;
+    const daftarFile: Array<Express.Multer.File | null> = files.length ? files : [null];
+    const fileUrls = daftarFile.map((file) =>
+      file ? this.file.simpanDokumen(file, `project/${dto.projectId}/financial/opname`) : null,
+    );
 
-    return this.prisma.opnamePekerjaan.create({
-      data: {
-        projectId: dto.projectId,
-        progressPersen: dto.progressPersen,
-        fileUrl,
-        ...(revisionRootId ? { revisionRootId } : {}),
-      },
-    });
+    try {
+      const hasil = await Promise.all(
+        fileUrls.map((fileUrl) =>
+          this.prisma.opnamePekerjaan.create({
+            data: {
+              projectId: dto.projectId,
+              progressPersen: dto.progressPersen,
+              fileUrl,
+              ...(revisionRootId ? { revisionRootId } : {}),
+            },
+          }),
+        ),
+      );
+      await this.notifikasiUpload(dto.projectId, aktor.id, files.length, Boolean(dto.revisiDariId)).catch(() => undefined);
+      return hasil;
+    } catch (error) {
+      fileUrls.forEach((fileUrl) => this.file.hapus(fileUrl));
+      throw error;
+    }
+  }
+
+  /** Kirim satu notifikasi WA ke Owner untuk satu proses upload, bukan satu pesan per file. */
+  private async notifikasiUpload(projectId: number, aktorId: number, jumlahFile: number, revisi: boolean) {
+    if (!this.whatsapp.aktif || !process.env.WA_OWNER_NUMBER) return;
+
+    const [project, pengunggah] = await Promise.all([
+      this.prisma.project.findUnique({ where: { id: projectId }, select: { namaProject: true } }),
+      this.prisma.user.findUnique({ where: { id: aktorId }, select: { name: true } }),
+    ]);
+    const judul = revisi ? 'UPLOAD REVISI OPNAME PEKERJAAN' : 'UPLOAD OPNAME PEKERJAAN';
+    const status = revisi ? 'Revisi menunggu review Owner' : 'Menunggu review Owner';
+    await this.whatsapp.kirim(
+      process.env.WA_OWNER_NUMBER,
+      `*${judul}*\n\n` +
+        `Project: *${project?.namaProject ?? '-'}*\n` +
+        `Pengunggah: *${pengunggah?.name ?? '-'}*\n` +
+        `Jumlah file: *${jumlahFile}*\n` +
+        `Status: *${status}*\n\n` +
+        `Silakan cek di HCGA CONNECT.`,
+    );
   }
 
   async review(aktor: AktorEprom, id: number, dto: ReviewOpnameDto) {

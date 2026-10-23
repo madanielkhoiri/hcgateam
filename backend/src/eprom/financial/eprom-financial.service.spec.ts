@@ -5,6 +5,8 @@ import { EpromAksesService } from '../common/eprom-akses.service';
 import { AktorEprom } from '../common/eprom-aktor';
 import { EpromFileService } from '../common/eprom-file.service';
 import { EpromFinancialService } from './eprom-financial.service';
+import { EpromEngineerSigningService } from '../engineer/eprom-engineer-signing.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 
 function aktor(role: UserRole, overrides: Partial<AktorEprom> = {}): AktorEprom {
   return { id: 1, username: 'test', role, ...overrides };
@@ -29,7 +31,8 @@ function buatService(overrides: { item?: unknown; projectAkses?: unknown } = {})
       delete: deleteFn,
       count,
     },
-    project: { findUnique: jest.fn().mockResolvedValue('projectAkses' in overrides ? overrides.projectAkses : { kontrak: { vendorId: 1 } }) },
+    project: { findUnique: jest.fn().mockResolvedValue('projectAkses' in overrides ? overrides.projectAkses : { namaProject: 'Project Test', kontrak: { vendorId: 1 } }) },
+    user: { findUnique: jest.fn().mockResolvedValue({ name: 'Pengunggah' }) },
   } as unknown as PrismaService;
 
   const akses = new EpromAksesService(prisma);
@@ -38,7 +41,9 @@ function buatService(overrides: { item?: unknown; projectAkses?: unknown } = {})
     hapus: jest.fn().mockReturnValue(true),
   } as unknown as EpromFileService;
 
-  const service = new EpromFinancialService(prisma, akses, file);
+  const signing = {} as EpromEngineerSigningService;
+  const whatsapp = { aktif: false, kirim: jest.fn() } as unknown as WhatsappService;
+  const service = new EpromFinancialService(prisma, akses, file, signing, whatsapp);
 
   return { service, create, update, deleteFn, count, file };
 }
@@ -64,7 +69,7 @@ describe('EpromFinancialService.buat', () => {
     const { service, create, file } = buatService();
     const dummyFile = { originalname: 'a.pdf' } as Express.Multer.File;
 
-    await service.buat(aktor(UserRole.OWNER), { projectId: 1, progressPersen: 75 } as any, dummyFile);
+    await service.buat(aktor(UserRole.OWNER), { projectId: 1, progressPersen: 75 } as any, [dummyFile]);
 
     expect(file.simpanDokumen).toHaveBeenCalled();
     expect(create).toHaveBeenCalledWith(

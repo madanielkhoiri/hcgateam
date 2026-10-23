@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/civil-project/modal";
 import { getStoredUser } from "@/lib/access-control";
 import {
@@ -35,6 +35,7 @@ export default function FinancialDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [progressPersen, setProgressPersen] = useState("");
   const [fileBaru, setFileBaru] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [revisiItem, setRevisiItem] = useState<OpnameItem | null>(null);
   const [editItem, setEditItem] = useState<OpnameItem | null>(null);
   const [editPersen, setEditPersen] = useState("");
@@ -69,12 +70,13 @@ export default function FinancialDetailPage() {
     setError(null);
     try {
       if (revisiItem && fileBaru.length === 0) throw new Error("File revisi wajib dipilih");
-      const daftarFile: Array<File | null> = revisiItem ? [fileBaru[0]] : fileBaru.length ? fileBaru : [null];
-      await Promise.all(daftarFile.map((file) =>
-        epromApi.financial.buat({ projectId, progressPersen: Number(progressPersen), revisiDariId: revisiItem?.id }, file),
-      ));
+      await epromApi.financial.buat(
+        { projectId, progressPersen: Number(progressPersen), revisiDariId: revisiItem?.id },
+        fileBaru,
+      );
       setProgressPersen("");
       setFileBaru([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setRevisiItem(null);
       muatItems();
       window.dispatchEvent(new Event("eprom-financial-updated"));
@@ -89,6 +91,7 @@ export default function FinancialDetailPage() {
     setRevisiItem(item);
     setProgressPersen(String(item.progressPersen));
     setFileBaru([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -176,18 +179,32 @@ export default function FinancialDetailPage() {
             <label>
               File Pendukung
               <input
+                ref={fileInputRef}
                 type="file"
-                multiple={!revisiItem}
+                multiple
                 accept="*/*"
                 onChange={(e) => setFileBaru(Array.from(e.target.files ?? []))}
               />
               {fileBaru.length > 0 && <span>{fileBaru.length} file dipilih</span>}
+              {fileBaru.map((file, index) => (
+                <span key={`${file.name}-${file.lastModified}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</span>
+                  <button
+                    type="button"
+                    className={engineerStyles.iconButtonDanger}
+                    title={`Hapus ${file.name}`}
+                    onClick={() => setFileBaru((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </span>
+              ))}
             </label>
             <button type="submit" className={engineerStyles.primaryButton} disabled={submitting}>
               {submitting ? "Menyimpan..." : revisiItem ? "Upload Revisi" : "Unggah Baru"}
             </button>
             {revisiItem && (
-              <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setRevisiItem(null); setProgressPersen(""); setFileBaru([]); }}>
+              <button type="button" className={engineerStyles.secondaryButton} onClick={() => { setRevisiItem(null); setProgressPersen(""); setFileBaru([]); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
                 Batal Revisi
               </button>
             )}
