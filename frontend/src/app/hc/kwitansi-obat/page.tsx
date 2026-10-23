@@ -34,8 +34,10 @@ type BarisBlast = {
   nrp: string;
   nama: string;
   cocok: boolean;
-  status: "DISETUJUI" | "DITRANSFER";
+  status: "DISETUJUI" | "DITRANSFER" | "DITOLAK";
   nominal: string;
+  tanggalTransfer: string;
+  alasan: string;
 };
 type PreviewImport = {
   totalBaris: number;
@@ -62,6 +64,8 @@ const barisKosong = (key: number): BarisBlast => ({
   cocok: false,
   status: "DISETUJUI",
   nominal: "",
+  tanggalTransfer: "",
+  alasan: "",
 });
 
 export default function KwitansiObatPage() {
@@ -127,12 +131,14 @@ export default function KwitansiObatPage() {
     if (r.ok) muatData();
   }
   async function ubahStatus(id: number, next: string) {
-    let nominalValue: number | undefined;
-    if (next === "DITRANSFER") {
-      const raw = window.prompt("Masukkan nominal transfer (Rupiah):");
-      if (!raw || Number(raw) <= 0) return;
-      nominalValue = Number(raw);
-    }
+    const raw = window.prompt("Masukkan nominal kwitansi (Rupiah):");
+    if (!raw || Number(raw) <= 0) return;
+    const nominalValue = Number(raw);
+    const tanggalTransfer =
+      next === "DITRANSFER"
+        ? window.prompt("Masukkan tanggal transfer (YYYY-MM-DD):") || ""
+        : undefined;
+    if (next === "DITRANSFER" && !tanggalTransfer) return;
     const alasanValue =
       next === "DITOLAK"
         ? window.prompt("Masukkan alasan penolakan:") || ""
@@ -147,6 +153,7 @@ export default function KwitansiObatPage() {
         status: next,
         nominal: nominalValue,
         alasan: alasanValue,
+        tanggalTransfer,
       }),
     });
     setPesan(
@@ -164,7 +171,8 @@ export default function KwitansiObatPage() {
           ? {
               ...item,
               ...perubahan,
-              ...(perubahan.status === "DISETUJUI" ? { nominal: "" } : {}),
+              ...(perubahan.status !== "DITRANSFER" ? { tanggalTransfer: "" } : {}),
+              ...(perubahan.status !== "DITOLAK" ? { alasan: "" } : {}),
             }
           : item,
       ),
@@ -213,8 +221,10 @@ export default function KwitansiObatPage() {
           nrp: item.nrp,
           nama: item.namaDatabase || item.namaExcel,
           cocok: item.cocok,
-          status: "DITRANSFER",
+          status: "DISETUJUI",
           nominal: String(item.jumlah),
+          tanggalTransfer: "",
+          alasan: "",
         })),
       );
       setPesanBlast(
@@ -240,9 +250,9 @@ export default function KwitansiObatPage() {
       .map((item) => ({
         nrp: item.nrp,
         status: item.status,
-        ...(item.status === "DITRANSFER"
-          ? { nominal: Number(item.nominal) }
-          : {}),
+        nominal: Number(item.nominal),
+        ...(item.status === "DITRANSFER" ? { tanggalTransfer: item.tanggalTransfer } : {}),
+        ...(item.status === "DITOLAK" ? { alasan: item.alasan } : {}),
       }));
     if (!data.length) {
       setPesanBlast("Tambahkan minimal satu karyawan.");
@@ -251,10 +261,18 @@ export default function KwitansiObatPage() {
     if (
       data.some(
         (item) =>
-          item.status === "DITRANSFER" && (!item.nominal || item.nominal <= 0),
+          !item.nominal || item.nominal <= 0,
       )
     ) {
-      setPesanBlast("Nominal wajib diisi untuk semua status Ditransfer.");
+      setPesanBlast("Nominal wajib diisi pada semua baris.");
+      return;
+    }
+    if (barisBlast.some((item) => item.nrp && item.status === "DITRANSFER" && !item.tanggalTransfer)) {
+      setPesanBlast("Tanggal transfer wajib diisi pada semua status Ditransfer.");
+      return;
+    }
+    if (barisBlast.some((item) => item.nrp && item.status === "DITOLAK" && !item.alasan.trim())) {
+      setPesanBlast("Alasan wajib diisi pada semua status Ditolak.");
       return;
     }
     setProsesBlast(true);
@@ -304,6 +322,7 @@ export default function KwitansiObatPage() {
     >
       <div style={{ maxWidth: 1060, margin: "0 auto" }}>
         <section
+          id="input"
           style={{
             background: "linear-gradient(135deg,#075dcc,#0879e8)",
             borderRadius: 18,
@@ -365,10 +384,9 @@ export default function KwitansiObatPage() {
             }}
           >
             <div>
-              <h2 style={{ margin: 0, fontSize: 19 }}>Blast Kwitansi Obat</h2>
+              <h2 style={{ margin: 0, fontSize: 19 }}>Input Kwitansi Obat</h2>
               <p style={{ color: "#7185a3", margin: "7px 0 0" }}>
-                Tambahkan beberapa karyawan atau isi otomatis dari sheet
-                Template HO.
+                Bisa digunakan untuk satu karyawan, banyak karyawan, atau diisi otomatis dari sheet Template HO.
               </p>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -439,7 +457,8 @@ export default function KwitansiObatPage() {
                     "No",
                     "NRP / Nama Karyawan",
                     "Status",
-                    "Nominal Transfer",
+                    "Nominal Kwitansi",
+                    "Tanggal / Alasan",
                     "Aksi",
                   ].map((judul) => (
                     <th
@@ -506,24 +525,38 @@ export default function KwitansiObatPage() {
                       >
                         <option value="DISETUJUI">Disetujui</option>
                         <option value="DITRANSFER">Ditransfer</option>
+                        <option value="DITOLAK">Ditolak</option>
                       </select>
                     </td>
                     <td style={{ padding: 9 }}>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.nominal}
+                        onChange={(event) =>
+                          ubahBaris(item.key, { nominal: event.target.value })
+                        }
+                        placeholder="Rp"
+                        style={{ ...inputStyle, minWidth: 155 }}
+                      />
+                    </td>
+                    <td style={{ padding: 9, minWidth: 210 }}>
                       {item.status === "DITRANSFER" ? (
                         <input
-                          type="number"
-                          min="1"
-                          value={item.nominal}
-                          onChange={(event) =>
-                            ubahBaris(item.key, { nominal: event.target.value })
-                          }
-                          placeholder="Rp"
-                          style={{ ...inputStyle, minWidth: 155 }}
+                          type="date"
+                          value={item.tanggalTransfer}
+                          onChange={(event) => ubahBaris(item.key, { tanggalTransfer: event.target.value })}
+                          style={{ ...inputStyle, minWidth: 170 }}
+                        />
+                      ) : item.status === "DITOLAK" ? (
+                        <input
+                          value={item.alasan}
+                          onChange={(event) => ubahBaris(item.key, { alasan: event.target.value })}
+                          placeholder="Alasan penolakan"
+                          style={{ ...inputStyle, minWidth: 210 }}
                         />
                       ) : (
-                        <span style={{ color: "#91a3bd" }}>
-                          Belum ditransfer
-                        </span>
+                        <span style={{ color: "#0a9b61", fontWeight: 700 }}>Tanggal input otomatis</span>
                       )}
                     </td>
                     <td style={{ padding: 9 }}>
@@ -593,14 +626,14 @@ export default function KwitansiObatPage() {
         </section>
         <div
           style={{
-            display: "grid",
+            display: "none",
             gridTemplateColumns: "minmax(0,1fr) 320px",
             gap: 22,
             marginTop: 22,
           }}
         >
           <section
-            id="input"
+            id="input-lama"
             style={{
               display: tab === "input" ? "block" : "none",
               background: "#fff",

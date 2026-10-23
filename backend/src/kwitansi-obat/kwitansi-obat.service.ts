@@ -20,6 +20,73 @@ export class KwitansiObatService {
     private readonly whatsapp: WhatsappService,
   ) {}
 
+  private tanggalIndonesia(tanggal: Date) {
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Makassar',
+    }).format(tanggal);
+  }
+
+  private tanggalDariInput(value?: string) {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const tanggal = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(tanggal.getTime()) ? null : tanggal;
+  }
+
+  private buatPesan(
+    karyawan: { nama: string; gender?: string | null },
+    data: {
+      status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
+      nominal: number;
+      alasan?: string;
+      tanggalStatus: Date;
+    },
+  ) {
+    const sapaan =
+      karyawan.gender === 'LAKI_LAKI'
+        ? 'Bapak'
+        : karyawan.gender === 'PEREMPUAN'
+          ? 'Ibu'
+          : 'Bapak/Ibu';
+    const pembuka = `Yth. ${sapaan} *${karyawan.nama}*,`;
+    const nominal = `Rp ${data.nominal.toLocaleString('id-ID')},-`;
+    const tanggal = this.tanggalIndonesia(data.tanggalStatus);
+
+    if (data.status === 'DITRANSFER') {
+      return [
+        pembuka,
+        '',
+        `Kwitansi obat Anda sudah diproses transfer pada tanggal ${tanggal}.`,
+        `Nominal: *${nominal}*`,
+        '',
+        'Silakan hubungi HC bila membutuhkan informasi lebih lanjut.',
+      ].join('\n');
+    }
+    if (data.status === 'DITOLAK') {
+      return [
+        pembuka,
+        '',
+        `Kwitansi obat Anda ditolak oleh HC sebesar ${nominal}`,
+        `Alasan: *${data.alasan?.trim() || '-'}*`,
+        '',
+        'Silakan hubungi Admin Dept & HC bila membutuhkan informasi lebih lanjut.',
+      ].join('\n');
+    }
+    return [
+      pembuka,
+      '',
+      `Pengajuan kwitansi obat Anda telah disetujui sebesar ${nominal} pada tanggal ${tanggal}.`,
+      '',
+      'Estimasi pencairan H+1 Minggu s/d H+2 Minggu dari tanggal approve (jika tidak ada perubahan dari HO).',
+      '',
+      'Notifikasi berikutnya akan dikirim setelah dana ditransfer.',
+      '',
+      'Terima kasih.',
+    ].join('\n');
+  }
+
   async daftarKaryawan(cari?: string) {
     return this.prisma.karyawan.findMany({
       where: {
@@ -155,8 +222,10 @@ export class KwitansiObatService {
     dto: {
       data?: Array<{
         nrp?: string;
-        status?: 'DISETUJUI' | 'DITRANSFER';
+        status?: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
         nominal?: number;
+        tanggalTransfer?: string;
+        alasan?: string;
       }>;
       kirimNotifikasi?: boolean;
     },
@@ -165,26 +234,32 @@ export class KwitansiObatService {
     const input = Array.isArray(dto.data) ? dto.data : [];
     const dataValid: Array<{
       nrp: string;
-      status: 'DISETUJUI' | 'DITRANSFER';
-      nominal?: number;
+      status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
+      nominal: number;
+      tanggalStatus: Date;
+      alasan?: string;
     }> = [];
     for (const item of input) {
       const nrp = String(item.nrp ?? '').trim();
       const status = item.status;
       const nominal = Math.round(Number(item.nominal));
-      if (!nrp || (status !== 'DISETUJUI' && status !== 'DITRANSFER')) continue;
-      if (
-        status === 'DITRANSFER' &&
-        (!Number.isFinite(nominal) || nominal <= 0)
-      ) {
+      if (!nrp || !['DISETUJUI', 'DITRANSFER', 'DITOLAK'].includes(String(status))) continue;
+      if (!Number.isFinite(nominal) || nominal <= 0) {
         throw new BadRequestException(
-          `Nominal transfer wajib diisi untuk NRP ${nrp}`,
+          `Nominal kwitansi wajib diisi untuk NRP ${nrp}`,
         );
       }
+      const tanggalTransfer = this.tanggalDariInput(item.tanggalTransfer);
+      if (status === 'DITRANSFER' && !tanggalTransfer)
+        throw new BadRequestException(`Tanggal transfer wajib diisi untuk NRP ${nrp}`);
+      if (status === 'DITOLAK' && !item.alasan?.trim())
+        throw new BadRequestException(`Alasan penolakan wajib diisi untuk NRP ${nrp}`);
       dataValid.push({
         nrp,
-        status,
-        ...(status === 'DITRANSFER' ? { nominal } : {}),
+        status: status!,
+        nominal,
+        tanggalStatus: tanggalTransfer ?? new Date(),
+        ...(item.alasan?.trim() ? { alasan: item.alasan.trim() } : {}),
       });
     }
     if (!dataValid.length)
@@ -217,7 +292,9 @@ export class KwitansiObatService {
         return {
           karyawanId: item.id,
           status: nilai.status,
-          nominal: nilai.status === 'DITRANSFER' ? nilai.nominal : undefined,
+          nominal: nilai.nominal,
+          alasan: nilai.alasan,
+          tanggalStatus: nilai.tanggalStatus,
           dibuatOlehId,
         };
       }),
@@ -229,16 +306,15 @@ export class KwitansiObatService {
     if (dto.kirimNotifikasi) {
       const ringkasanPerNrp = new Map<
         string,
-        { status: 'DISETUJUI' | 'DITRANSFER'; nominal: number }
+        { status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK'; nominal: number; alasan?: string; tanggalStatus: Date }
       >();
       for (const nilai of dataTersimpan) {
         const lama = ringkasanPerNrp.get(nilai.nrp);
         ringkasanPerNrp.set(nilai.nrp, {
-          status:
-            nilai.status === 'DITRANSFER' || lama?.status === 'DITRANSFER'
-              ? 'DITRANSFER'
-              : 'DISETUJUI',
+          status: nilai.status,
           nominal: (lama?.nominal ?? 0) + (nilai.nominal ?? 0),
+          alasan: nilai.alasan ?? lama?.alasan,
+          tanggalStatus: nilai.tanggalStatus,
         });
       }
       const hasil = await Promise.allSettled(
@@ -249,38 +325,7 @@ export class KwitansiObatService {
             tanpaNomor += 1;
             return;
           }
-          const sapaan =
-            item.gender === 'LAKI_LAKI'
-              ? 'Bapak'
-              : item.gender === 'PEREMPUAN'
-                ? 'Ibu'
-                : 'Bapak/Ibu';
-          const pesan =
-            nilai.status === 'DITRANSFER'
-              ? [
-                  '*KWITANSI OBAT DITRANSFER*',
-                  '',
-                  `Yth. ${sapaan} *${item.nama}*,`,
-                  '',
-                  'Penggantian biaya kwitansi obat Anda telah ditransfer.',
-                  '',
-                  `*Jumlah:* Rp ${nilai.nominal!.toLocaleString('id-ID')}`,
-                  '',
-                  'Silakan periksa rekening Anda. Jika membutuhkan informasi lebih lanjut, hubungi tim HC.',
-                  '',
-                  'Terima kasih.',
-                ].join('\n')
-              : [
-                  '*KWITANSI OBAT DISETUJUI*',
-                  '',
-                  `Yth. ${sapaan} *${item.nama}*,`,
-                  '',
-                  'Pengajuan kwitansi obat Anda telah disetujui dan sedang diproses untuk pembayaran.',
-                  '',
-                  'Notifikasi berikutnya akan dikirim setelah dana ditransfer.',
-                  '',
-                  'Terima kasih.',
-                ].join('\n');
+          const pesan = this.buatPesan(item, nilai);
           const sukses = await this.whatsapp.kirim(
             nomor,
             pesan,
@@ -330,6 +375,7 @@ export class KwitansiObatService {
       status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
       nominal?: number;
       alasan?: string;
+      tanggalTransfer?: string;
     },
     dibuatOlehId: number,
   ) {
@@ -337,39 +383,29 @@ export class KwitansiObatService {
       where: { id: Number(dto.karyawanId) },
     });
     if (!karyawan) throw new BadRequestException('Karyawan tidak ditemukan');
-    if (
-      dto.status === 'DITRANSFER' &&
-      (!dto.nominal || Number(dto.nominal) <= 0)
-    )
+    if (!dto.nominal || Number(dto.nominal) <= 0)
       throw new BadRequestException(
-        'Nominal wajib diisi untuk status ditransfer',
+        'Nominal kwitansi wajib diisi',
       );
+    const tanggalTransfer = this.tanggalDariInput(dto.tanggalTransfer);
+    if (dto.status === 'DITRANSFER' && !tanggalTransfer)
+      throw new BadRequestException('Tanggal transfer wajib diisi');
     if (dto.status === 'DITOLAK' && !dto.alasan?.trim())
       throw new BadRequestException('Alasan wajib diisi untuk status ditolak');
-    const sapaan =
-      karyawan.gender === 'LAKI_LAKI'
-        ? 'Bapak'
-        : karyawan.gender === 'PEREMPUAN'
-          ? 'Ibu'
-          : 'Yth.';
-    const nama = `*${karyawan.nama}*`;
-    const statusText =
-      dto.status === 'DISETUJUI'
-        ? 'disetujui'
-        : dto.status === 'DITRANSFER'
-          ? 'telah ditransfer'
-          : 'ditolak';
-    let pesan = `Yth. ${sapaan} ${nama},\n\nKwitansi obat Anda ${statusText} oleh HC.`;
-    if (dto.status === 'DITRANSFER')
-      pesan += `\nNominal: Rp ${Number(dto.nominal).toLocaleString('id-ID')}`;
-    if (dto.status === 'DITOLAK') pesan += `\nAlasan: ${dto.alasan!.trim()}`;
-    pesan += '\n\nSilakan hubungi HC bila membutuhkan informasi lebih lanjut.';
+    const tanggalStatus = tanggalTransfer ?? new Date();
+    const pesan = this.buatPesan(karyawan, {
+      status: dto.status,
+      nominal: Number(dto.nominal),
+      alasan: dto.alasan,
+      tanggalStatus,
+    });
     const log = await this.prisma.kwitansiObatNotifikasi.create({
       data: {
         karyawanId: karyawan.id,
         status: dto.status,
         nominal: dto.nominal ? Number(dto.nominal) : undefined,
         alasan: dto.alasan?.trim() || undefined,
+        tanggalStatus,
         dibuatOlehId,
       },
     });
@@ -388,6 +424,7 @@ export class KwitansiObatService {
       status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
       nominal?: number;
       alasan?: string;
+      tanggalTransfer?: string;
     },
   ) {
     const old = await this.prisma.kwitansiObatNotifikasi.findUnique({

@@ -70,6 +70,7 @@ model KwitansiObatNotifikasi {
   status       StatusKwitansiObat
   nominal      Decimal?           @db.Decimal(15, 2)
   alasan       String?            @db.Text
+  tanggalStatus DateTime          @default(now())
   dibuatOlehId Int
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt

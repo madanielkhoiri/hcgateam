@@ -63,8 +63,10 @@ export class KwitansiObatController {
     dto: {
       data?: Array<{
         nrp?: string;
-        status?: 'DISETUJUI' | 'DITRANSFER';
+        status?: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
         nominal?: number;
+        tanggalTransfer?: string;
+        alasan?: string;
       }>;
       kirimNotifikasi?: boolean;
     },
@@ -85,6 +87,7 @@ export class KwitansiObatController {
       status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
       nominal?: number;
       alasan?: string;
+      tanggalTransfer?: string;
     },
     @Req() req: any,
   ) {
@@ -98,6 +101,7 @@ export class KwitansiObatController {
       status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
       nominal?: number;
       alasan?: string;
+      tanggalTransfer?: string;
     },
     @Req() req: any,
   ) {
@@ -111,6 +115,7 @@ export class KwitansiObatController {
       status: 'DISETUJUI' | 'DITRANSFER' | 'DITOLAK';
       nominal?: number;
       alasan?: string;
+      tanggalTransfer?: string;
     },
     @Req() req: any,
   ) {
