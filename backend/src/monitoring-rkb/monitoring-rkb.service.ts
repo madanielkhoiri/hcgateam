@@ -118,7 +118,7 @@ export class MonitoringRkbService {
     return { message: 'Project RKB berhasil dihapus' };
   }
 
-  async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: ItemUnit; keterangan?: KeteranganRkb; status?: StatusRkb }[]) {
+  async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: ItemUnit; keterangan?: KeteranganRkb | null; status?: StatusRkb }[]) {
     const rkb = await this.detail(rkbId);
     if (barang.length === 0) throw new BadRequestException('Minimal satu barang harus diisi');
     await this.prisma.monitoringRkbBarang.createMany({
@@ -136,7 +136,7 @@ export class MonitoringRkbService {
     return this.detail(rkbId);
   }
 
-  async ubahBarang(rkbId: number, barangId: number, barang: { namaBarang: string; qty: number; satuan: ItemUnit; keterangan?: KeteranganRkb; status?: StatusRkb }) {
+  async ubahBarang(rkbId: number, barangId: number, barang: { namaBarang: string; qty: number; satuan: ItemUnit; keterangan?: KeteranganRkb | null; status?: StatusRkb }) {
     await this.detail(rkbId);
     const lama = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
     if (!lama) throw new NotFoundException('Barang RKB tidak ditemukan');
@@ -179,6 +179,14 @@ export class MonitoringRkbService {
     if (!barang) throw new NotFoundException('Barang RKB tidak ditemukan');
     await this.prisma.monitoringRkbBarang.update({ where: { id: barangId }, data: { status } });
     await this.sinkronStatusRkb(rkbId);
+    return this.detail(rkbId);
+  }
+
+  async ubahKeteranganBarang(rkbId: number, barangId: number, keterangan: KeteranganRkb | null) {
+    await this.detail(rkbId);
+    const barang = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
+    if (!barang) throw new NotFoundException('Barang RKB tidak ditemukan');
+    await this.prisma.monitoringRkbBarang.update({ where: { id: barangId }, data: { keterangan } });
     return this.detail(rkbId);
   }
 

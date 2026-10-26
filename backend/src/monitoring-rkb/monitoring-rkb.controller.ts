@@ -4,7 +4,7 @@ import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { Aktor, type AktorPostingan } from '../postingan/postingan-aktor';
-import { BarangRkbDto, SimpanMonitoringRkbDto, SimpanProjectRkbDto, TambahBarangRkbDto, UbahStatusRkbDto } from './dto/monitoring-rkb.dto';
+import { BarangRkbDto, SimpanMonitoringRkbDto, SimpanProjectRkbDto, TambahBarangRkbDto, UbahKeteranganRkbDto, UbahStatusRkbDto } from './dto/monitoring-rkb.dto';
 import { MonitoringRkbService } from './monitoring-rkb.service';
 
 @Controller('monitoring-rkb')
@@ -26,6 +26,7 @@ export class MonitoringRkbController {
   @UseInterceptors(FileInterceptor('foto', { storage: memoryStorage() }))
   unggahFotoBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @UploadedFile() foto?: Express.Multer.File) { return this.service.unggahFotoBarang(id, barangId, foto); }
   @Patch(':id/barang/:barangId/status') ubahStatusBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @Body() dto: UbahStatusRkbDto) { return this.service.ubahStatusBarang(id, barangId, dto.status); }
+  @Patch(':id/barang/:barangId/keterangan') ubahKeteranganBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @Body() dto: UbahKeteranganRkbDto) { return this.service.ubahKeteranganBarang(id, barangId, dto.keterangan ?? null); }
   @Delete(':id/barang/:barangId') hapusBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number) { return this.service.hapusBarang(id, barangId); }
   @Patch(':id/status') ubahStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UbahStatusRkbDto) { return this.service.ubahStatus(id, dto.status); }
   @Patch(':id') ubah(@Param('id', ParseIntPipe) id: number, @Body() dto: SimpanMonitoringRkbDto) { return this.service.ubah(id, dto); }

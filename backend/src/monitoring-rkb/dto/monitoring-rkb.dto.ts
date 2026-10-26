@@ -67,3 +67,9 @@ export class UbahStatusRkbDto {
   @IsEnum(StatusRkb)
   status: StatusRkb;
 }
+
+export class UbahKeteranganRkbDto {
+  @IsOptional()
+  @IsEnum(KeteranganRkb)
+  keterangan?: KeteranganRkb | null;
+}

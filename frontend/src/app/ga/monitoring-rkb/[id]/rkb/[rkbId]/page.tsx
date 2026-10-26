@@ -14,7 +14,7 @@ import styles from "../../../monitoring-rkb.module.css";
 import { urlUploads } from "@/lib/uploads-url";
 
 type BarangForm = BarangRkb & { fotoFile?: File | null };
-const kosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: "SESUAI", fotoFile: null });
+const kosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: null, fotoFile: null });
 const label: Record<StatusRkb, string> = {
   WAITING_APPROVAL: "Waiting Approval",
   WAITING_SUPPLY: "Waiting Supply",
@@ -34,7 +34,8 @@ export default function DetailRkb() {
     [modal, setModal] = useState(false),
     [editId, setEditId] = useState<number | null>(null),
     [error, setError] = useState(""),
-    [statusDiproses, setStatusDiproses] = useState<number | null>(null);
+    [statusDiproses, setStatusDiproses] = useState<number | null>(null),
+    [keteranganDiproses, setKeteranganDiproses] = useState<number | null>(null);
   const load = useCallback(async () => {
     try {
       setRkb(await monitoringRkbApi.detail(rkbId));
@@ -94,6 +95,13 @@ export default function DetailRkb() {
     } finally {
       setStatusDiproses(null);
     }
+  }
+  async function setKeteranganBarang(barangId: number, keterangan: KeteranganRkb | null) {
+    setKeteranganDiproses(barangId);
+    setError("");
+    try { setRkb(await monitoringRkbApi.ubahKeteranganBarang(rkbId, barangId, keterangan)); }
+    catch (e) { setError(e instanceof Error ? e.message : "Keterangan barang gagal diubah"); }
+    finally { setKeteranganDiproses(null); }
   }
   return (
     <main className={styles.page}>
@@ -158,7 +166,7 @@ export default function DetailRkb() {
                     </td>
                     <td>{Number(b.qty).toLocaleString("id-ID")}</td>
                     <td>{b.satuan}</td>
-                    <td><span className={`${styles.conformityPill} ${b.keterangan === "TIDAK_SESUAI" ? styles.notConform : styles.conform}`}>{b.keterangan === "TIDAK_SESUAI" ? "Tidak Sesuai" : "Sesuai"}</span></td>
+                    <td><select className={`${styles.statusSelect} ${b.keterangan === "TIDAK_SESUAI" ? styles.notConform : b.keterangan === "SESUAI" ? styles.conform : ""}`} value={b.keterangan ?? ""} disabled={keteranganDiproses === b.id} onChange={(e) => void setKeteranganBarang(b.id!, e.target.value ? e.target.value as KeteranganRkb : null)}><option value="">Pilih Keterangan</option><option value="SESUAI">Sesuai</option><option value="TIDAK_SESUAI">Tidak Sesuai</option></select></td>
                     <td>{b.fotoUrl ? <a href={urlUploads(b.fotoUrl)} target="_blank" rel="noreferrer"><img className={styles.itemPhoto} src={urlUploads(b.fotoUrl)} alt={`Foto ${b.namaBarang}`}/></a> : <span className={styles.noPhoto}>Belum ada</span>}</td>
                     <td>
                       <select
@@ -238,7 +246,7 @@ export default function DetailRkb() {
                     onChange={(e) => ubah(i, "qty", e.target.value)}
                   />
                   <select required value={b.satuan} onChange={(e) => ubah(i, "satuan", e.target.value)}>{SATUAN_INVENTORY.map((unit) => <option key={unit} value={unit}>{unit}</option>)}</select>
-                  <select value={b.keterangan ?? "SESUAI"} onChange={(e) => ubah(i, "keterangan", e.target.value as KeteranganRkb)}><option value="SESUAI">Sesuai</option><option value="TIDAK_SESUAI">Tidak Sesuai</option></select>
+                  <select value={b.keterangan ?? ""} onChange={(e) => ubah(i, "keterangan", e.target.value ? e.target.value as KeteranganRkb : null)}><option value="">Pilih Keterangan</option><option value="SESUAI">Sesuai</option><option value="TIDAK_SESUAI">Tidak Sesuai</option></select>
                   <label className={styles.photoInput}><span>{b.fotoUrl ? "Ganti foto" : "Foto barang"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => ubah(i, "fotoFile", e.target.files?.[0] ?? null)}/></label>
                   {!editId && (
                     <button

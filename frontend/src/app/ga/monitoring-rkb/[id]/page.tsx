@@ -26,7 +26,7 @@ const classes: Record<StatusRkb, string> = {
   CLOSE: "close",
 };
 type BarangForm = BarangRkb & { fotoFile?: File | null };
-const barangKosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: "SESUAI", status: "WAITING_APPROVAL", fotoFile: null });
+const barangKosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: null, status: "WAITING_APPROVAL", fotoFile: null });
 
 export default function DaftarRkbProject() {
   const { id } = useParams<{ id: string }>(),
@@ -211,7 +211,8 @@ export default function DaftarRkbProject() {
                           ubahBarang(i, "namaBarang", e.target.value)
                         }
                       />
-                      <select value={b.keterangan ?? "SESUAI"} onChange={(e) => ubahBarang(i, "keterangan", e.target.value as KeteranganRkb)}>
+                      <select value={b.keterangan ?? ""} onChange={(e) => ubahBarang(i, "keterangan", e.target.value ? e.target.value as KeteranganRkb : null)}>
+                        <option value="">Pilih Keterangan</option>
                         <option value="SESUAI">Sesuai</option>
                         <option value="TIDAK_SESUAI">Tidak Sesuai</option>
                       </select>

@@ -47,6 +47,7 @@ import {
   type JenisAktivitas,
 } from '@/lib/aktivitas-api';
 import styles from './dashboard.module.css';
+import SeasonalBanner from './seasonal-banner';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -710,6 +711,7 @@ export default function DashboardPage() {
       </header>
 
       <div className={styles.container}>
+        <SeasonalBanner />
         {/* ==================================================
             MEDIA SLIDER
         ================================================== */}

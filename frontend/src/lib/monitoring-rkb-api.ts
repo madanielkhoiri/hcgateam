@@ -5,7 +5,7 @@ export type KategoriRkb = 'PROJECT' | 'MAINTENANCE' | 'ATK' | 'FURNITURE' | 'BAN
 export type StatusRkb = 'WAITING_APPROVAL' | 'WAITING_SUPPLY' | 'CLOSE';
 export type KeteranganRkb = 'SESUAI' | 'TIDAK_SESUAI';
 export const SATUAN_INVENTORY = ['BATANG','BOTOL','BUAH','CM','DERIJEN','DUS','KARUNG','KG','KOLI','KOTAK','LEMBAR','LITER','LUSI','M2','M3','METER','MM','PAC','PC','RET','RIM','ROLL','SAK','SET','TABUNG','TUBE','UNIT'] as const;
-export type BarangRkb = { id?: number; namaBarang: string; qty: number; satuan: string; keterangan?: KeteranganRkb; fotoUrl?: string | null; status?: StatusRkb };
+export type BarangRkb = { id?: number; namaBarang: string; qty: number; satuan: string; keterangan?: KeteranganRkb | null; fotoUrl?: string | null; status?: StatusRkb };
 export type ProjectRkb = { id:number; namaProject:string; kategori:KategoriRkb; rkb:MonitoringRkb[]; createdAt:string; updatedAt:string };
 export type MonitoringRkb = { id: number; projectId:number; tanggal: string; nomorRkb: string; kategori: KategoriRkb; status: StatusRkb; barang: BarangRkb[]; project?:ProjectRkb; createdAt: string; updatedAt: string };
 export type MonitoringRkbInput = { projectId:number; tanggal:string; nomorRkb:string; status:StatusRkb; barang?:BarangRkb[] };
@@ -54,6 +54,7 @@ export const monitoringRkbApi = {
     return response.json() as Promise<BarangRkb>;
   },
   ubahStatusBarang: (id: number, barangId: number, status: StatusRkb) => request<MonitoringRkb>(`/${id}/barang/${barangId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  ubahKeteranganBarang: (id: number, barangId: number, keterangan: KeteranganRkb | null) => request<MonitoringRkb>(`/${id}/barang/${barangId}/keterangan`, { method: 'PATCH', body: JSON.stringify({ keterangan }) }),
   hapusBarang: (id: number, barangId: number) => request<{ message: string }>(`/${id}/barang/${barangId}`, { method: 'DELETE' }),
   daftarProject: () => request<ProjectRkb[]>('/projects'),
   detailProject: (id:number) => request<ProjectRkb>(`/projects/${id}`),
