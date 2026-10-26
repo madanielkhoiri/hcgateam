@@ -1,9 +1,11 @@
 import { getAccessToken } from './access-control';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
-export type KategoriRkb = 'PROJECT' | 'MAINTENANCE';
+export type KategoriRkb = 'PROJECT' | 'MAINTENANCE' | 'ATK' | 'FURNITURE' | 'BANGUNAN';
 export type StatusRkb = 'WAITING_APPROVAL' | 'WAITING_SUPPLY' | 'CLOSE';
-export type BarangRkb = { id?: number; namaBarang: string; qty: number; satuan: string; status?: StatusRkb };
+export type KeteranganRkb = 'SESUAI' | 'TIDAK_SESUAI';
+export const SATUAN_INVENTORY = ['BATANG','BOTOL','BUAH','CM','DERIJEN','DUS','KARUNG','KG','KOLI','KOTAK','LEMBAR','LITER','LUSI','M2','M3','METER','MM','PAC','PC','RET','RIM','ROLL','SAK','SET','TABUNG','TUBE','UNIT'] as const;
+export type BarangRkb = { id?: number; namaBarang: string; qty: number; satuan: string; keterangan?: KeteranganRkb; fotoUrl?: string | null; status?: StatusRkb };
 export type ProjectRkb = { id:number; namaProject:string; kategori:KategoriRkb; rkb:MonitoringRkb[]; createdAt:string; updatedAt:string };
 export type MonitoringRkb = { id: number; projectId:number; tanggal: string; nomorRkb: string; kategori: KategoriRkb; status: StatusRkb; barang: BarangRkb[]; project?:ProjectRkb; createdAt: string; updatedAt: string };
 export type MonitoringRkbInput = { projectId:number; tanggal:string; nomorRkb:string; status:StatusRkb; barang?:BarangRkb[] };
@@ -38,6 +40,19 @@ export const monitoringRkbApi = {
   hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
   tambahBarang: (id: number, barang: BarangRkb[]) => request<MonitoringRkb>(`/${id}/barang`, { method: 'POST', body: JSON.stringify({ barang }) }),
   ubahBarang: (id: number, barangId: number, barang: BarangRkb) => request<MonitoringRkb>(`/${id}/barang/${barangId}`, { method: 'PATCH', body: JSON.stringify(barang) }),
+  unggahFotoBarang: async (id: number, barangId: number, foto: File) => {
+    const token = getAccessToken();
+    const form = new FormData();
+    form.append('foto', foto);
+    const response = await fetch(`${API_URL}/monitoring-rkb/${id}/barang/${barangId}/foto`, {
+      method: 'POST', body: form, headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(Array.isArray(body?.message) ? body.message[0] : body?.message || `Permintaan gagal (${response.status})`);
+    }
+    return response.json() as Promise<BarangRkb>;
+  },
   ubahStatusBarang: (id: number, barangId: number, status: StatusRkb) => request<MonitoringRkb>(`/${id}/barang/${barangId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   hapusBarang: (id: number, barangId: number) => request<{ message: string }>(`/${id}/barang/${barangId}`, { method: 'DELETE' }),
   daftarProject: () => request<ProjectRkb[]>('/projects'),

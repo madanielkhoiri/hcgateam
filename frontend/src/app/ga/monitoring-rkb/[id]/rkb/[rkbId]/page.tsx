@@ -4,13 +4,17 @@ import { Edit3, Package, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   monitoringRkbApi,
+  SATUAN_INVENTORY,
   type BarangRkb,
+  type KeteranganRkb,
   type MonitoringRkb,
   type StatusRkb,
 } from "@/lib/monitoring-rkb-api";
 import styles from "../../../monitoring-rkb.module.css";
+import { urlUploads } from "@/lib/uploads-url";
 
-const kosong = (): BarangRkb => ({ namaBarang: "", qty: 1, satuan: "" });
+type BarangForm = BarangRkb & { fotoFile?: File | null };
+const kosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: "SESUAI", fotoFile: null });
 const label: Record<StatusRkb, string> = {
   WAITING_APPROVAL: "Waiting Approval",
   WAITING_SUPPLY: "Waiting Supply",
@@ -26,7 +30,7 @@ export default function DetailRkb() {
   const p = useParams<{ id: string; rkbId: string }>(),
     rkbId = Number(p.rkbId);
   const [rkb, setRkb] = useState<MonitoringRkb | null>(null),
-    [rows, setRows] = useState<BarangRkb[]>([kosong()]),
+    [rows, setRows] = useState<BarangForm[]>([kosong()]),
     [modal, setModal] = useState(false),
     [editId, setEditId] = useState<number | null>(null),
     [error, setError] = useState(""),
@@ -52,7 +56,7 @@ export default function DetailRkb() {
     setRows([{ ...b, qty: Number(b.qty) }]);
     setModal(true);
   }
-  function ubah(i: number, k: keyof BarangRkb, v: string) {
+  function ubah(i: number, k: keyof BarangForm, v: string | File | null) {
     setRows((x) =>
       x.map((b, n) =>
         n === i ? { ...b, [k]: k === "qty" ? Number(v) : v } : b,
@@ -61,8 +65,17 @@ export default function DetailRkb() {
   }
   async function simpan(e: React.FormEvent) {
     e.preventDefault();
-    if (editId) await monitoringRkbApi.ubahBarang(rkbId, editId, rows[0]);
-    else await monitoringRkbApi.tambahBarang(rkbId, rows);
+    const payload = rows.map(({ fotoFile: _fotoFile, fotoUrl: _fotoUrl, id: _id, ...item }) => item);
+    if (editId) {
+      await monitoringRkbApi.ubahBarang(rkbId, editId, payload[0]);
+      if (rows[0].fotoFile) await monitoringRkbApi.unggahFotoBarang(rkbId, editId, rows[0].fotoFile);
+    } else {
+      const hasil = await monitoringRkbApi.tambahBarang(rkbId, payload);
+      const itemBaru = hasil.barang.slice(-rows.length);
+      await Promise.all(rows.map((item, index) => item.fotoFile && itemBaru[index]?.id
+        ? monitoringRkbApi.unggahFotoBarang(rkbId, itemBaru[index].id!, item.fotoFile)
+        : Promise.resolve()));
+    }
     setModal(false);
     await load();
   }
@@ -130,6 +143,8 @@ export default function DetailRkb() {
                   <th>Nama Barang</th>
                   <th>QTY</th>
                   <th>Satuan</th>
+                  <th>Keterangan</th>
+                  <th>Foto</th>
                   <th>Status</th>
                   <th>Aksi</th>
                 </tr>
@@ -143,6 +158,8 @@ export default function DetailRkb() {
                     </td>
                     <td>{Number(b.qty).toLocaleString("id-ID")}</td>
                     <td>{b.satuan}</td>
+                    <td><span className={`${styles.conformityPill} ${b.keterangan === "TIDAK_SESUAI" ? styles.notConform : styles.conform}`}>{b.keterangan === "TIDAK_SESUAI" ? "Tidak Sesuai" : "Sesuai"}</span></td>
+                    <td>{b.fotoUrl ? <a href={urlUploads(b.fotoUrl)} target="_blank" rel="noreferrer"><img className={styles.itemPhoto} src={urlUploads(b.fotoUrl)} alt={`Foto ${b.namaBarang}`}/></a> : <span className={styles.noPhoto}>Belum ada</span>}</td>
                     <td>
                       <select
                         className={`${styles.statusSelect} ${styles[statusClass[b.status ?? "WAITING_APPROVAL"]]}`}
@@ -205,7 +222,7 @@ export default function DetailRkb() {
                 )}
               </div>
               {rows.map((b, i) => (
-                <div className={styles.itemRow} key={i}>
+                <div className={styles.itemEditGrid} key={i}>
                   <input
                     required
                     placeholder="Nama barang"
@@ -220,12 +237,9 @@ export default function DetailRkb() {
                     value={b.qty}
                     onChange={(e) => ubah(i, "qty", e.target.value)}
                   />
-                  <input
-                    required
-                    placeholder="Satuan"
-                    value={b.satuan}
-                    onChange={(e) => ubah(i, "satuan", e.target.value)}
-                  />
+                  <select required value={b.satuan} onChange={(e) => ubah(i, "satuan", e.target.value)}>{SATUAN_INVENTORY.map((unit) => <option key={unit} value={unit}>{unit}</option>)}</select>
+                  <select value={b.keterangan ?? "SESUAI"} onChange={(e) => ubah(i, "keterangan", e.target.value as KeteranganRkb)}><option value="SESUAI">Sesuai</option><option value="TIDAK_SESUAI">Tidak Sesuai</option></select>
+                  <label className={styles.photoInput}><span>{b.fotoUrl ? "Ganti foto" : "Foto barang"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => ubah(i, "fotoFile", e.target.files?.[0] ?? null)}/></label>
                   {!editId && (
                     <button
                       type="button"

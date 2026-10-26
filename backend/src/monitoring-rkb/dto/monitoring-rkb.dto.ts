@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
-import { KategoriRkb, StatusRkb } from '@prisma/client';
+import { ItemUnit, KategoriRkb, KeteranganRkb, StatusRkb } from '@prisma/client';
 
 export class BarangRkbDto {
   @IsString()
@@ -12,9 +12,12 @@ export class BarangRkbDto {
   @Min(0.01)
   qty: number;
 
-  @IsString()
-  @IsNotEmpty()
-  satuan: string;
+  @IsEnum(ItemUnit)
+  satuan: ItemUnit;
+
+  @IsOptional()
+  @IsEnum(KeteranganRkb)
+  keterangan?: KeteranganRkb;
 
   @IsOptional()
   @IsEnum(StatusRkb)

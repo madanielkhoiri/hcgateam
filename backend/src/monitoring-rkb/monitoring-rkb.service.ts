@@ -1,13 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, StatusRkb } from '@prisma/client';
+import { ItemUnit, KeteranganRkb, Prisma, StatusRkb } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SimpanMonitoringRkbDto } from './dto/monitoring-rkb.dto';
+import { MonitoringRkbFileService } from './monitoring-rkb-file.service';
 
 const includeBarang = { barang: { orderBy: { urutan: 'asc' as const } }, project: true };
 
 @Injectable()
 export class MonitoringRkbService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly file: MonitoringRkbFileService) {}
 
   daftar(kategori?: string, status?: string, cari?: string, projectId?: number) {
     return this.prisma.monitoringRkb.findMany({
@@ -43,7 +44,7 @@ export class MonitoringRkbService {
           kategori: project.kategori,
           status: this.ringkasStatus((dto.barang ?? []).map((item) => item.status ?? dto.status)),
           createdById,
-          barang: { create: (dto.barang ?? []).map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), status: item.status ?? dto.status, urutan })) },
+          barang: { create: (dto.barang ?? []).map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan, keterangan: item.keterangan, status: item.status ?? dto.status, urutan })) },
         },
         include: includeBarang,
       });
@@ -62,7 +63,7 @@ export class MonitoringRkbService {
           where: { id },
           data: {
             tanggal: new Date(dto.tanggal), projectId: dto.projectId, nomorRkb: dto.nomorRkb.trim(), kategori: project.kategori, status: dto.status,
-            ...(dto.barang !== undefined ? { barang: { create: dto.barang.map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan.trim(), status: item.status ?? dto.status, urutan })) } } : {}),
+            ...(dto.barang !== undefined ? { barang: { create: dto.barang.map((item, urutan) => ({ namaBarang: item.namaBarang.trim(), qty: item.qty, satuan: item.satuan, keterangan: item.keterangan, status: item.status ?? dto.status, urutan })) } } : {}),
           },
           include: includeBarang,
         });
@@ -71,8 +72,9 @@ export class MonitoringRkbService {
   }
 
   async hapus(id: number) {
-    await this.detail(id);
+    const data = await this.detail(id);
     await this.prisma.monitoringRkb.delete({ where: { id } });
+    (data.barang ?? []).forEach((item) => this.file.hapus(item.fotoUrl));
     return { message: 'Data RKB berhasil dihapus' };
   }
 
@@ -110,12 +112,13 @@ export class MonitoringRkbService {
   }
 
   async hapusProject(id: number) {
-    await this.detailProject(id);
+    const project = await this.detailProject(id);
     await this.prisma.monitoringRkbProject.delete({ where: { id } });
+    (project.rkb ?? []).flatMap((rkb) => rkb.barang ?? []).forEach((item) => this.file.hapus(item.fotoUrl));
     return { message: 'Project RKB berhasil dihapus' };
   }
 
-  async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: string; status?: StatusRkb }[]) {
+  async tambahBarang(rkbId: number, barang: { namaBarang: string; qty: number; satuan: ItemUnit; keterangan?: KeteranganRkb; status?: StatusRkb }[]) {
     const rkb = await this.detail(rkbId);
     if (barang.length === 0) throw new BadRequestException('Minimal satu barang harus diisi');
     await this.prisma.monitoringRkbBarang.createMany({
@@ -123,7 +126,8 @@ export class MonitoringRkbService {
         rkbId,
         namaBarang: item.namaBarang.trim(),
         qty: item.qty,
-        satuan: item.satuan.trim(),
+        satuan: item.satuan,
+        keterangan: item.keterangan,
         status: item.status ?? StatusRkb.WAITING_APPROVAL,
         urutan: rkb.barang.length + index,
       })),
@@ -132,21 +136,39 @@ export class MonitoringRkbService {
     return this.detail(rkbId);
   }
 
-  async ubahBarang(rkbId: number, barangId: number, barang: { namaBarang: string; qty: number; satuan: string; status?: StatusRkb }) {
+  async ubahBarang(rkbId: number, barangId: number, barang: { namaBarang: string; qty: number; satuan: ItemUnit; keterangan?: KeteranganRkb; status?: StatusRkb }) {
     await this.detail(rkbId);
     const lama = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
     if (!lama) throw new NotFoundException('Barang RKB tidak ditemukan');
     await this.prisma.monitoringRkbBarang.update({
       where: { id: barangId },
-      data: { namaBarang: barang.namaBarang.trim(), qty: barang.qty, satuan: barang.satuan.trim(), ...(barang.status ? { status: barang.status } : {}) },
+      data: { namaBarang: barang.namaBarang.trim(), qty: barang.qty, satuan: barang.satuan, keterangan: barang.keterangan, ...(barang.status ? { status: barang.status } : {}) },
     });
     return this.detail(rkbId);
   }
 
+  async unggahFotoBarang(rkbId: number, barangId: number, foto?: Express.Multer.File) {
+    await this.detail(rkbId);
+    const barang = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
+    if (!barang) throw new NotFoundException('Barang RKB tidak ditemukan');
+    if (!foto) throw new BadRequestException('Foto barang wajib diunggah');
+    const fotoUrl = this.file.simpan(foto);
+    try {
+      const hasil = await this.prisma.monitoringRkbBarang.update({ where: { id: barangId }, data: { fotoUrl } });
+      this.file.hapus(barang.fotoUrl);
+      return hasil;
+    } catch (error) {
+      this.file.hapus(fotoUrl);
+      throw error;
+    }
+  }
+
   async hapusBarang(rkbId: number, barangId: number) {
     await this.detail(rkbId);
+    const barang = await this.prisma.monitoringRkbBarang.findFirst({ where: { id: barangId, rkbId } });
     const hasil = await this.prisma.monitoringRkbBarang.deleteMany({ where: { id: barangId, rkbId } });
     if (hasil.count === 0) throw new NotFoundException('Barang RKB tidak ditemukan');
+    this.file.hapus(barang?.fotoUrl);
     await this.sinkronStatusRkb(rkbId);
     return { message: 'Barang RKB berhasil dihapus' };
   }

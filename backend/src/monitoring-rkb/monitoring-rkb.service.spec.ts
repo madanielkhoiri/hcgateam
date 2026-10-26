@@ -13,7 +13,8 @@ describe('MonitoringRkbService', () => {
     const project = { findMany: jest.fn(), findUnique: jest.fn().mockResolvedValue({ id: 10, kategori: KategoriRkb.PROJECT, rkb: [] }), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
     const prisma: any = { monitoringRkb: model, monitoringRkbBarang: item, monitoringRkbProject: project };
     prisma.$transaction = jest.fn((callback) => callback(prisma));
-    return { service: new MonitoringRkbService(prisma), model, item, project };
+    const file: any = { simpan: jest.fn(), hapus: jest.fn() };
+    return { service: new MonitoringRkbService(prisma, file), model, item, project, file };
   }
 
   it('menyimpan seluruh barang tanpa batas tetap', async () => {

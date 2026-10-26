@@ -3276,12 +3276,20 @@ model FotoPenyerahanTps3r {
 enum KategoriRkb {
   PROJECT
   MAINTENANCE
+  ATK
+  FURNITURE
+  BANGUNAN
 }
 
 enum StatusRkb {
   WAITING_APPROVAL
   WAITING_SUPPLY
   CLOSE
+}
+
+enum KeteranganRkb {
+  SESUAI
+  TIDAK_SESUAI
 }
 
 model MonitoringRkbProject {
@@ -3321,6 +3329,8 @@ model MonitoringRkbBarang {
   namaBarang String        @map("nama_barang")
   qty        Decimal       @db.Decimal(15, 2)
   satuan     String
+  keterangan KeteranganRkb @default(SESUAI)
+  fotoUrl    String?       @map("foto_url")
   status     StatusRkb     @default(WAITING_APPROVAL)
   urutan     Int           @default(0)
   rkb        MonitoringRkb @relation(fields: [rkbId], references: [id], onDelete: Cascade)

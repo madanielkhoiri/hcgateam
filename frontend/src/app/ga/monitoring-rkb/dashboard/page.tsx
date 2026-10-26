@@ -1,3 +1,41 @@
-'use client';
-import Link from 'next/link'; import { useEffect,useMemo,useState } from 'react'; import { ChevronRight } from 'lucide-react'; import { monitoringRkbApi,type ProjectRkb } from '@/lib/monitoring-rkb-api'; import styles from '../monitoring-rkb.module.css';
-export default function DashboardRkb(){const [data,setData]=useState<ProjectRkb[]>([]);useEffect(()=>{monitoringRkbApi.daftarProject().then(setData).catch(()=>setData([]))},[]);const semua=useMemo(()=>data.flatMap(p=>p.rkb),[data]);return <main className={styles.page}><header className={styles.header}><div><h1>Dashboard Monitoring RKB</h1><p>Ringkasan project, nomor RKB, barang, dan status pengadaan.</p></div></header><section className={styles.summary}><article><span>Total Project</span><strong>{data.length}</strong></article><article><span>Total RKB</span><strong>{semua.length}</strong></article><article><span>Total Barang</span><strong>{semua.reduce((n,r)=>n+r.barang.length,0)}</strong></article></section><section className={styles.tableWrap}><div className={styles.sectionHead}><div><h2>Project RKB</h2><p>Pilih project untuk melihat pembagian nomor RKB.</p></div></div><table className={styles.table}><thead><tr><th>Nama Project</th><th>Kategori</th><th>Jumlah RKB</th><th>Belum Close</th><th></th></tr></thead><tbody>{data.map(p=><tr key={p.id}><td><strong>{p.namaProject}</strong></td><td>{p.kategori==='PROJECT'?'Project':'Maintenance'}</td><td>{p.rkb.length}</td><td>{p.rkb.filter(r=>r.status!=='CLOSE').length}</td><td><Link href={`/ga/monitoring-rkb/${p.id}`}><ChevronRight size={18}/></Link></td></tr>)}</tbody></table></section></main>}
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { monitoringRkbApi, type KategoriRkb, type ProjectRkb } from "@/lib/monitoring-rkb-api";
+import styles from "../monitoring-rkb.module.css";
+
+const kategori: Array<{ value: KategoriRkb; label: string }> = [
+  { value: "PROJECT", label: "Project" },
+  { value: "MAINTENANCE", label: "Maintenance" },
+  { value: "ATK", label: "ATK" },
+  { value: "FURNITURE", label: "Furniture" },
+  { value: "BANGUNAN", label: "Bangunan" },
+];
+
+export default function DashboardRkb() {
+  const [data, setData] = useState<ProjectRkb[]>([]);
+  useEffect(() => { monitoringRkbApi.daftarProject().then(setData).catch(() => setData([])); }, []);
+  const semuaRkb = useMemo(() => data.flatMap((project) => project.rkb), [data]);
+  const grafikKategori = kategori.map((item) => ({ ...item, total: data.filter((project) => project.kategori === item.value).length }));
+  const grafikStatus = [
+    { label: "Menunggu Approval", total: semuaRkb.filter((rkb) => rkb.status === "WAITING_APPROVAL").length, className: "barApproval" },
+    { label: "Menunggu Supply", total: semuaRkb.filter((rkb) => rkb.status === "WAITING_SUPPLY").length, className: "barSupply" },
+    { label: "Close", total: semuaRkb.filter((rkb) => rkb.status === "CLOSE").length, className: "barClose" },
+  ];
+  const maksimumKategori = Math.max(1, ...grafikKategori.map((item) => item.total));
+  const maksimumStatus = Math.max(1, ...grafikStatus.map((item) => item.total));
+
+  return <main className={styles.page}>
+    <header className={styles.header}><div><h1>Dashboard Monitoring RKB</h1><p>Grafik ringkasan berdasarkan kategori dan status pengadaan.</p></div></header>
+    <section className={styles.chartGrid}>
+      <article className={styles.chartCard}>
+        <div className={styles.chartHead}><h2>RKB Berdasarkan Kategori</h2><span>{data.length} total data</span></div>
+        <div className={styles.barChart}>{grafikKategori.map((item) => <div className={styles.barRow} key={item.value}><div className={styles.barLabel}><span>{item.label}</span><strong>{item.total}</strong></div><div className={styles.barTrack}><div className={`${styles.barFill} ${styles[`bar${item.value}`]}`} style={{ width: `${item.total ? Math.max(8, item.total / maksimumKategori * 100) : 0}%` }}/></div></div>)}</div>
+      </article>
+      <article className={styles.chartCard}>
+        <div className={styles.chartHead}><h2>Status Pengadaan</h2><span>{semuaRkb.length} nomor RKB</span></div>
+        <div className={styles.barChart}>{grafikStatus.map((item) => <div className={styles.barRow} key={item.label}><div className={styles.barLabel}><span>{item.label}</span><strong>{item.total}</strong></div><div className={styles.barTrack}><div className={`${styles.barFill} ${styles[item.className]}`} style={{ width: `${item.total ? Math.max(8, item.total / maksimumStatus * 100) : 0}%` }}/></div></div>)}</div>
+      </article>
+    </section>
+  </main>;
+}

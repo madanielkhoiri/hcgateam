@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequireAccessKey } from '../auth/require-access-key.decorator';
 import { Aktor, type AktorPostingan } from '../postingan/postingan-aktor';
@@ -20,6 +22,9 @@ export class MonitoringRkbController {
   @Post() buat(@Aktor() aktor: AktorPostingan, @Body() dto: SimpanMonitoringRkbDto) { return this.service.buat(aktor.id, dto); }
   @Post(':id/barang') tambahBarang(@Param('id', ParseIntPipe) id: number, @Body() dto: TambahBarangRkbDto) { return this.service.tambahBarang(id, dto.barang); }
   @Patch(':id/barang/:barangId') ubahBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @Body() dto: BarangRkbDto) { return this.service.ubahBarang(id, barangId, dto); }
+  @Post(':id/barang/:barangId/foto')
+  @UseInterceptors(FileInterceptor('foto', { storage: memoryStorage() }))
+  unggahFotoBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @UploadedFile() foto?: Express.Multer.File) { return this.service.unggahFotoBarang(id, barangId, foto); }
   @Patch(':id/barang/:barangId/status') ubahStatusBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number, @Body() dto: UbahStatusRkbDto) { return this.service.ubahStatusBarang(id, barangId, dto.status); }
   @Delete(':id/barang/:barangId') hapusBarang(@Param('id', ParseIntPipe) id: number, @Param('barangId', ParseIntPipe) barangId: number) { return this.service.hapusBarang(id, barangId); }
   @Patch(':id/status') ubahStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UbahStatusRkbDto) { return this.service.ubahStatus(id, dto.status); }

@@ -5,7 +5,9 @@ import { ChevronRight, Edit3, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   monitoringRkbApi,
+  SATUAN_INVENTORY,
   type BarangRkb,
+  type KeteranganRkb,
   type MonitoringRkb,
   type MonitoringRkbInput,
   type ProjectRkb,
@@ -23,7 +25,8 @@ const classes: Record<StatusRkb, string> = {
   WAITING_SUPPLY: "waitingSupply",
   CLOSE: "close",
 };
-const barangKosong = (): BarangRkb => ({ namaBarang: "", qty: 1, satuan: "", status: "WAITING_APPROVAL" });
+type BarangForm = BarangRkb & { fotoFile?: File | null };
+const barangKosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: "SESUAI", status: "WAITING_APPROVAL", fotoFile: null });
 
 export default function DaftarRkbProject() {
   const { id } = useParams<{ id: string }>(),
@@ -34,7 +37,7 @@ export default function DaftarRkbProject() {
     [tanggal, setTanggal] = useState(new Date().toISOString().slice(0, 10)),
     [nomor, setNomor] = useState(""),
     [status, setStatus] = useState<StatusRkb>("WAITING_APPROVAL"),
-    [barang, setBarang] = useState<BarangRkb[]>([barangKosong()]),
+    [barang, setBarang] = useState<BarangForm[]>([barangKosong()]),
     [error, setError] = useState("");
   const load = useCallback(async () => {
     try {
@@ -63,7 +66,7 @@ export default function DaftarRkbProject() {
     setBarang([]);
     setModal(true);
   }
-  function ubahBarang(i: number, k: keyof BarangRkb, v: string) {
+  function ubahBarang(i: number, k: keyof BarangForm, v: string | File | null) {
     setBarang((rows) =>
       rows.map((b, n) =>
         n === i ? { ...b, [k]: k === "qty" ? Number(v) : v } : b,
@@ -72,16 +75,22 @@ export default function DaftarRkbProject() {
   }
   async function simpan(e: React.FormEvent) {
     e.preventDefault();
+    const barangPayload: BarangRkb[] = barang.map(({ fotoFile: _fotoFile, ...item }) => item);
     const d: MonitoringRkbInput = {
       projectId,
       tanggal,
       nomorRkb: nomor,
       status,
-      ...(!editId ? { barang } : {}),
+      ...(!editId ? { barang: barangPayload } : {}),
     };
     try {
       if (editId) await monitoringRkbApi.ubah(editId, d);
-      else await monitoringRkbApi.buat(d);
+      else {
+        const hasil = await monitoringRkbApi.buat(d);
+        await Promise.all(barang.map((item, index) => item.fotoFile && hasil.barang[index]?.id
+          ? monitoringRkbApi.unggahFotoBarang(hasil.id, hasil.barang[index].id!, item.fotoFile)
+          : Promise.resolve()));
+      }
       setModal(false);
       await load();
     } catch (e) {
@@ -202,6 +211,10 @@ export default function DaftarRkbProject() {
                           ubahBarang(i, "namaBarang", e.target.value)
                         }
                       />
+                      <select value={b.keterangan ?? "SESUAI"} onChange={(e) => ubahBarang(i, "keterangan", e.target.value as KeteranganRkb)}>
+                        <option value="SESUAI">Sesuai</option>
+                        <option value="TIDAK_SESUAI">Tidak Sesuai</option>
+                      </select>
                       <select
                         className={`${styles.statusSelect} ${styles[classes[b.status ?? "WAITING_APPROVAL"]]}`}
                         value={b.status ?? "WAITING_APPROVAL"}
@@ -218,14 +231,10 @@ export default function DaftarRkbProject() {
                         value={b.qty}
                         onChange={(e) => ubahBarang(i, "qty", e.target.value)}
                       />
-                      <input
-                        required
-                        placeholder="Satuan"
-                        value={b.satuan}
-                        onChange={(e) =>
-                          ubahBarang(i, "satuan", e.target.value)
-                        }
-                      />
+                      <select required value={b.satuan} onChange={(e) => ubahBarang(i, "satuan", e.target.value)}>
+                        {SATUAN_INVENTORY.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                      </select>
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => ubahBarang(i, "fotoFile", e.target.files?.[0] ?? null)}/>
                       <button
                         type="button"
                         className={styles.remove}
