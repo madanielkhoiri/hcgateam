@@ -30,6 +30,8 @@ export type MenuTreeNode = {
   children?: MenuTreeNode[];
   /** Pertahankan node sebagai panel grup walaupun hanya memiliki satu anak. */
   displayMode?: 'section';
+  /** Susunan anak langsung di dalam panel grup. */
+  childrenLayout?: 'grid4';
 };
 
 type MenuTreeProps = {
@@ -118,7 +120,7 @@ function SectionCard({ node }: { node: MenuTreeNode }) {
   } as React.CSSProperties;
 
   return (
-    <article className={styles.sectionCard} style={style}>
+    <article className={styles.sectionCard} style={style} data-layout={node.childrenLayout}>
       <div className={styles.sectionHeader}>
         {Icon ? (
           <span className={styles.sectionIcon}>
@@ -131,19 +133,19 @@ function SectionCard({ node }: { node: MenuTreeNode }) {
         </div>
       </div>
 
-      <Rows nodes={node.children ?? []} />
+      <Rows nodes={node.children ?? []} layout={node.childrenLayout} />
     </article>
   );
 }
 
-function Rows({ nodes }: { nodes: MenuTreeNode[] }) {
-  return (
+function Rows({ nodes, layout }: { nodes: MenuTreeNode[]; layout?: MenuTreeNode['childrenLayout'] }) {
+  const content = (
     <>
       {nodes.map((node) => {
         const hasil = collapseNode(node);
 
         if (hasil.type === 'leaf') {
-          return <LeafRow key={node.key} node={hasil.node} kicker={labelKicker(hasil.kickers, hasil.node.title)} />;
+          return <LeafRow key={node.key} node={hasil.node} kicker={labelKicker(hasil.kickers, hasil.node.title)} cardMode={layout === 'grid4'} />;
         }
 
         const awalan = labelKicker(hasil.kickers, hasil.node.title);
@@ -160,6 +162,8 @@ function Rows({ nodes }: { nodes: MenuTreeNode[] }) {
       })}
     </>
   );
+
+  return layout === 'grid4' ? <div className={styles.sectionItemsGrid}>{content}</div> : content;
 }
 
 function PrimaryCard({ node, kicker }: { node: MenuTreeNode; kicker: string }) {
@@ -219,7 +223,7 @@ function PrimaryCard({ node, kicker }: { node: MenuTreeNode; kicker: string }) {
   );
 }
 
-function LeafRow({ node, kicker }: { node: MenuTreeNode; kicker: string }) {
+function LeafRow({ node, kicker, cardMode = false }: { node: MenuTreeNode; kicker: string; cardMode?: boolean }) {
   const Icon = node.icon;
   const bisaDiklik = Boolean(node.href);
 
@@ -267,14 +271,14 @@ function LeafRow({ node, kicker }: { node: MenuTreeNode; kicker: string }) {
 
   if (bisaDiklik) {
     return (
-      <Link href={node.href!} className={styles.leafRow} style={style}>
+      <Link href={node.href!} className={`${styles.leafRow} ${cardMode ? styles.leafGridCard : ''}`} style={style}>
         {isi}
       </Link>
     );
   }
 
   return (
-    <div className={styles.leafRow} style={style}>
+    <div className={`${styles.leafRow} ${cardMode ? styles.leafGridCard : ''}`} style={style}>
       {isi}
     </div>
   );
