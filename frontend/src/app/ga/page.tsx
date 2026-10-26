@@ -48,7 +48,6 @@ const gaTree: MenuTreeNode[] = [
     accent: '#0868f6',
     soft: '#eaf2ff',
     displayMode: 'section',
-    childrenLayout: 'grid4',
     children: [
       {
         key: 'GA_MONITORING_RKB',
