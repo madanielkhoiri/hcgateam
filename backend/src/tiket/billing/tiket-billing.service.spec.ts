@@ -162,13 +162,13 @@ describe('TiketBillingService.detail', () => {
 });
 
 describe('TiketBillingService.hitungRekap', () => {
-  it('menghitung grandTotalHitung = subTotal - ppn - pph23', async () => {
+  it('menghitung grandTotalHitung = subTotal + ppn - pph23', async () => {
     const update = jest.fn(({ data }) => Promise.resolve({ id: 1, ...data }));
     const { service } = buatService({ update });
 
     const hasil = await service.hitungRekap(
       1,
-      { ppn: 50_000, pph23: 20_000, grandTotalVendor: 980_000 },
+      { ppn: 50_000, pph23: 20_000, grandTotalVendor: 1_030_000 },
       3,
     );
 
@@ -177,37 +177,35 @@ describe('TiketBillingService.hitungRekap', () => {
         data: expect.objectContaining({
           ppn: 50_000,
           pph23: 20_000,
-          grandTotalVendor: 980_000,
-          grandTotalHitung: 1_000_000 - 20_000,
+          grandTotalVendor: 1_030_000,
+          grandTotalHitung: 1_000_000 + 50_000 - 20_000,
           dihitungOlehId: 3,
         }),
       }),
     );
-    expect((hasil as any).grandTotalHitung).toBe(980_000);
+    expect((hasil as any).grandTotalHitung).toBe(1_030_000);
   });
 
-  it('PPN disimpan untuk referensi saja - TIDAK ikut dikurangi (sudah termasuk di Sub Total dari Grand Total tiap invoice)', async () => {
+  it('menambahkan PPN dan mengurangi PPH23 sesuai tagihan vendor', async () => {
     const update = jest.fn(({ data }) => Promise.resolve({ id: 2, ...data }));
 
-    // Data asli: Sub Total 243.545.987 (termasuk PPN 272.580 tiap invoice)
-    // - PPH23 49.560 = 243.496.427, persis SUBTOTAL final di rekap Excel.
     const { service } = buatService({
       update,
       findUnique: jest.fn().mockResolvedValue({
         id: 2,
-        subTotal: 243_545_987,
+        subTotal: 167_952_382,
       }),
     });
 
     await service.hitungRekap(
       2,
-      { ppn: 272_580, pph23: 49_560, grandTotalVendor: 243_496_427 },
+      { ppn: 195_360, pph23: 35_520, grandTotalVendor: 168_112_222 },
       1,
     );
 
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ grandTotalHitung: 243_496_427 }),
+        data: expect.objectContaining({ grandTotalHitung: 168_112_222 }),
       }),
     );
   });
