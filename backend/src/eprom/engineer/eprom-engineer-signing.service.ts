@@ -257,17 +257,18 @@ export class EpromEngineerSigningService {
     source: Buffer,
     ekstensi: string,
   ): Promise<Buffer> {
-    const metadata = await sharp(source).metadata();
+    const trimmedBuffer = await sharp(source).trim({ threshold: 10 }).toBuffer();
+    const metadata = await sharp(trimmedBuffer).metadata();
     const width = metadata.width ?? 0;
     const height = metadata.height ?? 0;
     const sisiTerpanjang = Math.max(width, height);
 
     if (!width || !height || sisiTerpanjang >= 1200) {
-      return source;
+      return trimmedBuffer;
     }
 
     const scale = Math.min(8, 1200 / sisiTerpanjang);
-    const gambar = sharp(source)
+    const gambar = sharp(trimmedBuffer)
       .resize({
         width: Math.round(width * scale),
         height: Math.round(height * scale),
@@ -282,10 +283,6 @@ export class EpromEngineerSigningService {
   }
 
   private validasiPosisi(posisi: PosisiTandaTangan): void {
-    // Toleransi kecil dibutuhkan karena file tanda tangan biasanya memiliki
-    // padding transparan. Kotaknya boleh sedikit melewati halaman agar tinta
-    // tanda tangan dapat ditempatkan tepat pada garis tepi PDF.
-    const bleed = 0.1;
     const nilai = [
       posisi.signatureXRatio,
       posisi.signatureYRatio,
@@ -297,12 +294,8 @@ export class EpromEngineerSigningService {
       !Number.isInteger(posisi.signaturePage) ||
       posisi.signaturePage < 1 ||
       nilai.some((item) => !Number.isFinite(item)) ||
-      posisi.signatureXRatio < -bleed ||
-      posisi.signatureYRatio < -bleed ||
       posisi.signatureWidthRatio <= 0 ||
-      posisi.signatureHeightRatio <= 0 ||
-      posisi.signatureXRatio + posisi.signatureWidthRatio > 1 + bleed ||
-      posisi.signatureYRatio + posisi.signatureHeightRatio > 1 + bleed
+      posisi.signatureHeightRatio <= 0
     ) {
       throw new BadRequestException('Posisi tanda tangan tidak valid.');
     }

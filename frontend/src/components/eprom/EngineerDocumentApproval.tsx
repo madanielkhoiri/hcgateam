@@ -36,24 +36,11 @@ const DEFAULT_PLACEMENT: Pick<Placement, "x" | "y" | "width" | "height"> = {
   height: 0.12,
 };
 
-function posisiSampaiTepi(
+function posisiBebas(
   pointer: number,
-  ukuran: number,
   offsetPegangan: number,
 ): number {
-  // Pada layar sempit jari/kursor tidak selalu dapat bergerak melewati kanvas.
-  // Begitu pointer menyentuh tepi kertas, tempelkan kotak tanda tangan tepat
-  // ke tepi tersebut agar seluruh area PDF tetap dapat dipakai.
-  const ambangTepi = 0.025;
-  const bleed = 0.08;
-  const batasAwal = -bleed;
-  const batasAkhir = 1 - ukuran + bleed;
-  if (pointer <= ambangTepi) return batasAwal;
-  if (pointer >= 1 - ambangTepi) return batasAkhir;
-  return Math.max(
-    batasAwal,
-    Math.min(batasAkhir, pointer - offsetPegangan),
-  );
+  return pointer - offsetPegangan;
 }
 
 function namaPekerjaan(detail: EngineerApprovalDetail): string {
@@ -75,6 +62,62 @@ function idPlacement(): string {
     randomUUID?: () => string;
   };
   return cryptoApi.randomUUID?.() ?? `placement-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function previewTandaTanganTanpaMargin(path: string): Promise<string> {
+  const sourceUrl = urlFileEprom(path);
+  try {
+    const response = await fetch(sourceUrl);
+    if (!response.ok) return sourceUrl;
+    const bitmap = await createImageBitmap(await response.blob());
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return sourceUrl;
+    context.drawImage(bitmap, 0, 0);
+    const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    let kiri = bitmap.width;
+    let kanan = -1;
+    let atas = bitmap.height;
+    let bawah = -1;
+    for (let y = 0; y < bitmap.height; y += 1) {
+      for (let x = 0; x < bitmap.width; x += 1) {
+        const index = (y * bitmap.width + x) * 4;
+        const terlihat = pixels[index + 3] > 20 &&
+          (pixels[index] < 245 || pixels[index + 1] < 245 || pixels[index + 2] < 245);
+        if (!terlihat) continue;
+        kiri = Math.min(kiri, x);
+        kanan = Math.max(kanan, x);
+        atas = Math.min(atas, y);
+        bawah = Math.max(bawah, y);
+      }
+    }
+    if (kanan < kiri || bawah < atas) return sourceUrl;
+    const padding = 2;
+    kiri = Math.max(0, kiri - padding);
+    atas = Math.max(0, atas - padding);
+    kanan = Math.min(bitmap.width - 1, kanan + padding);
+    bawah = Math.min(bitmap.height - 1, bawah + padding);
+    const cropped = document.createElement("canvas");
+    cropped.width = kanan - kiri + 1;
+    cropped.height = bawah - atas + 1;
+    cropped.getContext("2d")?.drawImage(
+      canvas,
+      kiri,
+      atas,
+      cropped.width,
+      cropped.height,
+      0,
+      0,
+      cropped.width,
+      cropped.height,
+    );
+    bitmap.close();
+    return cropped.toDataURL("image/png");
+  } catch {
+    return sourceUrl;
+  }
 }
 
 /**
@@ -116,6 +159,7 @@ export function EngineerDocumentApproval({
   const [detail, setDetail] = useState<EngineerApprovalDetail | null>(null);
   const [signatures, setSignatures] = useState<EngineerSignature[]>([]);
   const [signatureFile, setSignatureFile] = useState("");
+  const [signaturePreviews, setSignaturePreviews] = useState<Record<string, string>>({});
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [selectedPlacementId, setSelectedPlacementId] = useState<string | null>(
     null,
@@ -157,6 +201,19 @@ export function EngineerDocumentApproval({
       )
       .finally(() => setLoading(false));
   }, [documentId, mode, projectId, tipe]);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all(
+      signatures.map(async (signature) => [
+        signature.filename,
+        await previewTandaTanganTanpaMargin(signature.path),
+      ] as const),
+    ).then((entries) => {
+      if (active) setSignaturePreviews(Object.fromEntries(entries));
+    });
+    return () => { active = false; };
+  }, [signatures]);
 
   const pdfUrl = detail?.item.effectiveFileUrl ?? detail?.item.fileUrl;
 
@@ -376,8 +433,6 @@ export function EngineerDocumentApproval({
     setPlacements((current) =>
       current.map((item) => ({
         ...item,
-        x: Math.min(item.x, 1 - selected.width),
-        y: Math.min(item.y, 1 - selected.height),
         width: selected.width,
         height: selected.height,
       })),
@@ -401,8 +456,8 @@ export function EngineerDocumentApproval({
         item.id === placement.id
           ? {
               ...item,
-              x: posisiSampaiTepi(pointerX, item.width, item.width / 2),
-              y: posisiSampaiTepi(pointerY, item.height, item.height / 2),
+              x: posisiBebas(pointerX, item.width / 2),
+              y: posisiBebas(pointerY, item.height / 2),
             }
           : item,
       ),
@@ -449,8 +504,8 @@ export function EngineerDocumentApproval({
           if (mode === "drag") {
             return {
               ...start,
-              x: posisiSampaiTepi(pointerX, start.width, grabOffsetX),
-              y: posisiSampaiTepi(pointerY, start.height, grabOffsetY),
+              x: posisiBebas(pointerX, grabOffsetX),
+              y: posisiBebas(pointerY, grabOffsetY),
             };
           }
 
@@ -460,18 +515,9 @@ export function EngineerDocumentApproval({
             scaleX < 1 || scaleY < 1
               ? Math.min(scaleX, scaleY)
               : Math.max(scaleX, scaleY);
-          const minimumScale = Math.max(
-            0.08 / start.width,
-            0.04 / start.height,
-          );
-          const maximumScale = Math.min(
-            (1 - start.x) / start.width,
-            (1 - start.y) / start.height,
-          );
-          const scale = Math.max(
-            minimumScale,
-            Math.min(maximumScale, requestedScale),
-          );
+          // Tidak dibatasi oleh ukuran atau tepi halaman. Nilai minimum teknis
+          // hanya mencegah dimensi nol/negatif yang tidak valid untuk PDF.
+          const scale = Math.max(0.001, requestedScale);
 
           return {
             ...start,
@@ -801,7 +847,7 @@ export function EngineerDocumentApproval({
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={urlFileEprom(signature.path)}
+                          src={signaturePreviews[signature.filename] ?? urlFileEprom(signature.path)}
                           alt={`Tanda tangan ${signature.name}`}
                           draggable={false}
                         />
