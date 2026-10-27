@@ -282,6 +282,10 @@ export class EpromEngineerSigningService {
   }
 
   private validasiPosisi(posisi: PosisiTandaTangan): void {
+    // Toleransi kecil dibutuhkan karena file tanda tangan biasanya memiliki
+    // padding transparan. Kotaknya boleh sedikit melewati halaman agar tinta
+    // tanda tangan dapat ditempatkan tepat pada garis tepi PDF.
+    const bleed = 0.1;
     const nilai = [
       posisi.signatureXRatio,
       posisi.signatureYRatio,
@@ -293,12 +297,12 @@ export class EpromEngineerSigningService {
       !Number.isInteger(posisi.signaturePage) ||
       posisi.signaturePage < 1 ||
       nilai.some((item) => !Number.isFinite(item)) ||
-      posisi.signatureXRatio < 0 ||
-      posisi.signatureYRatio < 0 ||
+      posisi.signatureXRatio < -bleed ||
+      posisi.signatureYRatio < -bleed ||
       posisi.signatureWidthRatio <= 0 ||
       posisi.signatureHeightRatio <= 0 ||
-      posisi.signatureXRatio + posisi.signatureWidthRatio > 1 ||
-      posisi.signatureYRatio + posisi.signatureHeightRatio > 1
+      posisi.signatureXRatio + posisi.signatureWidthRatio > 1 + bleed ||
+      posisi.signatureYRatio + posisi.signatureHeightRatio > 1 + bleed
     ) {
       throw new BadRequestException('Posisi tanda tangan tidak valid.');
     }

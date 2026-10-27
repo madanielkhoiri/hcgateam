@@ -45,9 +45,15 @@ function posisiSampaiTepi(
   // Begitu pointer menyentuh tepi kertas, tempelkan kotak tanda tangan tepat
   // ke tepi tersebut agar seluruh area PDF tetap dapat dipakai.
   const ambangTepi = 0.025;
-  if (pointer <= ambangTepi) return 0;
-  if (pointer >= 1 - ambangTepi) return Math.max(0, 1 - ukuran);
-  return Math.max(0, Math.min(1 - ukuran, pointer - offsetPegangan));
+  const bleed = 0.08;
+  const batasAwal = -bleed;
+  const batasAkhir = 1 - ukuran + bleed;
+  if (pointer <= ambangTepi) return batasAwal;
+  if (pointer >= 1 - ambangTepi) return batasAkhir;
+  return Math.max(
+    batasAwal,
+    Math.min(batasAkhir, pointer - offsetPegangan),
+  );
 }
 
 function namaPekerjaan(detail: EngineerApprovalDetail): string {
