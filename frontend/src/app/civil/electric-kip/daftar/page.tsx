@@ -40,7 +40,7 @@ export default function KipListPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [preview, setPreview] = useState<Kip | null>(null);
-  const [cetakUniversal, setCetakUniversal] = useState(false);
+  const [cetakKip, setCetakKip] = useState<Kip | null>(null);
   const [qrSvg, setQrSvg] = useState('');
   const [qrError, setQrError] = useState('');
   const [aturGps, setAturGps] = useState<LokasiHousekeepingIndoor | null>(null);
@@ -52,7 +52,7 @@ export default function KipListPage() {
   const [detailBulan, setDetailBulan] = useState<KipChecklistBulan | null>(null);
 
   const user = getStoredUser();
-  const bolehCeklis = !!user && ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'].includes(user.role);
+  const bolehCeklis = !!user && ['KORLAP', 'ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'].includes(user.role);
 
   async function muat() {
     try {
@@ -157,12 +157,12 @@ export default function KipListPage() {
   }
 
   /** Barcode universal — sama untuk semua lokasi, cukup dicetak sekali & digandakan sebagai stok. */
-  async function bukaCetakUniversal() {
-    setCetakUniversal(true);
+  async function bukaCetakKip(kip: Kip) {
+    setCetakKip(kip);
     setQrSvg('');
     setQrError('');
     try {
-      const target = `${window.location.origin}/kip-scan`;
+      const target = `${window.location.origin}/kip-scan/${kip.id}`;
       setQrSvg(await kipApi.qrSvgUniversal(target));
     } catch (err) {
       setQrError(err instanceof KipApiError ? err.message : 'QR gagal dibuat');
@@ -241,14 +241,10 @@ export default function KipListPage() {
           </span>
           <div>
             <h1>KIP — Kartu Inspeksi Peralatan</h1>
-            <p>Satu barcode berlaku untuk semua lokasi — cetak sekali, tempel di mana saja. Siapa saja bisa scan lalu pilih lokasi & alatnya; Tim Elektrik ceklis dari situ.</p>
+            <p>Setiap alat memiliki barcode permanen. Scan langsung menampilkan kartu KIP 3D tanpa login.</p>
           </div>
         </div>
         <div className={styles.heroActions}>
-          <button className={styles.importButton} onClick={bukaCetakUniversal}>
-            <Printer />
-            Cetak Barcode Universal
-          </button>
           <button className={styles.primary} onClick={bukaModal}>
             <Plus />
             Buat KIP
@@ -300,6 +296,9 @@ export default function KipListPage() {
                       <div className={styles.actions}>
                         <button onClick={() => setPreview(item)} title="Lihat Kartu 3D">
                           <Eye size={16} />
+                        </button>
+                        <button onClick={() => bukaCetakKip(item)} title="Cetak Barcode KIP">
+                          <Printer size={16} />
                         </button>
                         <button onClick={() => bukaModalEdit(item)} title="Edit KIP">
                           <Pencil size={16} />
@@ -403,7 +402,7 @@ export default function KipListPage() {
                   ))}
                 </select>
                 <span style={{ fontSize: 11, color: '#71839d' }}>
-                  Barcode-nya sama untuk semua lokasi (lihat tombol &quot;Cetak Barcode Universal&quot;) — pilih lokasi cukup untuk pengelompokan & validasi GPS.
+                  Setelah disimpan, cetak barcode unik alat dari tabel. Barcode tetap berlaku ketika data KIP diperbarui.
                 </span>
               </label>
               <label style={{ gridColumn: '1/-1' }}>
@@ -564,15 +563,15 @@ export default function KipListPage() {
 
       {detailBulan && <KipDetailBulan baris={detailBulan} onTutup={() => setDetailBulan(null)} />}
 
-      {cetakUniversal && (
-        <div className={styles.modalBack} onClick={() => setCetakUniversal(false)}>
+      {cetakKip && (
+        <div className={styles.modalBack} onClick={() => setCetakKip(null)}>
           <div className={styles.modal} style={{ width: 'min(380px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <header>
               <div>
-                <h2>Cetak Barcode Universal</h2>
-                <p>Satu barcode ini berlaku untuk semua lokasi — boleh digandakan & ditempel di mana saja.</p>
+                <h2>Cetak Barcode {cetakKip.noKip}</h2>
+                <p>Barcode permanen untuk {cetakKip.jenisPeralatan}. Scan langsung membuka kartu KIP 3D.</p>
               </div>
-              <button type="button" onClick={() => setCetakUniversal(false)}>
+              <button type="button" onClick={() => setCetakKip(null)}>
                 <X />
               </button>
             </header>
@@ -585,13 +584,13 @@ export default function KipListPage() {
                 />
               )}
               {!qrError && !qrSvg && <p style={{ color: '#71839d' }}>Membuat QR...</p>}
-              <h3 style={{ margin: '16px 0 2px', fontSize: 17 }}>Barcode KIP — Semua Lokasi</h3>
+              <h3 style={{ margin: '16px 0 2px', fontSize: 17 }}>{cetakKip.noKip}</h3>
               <p style={{ margin: 0, color: '#71839d', fontSize: 12 }}>
-                Scan untuk pilih lokasi & lihat status KIP di lokasi tersebut
+                {cetakKip.jenisPeralatan} — {LABEL_LOKASI_KIP[cetakKip.lokasi]}
               </p>
             </div>
             <footer>
-              <button type="button" onClick={() => setCetakUniversal(false)}>
+              <button type="button" onClick={() => setCetakKip(null)}>
                 Tutup
               </button>
               <button type="button" className={styles.primary} onClick={cetakSekarang} disabled={!qrSvg}>

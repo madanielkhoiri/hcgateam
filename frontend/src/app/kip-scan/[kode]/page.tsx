@@ -11,7 +11,7 @@ import { KipCeklisForm } from '@/components/kip/kip-ceklis-form';
 import { KipDetailBulan } from '@/components/kip/kip-detail-bulan';
 import styles from '../kip-scan.module.css';
 
-const ROLE_BOLEH_CEKLIS = ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'];
+const ROLE_BOLEH_CEKLIS = ['KORLAP', 'ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'];
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
@@ -39,9 +39,11 @@ export default function KipScanDetailPage() {
   async function muat() {
     try {
       setError('');
-      setData(await kipApi.statusByKode(kode));
+      const kipId = Number(kode);
+      if (!Number.isInteger(kipId) || kipId < 1) throw new Error('Barcode KIP tidak valid');
+      setData(await kipApi.statusByKipId(kipId));
     } catch (err) {
-      setError(err instanceof KipApiError ? err.message : 'Lokasi tidak ditemukan');
+      setError(err instanceof KipApiError ? err.message : err instanceof Error ? err.message : 'KIP tidak ditemukan');
       setData(null);
     } finally {
       setLoading(false);
@@ -120,10 +122,10 @@ export default function KipScanDetailPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div>
           <strong style={{ fontSize: 15 }}>{data ? LABEL_LOKASI_KIP[data.lokasi] : kode}</strong>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{data?.kip.length ?? 0} KIP terdaftar</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{data?.kip[0]?.jenisPeralatan ?? 'KIP tidak ditemukan'}</div>
         </div>
         <Link href="/kip-scan" className={styles.arScanLagi}>
-          Scan Lokasi Lain
+          Scan KIP Lain
         </Link>
       </div>
 

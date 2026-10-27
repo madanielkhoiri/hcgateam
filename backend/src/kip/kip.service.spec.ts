@@ -67,12 +67,12 @@ function baris(overrides: Partial<{ status: StatusChecklistKip; parameterCheckli
 }
 
 describe('KipService.ceklis', () => {
-  it('menolak role yang bukan Elektrik/Admin/Super Admin', async () => {
+  it('menolak role yang bukan Koordinator Lapangan/Elektrik/Admin', async () => {
     const { service } = buatService({});
 
     await expect(
       service.ceklis(UserRole.KARYAWAN, AKTOR, 1, 3, FOTO, [true, true]),
-    ).rejects.toThrow('Ceklis KIP hanya boleh dilakukan oleh Tim Elektrik atau Admin');
+    ).rejects.toThrow('Ceklis KIP hanya boleh dilakukan oleh Koordinator Lapangan, Tim Elektrik, atau Admin');
   });
 
   it.each([0, 13])('menolak bulan di luar rentang 1-12 (bulan=%i)', async (bulan) => {
@@ -182,15 +182,17 @@ describe('KipService.ceklis', () => {
     );
   });
 
-  it('berhasil ceklis tanpa validasi GPS kalau lokasi belum punya titik acuan', async () => {
+  it('menolak ceklis kalau lokasi belum punya titik GPS acuan', async () => {
     const { service, file } = buatService({
       findUniqueBaris: baris(),
       findUniqueGps: null,
     });
 
-    await service.ceklis(UserRole.ELEKTRIK, AKTOR9, 1, 3, FOTO, [true, true]);
+    await expect(
+      service.ceklis(UserRole.ELEKTRIK, AKTOR9, 1, 3, FOTO, [true, true]),
+    ).rejects.toThrow('Admin atau Koordinator Lapangan wajib merekam titik GPS sebelum checklist dilakukan');
 
-    expect(file.simpanFoto).toHaveBeenCalled();
+    expect(file.simpanFoto).not.toHaveBeenCalled();
   });
 });
 

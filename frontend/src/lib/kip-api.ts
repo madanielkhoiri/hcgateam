@@ -161,6 +161,7 @@ export const kipApi = {
 
   /** Endpoint publik — dipakai halaman scan, tidak wajib login. */
   statusByKode: (kode: string) => request<StatusLokasi>(`/kip/publik/${encodeURIComponent(kode)}`, {}, false),
+  statusByKipId: (id: number) => request<StatusLokasi>(`/kip/publik/alat/${id}`, {}, false),
 
   ceklis: (
     kipId: number,

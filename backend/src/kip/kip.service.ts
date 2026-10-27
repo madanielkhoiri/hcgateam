@@ -237,6 +237,24 @@ export class KipService {
     return { lokasi, kip, gps };
   }
 
+  /** Tampilan publik satu alat dari barcode unik yang memakai ID KIP permanen. */
+  async statusByKipId(id: number) {
+    const kip = await this.prisma.kip.findUnique({
+      where: { id },
+      include: KIP_INCLUDE,
+    });
+
+    if (!kip) {
+      throw new NotFoundException('KIP tidak ditemukan');
+    }
+
+    const gps = await this.prisma.kipLokasiGps.findUnique({
+      where: { lokasi: kip.lokasi },
+    });
+
+    return { lokasi: kip.lokasi, kip: [kip], gps };
+  }
+
   // ==================================================
   // CEKLIS BULANAN (Tim Elektrik / Admin)
   // ==================================================
@@ -281,26 +299,29 @@ export class KipService {
       where: { lokasi: baris.kip.lokasi },
     });
 
-    // Lokasi sudah punya titik GPS acuan — wajib berada di sana untuk ceklis.
-    if (gps) {
-      if (!lokasiSekarang) {
-        throw new BadRequestException(
-          'Lokasi GPS Anda tidak terdeteksi. Aktifkan akses lokasi lalu coba lagi.',
-        );
-      }
-
-      const jarak = jarakMeter(
-        gps.latitude,
-        gps.longitude,
-        lokasiSekarang.latitude,
-        lokasiSekarang.longitude,
+    if (!gps) {
+      throw new BadRequestException(
+        'Titik GPS acuan lokasi belum direkam. Admin atau Koordinator Lapangan wajib merekam titik GPS sebelum checklist dilakukan.',
       );
+    }
 
-      if (jarak > RADIUS_TOLERANSI_METER) {
-        throw new BadRequestException(
-          `Anda berada ${Math.round(jarak)} m dari lokasi. Ceklis hanya bisa dilakukan di lokasi peralatan.`,
-        );
-      }
+    if (!lokasiSekarang) {
+      throw new BadRequestException(
+        'Lokasi GPS Anda tidak terdeteksi. Aktifkan akses lokasi lalu coba lagi.',
+      );
+    }
+
+    const jarak = jarakMeter(
+      gps.latitude,
+      gps.longitude,
+      lokasiSekarang.latitude,
+      lokasiSekarang.longitude,
+    );
+
+    if (jarak > RADIUS_TOLERANSI_METER) {
+      throw new BadRequestException(
+        `Anda berada ${Math.round(jarak)} m dari lokasi. Ceklis hanya bisa dilakukan di lokasi peralatan.`,
+      );
     }
 
     const fotoBukti = this.file.simpanFoto(foto, kipId, bulan);

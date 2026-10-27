@@ -116,6 +116,11 @@ export class KipController {
 
   // ---------- Publik (tanpa JWT sama sekali) ----------
 
+  @Get('publik/alat/:id')
+  statusByKipId(@Param('id', ParseIntPipe) id: number) {
+    return this.service.statusByKipId(id);
+  }
+
   @Get('publik/:kode')
   statusByKode(@Param('kode') kode: string) {
     return this.service.statusByKode(kode);

@@ -10,7 +10,7 @@ import { KipCeklisForm } from '@/components/kip/kip-ceklis-form';
 import { KipDetailBulan } from '@/components/kip/kip-detail-bulan';
 import styles from './kip-scan.module.css';
 
-const ROLE_BOLEH_CEKLIS = ['ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'];
+const ROLE_BOLEH_CEKLIS = ['KORLAP', 'ELEKTRIK', 'ADMIN', 'SUPER_ADMIN'];
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',

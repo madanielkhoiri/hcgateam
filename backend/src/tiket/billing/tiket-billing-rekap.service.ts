@@ -78,8 +78,8 @@ export class TiketBillingRekapService {
   }
 
   /**
-   * Cari baris "Grand Total" di halaman 1 - posisi Y-nya (buat potong
-   * halaman) dan nominalnya (buat jumlah otomatis Sub Total Billing).
+   * Cari posisi "Grand Total" untuk batas potong, tetapi nominal yang
+   * dijumlahkan sebagai Sub Total Billing diambil dari baris "Sub Total".
    * Instance method (bukan fungsi lepas) supaya bisa di-mock via
    * jest.spyOn di test — pdfjs-dist v5 murni ESM dan tidak bisa di-load
    * langsung di lingkungan Jest (CommonJS) tanpa --experimental-vm-modules,
@@ -111,35 +111,41 @@ export class TiketBillingRekapService {
         .sort((a, b) => b.transform[5] - a.transform[5]);
 
       const TOLERANSI_BARIS = 1.5; // pt
-      const baris: Array<{ y: number; teks: string }> = [];
+      const baris: Array<{ y: number; bagian: Array<{ x: number; teks: string }> }> = [];
 
       for (const item of itemUrut) {
         const y = item.transform[5];
         const barisAktif = baris.at(-1);
 
         if (barisAktif && Math.abs(y - barisAktif.y) <= TOLERANSI_BARIS) {
-          barisAktif.teks += item.str;
+          barisAktif.bagian.push({ x: item.transform[4], teks: item.str });
         } else {
-          baris.push({ y, teks: item.str });
+          baris.push({ y, bagian: [{ x: item.transform[4], teks: item.str }] });
         }
       }
 
-      for (const { y, teks } of baris) {
-        if (teks.toLowerCase().replace(/\s+/g, '').includes('grandtotal')) {
-          // Ambil angka nominal di baris ini - urutannya bisa "GrandTotal
-          // IDR 1,313,819.00" ATAU "1,313,819.00 Grand Total IDR"
-          // tergantung urutan text-run di content stream PDF sumbernya,
-          // jadi dicari di mana saja dalam baris (bukan cuma di ujung).
-          const angka = teks.match(/(\d{1,3}(?:,\d{3})*\.\d{1,2})/);
-          const jumlah = angka
-            ? Math.round(parseFloat(angka[1].replace(/,/g, '')))
-            : null;
+      let yGrandTotal: number | null = null;
+      let jumlahSubTotal: number | null = null;
 
-          return { y, jumlah };
+      for (const { y, bagian } of baris) {
+        const teks = bagian
+          .sort((a, b) => a.x - b.x)
+          .map((item) => item.teks.trim())
+          .filter(Boolean)
+          .join(' ');
+        const normal = teks.toLowerCase().replace(/\s+/g, '');
+
+        if (normal.includes('subtotal')) {
+          const angka = teks.match(
+            /sub\s*total\s*(?:idr)?\s*(\d{1,3}(?:,\d{3})*\.\d{1,2})/i,
+          );
+          if (angka) jumlahSubTotal = Math.round(parseFloat(angka[1].replace(/,/g, '')));
         }
+
+        if (normal.includes('grandtotal')) yGrandTotal = y;
       }
 
-      return null;
+      return yGrandTotal !== null ? { y: yGrandTotal, jumlah: jumlahSubTotal } : null;
     } finally {
       await dokumen.destroy();
     }
