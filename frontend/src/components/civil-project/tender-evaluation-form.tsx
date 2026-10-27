@@ -375,6 +375,7 @@ export function TenderEvaluationForm({
     }
   };
   if (!report) return <p>{error || "Memuat evaluasi..."}</p>;
+  const locked = report.locked;
   const rounds = data.sphRounds || [];
   const validPrice = finalPrice(data),
     known = rounds.filter((r) => ontime(r) !== null),
@@ -407,13 +408,18 @@ export function TenderEvaluationForm({
       <div
         style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "14px 0" }}
       >
-        <button style={primary} onClick={save} disabled={saving}>
+        <button style={primary} onClick={save} disabled={saving || locked}>
           <Save size={14} /> {saving ? "Menyimpan..." : "Simpan"}
         </button>
         <button style={btn} onClick={pdf}>
           <Printer size={14} /> Cetak / PDF
         </button>
       </div>
+      {locked && (
+        <div style={{ ...box, color: "#08783f", background: "#e9f8ef", borderColor: "#a8dfbd" }}>
+          <b>Evaluasi telah dikunci.</b> Pemenang tender sudah ditetapkan kepada <b>{report.pemenang?.namaVendor || config.finalDecision?.vendorName || "vendor terpilih"}</b>. Seluruh nilai, SPH, dan dokumen evaluasi hanya dapat dilihat dan tidak dapat diubah lagi.
+        </div>
+      )}
       {error && <div style={{ ...box, color: "#a72c3b" }}>{error}</div>}
       <div
         className="evaluation-layout"
@@ -458,6 +464,7 @@ export function TenderEvaluationForm({
             </button>
           ))}
         </aside>
+        <fieldset disabled={locked} style={{ minWidth: 0, margin: 0, padding: 0, border: 0 }}>
         <main style={{ minWidth: 0 }}>
           <section id="eval-dashboard" style={box}>
             <h2>Dashboard Perbandingan Vendor • Ranking Otomatis</h2>
@@ -1172,6 +1179,7 @@ export function TenderEvaluationForm({
             {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
           </section>
         </main>
+        </fieldset>
       </div>
       <style jsx>{`
         .presentation-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }

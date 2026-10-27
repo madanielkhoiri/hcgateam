@@ -213,7 +213,7 @@ export type TenderEvaluationData = {
   manpowerOffered?: number; localWorkers?: number; nonLocalWorkers?: number;
   recommendationStatus?: '' | 'recommended' | 'not_recommended'; decisionNotes?: string;
 };
-export type TenderEvaluationReport = { tenderId: number; namaTender: string; config: Record<string, any>; vendors: Array<{ vendorId: number; namaVendor: string; evaluasi: ({ dokumenAdminFiles: string[]; dokumenHseFiles: string[] } & Record<string, any>) | null; data: TenderEvaluationData; eligible: boolean; score: number | null; localPercent: number }> };
+export type TenderEvaluationReport = { tenderId: number; namaTender: string; locked: boolean; pemenang: { id: number; namaVendor: string } | null; config: Record<string, any>; vendors: Array<{ vendorId: number; namaVendor: string; evaluasi: ({ dokumenAdminFiles: string[]; dokumenHseFiles: string[] } & Record<string, any>) | null; data: TenderEvaluationData; eligible: boolean; score: number | null; localPercent: number }> };
 
 export type Kontrak = {
   id: number;

@@ -41,10 +41,11 @@ function calculate(rows: any[], config: Data) {
 @Injectable()
 export class EpromEvaluasiVendorService {
   constructor(private readonly prisma: PrismaService, private readonly file: EpromFileService, private readonly pdf: EpromReportPdfService) {}
-  private async tender(id: number) { const tender = await this.prisma.tenderProcess.findUnique({ where: { id }, include: { undangan: { include: { vendor: true }, orderBy: { id: 'asc' } }, evaluasiVendor: true } }); if (!tender) throw new NotFoundException('Tender tidak ditemukan'); if (tender.jenisTender === 'INTERNAL') throw new BadRequestException('Tender Internal tidak memiliki Evaluasi Vendor'); return tender; }
-  async daftar(id: number) { const tender = await this.tender(id); const map = new Map(tender.evaluasiVendor.map((e) => [e.vendorId, e])); const rows = tender.undangan.map((u) => ({ vendor: u.vendor, evaluasi: map.get(u.vendorId) ?? null })); return { tenderId: id, namaTender: tender.namaTender, config: (tender.evaluasiConfig ?? {}) as Data, vendors: calculate(rows, (tender.evaluasiConfig ?? {}) as Data) }; }
+  private async tender(id: number) { const tender = await this.prisma.tenderProcess.findUnique({ where: { id }, include: { undangan: { include: { vendor: true }, orderBy: { id: 'asc' } }, evaluasiVendor: true, sph: { where: { statusPemenang: true }, include: { vendor: true }, take: 1 } } }); if (!tender) throw new NotFoundException('Tender tidak ditemukan'); if (tender.jenisTender === 'INTERNAL') throw new BadRequestException('Tender Internal tidak memiliki Evaluasi Vendor'); return tender; }
+  private wajibBelumDikunci(tender: { sph?: unknown[] }) { if ((tender.sph ?? []).length > 0) throw new BadRequestException('Evaluasi tender sudah dikunci karena pemenang telah ditetapkan'); }
+  async daftar(id: number) { const tender = await this.tender(id); const map = new Map(tender.evaluasiVendor.map((e) => [e.vendorId, e])); const rows = tender.undangan.map((u) => ({ vendor: u.vendor, evaluasi: map.get(u.vendorId) ?? null })); const pemenang = tender.sph?.[0]?.vendor ?? null; return { tenderId: id, namaTender: tender.namaTender, locked: Boolean(pemenang), pemenang, config: (tender.evaluasiConfig ?? {}) as Data, vendors: calculate(rows, (tender.evaluasiConfig ?? {}) as Data) }; }
   async ubah(id: number, vendorId: number, dto: UbahEvaluasiVendorDto, files: { admin?: Express.Multer.File[]; hse?: Express.Multer.File[] } = {}) {
-    const tender = await this.tender(id); if (!tender.undangan.some((u) => u.vendorId === vendorId)) throw new BadRequestException('Vendor belum diundang');
+    const tender = await this.tender(id); this.wajibBelumDikunci(tender); if (!tender.undangan.some((u) => u.vendorId === vendorId)) throw new BadRequestException('Vendor belum diundang');
     const old = await this.prisma.evaluasiVendor.findUnique({ where: { tenderId_vendorId: { tenderId: id, vendorId } } });
     const save = (f: Express.Multer.File) => this.file.simpan(f, `tender/${id}/evaluasi`, this.file.tebakTipe(f.originalname));
     const admin = [...(old?.dokumenAdminFiles ?? []), ...(files.admin ?? []).map(save)], hse = [...(old?.dokumenHseFiles ?? []), ...(files.hse ?? []).map(save)];
@@ -52,7 +53,7 @@ export class EpromEvaluasiVendorService {
     return this.daftar(id);
   }
   async hapusDokumen(id: number, vendorId: number, jenis: string, index: number) {
-    await this.tender(id);
+    const tender = await this.tender(id); this.wajibBelumDikunci(tender);
     if (!['admin', 'hse'].includes(jenis)) throw new BadRequestException('Jenis dokumen tidak valid');
     const row = await this.prisma.evaluasiVendor.findUnique({ where: { tenderId_vendorId: { tenderId: id, vendorId } } });
     if (!row) throw new NotFoundException('Evaluasi vendor tidak ditemukan');
