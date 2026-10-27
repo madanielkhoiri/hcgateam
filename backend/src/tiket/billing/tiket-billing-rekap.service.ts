@@ -125,6 +125,7 @@ export class TiketBillingRekapService {
       }
 
       let yGrandTotal: number | null = null;
+      let ySubTotal: number | null = null;
       let jumlahSubTotal: number | null = null;
 
       for (const { y, bagian } of baris) {
@@ -136,6 +137,7 @@ export class TiketBillingRekapService {
         const normal = teks.toLowerCase().replace(/\s+/g, '');
 
         if (normal.includes('subtotal')) {
+          ySubTotal = y;
           const angka = teks.match(
             /sub\s*total\s*(?:idr)?\s*(\d{1,3}(?:,\d{3})*\.\d{1,2})/i,
           );
@@ -145,7 +147,11 @@ export class TiketBillingRekapService {
         if (normal.includes('grandtotal')) yGrandTotal = y;
       }
 
-      return yGrandTotal !== null ? { y: yGrandTotal, jumlah: jumlahSubTotal } : null;
+      // Invoice panjang dapat menaruh Grand Total di halaman kedua, sedangkan
+      // rekap memang hanya memakai halaman pertama. Dalam kondisi itu Sub
+      // Total tetap wajib dihitung dan posisi Sub Total menjadi batas potong.
+      const yBatas = yGrandTotal ?? ySubTotal;
+      return yBatas !== null ? { y: yBatas, jumlah: jumlahSubTotal } : null;
     } finally {
       await dokumen.destroy();
     }
