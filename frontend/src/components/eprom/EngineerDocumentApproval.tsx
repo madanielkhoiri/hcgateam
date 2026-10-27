@@ -36,6 +36,20 @@ const DEFAULT_PLACEMENT: Pick<Placement, "x" | "y" | "width" | "height"> = {
   height: 0.12,
 };
 
+function posisiSampaiTepi(
+  pointer: number,
+  ukuran: number,
+  offsetPegangan: number,
+): number {
+  // Pada layar sempit jari/kursor tidak selalu dapat bergerak melewati kanvas.
+  // Begitu pointer menyentuh tepi kertas, tempelkan kotak tanda tangan tepat
+  // ke tepi tersebut agar seluruh area PDF tetap dapat dipakai.
+  const ambangTepi = 0.025;
+  if (pointer <= ambangTepi) return 0;
+  if (pointer >= 1 - ambangTepi) return Math.max(0, 1 - ukuran);
+  return Math.max(0, Math.min(1 - ukuran, pointer - offsetPegangan));
+}
+
 function namaPekerjaan(detail: EngineerApprovalDetail): string {
   if (detail.documentType === "OPNAME_PEKERJAAN") {
     const item = detail.item as EngineerApprovalDetail["item"] & { progressPersen?: string };
@@ -381,14 +395,8 @@ export function EngineerDocumentApproval({
         item.id === placement.id
           ? {
               ...item,
-              x: Math.max(
-                0,
-                Math.min(1 - item.width, pointerX - item.width / 2),
-              ),
-              y: Math.max(
-                0,
-                Math.min(1 - item.height, pointerY - item.height / 2),
-              ),
+              x: posisiSampaiTepi(pointerX, item.width, item.width / 2),
+              y: posisiSampaiTepi(pointerY, item.height, item.height / 2),
             }
           : item,
       ),
@@ -416,21 +424,10 @@ export function EngineerDocumentApproval({
     captureTarget.setPointerCapture(pointerId);
     setSelectedPlacementId(placementId);
 
-    function move(pointer: PointerEvent) {
-      if (pointer.pointerId !== pointerId) return;
-      pointer.preventDefault();
+    let lastPointer: PointerEvent | null = null;
+    let autoScrollFrame = 0;
 
-      if (scrollContainer) {
-        const scrollRect = scrollContainer.getBoundingClientRect();
-        const batasScroll = 56;
-
-        if (pointer.clientY > scrollRect.bottom - batasScroll) {
-          scrollContainer.scrollTop += 18;
-        } else if (pointer.clientY < scrollRect.top + batasScroll) {
-          scrollContainer.scrollTop -= 18;
-        }
-      }
-
+    function perbaruiPosisi(pointer: PointerEvent) {
       // Posisi halaman berubah ketika viewer ikut scroll. Baca ulang rect supaya
       // koordinat pointer selalu dihitung terhadap halaman yang sedang terlihat.
       const currentSurface = surfaceRef.current;
@@ -446,14 +443,8 @@ export function EngineerDocumentApproval({
           if (mode === "drag") {
             return {
               ...start,
-              x: Math.max(
-                0,
-                Math.min(1 - start.width, pointerX - grabOffsetX),
-              ),
-              y: Math.max(
-                0,
-                Math.min(1 - start.height, pointerY - grabOffsetY),
-              ),
+              x: posisiSampaiTepi(pointerX, start.width, grabOffsetX),
+              y: posisiSampaiTepi(pointerY, start.height, grabOffsetY),
             };
           }
 
@@ -485,11 +476,55 @@ export function EngineerDocumentApproval({
       );
     }
 
+    function scrollSaatDiTepi() {
+      if (!scrollContainer || !lastPointer) {
+        autoScrollFrame = window.requestAnimationFrame(scrollSaatDiTepi);
+        return;
+      }
+
+      const scrollRect = scrollContainer.getBoundingClientRect();
+      const batasScroll = Math.min(90, Math.max(48, scrollRect.height * 0.12));
+      let scrollDelta = 0;
+
+      if (lastPointer.clientY > scrollRect.bottom - batasScroll) {
+        const jarak = Math.min(
+          batasScroll,
+          lastPointer.clientY - (scrollRect.bottom - batasScroll),
+        );
+        scrollDelta = Math.max(8, Math.round((jarak / batasScroll) * 28));
+      } else if (lastPointer.clientY < scrollRect.top + batasScroll) {
+        const jarak = Math.min(
+          batasScroll,
+          scrollRect.top + batasScroll - lastPointer.clientY,
+        );
+        scrollDelta = -Math.max(8, Math.round((jarak / batasScroll) * 28));
+      }
+
+      if (scrollDelta !== 0) {
+        const sebelum = scrollContainer.scrollTop;
+        scrollContainer.scrollTop += scrollDelta;
+        if (scrollContainer.scrollTop !== sebelum) {
+          perbaruiPosisi(lastPointer);
+        }
+      }
+
+      autoScrollFrame = window.requestAnimationFrame(scrollSaatDiTepi);
+    }
+
+    function move(pointer: PointerEvent) {
+      if (pointer.pointerId !== pointerId) return;
+      pointer.preventDefault();
+      lastPointer = pointer;
+      perbaruiPosisi(pointer);
+    }
+
     function selesai(pointer: PointerEvent) {
       if (pointer.pointerId !== pointerId) return;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", selesai);
       window.removeEventListener("pointercancel", selesai);
+      window.cancelAnimationFrame(autoScrollFrame);
+      lastPointer = null;
 
       if (captureTarget.hasPointerCapture(pointerId)) {
         captureTarget.releasePointerCapture(pointerId);
@@ -499,6 +534,7 @@ export function EngineerDocumentApproval({
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", selesai);
     window.addEventListener("pointercancel", selesai);
+    autoScrollFrame = window.requestAnimationFrame(scrollSaatDiTepi);
   }
 
   async function approve() {
