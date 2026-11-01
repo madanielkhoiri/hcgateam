@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clearSession, formatRole, getStoredUser, type PortalUser } from '@/lib/access-control';
+import { compressImage } from '@/lib/compress-image';
 import {
   gudangApi,
   urlFotoGudang,
@@ -122,6 +123,7 @@ function GudangPageInner() {
   const [note, setNote] = useState('');
   const [checkoutPhoto, setCheckoutPhoto] = useState<File | null>(null);
   const [checkoutPhotoPreview, setCheckoutPhotoPreview] = useState('');
+  const [compressingPhoto, setCompressingPhoto] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -325,7 +327,7 @@ function GudangPageInner() {
     setLangkah('menu');
   }
 
-  function pilihFotoCheckout(file?: File) {
+  async function pilihFotoCheckout(file?: File) {
     if (!file) return;
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
@@ -333,14 +335,18 @@ function GudangPageInner() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setSubmitError('Ukuran foto maksimal 5 MB');
-      return;
-    }
-
-    setCheckoutPhoto(file);
-    setCheckoutPhotoPreview(URL.createObjectURL(file));
+    setCompressingPhoto(true);
     setSubmitError('');
+
+    try {
+      const compressedPhoto = await compressImage(file, 0.7);
+      setCheckoutPhoto(compressedPhoto);
+      setCheckoutPhotoPreview(URL.createObjectURL(compressedPhoto));
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Foto gagal dikompres');
+    } finally {
+      setCompressingPhoto(false);
+    }
   }
 
   function hapusFotoCheckout() {
@@ -780,7 +786,7 @@ function GudangPageInner() {
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         onChange={(event) => {
-                          pilihFotoCheckout(event.target.files?.[0]);
+                          void pilihFotoCheckout(event.target.files?.[0]);
                           event.currentTarget.value = '';
                         }}
                       />
@@ -793,7 +799,7 @@ function GudangPageInner() {
                         accept="image/*"
                         capture="environment"
                         onChange={(event) => {
-                          pilihFotoCheckout(event.target.files?.[0]);
+                          void pilihFotoCheckout(event.target.files?.[0]);
                           event.currentTarget.value = '';
                         }}
                       />
@@ -812,6 +818,9 @@ function GudangPageInner() {
                       <button type="button" onClick={hapusFotoCheckout}>Hapus</button>
                     </div>
                   )}
+                  {compressingPhoto && (
+                    <span className={styles.photoCompressionText}>Foto sedang dikompres 70%...</span>
+                  )}
                 </div>
               </>
             )}
@@ -821,8 +830,8 @@ function GudangPageInner() {
         </div>
 
         <div className={styles.footer}>
-          <button type="button" className={styles.primaryButton} onClick={() => void submitCheckout()} disabled={submitting}>
-            {submitting ? 'Mengirim...' : 'Konfirmasi & Kirim'}
+          <button type="button" className={styles.primaryButton} onClick={() => void submitCheckout()} disabled={submitting || compressingPhoto}>
+            {compressingPhoto ? 'Mengompres foto...' : submitting ? 'Mengirim...' : 'Konfirmasi & Kirim'}
           </button>
         </div>
       </div>

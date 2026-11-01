@@ -780,6 +780,14 @@
   cursor: pointer;
 }
 
+.photoCompressionText {
+  display: block;
+  margin-top: 8px;
+  color: #6f819d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 @media (max-width: 420px) {
   .photoSourceButtons { grid-template-columns: 1fr; }
   .photoPreviewCard { grid-template-columns: 54px minmax(0, 1fr) auto; }
