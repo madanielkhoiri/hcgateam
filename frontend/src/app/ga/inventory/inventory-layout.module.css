@@ -566,6 +566,8 @@
   width: 100% !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
+  z-index: 300 !important;
+  overflow: visible !important;
 }
 
 .pageContent {
@@ -712,7 +714,10 @@
   margin: 0 0 0 var(--inventory-sidebar-width) !important;
   padding: 0 !important;
   box-sizing: border-box !important;
-  overflow-x: hidden !important;
+  /* `hidden` pada satu sumbu membuat sumbu lain menjadi scroll container dan
+     memotong dropdown profil di bawah header. Clip hanya sumbu horizontal. */
+  overflow-x: clip !important;
+  overflow-y: visible !important;
 }
 
 .shellCollapsed .contentArea {
