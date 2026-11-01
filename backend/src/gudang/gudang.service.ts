@@ -78,6 +78,16 @@ export class GudangService {
       throw new BadRequestException('Keranjang masih kosong');
     }
 
+    if (scope.trim().toUpperCase() === 'ELECTRIC') {
+      if (!input.note?.trim()) {
+        throw new BadRequestException('Keterangan pengambilan Electric wajib diisi');
+      }
+
+      if (!photoFilename) {
+        throw new BadRequestException('Foto bukti pengambilan Electric wajib dipilih');
+      }
+    }
+
     for (const line of input.items) {
       if (!Number.isInteger(line.itemId) || line.itemId <= 0) {
         throw new BadRequestException('ID barang tidak valid');

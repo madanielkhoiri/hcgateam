@@ -698,6 +698,94 @@
   font-weight: 600;
 }
 
+.textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.photoSourceButtons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.photoSourceButton {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin: 0 !important;
+  padding: 11px 12px;
+  border: 1px solid #a9c8f7;
+  border-radius: 14px;
+  background: #eef5ff;
+  color: #0868f6 !important;
+  cursor: pointer;
+  text-align: center;
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.photoPreviewCard {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #d9e5f5;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.photoPreviewCard img {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.photoPreviewCard div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.photoPreviewCard strong,
+.photoPreviewCard span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photoPreviewCard strong { color: #10244a; font-size: 12px; }
+.photoPreviewCard span { color: #6f819d; font-size: 11px; }
+.photoPreviewCard button {
+  border: 0;
+  background: #fff0f1;
+  color: #d64545;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 420px) {
+  .photoSourceButtons { grid-template-columns: 1fr; }
+  .photoPreviewCard { grid-template-columns: 54px minmax(0, 1fr) auto; }
+  .photoPreviewCard img { width: 54px; height: 54px; }
+}
+
 .errorText {
   font-size: 13px;
   font-weight: 700;

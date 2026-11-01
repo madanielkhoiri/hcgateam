@@ -33,6 +33,8 @@ export type CheckoutGudangInput = {
   scope: InventoryScopeGudang;
   taker: string;
   department: string;
+  note?: string;
+  photo?: File;
   items: ItemKeranjang[];
 };
 
@@ -97,6 +99,8 @@ export const gudangApi = {
     form.append('scope', input.scope);
     form.append('taker', input.taker);
     form.append('department', input.department);
+    if (input.note) form.append('note', input.note);
+    if (input.photo) form.append('photo', input.photo);
     form.append('items', JSON.stringify(input.items));
 
     const response = await fetch(`${API_URL}/gudang/checkout`, {

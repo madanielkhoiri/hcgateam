@@ -119,6 +119,9 @@ function GudangPageInner() {
   const [nrp, setNrp] = useState('');
   const [taker, setTaker] = useState('');
   const [department, setDepartment] = useState('');
+  const [note, setNote] = useState('');
+  const [checkoutPhoto, setCheckoutPhoto] = useState<File | null>(null);
+  const [checkoutPhotoPreview, setCheckoutPhotoPreview] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -126,6 +129,12 @@ function GudangPageInner() {
   const [nomorTransaksi, setNomorTransaksi] = useState('');
   const [waktuTransaksi, setWaktuTransaksi] = useState<Date | null>(null);
   const [namaPengambilSukses, setNamaPengambilSukses] = useState('');
+
+  useEffect(() => {
+    return () => {
+      if (checkoutPhotoPreview) URL.revokeObjectURL(checkoutPhotoPreview);
+    };
+  }, [checkoutPhotoPreview]);
 
   useEffect(() => {
     const stored = getStoredUser();
@@ -177,6 +186,9 @@ function GudangPageInner() {
     setScope(nilai);
     setActiveCategory('SEMUA');
     setSearch('');
+    setNote('');
+    setCheckoutPhoto(null);
+    setCheckoutPhotoPreview('');
     setLangkah('menu');
   }
 
@@ -250,6 +262,21 @@ function GudangPageInner() {
       return;
     }
 
+    if (!department.trim()) {
+      setSubmitError('Departemen / site wajib dipilih');
+      return;
+    }
+
+    if (scope === 'ELECTRIC' && !note.trim()) {
+      setSubmitError('Keterangan pengambilan Electric wajib diisi');
+      return;
+    }
+
+    if (scope === 'ELECTRIC' && !checkoutPhoto) {
+      setSubmitError('Foto bukti pengambilan Electric wajib dipilih');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
@@ -260,6 +287,8 @@ function GudangPageInner() {
         scope,
         taker: namaPengambil,
         department,
+        note: note.trim(),
+        photo: checkoutPhoto ?? undefined,
         items: barisKeranjang.map(({ item, qty }) => ({ itemId: item.id, quantity: qty })),
       });
 
@@ -275,6 +304,9 @@ function GudangPageInner() {
       setNrp('');
       setTaker('');
       setDepartment('');
+      setNote('');
+      setCheckoutPhoto(null);
+      setCheckoutPhotoPreview('');
       setLangkah('sukses');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Checkout gagal, coba lagi');
@@ -287,7 +319,33 @@ function GudangPageInner() {
     setCart({});
     setHasil(null);
     setSubmitError('');
+    setNote('');
+    setCheckoutPhoto(null);
+    setCheckoutPhotoPreview('');
     setLangkah('menu');
+  }
+
+  function pilihFotoCheckout(file?: File) {
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setSubmitError('Foto hanya boleh berformat JPG, PNG, atau WEBP');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError('Ukuran foto maksimal 5 MB');
+      return;
+    }
+
+    setCheckoutPhoto(file);
+    setCheckoutPhotoPreview(URL.createObjectURL(file));
+    setSubmitError('');
+  }
+
+  function hapusFotoCheckout() {
+    setCheckoutPhoto(null);
+    setCheckoutPhotoPreview('');
   }
 
   function BackButton({ onClick }: { onClick: () => void }) {
@@ -698,6 +756,65 @@ function GudangPageInner() {
                 ))}
               </select>
             </div>
+
+            {scope === 'ELECTRIC' && (
+              <>
+                <div className={styles.field}>
+                  <label>Keterangan *</label>
+                  <textarea
+                    className={`${styles.input} ${styles.textarea}`}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="Tuliskan tujuan atau keterangan pengambilan barang"
+                    rows={3}
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label>Foto bukti pengambilan *</label>
+                  <div className={styles.photoSourceButtons}>
+                    <label className={styles.photoSourceButton}>
+                      Pilih dari Galeri
+                      <input
+                        className={styles.hiddenFileInput}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(event) => {
+                          pilihFotoCheckout(event.target.files?.[0]);
+                          event.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                    <label className={styles.photoSourceButton}>
+                      Buka Kamera
+                      <input
+                        className={styles.hiddenFileInput}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(event) => {
+                          pilihFotoCheckout(event.target.files?.[0]);
+                          event.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {checkoutPhoto && (
+                    <div className={styles.photoPreviewCard}>
+                      {checkoutPhotoPreview && (
+                        <img src={checkoutPhotoPreview} alt="Pratinjau bukti pengambilan" />
+                      )}
+                      <div>
+                        <strong>{checkoutPhoto.name}</strong>
+                        <span>{Math.max(1, Math.round(checkoutPhoto.size / 1024))} KB</span>
+                      </div>
+                      <button type="button" onClick={hapusFotoCheckout}>Hapus</button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {submitError && <p className={styles.errorText}>{submitError}</p>}
