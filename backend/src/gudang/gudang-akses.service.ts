@@ -13,6 +13,8 @@ const ROLE_BOLEH_GUDANG: UserRole[] = [
   UserRole.SECTION_HEAD,
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
+  UserRole.ELEKTRIK,
+  UserRole.GRUP_LEADER_GA,
 ];
 
 @Injectable()

@@ -13,7 +13,7 @@ import {
 } from '@/lib/gudang-api';
 import styles from './gudang.module.css';
 
-const ROLE_BOLEH_GUDANG = ['GUDANG', 'SECTION_HEAD', 'ADMIN', 'SUPER_ADMIN'];
+const ROLE_BOLEH_GUDANG = ['GUDANG', 'SECTION_HEAD', 'ADMIN', 'SUPER_ADMIN', 'ELEKTRIK', 'GRUP_LEADER_GA'];
 
 type Langkah = 'scope' | 'menu' | 'keranjang' | 'konfirmasi' | 'sukses';
 
@@ -468,6 +468,23 @@ function GudangPageInner() {
               </svg>
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => router.push('/gudang/peminjaman-alat')}
+            className={styles.lineCard}
+            style={{ cursor: 'pointer', textAlign: 'left', border: 'none', width: '100%' }}
+          >
+            <div className={styles.lineTile} style={{ background: '#fff2df', color: '#d97706' }}>
+              <IkonBarang size={26} />
+            </div>
+            <div className={styles.lineInfo}>
+              <div className={styles.lineName}>Peminjaman Alat</div>
+              <div className={styles.footerHint}>Alat GA & Electric</div>
+            </div>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9aa8bf" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
       </div>
     );

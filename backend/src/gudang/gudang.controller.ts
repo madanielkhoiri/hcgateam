@@ -12,6 +12,9 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  Param,
+  ParseIntPipe,
   Post,
   Query,
   Req,
@@ -26,6 +29,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GudangService } from './gudang.service';
+import { ToolBorrowingService } from './tool-borrowing.service';
 
 const gudangPhotoDirectory = join(process.cwd(), 'uploads', 'gudang-checkout');
 
@@ -59,7 +63,70 @@ const gudangPhotoUpload = FileInterceptor('photo', {
 
 @Controller('gudang')
 export class GudangController {
-  constructor(private readonly service: GudangService) {}
+  constructor(
+    private readonly service: GudangService,
+    private readonly tools: ToolBorrowingService,
+  ) {}
+
+  @Get('tool-borrowing/employees')
+  @UseGuards(JwtAuthGuard)
+  toolEmployees(@Req() req: any) {
+    return this.tools.listEmployees(req.user);
+  }
+
+  @Post('tool-borrowing/employees')
+  @UseGuards(JwtAuthGuard)
+  createToolEmployee(@Req() req: any, @Body() body: { nrp?: string; name?: string }) {
+    return this.tools.createEmployee(req.user, body);
+  }
+
+  @Get('tool-borrowing/employees/:id/qr')
+  @UseGuards(JwtAuthGuard)
+  @Header('Content-Type', 'image/svg+xml')
+  employeeQr(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.tools.employeeQrSvg(req.user, id);
+  }
+
+  @Get('tool-borrowing/tools')
+  @UseGuards(JwtAuthGuard)
+  toolList(@Req() req: any, @Query('owner') owner?: string) {
+    return this.tools.listTools(req.user, owner);
+  }
+
+  @Post('tool-borrowing/tools')
+  @UseGuards(JwtAuthGuard)
+  createTool(
+    @Req() req: any,
+    @Body() body: { owner?: string; code?: string; name?: string },
+  ) {
+    return this.tools.createTool(req.user, body);
+  }
+
+  @Post('tool-borrowing/tools/:id/borrow')
+  @UseGuards(JwtAuthGuard)
+  borrowTool(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('qrData') qrData: string,
+  ) {
+    return this.tools.borrow(req.user, id, qrData);
+  }
+
+  @Post('tool-borrowing/tools/:id/return')
+  @UseGuards(JwtAuthGuard)
+  returnTool(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { qrData?: string; condition?: string; note?: string },
+  ) {
+    return this.tools.returnTool(req.user, id, body);
+  }
+
+  @Get('tool-borrowing/history')
+  @UseGuards(JwtAuthGuard)
+  toolHistory(@Req() req: any) {
+    return this.tools.history(req.user);
+  }
 
   @Get('barang')
   @UseGuards(JwtAuthGuard)

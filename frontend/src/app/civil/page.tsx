@@ -79,6 +79,17 @@ function buatCivilTree(approval: RingkasanApproval | null): MenuTreeNode[] {
             accent: '#d97706',
             soft: '#fff2df',
           },
+          {
+            key: 'CIVIL_ELECTRIC_TOOL_BORROWING',
+            title: 'Peminjaman Alat',
+            description: 'Master dan monitoring peminjaman alat bersama Electric dan GA.',
+            status: 'Tersedia',
+            href: '/gudang/peminjaman-alat',
+            icon: HardHat,
+            accessKey: ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC,
+            accent: '#d97706',
+            soft: '#fff2df',
+          },
         ],
       },
       {

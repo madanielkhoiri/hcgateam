@@ -83,6 +83,17 @@ const gaTree: MenuTreeNode[] = [
         soft: '#f0ebff',
       },
       {
+        key: 'GA_TOOL_BORROWING',
+        title: 'Peminjaman Alat',
+        description: 'Master dan monitoring peminjaman alat bersama GA dan Electric.',
+        status: 'Tersedia',
+        href: '/gudang/peminjaman-alat',
+        icon: HardHat,
+        accessKey: ACCESS_KEYS.GA_INVENTORY,
+        accent: '#d97706',
+        soft: '#fff2df',
+      },
+      {
         key: 'GA_PROJECT',
         title: 'Project',
         description: 'Dokumentasi Pre-Activity Check dan laporan Post Activity pekerjaan project.',

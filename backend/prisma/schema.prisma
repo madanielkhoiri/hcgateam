@@ -422,6 +422,85 @@ model StockOut {
   @@map("stock_outs")
 }
 
+// ==================================================
+// PEMINJAMAN ALAT BERSAMA GA & ELECTRIC
+// ==================================================
+
+enum ToolOwner {
+  GA
+  ELECTRIC
+}
+
+enum ToolAssetStatus {
+  AVAILABLE
+  BORROWED
+  DAMAGED
+  LOST
+}
+
+enum ToolReturnCondition {
+  GOOD
+  DAMAGED
+  LOST
+}
+
+model ToolBorrowEmployee {
+  id        Int      @id @default(autoincrement())
+  nrp       String   @unique
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  borrowings ToolLoan[] @relation("ToolLoanBorrower")
+  returns    ToolLoan[] @relation("ToolLoanReturner")
+
+  @@index([name])
+  @@map("tool_borrow_employees")
+}
+
+model ToolAsset {
+  id        Int             @id @default(autoincrement())
+  owner     ToolOwner
+  code      String
+  name      String
+  status    ToolAssetStatus @default(AVAILABLE)
+  isActive  Boolean         @default(true) @map("is_active")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  loans ToolLoan[]
+
+  @@unique([owner, code])
+  @@index([owner, status])
+  @@index([name])
+  @@map("tool_assets")
+}
+
+model ToolLoan {
+  id                 Int                  @id @default(autoincrement())
+  toolId             Int                  @map("tool_id")
+  borrowerId         Int                  @map("borrower_id")
+  borrowedAt         DateTime             @default(now()) @map("borrowed_at")
+  returnedAt         DateTime?            @map("returned_at")
+  returnerId         Int?                 @map("returner_id")
+  returnCondition    ToolReturnCondition? @map("return_condition")
+  returnNote         String?              @db.Text @map("return_note")
+  borrowedByUserId   Int                  @map("borrowed_by_user_id")
+  returnedByUserId   Int?                 @map("returned_by_user_id")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  tool      ToolAsset          @relation(fields: [toolId], references: [id], onDelete: Restrict)
+  borrower  ToolBorrowEmployee @relation("ToolLoanBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+  returner  ToolBorrowEmployee? @relation("ToolLoanReturner", fields: [returnerId], references: [id], onDelete: Restrict)
+
+  @@index([toolId, returnedAt])
+  @@index([borrowerId, borrowedAt])
+  @@index([borrowedAt])
+  @@map("tool_loans")
+}
+
 enum WorkOrderStatus {
   OPEN
   ON_PROGRESS
