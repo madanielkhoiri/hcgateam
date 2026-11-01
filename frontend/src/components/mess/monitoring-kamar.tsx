@@ -9,6 +9,19 @@ type PersonForm = { id?: number; nrp: string; name: string; shift: ShiftMess };
 const emptyPerson = (): PersonForm => ({ nrp: '', name: '', shift: 'PAGI' });
 const BUILDINGS = ['1', '2', '3', 'A', 'B', 'C', 'D', 'E', 'F'];
 
+function formatDuration(seconds?: number | null) {
+  if (seconds === null || seconds === undefined) return '-';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  return [hours, minutes, remainingSeconds].map((value) => String(value).padStart(2, '0')).join(':');
+}
+
+function formatCleaningTime(value?: string | null) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value));
+}
+
 export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }) {
   const [rows, setRows] = useState<MessRoom[]>([]);
   const [open, setOpen] = useState(false);
@@ -91,7 +104,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
     <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
     <section className={styles.tableWrap}>
       <table>
-        <thead><tr><th>No</th><th>Gedung</th><th>Kamar</th><th>Karyawan</th><th>Status Kamar</th>{admin && <th>Aksi</th>}</tr></thead>
+        <thead><tr><th>No</th><th>Gedung</th><th>Kamar</th><th>Karyawan</th><th>Status & Durasi Kebersihan</th>{admin && <th>Aksi</th>}</tr></thead>
         <tbody>{filteredRows.map((room, index) => <tr key={room.id}>
           <td>{index + 1}</td><td><b>Gedung {room.building}</b></td><td><b>Kamar {room.number}</b></td>
           <td><div className={styles.peopleCompact}>
@@ -102,7 +115,15 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
             </div>)}
             {!room.occupants.length && <span className={styles.noOccupant}>Belum ada penghuni</span>}
           </div></td>
-          <td><span className={room.cleanliness === 'SUDAH' ? styles.done : styles.pending}>{room.cleanliness === 'SUDAH' ? 'Sudah' : 'Belum'}</span></td>
+          <td><div className={styles.cleaningInfo}>
+            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : styles.pending}>{room.activeCleaning ? 'Sedang Dibersihkan' : room.cleanliness === 'SUDAH' ? 'Sudah' : 'Belum'}</span>
+            {room.lastCleaning && <>
+              <small><b>Petugas:</b> {room.lastCleaning.houseMan.name}</small>
+              <small><b>Mulai:</b> {formatCleaningTime(room.lastCleaning.startedAt)}</small>
+              {room.lastCleaning.finishedAt && <small><b>Selesai:</b> {formatCleaningTime(room.lastCleaning.finishedAt)}</small>}
+              <strong>Durasi {room.activeCleaning ? 'berjalan' : 'pembersihan'}: {room.activeCleaning ? 'Sedang dihitung' : formatDuration(room.lastCleaning.durationSec)}</strong>
+            </>}
+          </div></td>
           {admin && <td><div className={styles.actions}><button onClick={() => openEdit(room)}>Edit</button><button className={styles.danger} onClick={async () => { if (confirm(`Hapus Kamar ${room.number}?`)) { await messApi.deleteRoom(room.id); await load(); } }}>Hapus</button></div></td>}
         </tr>)}</tbody>
       </table>

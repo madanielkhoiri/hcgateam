@@ -11,6 +11,11 @@ function duration(start: string, now: number) {
   return `${String(Math.floor(seconds / 3600)).padStart(2, '0')}:${String(Math.floor(seconds % 3600 / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+function completedDuration(seconds?: number | null) {
+  if (seconds === null || seconds === undefined) return '-';
+  return `${String(Math.floor(seconds / 3600)).padStart(2, '0')}:${String(Math.floor(seconds % 3600 / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
 export default function Operations() {
   const [rows, setRows] = useState<MessRoom[]>([]);
   const [now, setNow] = useState(Date.now());
@@ -38,6 +43,12 @@ export default function Operations() {
     });
   }, [rows, query, filterBuilding, filterStatus]);
 
+  const groupedRows = useMemo(() => {
+    const known = BUILDINGS.map((building) => ({ building, rooms: filteredRows.filter((room) => room.building === building) })).filter((group) => group.rooms.length > 0);
+    const others = [...new Set(filteredRows.map((room) => room.building).filter((building) => !BUILDINGS.includes(building)))];
+    return [...known, ...others.map((building) => ({ building, rooms: filteredRows.filter((room) => room.building === building) }))];
+  }, [filteredRows]);
+
   async function act(room: MessRoom) {
     try {
       if (room.activeCleaning) await messApi.finish(room.id);
@@ -62,14 +73,20 @@ export default function Operations() {
       <button className={styles.filterReset} onClick={resetFilters} disabled={!query && filterBuilding === 'ALL' && filterStatus === 'ALL'}>Reset</button>
     </section>
     <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
-    <section className={styles.opsGrid}>
-      {filteredRows.map((room) => <article className={styles.roomCard} key={room.id}>
-        <div><small>GEDUNG {room.building} · KAMAR</small><h2>{room.number}</h2></div>
-        <span className={room.cleanliness === 'SUDAH' ? styles.done : styles.pending}>{room.cleanliness === 'SUDAH' ? 'Sudah' : 'Belum'}</span>
-        <p>{room.occupants.length} penghuni</p>
-        {room.activeCleaning && <div className={styles.timer}><small>Sedang dibersihkan oleh {room.activeCleaning.houseMan.name}</small><strong>{duration(room.activeCleaning.startedAt, now)}</strong></div>}
-        <button className={room.activeCleaning ? styles.finishButton : ''} onClick={() => act(room)}>{room.activeCleaning ? 'Selesai Bersihkan' : 'Mulai Bersihkan'}</button>
-      </article>)}
+    <section className={styles.buildingGroups}>
+      {groupedRows.map((group) => <section className={styles.buildingGroup} key={group.building}>
+        <header className={styles.buildingGroupHeader}><div><span>GEDUNG</span><h2>Gedung {group.building}</h2></div><strong>{group.rooms.length} kamar</strong></header>
+        <div className={styles.opsGrid}>
+          {group.rooms.map((room) => <article className={styles.roomCard} key={room.id}>
+            <div><small>KAMAR</small><h2>{room.number}</h2></div>
+            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : styles.pending}>{room.activeCleaning ? 'Sedang' : room.cleanliness === 'SUDAH' ? 'Sudah' : 'Belum'}</span>
+            <p>{room.occupants.length} penghuni</p>
+            {room.activeCleaning && <div className={styles.timer}><small>Sedang dibersihkan oleh {room.activeCleaning.houseMan.name}</small><strong>{duration(room.activeCleaning.startedAt, now)}</strong></div>}
+            {!room.activeCleaning && room.cleanliness === 'SUDAH' && room.lastCleaning?.finishedAt && <div className={styles.completedCleaning}><small>Terakhir dibersihkan oleh {room.lastCleaning.houseMan.name}</small><strong>{completedDuration(room.lastCleaning.durationSec)}</strong><small>Durasi pembersihan</small></div>}
+            <button className={room.activeCleaning ? styles.finishButton : ''} onClick={() => act(room)}>{room.activeCleaning ? 'Selesai Bersihkan' : 'Mulai Bersihkan'}</button>
+          </article>)}
+        </div>
+      </section>)}
     </section>
     {!rows.length && <div className={styles.empty}>Belum ada kamar untuk dibersihkan.</div>}
     {!!rows.length && !filteredRows.length && <div className={styles.empty}>Tidak ada kamar yang sesuai dengan filter.</div>}
