@@ -288,9 +288,15 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             : "inventory";
 
   const dalamCivilElectric = pathname.startsWith("/ga/inventory/civil-electric");
+  const dalamInventoryMess = pathname.startsWith("/ga/inventory/mess");
+  const dalamInventoryElectric = pathname.startsWith("/ga/inventory/electric");
 
   const sectionTitle = {
-    inventory: dalamCivilElectric ? "Inventory Electric" : "Inventory",
+    inventory: dalamCivilElectric || dalamInventoryElectric
+      ? "Inventory Electric"
+      : dalamInventoryMess
+        ? "Inventory Mess"
+        : "Inventory Infras",
     pekerjaan: "Pekerjaan",
     aktivitas: "Aktivitas Harian",
     potongRumput: "Potong Rumput",
@@ -317,7 +323,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
       ? { href: "/administrasi", label: "Kembali ke Administrasi" }
       : activeSection === "pekerjaan"
         ? { href: "/civil", label: "Kembali ke Civil" }
-        : dalamCivilElectric
+        : dalamCivilElectric || dalamInventoryElectric
           ? { href: "/civil", label: "Kembali ke Civil" }
           : { href: "/ga", label: "Pilihan GA" };
 
@@ -329,6 +335,18 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
 
       if (activeSection === "inventory" && dalamCivilElectric) {
         return group.id === "inventory-electric";
+      }
+
+      if (activeSection === "inventory" && dalamInventoryMess) {
+        return group.id === "inventory-mess";
+      }
+
+      if (activeSection === "inventory" && dalamInventoryElectric) {
+        return group.id === "inventory-electric";
+      }
+
+      if (activeSection === "inventory") {
+        return group.id === "dashboard" || group.id === "inventory";
       }
 
       return true;
