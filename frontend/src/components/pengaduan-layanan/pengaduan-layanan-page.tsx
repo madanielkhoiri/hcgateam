@@ -28,6 +28,12 @@ import { DaftarPengaduanTabel } from './daftar-pengaduan-tabel';
 import styles from './pengaduan-layanan.module.css';
 
 const DAFTAR_LOKASI: LokasiPengaduan[] = ['TAMBANG', 'MESS'];
+const LOKASI_TAMBANG = ['CSA MONTE BARU', 'CSA MONTE SUPPORT', 'CSA MONTE GIBSON', 'WORKSHOP', 'OFFICE PLANT', 'WAREHOUSE', 'OFFICE BARU', 'OFFICE LAMA', 'REFUELING SARANA', 'OFFICE FUEL'];
+const GEDUNG_MESS = ['1', '2', '3', 'A', 'B', 'C', 'D', 'E', 'F'];
+const KATEGORI = [
+  ['LISTRIK', '⚡'], ['AIR', '💧'], ['AC', '❄️'], ['FURNITURE', '🪑'], ['KEBERSIHAN', '🧹'],
+  ['KEAMANAN', '🛡️'], ['KAMAR MANDI', '🚿'], ['BANGUNAN', '🏠'], ['LAINNYA', '➕'],
+] as const;
 
 const ACCESS_KEY_PER_DIVISI: Record<DivisiPengaduan, string> = {
   HC: ACCESS_KEYS.HC,
@@ -49,6 +55,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [user, setUser] = useState<PortalUser | null>(null);
   const [langkah, setLangkah] = useState<Langkah>('rating');
   const [lokasi, setLokasi] = useState<LokasiPengaduan | null>(null);
+  const [nrpPelapor, setNrpPelapor] = useState('');
+  const [detailLokasi, setDetailLokasi] = useState('');
+  const [gedung, setGedung] = useState('');
+  const [lantai, setLantai] = useState('');
+  const [kamarArea, setKamarArea] = useState('');
+  const [kategori, setKategori] = useState('');
+  const [jenisLaporan, setJenisLaporan] = useState('');
   const [rating, setRating] = useState(0);
   const [komentar, setKomentar] = useState('');
   const [deskripsiAduan, setDeskripsiAduan] = useState('');
@@ -76,6 +89,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     }
 
     setUser(stored);
+    setNrpPelapor(stored.nrp ?? '');
   }, [divisi, router]);
 
   function lanjutKeAduan() {
@@ -109,6 +123,30 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
       setError('Pilih lokasi (Tambang atau Mess) terlebih dahulu.');
       return;
     }
+    if (butuhLokasi && !nrpPelapor.trim()) {
+      setError('NRP pelapor wajib diisi.');
+      return;
+    }
+    if (lokasi === 'TAMBANG' && !detailLokasi) {
+      setError('Pilih lokasi Tambang terlebih dahulu.');
+      return;
+    }
+    if (lokasi === 'MESS' && (!gedung || !lantai.trim() || !kamarArea.trim())) {
+      setError('Gedung, lantai, dan kamar/area Mess wajib diisi.');
+      return;
+    }
+    if (butuhLokasi && !kategori) {
+      setError('Pilih kategori laporan.');
+      return;
+    }
+    if (butuhLokasi && !jenisLaporan) {
+      setError('Pilih jenis laporan.');
+      return;
+    }
+    if (butuhLokasi && !deskripsiAduan.trim()) {
+      setError('Keluhan atau kerusakan wajib dijelaskan.');
+      return;
+    }
 
     if (foto.length === 0) {
       setError('Minimal 1 foto wajib dilampirkan.');
@@ -125,6 +163,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         komentar: komentar.trim() || undefined,
         deskripsiAduan: deskripsiAduan.trim() || undefined,
         lokasi: butuhLokasi ? lokasi ?? undefined : undefined,
+        nrpPelapor: butuhLokasi ? nrpPelapor.trim() : undefined,
+        detailLokasi: lokasi === 'TAMBANG' ? detailLokasi : undefined,
+        gedung: lokasi === 'MESS' ? gedung : undefined,
+        lantai: lokasi === 'MESS' ? lantai.trim() : undefined,
+        kamarArea: lokasi === 'MESS' ? kamarArea.trim() : undefined,
+        kategori: butuhLokasi ? kategori : undefined,
+        jenisLaporan: butuhLokasi ? jenisLaporan : undefined,
         foto,
       });
 
@@ -133,6 +178,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
       setKomentar('');
       setDeskripsiAduan('');
       setLokasi(null);
+      setNrpPelapor(user?.nrp ?? '');
+      setDetailLokasi('');
+      setGedung('');
+      setLantai('');
+      setKamarArea('');
+      setKategori('');
+      setJenisLaporan('');
       setFoto([]);
       setLangkah('rating');
     } catch (err) {
@@ -277,7 +329,10 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
                     key={item}
                     type="button"
                     className={`${styles.lokasiButton} ${lokasi === item ? styles.lokasiButtonAktif : ''}`}
-                    onClick={() => setLokasi(item)}
+                    onClick={() => {
+                      setLokasi(item);
+                      setDetailLokasi(''); setGedung(''); setLantai(''); setKamarArea('');
+                    }}
                   >
                     {LABEL_LOKASI_PENGADUAN[item]}
                   </button>
@@ -285,9 +340,67 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
               </div>
             )}
 
+            {butuhLokasi && lokasi && (
+              <div className={styles.detailFormGrid}>
+                <label className={styles.fieldGroup}>
+                  <span>NRP Pelapor</span>
+                  <input value={nrpPelapor} onChange={(e) => setNrpPelapor(e.target.value)} placeholder="Masukkan NRP" />
+                </label>
+
+                {lokasi === 'TAMBANG' ? (
+                  <label className={`${styles.fieldGroup} ${styles.fieldFull}`}>
+                    <span>Lokasi Tambang</span>
+                    <select value={detailLokasi} onChange={(e) => setDetailLokasi(e.target.value)}>
+                      <option value="">Pilih lokasi</option>
+                      {LOKASI_TAMBANG.map((item) => <option key={item} value={item}>{item}</option>)}
+                    </select>
+                  </label>
+                ) : (
+                  <>
+                    <label className={styles.fieldGroup}>
+                      <span>Gedung</span>
+                      <select value={gedung} onChange={(e) => setGedung(e.target.value)}>
+                        <option value="">Pilih gedung</option>
+                        {GEDUNG_MESS.map((item) => <option key={item} value={item}>Gedung {item}</option>)}
+                      </select>
+                    </label>
+                    <label className={styles.fieldGroup}>
+                      <span>Lantai</span>
+                      <input value={lantai} onChange={(e) => setLantai(e.target.value)} placeholder="Masukkan lantai" />
+                    </label>
+                    <label className={styles.fieldGroup}>
+                      <span>No. Kamar / Area</span>
+                      <input value={kamarArea} onChange={(e) => setKamarArea(e.target.value)} placeholder="Masukkan kamar / area" />
+                    </label>
+                  </>
+                )}
+
+                <div className={`${styles.fieldGroup} ${styles.fieldFull}`}>
+                  <span>Kategori</span>
+                  <div className={styles.kategoriGrid}>
+                    {KATEGORI.map(([nilai, ikon]) => (
+                      <button key={nilai} type="button" className={`${styles.kategoriButton} ${kategori === nilai ? styles.kategoriAktif : ''}`} onClick={() => setKategori(nilai)}>
+                        <b>{ikon}</b><small>{nilai}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label className={`${styles.fieldGroup} ${styles.fieldFull}`}>
+                  <span>Jenis Laporan</span>
+                  <select value={jenisLaporan} onChange={(e) => setJenisLaporan(e.target.value)}>
+                    <option value="">Pilih jenis laporan</option>
+                    <option value="NORMAL">Normal</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </label>
+              </div>
+            )}
+
             <textarea
               className={styles.komentar}
-              placeholder="Ceritakan masalah atau permintaan Anda (opsional)..."
+              placeholder="Jelaskan keluhan atau kerusakan..."
               value={deskripsiAduan}
               onChange={(event) => setDeskripsiAduan(event.target.value)}
               rows={4}

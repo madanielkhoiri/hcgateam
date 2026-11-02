@@ -572,6 +572,22 @@
   border-color: #0868f6;
 }
 
+.detailFormGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.fieldGroup { display: flex; flex-direction: column; gap: 6px; color: #344766; font-size: 12px; font-weight: 700; }
+.fieldGroup input, .fieldGroup select { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #d7e2ef; border-radius: 10px; background: #f8fafd; color: #10244a; font: inherit; outline: none; }
+.fieldGroup input:focus, .fieldGroup select:focus { border-color: #0868f6; }
+.fieldFull { grid-column: 1 / -1; }
+.kategoriGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.kategoriButton { display: flex; min-height: 58px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 1px solid #cfe0ef; border-radius: 10px; background: #f8fcff; color: #344766; cursor: pointer; }
+.kategoriButton b { font-size: 18px; }
+.kategoriButton small { font-size: 9px; font-weight: 800; }
+.kategoriAktif { color: #0868f6; border-color: #0868f6; background: #eef5ff; box-shadow: 0 0 0 1px #0868f6 inset; }
+
+@media (max-width: 560px) {
+  .detailFormGrid { grid-template-columns: 1fr; }
+  .fieldFull { grid-column: auto; }
+}
+
 .fotoWrap {
   display: flex;
   flex-direction: column;

@@ -31,6 +31,16 @@ function buatService(overrides: {
 }
 
 const FOTO_DUMMY = [{ urlFoto: 'pengaduan-layanan/x.jpg', namaFile: 'x.jpg' }];
+const ADUAN_GA_TAMBANG = {
+  divisi: DivisiPengaduan.GA,
+  rating: 4,
+  lokasi: LokasiPengaduan.TAMBANG,
+  nrpPelapor: '2600207',
+  detailLokasi: 'WORKSHOP',
+  kategori: 'AC',
+  jenisLaporan: 'HIGH',
+  deskripsiAduan: 'AC ruang kerja rusak',
+};
 
 describe('PengaduanLayananService.create', () => {
   it('menyimpan divisi, rating, lokasi, foto, dan pengirimId sesuai input (GA)', async () => {
@@ -38,11 +48,9 @@ describe('PengaduanLayananService.create', () => {
 
     await service.create(
       {
-        divisi: DivisiPengaduan.GA,
-        rating: 4,
+        ...ADUAN_GA_TAMBANG,
         komentar: '  Cepat tanggap  ',
         deskripsiAduan: '  AC ruang kerja rusak  ',
-        lokasi: LokasiPengaduan.TAMBANG,
       },
       18,
       FOTO_DUMMY,
@@ -55,6 +63,13 @@ describe('PengaduanLayananService.create', () => {
         komentar: 'Cepat tanggap',
         deskripsiAduan: 'AC ruang kerja rusak',
         lokasi: LokasiPengaduan.TAMBANG,
+        nrpPelapor: '2600207',
+        detailLokasi: 'WORKSHOP',
+        gedung: null,
+        lantai: null,
+        kamarArea: null,
+        kategori: 'AC',
+        jenisLaporan: 'HIGH',
         pengirimId: 18,
         foto: { create: FOTO_DUMMY },
       },
@@ -97,7 +112,7 @@ describe('PengaduanLayananService.create', () => {
     const { service, create } = buatService();
 
     await service.create(
-      { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
+      { ...ADUAN_GA_TAMBANG, komentar: '   ' },
       1,
       FOTO_DUMMY,
     );
@@ -109,7 +124,7 @@ describe('PengaduanLayananService.create', () => {
     const { service, create } = buatService();
 
     await service.create(
-      { divisi: DivisiPengaduan.GA, rating: 5, lokasi: LokasiPengaduan.MESS },
+      { divisi: DivisiPengaduan.HC, rating: 5, deskripsiAduan: '   ' },
       1,
       FOTO_DUMMY,
     );

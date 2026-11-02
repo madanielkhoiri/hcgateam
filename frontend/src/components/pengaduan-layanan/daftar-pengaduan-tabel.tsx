@@ -148,8 +148,10 @@ export function DaftarPengaduanTabel({
               <th>Tanggal</th>
               <th>Pengirim</th>
               <th>Lokasi</th>
+              <th>Kategori / Jenis</th>
               <th>Komentar</th>
               <th>Aduan Layanan</th>
+              <th>Foto</th>
               <th>Status</th>
               <th>Progress</th>
               {bolehKelolaStatus && <th>Aksi</th>}
@@ -165,8 +167,13 @@ export function DaftarPengaduanTabel({
                     year: 'numeric',
                   }).format(new Date(item.createdAt))}
                 </td>
-                <td>{item.pengirim}</td>
-                <td>{item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}</td>
+                <td>{item.pengirim}<br /><small>{item.nrpPelapor ? `NRP ${item.nrpPelapor}` : ''}</small></td>
+                <td>
+                  {item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}
+                  {item.detailLokasi && <><br /><small>{item.detailLokasi}</small></>}
+                  {item.gedung && <><br /><small>Gedung {item.gedung}, Lantai {item.lantai}, {item.kamarArea}</small></>}
+                </td>
+                <td>{item.kategori || '-'}<br /><small>{item.jenisLaporan || ''}</small></td>
                 <td>{item.komentar || '-'}</td>
                 <td>{item.deskripsiAduan || '-'}</td>
                 <td>

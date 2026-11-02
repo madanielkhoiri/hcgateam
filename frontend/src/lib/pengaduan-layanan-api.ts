@@ -27,6 +27,13 @@ export type BuatPengaduanInput = {
   deskripsiAduan?: string;
   /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC. */
   lokasi?: LokasiPengaduan;
+  nrpPelapor?: string;
+  detailLokasi?: string;
+  gedung?: string;
+  lantai?: string;
+  kamarArea?: string;
+  kategori?: string;
+  jenisLaporan?: string;
   /** Wajib minimal 1 foto — bukti/ilustrasi Aduan Layanan. */
   foto: File[];
 };
@@ -44,6 +51,13 @@ export type DetailPengaduan = {
   deskripsiAduan: string | null;
   foto: FotoPengaduan[];
   lokasi: LokasiPengaduan | null;
+  nrpPelapor: string | null;
+  detailLokasi: string | null;
+  gedung: string | null;
+  lantai: string | null;
+  kamarArea: string | null;
+  kategori: string | null;
+  jenisLaporan: string | null;
   status: StatusPengaduan;
   progress: number;
   catatanAdmin: string | null;
@@ -112,6 +126,13 @@ export const pengaduanLayananApi = {
     if (input.komentar) form.append('komentar', input.komentar);
     if (input.deskripsiAduan) form.append('deskripsiAduan', input.deskripsiAduan);
     if (input.lokasi) form.append('lokasi', input.lokasi);
+    if (input.nrpPelapor) form.append('nrpPelapor', input.nrpPelapor);
+    if (input.detailLokasi) form.append('detailLokasi', input.detailLokasi);
+    if (input.gedung) form.append('gedung', input.gedung);
+    if (input.lantai) form.append('lantai', input.lantai);
+    if (input.kamarArea) form.append('kamarArea', input.kamarArea);
+    if (input.kategori) form.append('kategori', input.kategori);
+    if (input.jenisLaporan) form.append('jenisLaporan', input.jenisLaporan);
     input.foto.forEach((file) => form.append('foto', file));
 
     const response = await fetch(`${API_URL}/pengaduan-layanan`, {

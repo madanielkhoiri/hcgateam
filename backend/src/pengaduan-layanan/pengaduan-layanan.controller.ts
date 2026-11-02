@@ -119,6 +119,13 @@ export class PengaduanLayananController {
     @Body('komentar') komentar: string | undefined,
     @Body('deskripsiAduan') deskripsiAduan: string | undefined,
     @Body('lokasi') lokasiRaw: string | undefined,
+    @Body('nrpPelapor') nrpPelapor: string | undefined,
+    @Body('detailLokasi') detailLokasi: string | undefined,
+    @Body('gedung') gedung: string | undefined,
+    @Body('lantai') lantai: string | undefined,
+    @Body('kamarArea') kamarArea: string | undefined,
+    @Body('kategori') kategori: string | undefined,
+    @Body('jenisLaporan') jenisLaporan: string | undefined,
     @UploadedFiles() foto?: Express.Multer.File[],
   ) {
     const dto: CreatePengaduanLayananDto = {
@@ -127,6 +134,13 @@ export class PengaduanLayananController {
       komentar,
       deskripsiAduan,
       lokasi: validasiLokasi(lokasiRaw),
+      nrpPelapor,
+      detailLokasi,
+      gedung,
+      lantai,
+      kamarArea,
+      kategori,
+      jenisLaporan,
     };
 
     const fotoTersimpan = (foto ?? []).map((berkas) => ({

@@ -6,6 +6,13 @@ import { UbahStatusPengaduanLayananDto } from './dto/ubah-status-pengaduan-layan
 import { WebPushService } from '../web-push/web-push.service';
 
 const JUMLAH_BULAN_TREN = 6;
+const LOKASI_TAMBANG = new Set([
+  'CSA MONTE BARU', 'CSA MONTE SUPPORT', 'CSA MONTE GIBSON', 'WORKSHOP',
+  'OFFICE PLANT', 'WAREHOUSE', 'OFFICE BARU', 'OFFICE LAMA',
+  'REFUELING SARANA', 'OFFICE FUEL',
+]);
+const KATEGORI_ADUAN = new Set(['LISTRIK', 'AIR', 'AC', 'FURNITURE', 'KEBERSIHAN', 'KEAMANAN', 'KAMAR MANDI', 'BANGUNAN', 'LAINNYA']);
+const JENIS_LAPORAN = new Set(['NORMAL', 'HIGH', 'URGENT']);
 
 @Injectable()
 export class PengaduanLayananService {
@@ -25,6 +32,25 @@ export class PengaduanLayananService {
       throw new BadRequestException('Lokasi (Tambang/Mess) wajib dipilih untuk divisi GA/Civil');
     }
 
+    if (butuhLokasi && !dto.nrpPelapor?.trim()) {
+      throw new BadRequestException('NRP pelapor wajib diisi');
+    }
+    if (butuhLokasi && dto.lokasi === 'TAMBANG' && !LOKASI_TAMBANG.has(dto.detailLokasi?.trim().toUpperCase() ?? '')) {
+      throw new BadRequestException('Lokasi Tambang wajib dipilih dari daftar yang tersedia');
+    }
+    if (butuhLokasi && dto.lokasi === 'MESS' && (!dto.gedung?.trim() || !dto.lantai?.trim() || !dto.kamarArea?.trim())) {
+      throw new BadRequestException('Gedung, lantai, dan kamar/area Mess wajib diisi');
+    }
+    if (butuhLokasi && !KATEGORI_ADUAN.has(dto.kategori?.trim().toUpperCase() ?? '')) {
+      throw new BadRequestException('Kategori laporan wajib dipilih');
+    }
+    if (butuhLokasi && !JENIS_LAPORAN.has(dto.jenisLaporan?.trim().toUpperCase() ?? '')) {
+      throw new BadRequestException('Jenis laporan wajib dipilih');
+    }
+    if (butuhLokasi && !dto.deskripsiAduan?.trim()) {
+      throw new BadRequestException('Keluhan atau kerusakan wajib dijelaskan');
+    }
+
     if (foto.length === 0) {
       throw new BadRequestException('Minimal 1 foto wajib dilampirkan pada Aduan Layanan');
     }
@@ -36,6 +62,13 @@ export class PengaduanLayananService {
         komentar: dto.komentar?.trim() || null,
         deskripsiAduan: dto.deskripsiAduan?.trim() || null,
         lokasi: butuhLokasi ? dto.lokasi : null,
+        nrpPelapor: butuhLokasi ? dto.nrpPelapor?.trim() : null,
+        detailLokasi: dto.lokasi === 'TAMBANG' ? dto.detailLokasi?.trim().toUpperCase() : null,
+        gedung: dto.lokasi === 'MESS' ? dto.gedung?.trim().toUpperCase() : null,
+        lantai: dto.lokasi === 'MESS' ? dto.lantai?.trim() : null,
+        kamarArea: dto.lokasi === 'MESS' ? dto.kamarArea?.trim() : null,
+        kategori: butuhLokasi ? dto.kategori?.trim().toUpperCase() : null,
+        jenisLaporan: butuhLokasi ? dto.jenisLaporan?.trim().toUpperCase() : null,
         pengirimId,
         foto: { create: foto },
       },
@@ -134,6 +167,13 @@ export class PengaduanLayananService {
         deskripsiAduan: item.deskripsiAduan,
         foto: item.foto,
         lokasi: item.lokasi,
+        nrpPelapor: item.nrpPelapor,
+        detailLokasi: item.detailLokasi,
+        gedung: item.gedung,
+        lantai: item.lantai,
+        kamarArea: item.kamarArea,
+        kategori: item.kategori,
+        jenisLaporan: item.jenisLaporan,
         status: item.status,
         progress: item.progress,
         catatanAdmin: item.catatanAdmin,

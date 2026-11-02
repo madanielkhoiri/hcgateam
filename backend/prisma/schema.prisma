@@ -3497,6 +3497,13 @@ model PengaduanLayanan {
    */
   deskripsiAduan String?          @map("deskripsi_aduan") @db.Text
   lokasi         LokasiPengaduan?
+  nrpPelapor     String?          @map("nrp_pelapor")
+  detailLokasi   String?          @map("detail_lokasi")
+  gedung         String?
+  lantai         String?
+  kamarArea      String?          @map("kamar_area")
+  kategori       String?
+  jenisLaporan   String?          @map("jenis_laporan")
   status         StatusPengaduan  @default(MENUNGGU)
   progress       Int              @default(0)
   catatanAdmin   String?          @map("catatan_admin") @db.Text
