@@ -149,7 +149,7 @@ export function DaftarPengaduanTabel({
             <tr>
               <th>Tanggal</th>
               <th>Pengirim</th>
-              <th>Lokasi</th>
+              <th>Area Laporan</th>
               <th>Kategori / Jenis</th>
               <th>Komentar</th>
               <th>Aduan Layanan</th>
@@ -171,9 +171,16 @@ export function DaftarPengaduanTabel({
                 </td>
                 <td>{item.namaPelapor || item.pengirim}<br /><small>{item.nrpPelapor ? `NRP ${item.nrpPelapor}` : ''}</small></td>
                 <td>
-                  {item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}
-                  {item.detailLokasi && <><br /><small>{item.detailLokasi}</small></>}
-                  {item.gedung && <><br /><small>Gedung {item.gedung}, Lantai {item.lantai}, {item.kamarArea}</small></>}
+                  {item.lokasi === 'TAMBANG' ? (
+                    <><strong>Tambang</strong><br /><small>Lokasi: {item.detailLokasi || '-'}</small></>
+                  ) : item.lokasi === 'MESS' ? (
+                    <>
+                      <strong>Mess</strong><br />
+                      <small>Gedung {item.gedung || '-'} &bull; Lantai {item.lantai || '-'} &bull; Kamar/Area {item.kamarArea || '-'}</small>
+                    </>
+                  ) : (
+                    item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'
+                  )}
                 </td>
                 <td>{item.kategori || '-'}<br /><small>{item.jenisLaporan || ''}</small></td>
                 <td>{item.komentar || '-'}</td>

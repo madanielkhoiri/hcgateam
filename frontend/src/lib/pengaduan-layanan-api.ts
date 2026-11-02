@@ -11,8 +11,7 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 /** Role yang boleh lihat rekap performa & kelola (approve/hold/reject) Aduan Layanan — samakan dengan backend PengaduanLayananAksesService. */
-export const ROLE_GROUP_LEADER_PENGADUAN = ['GRUP_LEADER_IR', 'GRUP_LEADER_COMBEN', 'GRUP_LEADER_GA', 'GRUP_LEADER_RND'];
-export const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD', ...ROLE_GROUP_LEADER_PENGADUAN];
+export const ROLE_BOLEH_LIHAT_REKAP = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 export const ROLE_BOLEH_LIHAT_ADUAN = [...ROLE_BOLEH_LIHAT_REKAP, 'KORLAP', 'ELEKTRIK'];
 export const ROLE_BOLEH_KELOLA_ADUAN = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 

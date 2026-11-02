@@ -17,7 +17,6 @@ import {
   LABEL_DIVISI_PENGADUAN,
   LABEL_LOKASI_PENGADUAN,
   ROLE_BOLEH_LIHAT_REKAP,
-  ROLE_BOLEH_LIHAT_ADUAN,
   type DivisiPengaduan,
   type LokasiPengaduan,
 } from '@/lib/pengaduan-layanan-api';
@@ -198,19 +197,13 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   }
 
   const bolehLihatRekap = ROLE_BOLEH_LIHAT_REKAP.includes(user.role);
-  const bolehLihatAduan = ROLE_BOLEH_LIHAT_ADUAN.includes(user.role);
   const labelDivisi = LABEL_DIVISI_PENGADUAN[divisi];
 
   // Admin/Section Head/Elektrik/Korlap punya tabel kelola Aduan Layanan di
   // halaman ini juga — silang cukup tutup popup-nya, jangan dilempar keluar
   // ke menu utama divisi seperti karyawan biasa (yang memang datang dari sana).
   function tutupPopup() {
-    if (bolehLihatAduan) {
-      setPopupTutup(true);
-      return;
-    }
-
-    router.push(HALAMAN_MENU_PER_DIVISI[divisi]);
+    setPopupTutup(true);
   }
 
   return (
@@ -232,10 +225,10 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             </div>
           </div>
 
-          {bolehLihatRekap && popupTutup && (
+          {popupTutup && (
             <button type="button" className={styles.rekapButton} onClick={() => setPopupTutup(false)}>
               <MessageSquareHeart size={16} />
-              Beri Penilaian
+              Buat Aduan
             </button>
           )}
 
@@ -247,7 +240,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           )}
         </div>
 
-        {bolehLihatRekap && <DaftarPengaduanTabel divisi={divisi} />}
+        <DaftarPengaduanTabel divisi={divisi} />
       </div>
 
       {popupAnim.mounted && (
@@ -256,7 +249,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         {terkirim ? (
           <div className={styles.sukses}>
             <div className={styles.popupHeaderKanan}>
-              <button type="button" onClick={lanjutKeAduan} className={styles.popupCloseInline} title="Lewati penilaian dan lanjut ke aduan">
+              <button type="button" onClick={tutupPopup} className={styles.popupCloseInline} title="Tutup">
                 <X size={16} />
               </button>
             </div>
@@ -278,7 +271,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
           <div className={styles.formCard}>
             <div className={styles.popupHeader}>
               <span className={styles.formLabel}>Beri rating pelayanan</span>
-              <button type="button" onClick={tutupPopup} className={styles.popupCloseInline} title="Tutup">
+              <button type="button" onClick={lanjutKeAduan} className={styles.popupCloseInline} title="Lewati penilaian dan lanjut ke aduan">
                 <X size={16} />
               </button>
             </div>

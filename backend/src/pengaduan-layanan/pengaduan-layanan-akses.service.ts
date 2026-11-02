@@ -12,10 +12,6 @@ const ROLE_BOLEH_LIHAT_REKAP: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
-  UserRole.GRUP_LEADER_IR,
-  UserRole.GRUP_LEADER_COMBEN,
-  UserRole.GRUP_LEADER_GA,
-  UserRole.GRUP_LEADER_RND,
 ];
 const ROLE_BOLEH_KELOLA_STATUS: UserRole[] = [
   UserRole.ADMIN,
@@ -28,7 +24,7 @@ const ROLE_BOLEH_LIHAT_ADUAN: UserRole[] = [
   UserRole.ELEKTRIK,
 ];
 
-const PESAN_TOLAK = 'Rekap performa hanya dapat diakses Admin, Section Head, dan Admin HC';
+const PESAN_TOLAK = 'Rekap performa hanya dapat diakses Admin dan Section Head';
 
 @Injectable()
 export class PengaduanLayananAksesService {

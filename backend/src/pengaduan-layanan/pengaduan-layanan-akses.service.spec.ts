@@ -9,10 +9,6 @@ describe('PengaduanLayananAksesService', () => {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
     UserRole.SECTION_HEAD,
-    UserRole.GRUP_LEADER_IR,
-    UserRole.GRUP_LEADER_COMBEN,
-    UserRole.GRUP_LEADER_GA,
-    UserRole.GRUP_LEADER_RND,
   ])('mengizinkan role %s melihat rekap performa', (role) => {
     expect(() => akses.wajibBolehLihatRekap(role)).not.toThrow();
   });
@@ -44,8 +40,8 @@ describe('PengaduanLayananAksesService', () => {
     UserRole.GRUP_LEADER_COMBEN,
     UserRole.GRUP_LEADER_GA,
     UserRole.GRUP_LEADER_RND,
-  ])('Group Leader %s dapat melihat rekap tetapi tidak dapat mengubah status', (role) => {
-    expect(() => akses.wajibBolehLihatRekap(role)).not.toThrow();
+  ])('Group Leader %s tidak dapat melihat rekap atau mengubah status', (role) => {
+    expect(() => akses.wajibBolehLihatRekap(role)).toThrow(ForbiddenException);
     expect(() => akses.wajibBolehKelolaStatus(role)).toThrow(ForbiddenException);
   });
 });
