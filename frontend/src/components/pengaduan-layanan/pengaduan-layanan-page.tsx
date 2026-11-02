@@ -6,11 +6,9 @@ import { ArrowLeft, BarChart3, CheckCircle2, ImagePlus, MessageSquareHeart, X } 
 import { useEffect, useRef, useState } from 'react';
 import { useAnimatedVisibility } from '@/components/animated-modal/use-animated-visibility';
 import {
-  ACCESS_KEYS,
   clearSession,
   getAccessToken,
   getStoredUser,
-  hasAccess,
   type PortalUser,
 } from '@/lib/access-control';
 import {
@@ -20,7 +18,6 @@ import {
   LABEL_LOKASI_PENGADUAN,
   ROLE_BOLEH_LIHAT_REKAP,
   ROLE_BOLEH_LIHAT_ADUAN,
-  ROLE_GROUP_LEADER_PENGADUAN,
   type DivisiPengaduan,
   type LokasiPengaduan,
 } from '@/lib/pengaduan-layanan-api';
@@ -35,12 +32,6 @@ const KATEGORI = [
   ['LISTRIK', '⚡'], ['AIR', '💧'], ['AC', '❄️'], ['FURNITURE', '🪑'], ['KEBERSIHAN', '🧹'],
   ['KEAMANAN', '🛡️'], ['KAMAR MANDI', '🚿'], ['BANGUNAN', '🏠'], ['LAINNYA', '➕'],
 ] as const;
-
-const ACCESS_KEY_PER_DIVISI: Record<DivisiPengaduan, string> = {
-  HC: ACCESS_KEYS.HC,
-  GA: ACCESS_KEYS.GA,
-  CIVIL: ACCESS_KEYS.CIVIL,
-};
 
 const HALAMAN_MENU_PER_DIVISI: Record<DivisiPengaduan, string> = {
   HC: '/hc',
@@ -82,11 +73,6 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     if (!token || !stored) {
       clearSession();
       router.replace('/login');
-      return;
-    }
-
-    if (!hasAccess(stored, ACCESS_KEY_PER_DIVISI[divisi]) && !ROLE_GROUP_LEADER_PENGADUAN.includes(stored.role)) {
-      router.replace(HALAMAN_MENU_PER_DIVISI[divisi]);
       return;
     }
 
