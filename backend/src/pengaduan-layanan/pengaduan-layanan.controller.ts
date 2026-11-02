@@ -46,11 +46,13 @@ function validasiDivisi(raw: string | undefined): DivisiPengaduan {
   throw new BadRequestException('Divisi wajib salah satu dari HC, GA, CIVIL');
 }
 
-function validasiRating(raw: string | undefined): number {
+function validasiRating(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+
   const rating = Number(raw);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new BadRequestException('Rating wajib angka 1-5');
+    throw new BadRequestException('Rating harus berupa angka 1-5');
   }
 
   return rating;

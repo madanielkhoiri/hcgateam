@@ -22,7 +22,7 @@ export type StatusPengaduan = 'MENUNGGU' | 'DISETUJUI' | 'DITAHAN' | 'DITOLAK' |
 
 export type BuatPengaduanInput = {
   divisi: DivisiPengaduan;
-  rating: number;
+  rating?: number;
   /** Catatan pengalaman saat kasih rating (step 1). */
   komentar?: string;
   /** Deskripsi masalah/permintaan Aduan Layanan (step 2). */
@@ -49,7 +49,7 @@ export type FotoPengaduan = {
 
 export type DetailPengaduan = {
   id: number;
-  rating: number;
+  rating: number | null;
   komentar: string | null;
   deskripsiAduan: string | null;
   foto: FotoPengaduan[];
@@ -126,7 +126,7 @@ export const pengaduanLayananApi = {
   kirim: async (input: BuatPengaduanInput): Promise<void> => {
     const form = new FormData();
     form.append('divisi', input.divisi);
-    form.append('rating', String(input.rating));
+    if (input.rating) form.append('rating', String(input.rating));
     if (input.komentar) form.append('komentar', input.komentar);
     if (input.deskripsiAduan) form.append('deskripsiAduan', input.deskripsiAduan);
     if (input.lokasi) form.append('lokasi', input.lokasi);

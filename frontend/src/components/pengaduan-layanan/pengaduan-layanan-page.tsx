@@ -82,11 +82,6 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   }, [divisi, router]);
 
   function lanjutKeAduan() {
-    if (rating < 1) {
-      setError('Pilih rating bintang terlebih dahulu.');
-      return;
-    }
-
     setError('');
     setLangkah('aduan');
   }
@@ -152,7 +147,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     try {
       await pengaduanLayananApi.kirim({
         divisi,
-        rating,
+        rating: rating || undefined,
         komentar: komentar.trim() || undefined,
         deskripsiAduan: deskripsiAduan.trim() || undefined,
         lokasi: butuhLokasi ? lokasi ?? undefined : undefined,
@@ -261,7 +256,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         {terkirim ? (
           <div className={styles.sukses}>
             <div className={styles.popupHeaderKanan}>
-              <button type="button" onClick={tutupPopup} className={styles.popupCloseInline} title="Tutup">
+              <button type="button" onClick={lanjutKeAduan} className={styles.popupCloseInline} title="Lewati penilaian dan lanjut ke aduan">
                 <X size={16} />
               </button>
             </div>
@@ -302,7 +297,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
             {error && <p className={styles.error}>{error}</p>}
 
             <button type="button" className={styles.tombolKirim} onClick={lanjutKeAduan}>
-              Lanjut
+              {rating > 0 ? 'Lanjut ke Aduan' : 'Lewati & Buat Aduan'}
             </button>
           </div>
         ) : (

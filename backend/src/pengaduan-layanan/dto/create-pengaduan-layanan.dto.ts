@@ -19,7 +19,7 @@ export class CreatePengaduanLayananDto {
   kamarArea?: string;
   kategori?: string;
   jenisLaporan?: string;
-  rating: number;
+  rating?: number;
   komentar?: string;
   deskripsiAduan?: string;
 }

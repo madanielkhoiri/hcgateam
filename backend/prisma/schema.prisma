@@ -3487,7 +3487,7 @@ enum StatusPengaduan {
 model PengaduanLayanan {
   id             Int              @id @default(autoincrement())
   divisi         DivisiPengaduan
-  rating         Int
+  rating         Int?
   /**
    * Catatan pengalaman saat kasih rating (step 1).
    */

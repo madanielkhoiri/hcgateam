@@ -135,9 +135,12 @@ export class PengaduanLayananService {
     });
 
     const jumlahPengaduan = daftarBulanIni.length;
-    const rataRata = jumlahPengaduan
-      ? daftarBulanIni.reduce((total, item) => total + item.rating, 0) /
-        jumlahPengaduan
+    const daftarDenganRating = daftarBulanIni.filter(
+      (item): item is typeof item & { rating: number } => item.rating !== null,
+    );
+    const rataRata = daftarDenganRating.length
+      ? daftarDenganRating.reduce((total, item) => total + item.rating, 0) /
+        daftarDenganRating.length
       : 0;
 
     const distribusiBintang: Record<1 | 2 | 3 | 4 | 5, number> = {
@@ -148,7 +151,7 @@ export class PengaduanLayananService {
       5: 0,
     };
 
-    for (const item of daftarBulanIni) {
+    for (const item of daftarDenganRating) {
       const bintang = item.rating as 1 | 2 | 3 | 4 | 5;
       if (distribusiBintang[bintang] !== undefined) {
         distribusiBintang[bintang] += 1;
@@ -222,9 +225,10 @@ export class PengaduanLayananService {
 
       const punyaBulanIni = data.filter(
         (item) =>
+          item.rating !== null &&
           item.createdAt.getMonth() === bulanIni &&
           item.createdAt.getFullYear() === tahunIni,
-      );
+      ) as Array<(typeof data)[number] & { rating: number }>;
 
       const rataRata = punyaBulanIni.length
         ? punyaBulanIni.reduce((total, item) => total + item.rating, 0) /
