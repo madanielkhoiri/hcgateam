@@ -35,6 +35,9 @@ export class PengaduanLayananService {
     if (butuhLokasi && !dto.nrpPelapor?.trim()) {
       throw new BadRequestException('NRP pelapor wajib diisi');
     }
+    if (butuhLokasi && !dto.namaPelapor?.trim()) {
+      throw new BadRequestException('Nama pelapor wajib diisi');
+    }
     if (butuhLokasi && dto.lokasi === 'TAMBANG' && !LOKASI_TAMBANG.has(dto.detailLokasi?.trim().toUpperCase() ?? '')) {
       throw new BadRequestException('Lokasi Tambang wajib dipilih dari daftar yang tersedia');
     }
@@ -63,6 +66,7 @@ export class PengaduanLayananService {
         deskripsiAduan: dto.deskripsiAduan?.trim() || null,
         lokasi: butuhLokasi ? dto.lokasi : null,
         nrpPelapor: butuhLokasi ? dto.nrpPelapor?.trim() : null,
+        namaPelapor: butuhLokasi ? dto.namaPelapor?.trim() : null,
         detailLokasi: dto.lokasi === 'TAMBANG' ? dto.detailLokasi?.trim().toUpperCase() : null,
         gedung: dto.lokasi === 'MESS' ? dto.gedung?.trim().toUpperCase() : null,
         lantai: dto.lokasi === 'MESS' ? dto.lantai?.trim() : null,
@@ -168,6 +172,7 @@ export class PengaduanLayananService {
         foto: item.foto,
         lokasi: item.lokasi,
         nrpPelapor: item.nrpPelapor,
+        namaPelapor: item.namaPelapor,
         detailLokasi: item.detailLokasi,
         gedung: item.gedung,
         lantai: item.lantai,

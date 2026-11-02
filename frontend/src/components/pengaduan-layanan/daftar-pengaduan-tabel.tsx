@@ -8,11 +8,13 @@
 // ==================================================
 
 import { useEffect, useState } from 'react';
+import { getStoredUser } from '@/lib/access-control';
 import {
   pengaduanLayananApi,
   PengaduanLayananApiError,
   LABEL_LOKASI_PENGADUAN,
   LABEL_STATUS_PENGADUAN,
+  ROLE_BOLEH_KELOLA_ADUAN,
   urlFotoPengaduan,
   type DivisiPengaduan,
   type RekapPengaduan,
@@ -38,7 +40,7 @@ export function DaftarPengaduanTabel({
   bulan?: number;
   tahun?: number;
 }) {
-  const bolehKelolaStatus = divisi === 'GA';
+  const bolehKelolaStatus = divisi === 'GA' && ROLE_BOLEH_KELOLA_ADUAN.includes(getStoredUser()?.role ?? '');
   const [rekap, setRekap] = useState<RekapPengaduan | null>(null);
   const [error, setError] = useState('');
   const [memuat, setMemuat] = useState(true);
@@ -167,7 +169,7 @@ export function DaftarPengaduanTabel({
                     year: 'numeric',
                   }).format(new Date(item.createdAt))}
                 </td>
-                <td>{item.pengirim}<br /><small>{item.nrpPelapor ? `NRP ${item.nrpPelapor}` : ''}</small></td>
+                <td>{item.namaPelapor || item.pengirim}<br /><small>{item.nrpPelapor ? `NRP ${item.nrpPelapor}` : ''}</small></td>
                 <td>
                   {item.lokasi ? LABEL_LOKASI_PENGADUAN[item.lokasi] : '-'}
                   {item.detailLokasi && <><br /><small>{item.detailLokasi}</small></>}

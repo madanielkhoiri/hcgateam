@@ -120,6 +120,7 @@ export class PengaduanLayananController {
     @Body('deskripsiAduan') deskripsiAduan: string | undefined,
     @Body('lokasi') lokasiRaw: string | undefined,
     @Body('nrpPelapor') nrpPelapor: string | undefined,
+    @Body('namaPelapor') namaPelapor: string | undefined,
     @Body('detailLokasi') detailLokasi: string | undefined,
     @Body('gedung') gedung: string | undefined,
     @Body('lantai') lantai: string | undefined,
@@ -135,6 +136,7 @@ export class PengaduanLayananController {
       deskripsiAduan,
       lokasi: validasiLokasi(lokasiRaw),
       nrpPelapor,
+      namaPelapor,
       detailLokasi,
       gedung,
       lantai,
@@ -176,7 +178,12 @@ export class PengaduanLayananController {
     @Query('bulan') bulanRaw?: string,
     @Query('tahun') tahunRaw?: string,
   ) {
-    const bolehLihatSemua = ([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.KORLAP, UserRole.ELEKTRIK] as UserRole[]).includes(request.user.role);
+    const bolehLihatSemua = ([
+      UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD,
+      UserRole.KORLAP, UserRole.ELEKTRIK,
+      UserRole.GRUP_LEADER_IR, UserRole.GRUP_LEADER_COMBEN,
+      UserRole.GRUP_LEADER_GA, UserRole.GRUP_LEADER_RND,
+    ] as UserRole[]).includes(request.user.role);
     return this.service.daftar(validasiDivisi(divisiRaw), bulanRaw ? Number(bulanRaw) : undefined, tahunRaw ? Number(tahunRaw) : undefined, bolehLihatSemua ? undefined : request.user.id);
   }
 

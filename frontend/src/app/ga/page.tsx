@@ -33,6 +33,7 @@ import {
 } from '@/lib/access-control';
 import { MenuTree, type MenuTreeNode } from '@/components/menu-tree/menu-tree';
 import { ProfileMenu } from '@/components/profile-menu/profile-menu';
+import { ambilRingkasanApproval, type RingkasanApproval } from '@/lib/approval-summary-api';
 import styles from './ga.module.css';
 
 const API_URL =
@@ -312,6 +313,11 @@ const gaTree: MenuTreeNode[] = [
 export default function GaPage() {
   const router = useRouter();
   const [user, setUser] = useState<PortalUser | null>(null);
+  const [approval, setApproval] = useState<RingkasanApproval | null>(null);
+
+  useEffect(() => {
+    void ambilRingkasanApproval().then(setApproval);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -383,8 +389,13 @@ export default function GaPage() {
       const children = node.children?.map(filterNode).filter((item): item is MenuTreeNode => item !== null);
       return children ? { ...node, children } : node;
     };
-    return gaTree.map(filterNode).filter((item): item is MenuTreeNode => item !== null);
-  }, [user?.role]);
+    const denganBadge = (node: MenuTreeNode): MenuTreeNode => ({
+      ...node,
+      pendingCount: node.key === 'GA_AKTIVITAS_HARIAN' ? approval?.dailyActivities : node.pendingCount,
+      children: node.children?.map(denganBadge),
+    });
+    return gaTree.map(filterNode).filter((item): item is MenuTreeNode => item !== null).map(denganBadge);
+  }, [user?.role, approval]);
 
   if (!user) {
     return <main className={styles.page}>Memuat pilihan GA...</main>;

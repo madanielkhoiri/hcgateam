@@ -130,6 +130,15 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       throw new ForbiddenException('Group Leader tidak memiliki akses pengelolaan ke domain ini');
     }
 
+    // Group Leader GA merupakan approver seluruh modul GA dan Civil. Akun
+    // lama tetap dapat approve walaupun daftar accessKeys belum tersinkron.
+    if (
+      user?.role === UserRole.GRUP_LEADER_GA &&
+      requiredAccessKeys.some((key) => aksesSesuaiDomainGroupLeader(user.role, key))
+    ) {
+      return true;
+    }
+
     const ownedAccessKeys = user.accessKeys ?? [];
 
     const punyaAkses = requiredAccessKeys.some((key) =>

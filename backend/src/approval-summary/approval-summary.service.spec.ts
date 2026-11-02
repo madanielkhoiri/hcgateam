@@ -9,6 +9,7 @@ function buatService(overrides: {
   deklarasiCount?: jest.Mock;
   notaCount?: jest.Mock;
   saldoCount?: jest.Mock;
+  dailyActivityCount?: jest.Mock;
 } = {}) {
   const workOrderCount = overrides.workOrderCount ?? jest.fn().mockResolvedValue(0);
   const suratCount = overrides.suratCount ?? jest.fn().mockResolvedValue(0);
@@ -16,6 +17,7 @@ function buatService(overrides: {
   const deklarasiCount = overrides.deklarasiCount ?? jest.fn().mockResolvedValue(0);
   const notaCount = overrides.notaCount ?? jest.fn().mockResolvedValue(0);
   const saldoCount = overrides.saldoCount ?? jest.fn().mockResolvedValue(0);
+  const dailyActivityCount = overrides.dailyActivityCount ?? jest.fn().mockResolvedValue(0);
   const prisma = {
     workOrder: { count: workOrderCount },
     suratTugasDinas: { count: suratCount },
@@ -36,11 +38,23 @@ function buatService(overrides: {
     deklarasi: { count: deklarasiCount },
     nota: { count: notaCount },
     saldo: { count: saldoCount },
+    dailyActivity: { count: dailyActivityCount },
   } as unknown as PrismaService;
   const service = new ApprovalSummaryService(prisma);
 
-  return { service, workOrderCount, suratCount, epromCounts, deklarasiCount, notaCount, saldoCount };
+  return { service, workOrderCount, suratCount, epromCounts, deklarasiCount, notaCount, saldoCount, dailyActivityCount };
 }
+
+describe('ApprovalSummaryService.ringkasan — Aktivitas Harian GA', () => {
+  it.each([UserRole.ADMIN, UserRole.SECTION_HEAD, UserRole.GRUP_LEADER_GA])(
+    'role %s mendapat badge aktivitas yang menunggu approval', async (role) => {
+      const { service, dailyActivityCount } = buatService({ dailyActivityCount: jest.fn().mockResolvedValue(3) });
+      const hasil = await service.ringkasan({ role });
+      expect(dailyActivityCount).toHaveBeenCalledWith({ where: { approvalStatus: 'PENDING' } });
+      expect(hasil.dailyActivities).toBe(3);
+    },
+  );
+});
 
 describe('ApprovalSummaryService.ringkasan — Work Order', () => {
   it('GRUP_LEADER cuma dihitung dari tahap MENUNGGU_GL', async () => {
@@ -48,6 +62,12 @@ describe('ApprovalSummaryService.ringkasan — Work Order', () => {
 
     await service.ringkasan({ role: UserRole.GRUP_LEADER });
 
+    expect(workOrderCount).toHaveBeenCalledWith({ where: { statusApproval: 'MENUNGGU_GL' } });
+  });
+
+  it('GRUP_LEADER_GA mendapat badge Work Order tahap GL', async () => {
+    const { service, workOrderCount } = buatService();
+    await service.ringkasan({ role: UserRole.GRUP_LEADER_GA });
     expect(workOrderCount).toHaveBeenCalledWith({ where: { statusApproval: 'MENUNGGU_GL' } });
   });
 
@@ -109,7 +129,7 @@ describe('ApprovalSummaryService.ringkasan — Surat Tugas Dinas', () => {
 });
 
 describe('ApprovalSummaryService.ringkasan — e-ProM', () => {
-  it.each([UserRole.OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD])(
+  it.each([UserRole.OWNER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.GRUP_LEADER_GA])(
     'role %s (setara Owner) ikut menjumlahkan pending dari semua jenis dokumen e-ProM',
     async (role) => {
       const { service, epromCounts } = buatService({ epromCounts: jest.fn().mockResolvedValue(2) });

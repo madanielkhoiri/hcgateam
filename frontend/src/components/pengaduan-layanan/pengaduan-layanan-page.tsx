@@ -20,6 +20,7 @@ import {
   LABEL_LOKASI_PENGADUAN,
   ROLE_BOLEH_LIHAT_REKAP,
   ROLE_BOLEH_LIHAT_ADUAN,
+  ROLE_GROUP_LEADER_PENGADUAN,
   type DivisiPengaduan,
   type LokasiPengaduan,
 } from '@/lib/pengaduan-layanan-api';
@@ -56,6 +57,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   const [langkah, setLangkah] = useState<Langkah>('rating');
   const [lokasi, setLokasi] = useState<LokasiPengaduan | null>(null);
   const [nrpPelapor, setNrpPelapor] = useState('');
+  const [namaPelapor, setNamaPelapor] = useState('');
   const [detailLokasi, setDetailLokasi] = useState('');
   const [gedung, setGedung] = useState('');
   const [lantai, setLantai] = useState('');
@@ -83,13 +85,14 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
       return;
     }
 
-    if (!hasAccess(stored, ACCESS_KEY_PER_DIVISI[divisi])) {
+    if (!hasAccess(stored, ACCESS_KEY_PER_DIVISI[divisi]) && !ROLE_GROUP_LEADER_PENGADUAN.includes(stored.role)) {
       router.replace(HALAMAN_MENU_PER_DIVISI[divisi]);
       return;
     }
 
     setUser(stored);
     setNrpPelapor(stored.nrp ?? '');
+    setNamaPelapor(stored.name ?? '');
   }, [divisi, router]);
 
   function lanjutKeAduan() {
@@ -125,6 +128,10 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
     }
     if (butuhLokasi && !nrpPelapor.trim()) {
       setError('NRP pelapor wajib diisi.');
+      return;
+    }
+    if (butuhLokasi && !namaPelapor.trim()) {
+      setError('Nama pelapor pada akun belum tersedia.');
       return;
     }
     if (lokasi === 'TAMBANG' && !detailLokasi) {
@@ -164,6 +171,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
         deskripsiAduan: deskripsiAduan.trim() || undefined,
         lokasi: butuhLokasi ? lokasi ?? undefined : undefined,
         nrpPelapor: butuhLokasi ? nrpPelapor.trim() : undefined,
+        namaPelapor: butuhLokasi ? namaPelapor.trim() : undefined,
         detailLokasi: lokasi === 'TAMBANG' ? detailLokasi : undefined,
         gedung: lokasi === 'MESS' ? gedung : undefined,
         lantai: lokasi === 'MESS' ? lantai.trim() : undefined,
@@ -179,6 +187,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
       setDeskripsiAduan('');
       setLokasi(null);
       setNrpPelapor(user?.nrp ?? '');
+      setNamaPelapor(user?.name ?? '');
       setDetailLokasi('');
       setGedung('');
       setLantai('');
@@ -340,11 +349,15 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
               </div>
             )}
 
-            {butuhLokasi && lokasi && (
+            {butuhLokasi && (
               <div className={styles.detailFormGrid}>
                 <label className={styles.fieldGroup}>
                   <span>NRP Pelapor</span>
-                  <input value={nrpPelapor} onChange={(e) => setNrpPelapor(e.target.value)} placeholder="Masukkan NRP" />
+                  <input value={nrpPelapor} readOnly placeholder="NRP dari akun" />
+                </label>
+                <label className={styles.fieldGroup}>
+                  <span>Nama Pelapor</span>
+                  <input value={namaPelapor} readOnly placeholder="Nama dari akun" />
                 </label>
 
                 {lokasi === 'TAMBANG' ? (
@@ -355,7 +368,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
                       {LOKASI_TAMBANG.map((item) => <option key={item} value={item}>{item}</option>)}
                     </select>
                   </label>
-                ) : (
+                ) : lokasi === 'MESS' ? (
                   <>
                     <label className={styles.fieldGroup}>
                       <span>Gedung</span>
@@ -373,7 +386,7 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
                       <input value={kamarArea} onChange={(e) => setKamarArea(e.target.value)} placeholder="Masukkan kamar / area" />
                     </label>
                   </>
-                )}
+                ) : null}
 
                 <div className={`${styles.fieldGroup} ${styles.fieldFull}`}>
                   <span>Kategori</span>

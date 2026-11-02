@@ -10,6 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export type RingkasanApproval = {
   workOrders: number;
+  dailyActivities: number;
   suratTugasDinas: number;
   eprom: number;
   deklarasiPengajuan: number;
@@ -19,6 +20,7 @@ export type RingkasanApproval = {
 
 const KOSONG: RingkasanApproval = {
   workOrders: 0,
+  dailyActivities: 0,
   suratTugasDinas: 0,
   eprom: 0,
   deklarasiPengajuan: 0,

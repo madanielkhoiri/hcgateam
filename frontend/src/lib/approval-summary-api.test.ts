@@ -3,6 +3,7 @@ import { ambilRingkasanApproval } from "./approval-summary-api";
 
 const KOSONG = {
  workOrders: 0,
+ dailyActivities: 0,
  suratTugasDinas: 0,
  eprom: 0,
  deklarasiPengajuan: 0,

@@ -565,6 +565,7 @@ export class DailyActivitiesService {
     const allowedRoles: UserRole[] = [
       UserRole.SECTION_HEAD,
       UserRole.GRUP_LEADER,
+      UserRole.GRUP_LEADER_GA,
       UserRole.ADMIN,
     ];
 

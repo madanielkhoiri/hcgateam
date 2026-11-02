@@ -12,6 +12,15 @@ const ROLE_BOLEH_LIHAT_REKAP: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
+  UserRole.GRUP_LEADER_IR,
+  UserRole.GRUP_LEADER_COMBEN,
+  UserRole.GRUP_LEADER_GA,
+  UserRole.GRUP_LEADER_RND,
+];
+const ROLE_BOLEH_KELOLA_STATUS: UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.SECTION_HEAD,
 ];
 const ROLE_BOLEH_LIHAT_ADUAN: UserRole[] = [
   ...ROLE_BOLEH_LIHAT_REKAP,
@@ -37,7 +46,7 @@ export class PengaduanLayananAksesService {
 
   /** Approve/Hold/Reject pengaduan — peran sama dengan yang boleh lihat rekap. */
   wajibBolehKelolaStatus(role: UserRole): void {
-    if (!ROLE_BOLEH_LIHAT_REKAP.includes(role)) {
+    if (!ROLE_BOLEH_KELOLA_STATUS.includes(role)) {
       throw new ForbiddenException(PESAN_TOLAK);
     }
   }

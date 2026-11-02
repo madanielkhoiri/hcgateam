@@ -214,6 +214,12 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return false;
   }
 
+  // Group Leader GA adalah approver lintas modul GA dan Civil. Jangan
+  // bergantung pada accessKeys lama akun yang mungkin belum tersinkron.
+  if (user.role === 'GRUP_LEADER_GA' && aturanGroupLeader(accessKey)) {
+    return true;
+  }
+
   const keys = user.accessKeys ?? [];
   if (keys.includes(accessKey) || keys.includes('ALL')) return true;
   // A child permission also opens its department card (e.g. HC_MCU -> HC).

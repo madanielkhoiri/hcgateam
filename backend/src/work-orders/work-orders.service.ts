@@ -61,7 +61,7 @@ export class WorkOrdersService {
     }
 
     if (statusApproval === StatusApprovalWorkOrder.MENUNGGU_GL) {
-      return aktor.role === UserRole.GRUP_LEADER;
+      return aktor.role === UserRole.GRUP_LEADER || aktor.role === UserRole.GRUP_LEADER_GA;
     }
 
     if (statusApproval === StatusApprovalWorkOrder.MENUNGGU_SH) {

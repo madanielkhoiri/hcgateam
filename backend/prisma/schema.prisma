@@ -3498,6 +3498,7 @@ model PengaduanLayanan {
   deskripsiAduan String?          @map("deskripsi_aduan") @db.Text
   lokasi         LokasiPengaduan?
   nrpPelapor     String?          @map("nrp_pelapor")
+  namaPelapor    String?          @map("nama_pelapor")
   detailLokasi   String?          @map("detail_lokasi")
   gedung         String?
   lantai         String?

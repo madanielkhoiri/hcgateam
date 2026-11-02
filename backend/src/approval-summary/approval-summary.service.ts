@@ -16,7 +16,7 @@
 // ==================================================
 
 import { Injectable } from '@nestjs/common';
-import { StatusApprovalEprom, StatusApprovalWorkOrder, StatusSuratTugas, UserRole } from '@prisma/client';
+import { DailyApprovalStatus, StatusApprovalEprom, StatusApprovalWorkOrder, StatusSuratTugas, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ROLE_PENYETUJU_DEKLARASI } from '../deklarasi-dinas/bantuan/deklarasi-akses.bantuan';
 
@@ -29,6 +29,7 @@ const ROLE_EPROM_APPROVER: UserRole[] = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
   UserRole.SECTION_HEAD,
+  UserRole.GRUP_LEADER_GA,
 ];
 
 @Injectable()
@@ -36,9 +37,10 @@ export class ApprovalSummaryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async ringkasan(aktor: AktorRingkasApproval) {
-    const [workOrders, suratTugasDinas, eprom, deklarasiPengajuan, deklarasiNota, deklarasiSaldo] =
+    const [workOrders, dailyActivities, suratTugasDinas, eprom, deklarasiPengajuan, deklarasiNota, deklarasiSaldo] =
       await Promise.all([
         this.hitungWorkOrder(aktor),
+        this.hitungDailyActivity(aktor),
         this.hitungSuratTugasDinas(aktor),
         this.hitungEprom(aktor),
         this.hitungDeklarasiPengajuan(aktor),
@@ -46,7 +48,16 @@ export class ApprovalSummaryService {
         this.hitungDeklarasiSaldo(aktor),
       ]);
 
-    return { workOrders, suratTugasDinas, eprom, deklarasiPengajuan, deklarasiNota, deklarasiSaldo };
+    return { workOrders, dailyActivities, suratTugasDinas, eprom, deklarasiPengajuan, deklarasiNota, deklarasiSaldo };
+  }
+
+  private async hitungDailyActivity(aktor: AktorRingkasApproval): Promise<number> {
+    const approver: UserRole[] = [
+      UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD,
+      UserRole.GRUP_LEADER, UserRole.GRUP_LEADER_GA,
+    ];
+    if (!approver.includes(aktor.role)) return 0;
+    return this.prisma.dailyActivity.count({ where: { approvalStatus: DailyApprovalStatus.PENDING } });
   }
 
   /** GL lihat MENUNGGU_GL, SH lihat MENUNGGU_SH, PJO lihat MENUNGGU_PJO. Admin lihat semua tahap. */
@@ -72,7 +83,7 @@ export class ApprovalSummaryService {
   }
 
   private tahapWorkOrderUntukRole(role: UserRole): StatusApprovalWorkOrder | null {
-    if (role === UserRole.GRUP_LEADER) return StatusApprovalWorkOrder.MENUNGGU_GL;
+    if (role === UserRole.GRUP_LEADER || role === UserRole.GRUP_LEADER_GA) return StatusApprovalWorkOrder.MENUNGGU_GL;
     if (role === UserRole.SECTION_HEAD) return StatusApprovalWorkOrder.MENUNGGU_SH;
     if (role === UserRole.PJO) return StatusApprovalWorkOrder.MENUNGGU_PJO;
     return null;

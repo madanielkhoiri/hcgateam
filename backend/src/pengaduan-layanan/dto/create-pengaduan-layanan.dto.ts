@@ -12,6 +12,7 @@ export class CreatePengaduanLayananDto {
   /** Wajib untuk divisi GA/CIVIL, tidak berlaku untuk HC — divalidasi di service. */
   lokasi?: LokasiPengaduan;
   nrpPelapor?: string;
+  namaPelapor?: string;
   detailLokasi?: string;
   gedung?: string;
   lantai?: string;

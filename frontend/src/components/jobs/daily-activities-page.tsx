@@ -352,6 +352,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
   const canApprove =
     user?.role === "SECTION_HEAD" ||
     user?.role === "GRUP_LEADER" ||
+    user?.role === "GRUP_LEADER_GA" ||
     user?.role === "ADMIN";
 
   function imageUrl(path: string): string {
