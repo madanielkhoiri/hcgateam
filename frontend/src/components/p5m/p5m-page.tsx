@@ -944,8 +944,34 @@ export default function P5mPage() {
                     <input type="date" required value={openForm.activityDate} onChange={(event) => setOpenForm((current) => ({ ...current, activityDate: event.target.value }))} />
                   </label>
                   <label>
-                    <span>Jam Mulai Absensi</span>
-                    <input type="time" required value={openForm.startTime} onChange={(event) => setOpenForm((current) => ({ ...current, startTime: event.target.value }))} />
+                    <span>Jam Mulai Absensi (24 Jam)</span>
+                    <div className={styles.inlineInput}>
+                      <select
+                        aria-label="Jam mulai"
+                        value={openForm.startTime.split(":")[0]}
+                        onChange={(event) => setOpenForm((current) => ({
+                          ...current,
+                          startTime: `${event.target.value}:${current.startTime.split(":")[1] || "00"}`,
+                        }))}
+                      >
+                        {Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0")).map((hour) => (
+                          <option key={hour} value={hour}>{hour}</option>
+                        ))}
+                      </select>
+                      <strong>:</strong>
+                      <select
+                        aria-label="Menit mulai"
+                        value={openForm.startTime.split(":")[1] || "00"}
+                        onChange={(event) => setOpenForm((current) => ({
+                          ...current,
+                          startTime: `${current.startTime.split(":")[0] || "00"}:${event.target.value}`,
+                        }))}
+                      >
+                        {Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0")).map((minute) => (
+                          <option key={minute} value={minute}>{minute}</option>
+                        ))}
+                      </select>
+                    </div>
                   </label>
                   <label className={styles.fullField}>
                     <span>Lokasi</span>
