@@ -85,6 +85,12 @@ type FormState = {
   notes: string;
 };
 
+type OpenFormState = {
+  activityDate: string;
+  location: string;
+  startTime: string;
+};
+
 const initialSupervisors = [
   "Akhmad Nurul Fahmi",
   "Arief Ahmad Fauzi",
@@ -125,6 +131,24 @@ function emptyForm(): FormState {
     participants: "",
     topic: "",
     notes: "",
+  };
+}
+
+function currentTimeValue() {
+  return new Date()
+    .toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    .replace(".", ":");
+}
+
+function emptyOpenForm(): OpenFormState {
+  return {
+    activityDate: todayValue(),
+    location: "",
+    startTime: currentTimeValue(),
   };
 }
 
@@ -215,6 +239,8 @@ export default function P5mPage() {
   const [message, setMessage] = useState("");
 
   const [formOpen, setFormOpen] = useState(false);
+  const [openFormVisible, setOpenFormVisible] = useState(false);
+  const [openForm, setOpenForm] = useState<OpenFormState>(emptyOpenForm);
   const [editingRow, setEditingRow] = useState<P5mRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<P5mRow | null>(null);
 
@@ -317,16 +343,63 @@ export default function P5mPage() {
     }));
   }
 
-  function openCreate() {
-    setEditingRow(null);
-    setForm(emptyForm());
-    setSelectedSupervisors([]);
-    setSelectedSupervisor("");
-    setManualSupervisor("");
-    setDocumentationPaths([]);
+  function showOpenP5m() {
+    setOpenForm(emptyOpenForm());
     setError("");
     setMessage("");
-    setFormOpen(true);
+    setOpenFormVisible(true);
+  }
+
+  async function createAndOpenP5m(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const createResponse = await fetch(`${API_URL}/p5m`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          activityDate: openForm.activityDate,
+          location: openForm.location.trim(),
+          speaker: "",
+          participants: "",
+          topic: "Menunggu hasil pelaksanaan P5M",
+          supervisors: [],
+          documentationPaths: [],
+        }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error(await readError(createResponse));
+      }
+
+      const created = (await createResponse.json()) as P5mRow;
+      const openResponse = await fetch(`${API_URL}/p5m/${created.id}/open`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ startTime: openForm.startTime }),
+      });
+
+      if (!openResponse.ok) {
+        throw new Error(await readError(openResponse));
+      }
+
+      setOpenFormVisible(false);
+      setMessage("P5M dibuka. Karyawan sudah dapat melakukan absensi.");
+      await loadData(1);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "P5M gagal dibuka.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function openEdit(row: P5mRow) {
@@ -462,6 +535,10 @@ export default function P5mPage() {
     try {
       if (!selectedSupervisors.length) {
         throw new Error("Minimal satu pengawas wajib dipilih.");
+      }
+
+      if (!documentationPaths.length) {
+        throw new Error("Minimal satu foto dokumentasi wajib diunggah.");
       }
 
       const payload = {
@@ -658,9 +735,9 @@ export default function P5mPage() {
           </div>
         </div>
 
-        {canManage && <button className={styles.primaryButton} onClick={openCreate}>
+        {canManage && <button className={styles.primaryButton} onClick={showOpenP5m}>
           <Plus size={18} />
-          Tambah P5M
+          Open P5M
         </button>}
       </section>
 
@@ -767,9 +844,9 @@ export default function P5mPage() {
                       </td>
                       <td>
                         <div className={styles.actions}>
-                          {canManage && row.status !== "CLOSED" && (
+                          {canManage && row.status === "OPEN" && (
                             <button className={styles.viewButton} type="button" onClick={() => void sessionAction(row, row.status === "OPEN" ? "close" : "open")}>
-                              {row.status === "OPEN" ? "Tutup" : "Buka"}
+                              Tutup P5M
                             </button>
                           )}
                           {canManage && (
@@ -780,7 +857,7 @@ export default function P5mPage() {
                               {row.attendances?.length ? "Sudah Absen" : "Isi Absensi"}
                             </button>
                           )}
-                          {canManage && <button
+                          {canManage && row.status === "CLOSED" && row.speaker && row.topic !== "Menunggu hasil pelaksanaan P5M" && row.documentationPaths.length > 0 && <button
                             className={styles.viewButton}
                             title="Buka PDF"
                             type="button"
@@ -789,13 +866,13 @@ export default function P5mPage() {
                             <FileDown size={16} />
                           </button>}
 
-                          {canManage && <button
+                          {canManage && row.status === "CLOSED" && <button
                             className={styles.editButton}
-                            title="Edit"
+                            title="Lengkapi hasil P5M"
                             type="button"
                             onClick={() => openEdit(row)}
                           >
-                            <Edit3 size={16} />
+                            <Edit3 size={16} /> Lengkapi Hasil
                           </button>}
 
                           <button
@@ -847,13 +924,53 @@ export default function P5mPage() {
         </div>
       </section>
 
+      {openFormVisible && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.formModal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Open P5M</h2>
+                <p>Buka sesi absensi terlebih dahulu. Data pelaksanaan dilengkapi setelah P5M selesai.</p>
+              </div>
+              <button className={styles.closeButton} type="button" onClick={() => setOpenFormVisible(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={createAndOpenP5m}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGrid}>
+                  <label>
+                    <span>Tanggal P5M</span>
+                    <input type="date" required value={openForm.activityDate} onChange={(event) => setOpenForm((current) => ({ ...current, activityDate: event.target.value }))} />
+                  </label>
+                  <label>
+                    <span>Jam Mulai Absensi</span>
+                    <input type="time" required value={openForm.startTime} onChange={(event) => setOpenForm((current) => ({ ...current, startTime: event.target.value }))} />
+                  </label>
+                  <label className={styles.fullField}>
+                    <span>Lokasi</span>
+                    <input required value={openForm.location} placeholder="Lokasi pelaksanaan P5M" onChange={(event) => setOpenForm((current) => ({ ...current, location: event.target.value }))} />
+                  </label>
+                </div>
+              </div>
+              <div className={styles.modalFooter}>
+                <button className={styles.secondaryButton} type="button" onClick={() => setOpenFormVisible(false)}>Batal</button>
+                <button className={styles.primaryButton} type="submit" disabled={saving}>
+                  {saving ? "Membuka..." : "Buka Absensi P5M"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {formOpen && (
         <div className={styles.modalBackdrop}>
           <div className={styles.formModal}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>{editingRow ? "Edit P5M" : "Tambah P5M"}</h2>
-                <p>Lengkapi data safety meeting sebelum pekerjaan.</p>
+                <h2>Lengkapi Hasil P5M</h2>
+                <p>Isi penyaji, materi, pengawas, catatan, dan dokumentasi setelah pelaksanaan selesai.</p>
               </div>
 
               <button
@@ -893,7 +1010,7 @@ export default function P5mPage() {
                   </label>
 
                   <label className={styles.fullField}>
-                    <span>Pemateri</span>
+                    <span>Penyaji / Pemateri</span>
                     <input
                       value={form.speaker}
                       required
