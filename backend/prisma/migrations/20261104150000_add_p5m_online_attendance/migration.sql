@@ -39,5 +39,5 @@ CREATE UNIQUE INDEX "p5m_attendances_meeting_id_user_id_key" ON "p5m_attendances
 CREATE INDEX "p5m_attendances_meeting_id_submitted_at_idx" ON "p5m_attendances"("meeting_id", "submitted_at");
 CREATE INDEX "p5m_attendances_user_id_idx" ON "p5m_attendances"("user_id");
 ALTER TABLE "p5m_attendances" ADD CONSTRAINT "p5m_attendances_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "p5m_meetings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "p5m_attendances" ADD CONSTRAINT "p5m_attendances_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "p5m_attendances" ADD CONSTRAINT "p5m_attendances_reviewed_by_id_fkey" FOREIGN KEY ("reviewed_by_id") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "p5m_attendances" ADD CONSTRAINT "p5m_attendances_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "p5m_attendances" ADD CONSTRAINT "p5m_attendances_reviewed_by_id_fkey" FOREIGN KEY ("reviewed_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
