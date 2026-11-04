@@ -66,7 +66,7 @@ export class McuKaryawanService {
     private readonly whatsapp: WhatsappService,
   ) {}
 
-  async importMasterExcel(buffer: Buffer, replace = false) {
+  async importMasterExcel(buffer: Buffer) {
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
     const sheet = workbook.Sheets['PPA ADW'];
     if (!sheet) throw new BadRequestException('Sheet PPA ADW tidak ditemukan');
@@ -114,10 +114,19 @@ export class McuKaryawanService {
         const row = await tx.departemen.upsert({ where: { namaDepartemen: name }, update: { aktif: true }, create: { namaDepartemen: name, aktif: true } });
         map.set(name, row.id);
       }
-      if (replace) await tx.karyawan.deleteMany({});
+      const nikTerdaftar = new Set(
+        (await tx.karyawan.findMany({ select: { nik: true } })).map((item) => item.nik.trim()),
+      );
+      const nikDiproses = new Set<string>();
       let inserted = 0;
+      let skipped = 0;
       for (const r of data) {
         const nik = clean(at(r, 'NRP'));
+        if (nikTerdaftar.has(nik) || nikDiproses.has(nik)) {
+          skipped++;
+          continue;
+        }
+        nikDiproses.add(nik);
         const nama = clean(at(r, 'NAMA'));
         const jabatan = clean(at(r, 'JABATAN')) || null;
         const email = clean(at(r, 'EMAIL')) || null;
@@ -131,10 +140,11 @@ export class McuKaryawanService {
           ? await tx.user.update({ where: { id: akunLama.id }, data: { name: nama, nrp: nik, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN, accessKeys: sanitizeAccessKeys([...akunLama.accessKeys, ...aksesDasar]) } })
           : await tx.user.create({ data: { name: nama, username: nik, nrp: nik, passwordHash: await bcrypt.hash(nik, 12), role: UserRole.KARYAWAN, accessKeys: aksesDasar, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN } });
         const payload = { nik, nama, gender: gender(at(r, 'GENDER')), departemenId: map.get(dept(at(r, 'DEPT.'))!)!, jabatan, email, noTelepon, statusKerja, akunId: akun.id };
-        await tx.karyawan.upsert({ where: { nik }, update: payload, create: payload });
+        await tx.karyawan.create({ data: payload });
+        nikTerdaftar.add(nik);
         inserted++;
       }
-      return { inserted, departments: names };
+      return { inserted, skipped, totalRows: data.length, departments: names };
     }, { maxWait: 30000, timeout: 600000 });
     return result;
   }

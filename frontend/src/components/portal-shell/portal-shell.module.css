@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   color: #10244a;
-  background: #f3f7fc;
+  background: var(--page-bg);
   transition: grid-template-columns 0.22s ease;
   width: 100%;
   max-width: 100vw;
@@ -89,13 +89,13 @@
 }
 .mainNavigationItem:hover,
 .menuItem:hover {
-  color: #08794a;
-  background: #f0f9f4;
+  color: var(--teal-hover);
+  background: var(--teal-soft);
 }
 .menuItemActive {
-  color: #078648;
-  background: #e7f7ee;
-  box-shadow: inset 3px 0 #0a9f59;
+  color: var(--teal-hover);
+  background: var(--teal-soft);
+  box-shadow: inset 3px 0 var(--teal);
 }
 .navigationLabel {
   margin: 21px 13px 9px;
@@ -131,7 +131,7 @@
   font-weight: 700;
   cursor: pointer;
 }
-.collapseButton:hover { color: #08794a; background: #edf8f2; }
+.collapseButton:hover { color: var(--teal-hover); background: var(--teal-soft); }
 .contentArea {
   min-width: 0;
   width: 100%;
@@ -158,25 +158,25 @@
 .topHeaderLeft span { color: #8392a8; font-size: 10px; font-weight: 700; }
 .topHeaderLeft strong { color: #15335c; font-size: 17px; }
 .mobileMenuButton { display: none; }
-.headerProfile { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border:0; border-radius: 14px; background:#f1f6ff; cursor: pointer; }
-.headerProfile:hover { background:#eaf2ff; }
+.headerProfile { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border:0; border-radius: 14px; background:var(--teal-soft); cursor: pointer; }
+.headerProfile:hover { background:#d9f3ef; }
 .profileArrow { color:#607895; transition:transform .16s ease; }
 .profileArrowOpen { color:#607895; transform:rotate(90deg); transition:transform .16s ease; }
 .profileDropdown { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; display: grid; min-width: 290px; padding: 14px 18px; border: 1px solid #d8e4f2; border-radius: 18px; background: #fff; box-shadow: 0 18px 38px rgba(15,35,70,.16); }
-.profileDropdownHeader { display: flex; align-items: center; gap: 12px; padding: 8px 2px 12px; color: #0868f6; }
+.profileDropdownHeader { display: flex; align-items: center; gap: 12px; padding: 8px 2px 12px; color: var(--primary); }
 .profileDropdownHeader span, .profileDropdown a span, .profileDropdown button span { display: grid; gap: 3px; }
 .profileDropdownHeader strong, .profileDropdown a strong, .profileDropdown button strong { color: #18355e; font-size: 13px; }
 .profileDropdownHeader small, .profileDropdown a small, .profileDropdown button small { color: #8190a5; font-size: 10px; }
 .profileDivider { height: 1px; margin: 4px 0; background: #e2eaf3; }
-.profileDropdown a, .profileDropdown button { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border: 0; background: none; color: #0868f6; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.profileDropdown a, .profileDropdown button { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border: 0; background: none; color: var(--primary); font: inherit; text-align: left; text-decoration:none; cursor:pointer; }
 .profileDropdown .logoutDropdown { color: #e32635; }
 .profileAvatar {
   width: 41px;
   height: 41px;
   display: grid;
   place-items: center;
-  color: #0870e6;
-  background: #eaf2ff;
+  color: var(--primary);
+  background: var(--primary-soft);
   border-radius: 50%;
 }
 .headerProfile > div { display: flex; flex-direction: column; gap: 3px; }

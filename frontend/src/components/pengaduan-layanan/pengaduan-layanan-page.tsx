@@ -40,7 +40,15 @@ const HALAMAN_MENU_PER_DIVISI: Record<DivisiPengaduan, string> = {
 
 type Langkah = 'rating' | 'aduan';
 
-export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
+export function PengaduanLayananPage({
+  divisi,
+  terpusat = false,
+  onPilihDivisi,
+}: {
+  divisi: DivisiPengaduan;
+  terpusat?: boolean;
+  onPilihDivisi?: (divisi: DivisiPengaduan) => void;
+}) {
   const router = useRouter();
   const butuhLokasi = divisi !== 'HC';
   const [user, setUser] = useState<PortalUser | null>(null);
@@ -209,9 +217,30 @@ export function PengaduanLayananPage({ divisi }: { divisi: DivisiPengaduan }) {
   return (
     <main className={styles.page}>
       <div className={styles.container}>
-        <Link href={HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.backButton}>
+        {terpusat && (
+          <section className={styles.divisionSelector}>
+            <div>
+              <strong>Tujuan Pengaduan</strong>
+              <span>Pilih layanan yang ingin diberi penilaian atau aduan.</span>
+            </div>
+            <div className={styles.divisionTabs}>
+              {(['HC', 'GA', 'CIVIL'] as DivisiPengaduan[]).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`${styles.divisionTab} ${item === divisi ? styles.divisionTabActive : ''}`}
+                  onClick={() => onPilihDivisi?.(item)}
+                >
+                  {LABEL_DIVISI_PENGADUAN[item]}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <Link href={terpusat ? '/dashboard' : HALAMAN_MENU_PER_DIVISI[divisi]} className={styles.backButton}>
           <ArrowLeft size={16} />
-          Kembali ke {labelDivisi}
+          {terpusat ? 'Kembali ke Dashboard' : `Kembali ke ${labelDivisi}`}
         </Link>
 
         <div className={styles.headerRow}>

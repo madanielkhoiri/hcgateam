@@ -9,6 +9,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -197,5 +198,14 @@ export class PengaduanLayananController {
   ) {
     this.akses.wajibBolehKelolaStatus(request.user.role);
     return this.service.ubahStatus(id, dto, request.user.id);
+  }
+
+  @Delete(':id')
+  hapus(
+    @Req() request: AuthRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    this.akses.wajibBolehKelolaStatus(request.user.role);
+    return this.service.hapus(id);
   }
 }

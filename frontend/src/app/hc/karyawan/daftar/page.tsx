@@ -211,9 +211,9 @@ export default function DaftarKaryawanPage() {
   }
 
   async function importExcel(file: File) {
-    if (!confirm('Import Excel akan mengganti data karyawan saat ini. Lanjutkan?')) return;
+    if (!confirm('Import Excel akan menambahkan NRP baru. NRP yang sudah terdaftar akan dilewati. Lanjutkan?')) return;
     setProses(true); setGalat(null); setSukses(null);
-    try { const hasil = await karyawanApi.importExcel(file); setSukses(`${hasil.inserted} data karyawan berhasil diimport`); await muat(); }
+    try { const hasil = await karyawanApi.importExcel(file); setSukses(`${hasil.inserted} karyawan baru ditambahkan, ${hasil.skipped} NRP yang sudah ada/duplikat dilewati.`); await muat(); }
     catch (error) { setGalat((error as Error).message); }
     finally { setProses(false); }
   }

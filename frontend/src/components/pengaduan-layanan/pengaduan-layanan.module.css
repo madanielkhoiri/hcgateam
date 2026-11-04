@@ -14,6 +14,55 @@
   gap: 18px;
 }
 
+.divisionSelector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #d7e5f4;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(16, 36, 74, 0.06);
+}
+
+.divisionSelector > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.divisionSelector strong {
+  font-size: 14px;
+}
+
+.divisionSelector span {
+  color: #657895;
+  font-size: 12px;
+}
+
+.divisionTabs {
+  display: flex;
+  gap: 7px;
+}
+
+.divisionTab {
+  min-width: 72px;
+  padding: 9px 14px;
+  color: #34506f;
+  background: #f5f9fd;
+  border: 1px solid #d2e0ef;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.divisionTabActive {
+  color: #ffffff;
+  background: linear-gradient(135deg, #1268d6, #078d87);
+  border-color: transparent;
+}
+
 .backButton {
   display: inline-flex;
   align-items: center;
@@ -449,10 +498,16 @@
 }
 
 .aksiGroup {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(66px, 1fr));
   gap: 5px;
+}
+
+.kolomAksi { min-width: 174px; }
+
+.aksiStack {
+  display: grid;
+  gap: 7px;
 }
 
 .tombolAksi {
@@ -497,6 +552,19 @@
 
 .tombolReject:hover:not(:disabled) {
   background: #ffdddd;
+}
+
+.tombolHapus {
+  width: 100%;
+  color: #b42318;
+  background: #fff;
+  border-color: #f2b8b5;
+}
+
+.tombolHapus:hover:not(:disabled) {
+  color: #fff;
+  background: #d92d20;
+  border-color: #d92d20;
 }
 
 .popupOverlay {
@@ -682,6 +750,16 @@
 }
 
 @media (max-width: 640px) {
+  .divisionSelector {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .divisionTabs,
+  .divisionTab {
+    flex: 1;
+  }
+
   .distribusiCard {
     grid-column: span 1;
   }
@@ -693,6 +771,6 @@
 }
 .progressCell { display: flex; align-items: center; gap: 7px; min-width: 100px; color: #1c5ea8; font-size: 11px; }
 .progressBar { width: 64px; height: 7px; overflow: hidden; border-radius: 999px; background: #e4edf7; }
-.progressBar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0868f6, #16a36a); }
+.progressBar span { display: block; height: 100%; border-radius: inherit; background: var(--brand-gradient); }
 .tombolSelesai { color: #087848; border-color: #b9e1cd; background: #f1fff8; }
 .tombolProgress { color: #1c5ea8; border-color: #c8dcf4; background: #f4f9ff; }

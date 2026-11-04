@@ -115,6 +115,6 @@ export const karyawanApi = {
       method: 'POST', body, headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) throw new KaryawanApiError(await bacaError(response), response.status);
-    return response.json() as Promise<{ inserted: number }>;
+    return response.json() as Promise<{ inserted: number; skipped: number; totalRows: number }>;
   },
 };

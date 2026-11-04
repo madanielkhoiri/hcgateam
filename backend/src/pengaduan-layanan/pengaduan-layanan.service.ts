@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengaduanLayananDto } from './dto/create-pengaduan-layanan.dto';
 import { UbahStatusPengaduanLayananDto } from './dto/ubah-status-pengaduan-layanan.dto';
 import { WebPushService } from '../web-push/web-push.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const JUMLAH_BULAN_TREN = 6;
 const LOKASI_TAMBANG = new Set([
@@ -115,6 +117,31 @@ export class PengaduanLayananService {
       });
     }
     return hasil;
+  }
+
+  async hapus(id: number) {
+    const pengaduan = await this.prisma.pengaduanLayanan.findUnique({
+      where: { id },
+      include: { foto: { select: { urlFoto: true } } },
+    });
+
+    if (!pengaduan) {
+      throw new NotFoundException('Pengaduan tidak ditemukan');
+    }
+
+    await this.prisma.pengaduanLayanan.delete({ where: { id } });
+
+    for (const foto of pengaduan.foto) {
+      const namaFile = path.basename(foto.urlFoto);
+      const lokasiFile = path.resolve(process.cwd(), 'uploads', 'pengaduan-layanan', namaFile);
+      try {
+        if (fs.existsSync(lokasiFile)) fs.unlinkSync(lokasiFile);
+      } catch {
+        // Data pengaduan tetap berhasil dihapus meskipun berkas lama tidak tersedia.
+      }
+    }
+
+    return { message: 'Pengaduan berhasil dihapus' };
   }
 
   async rekap(divisi: DivisiPengaduan, bulan?: number, tahun?: number, pengirimId?: number) {

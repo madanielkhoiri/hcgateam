@@ -836,14 +836,14 @@ export default function DashboardPage() {
         </div>
 
         <section className={styles.departmentGrid}>
-          <Link href="/ga/pengaduan" className={`${styles.departmentCard} ${styles.gaCard}`}>
+          <Link href="/pengaduan" className={`${styles.departmentCard} ${styles.gaCard}`}>
             <div className={styles.departmentTop}>
               <div className={styles.departmentIcon}><MessageSquareText size={27} /></div>
               <ChevronRight size={18} />
             </div>
             <div className={styles.departmentText}>
               <strong>Pengaduan Layanan</strong>
-              <span>Laporkan kerusakan atau keluhan fasilitas Tambang dan Mess.</span>
+              <span>Sampaikan aduan pelayanan HC, fasilitas GA, atau pekerjaan Civil.</span>
             </div>
           </Link>
         </section>

@@ -46,6 +46,7 @@ export class EpromEngineerSigningService {
     const pdf = await PDFDocument.load(readFileSync(sourcePath));
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     for (const anotasi of annotations) {
+
       const page = pdf.getPages()[anotasi.page - 1]; if (!page) continue;
       const { width, height } = page.getSize(); const values = anotasi.points.trim().split(/\s+/).map((p) => p.split(',').map(Number));
       const hex = anotasi.color.replace('#', ''); const color = hex.length === 6 ? rgb(parseInt(hex.slice(0,2),16)/255, parseInt(hex.slice(2,4),16)/255, parseInt(hex.slice(4,6),16)/255) : rgb(0.9,0.1,0.1);

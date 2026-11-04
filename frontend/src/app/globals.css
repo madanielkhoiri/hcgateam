@@ -1,9 +1,9 @@
 ﻿:root {
   color-scheme: light;
 
-  --page-bg: #edf4fd;
+  --page-bg: #eef7f8;
   --page-gradient-start: #f8fbff;
-  --page-gradient-end: #eaf2fd;
+  --page-gradient-end: #e8f8f5;
 
   --surface: #ffffff;
   --surface-header: rgba(255, 255, 255, 0.98);
@@ -12,23 +12,27 @@
   --text-secondary: #6f819d;
   --text-placeholder: #8c9bb2;
 
-  --border: #cfdeef;
-  --card-border: #abcdfb;
+  --border: #cfe3e8;
+  --card-border: #a9d8dc;
 
-  --input-bg: #f8fbff;
-  --input-border: #bdd5f4;
+  --input-bg: #f8fcfc;
+  --input-border: #b9dce2;
 
-  --primary: #0868f6;
-  --primary-hover: #075bdd;
-  --primary-soft: #eaf2ff;
+  --primary: #0f6fff;
+  --primary-hover: #0a5ed8;
+  --primary-soft: #eaf3ff;
+  --teal: #12a594;
+  --teal-hover: #0d8b7d;
+  --teal-soft: #e6f8f5;
+  --brand-gradient: linear-gradient(135deg, #0f6fff 0%, #0b8ec8 52%, #12a594 100%);
 
-  --browser-bg: #e8f2ff;
-  --browser-header: #a8caf5;
+  --browser-bg: #e8f7f6;
+  --browser-header: #9edbd7;
   --browser-line: rgba(90, 137, 196, 0.22);
   --browser-side: rgba(90, 137, 196, 0.16);
 
-  --decoration-circle: rgba(96, 165, 250, 0.12);
-  --decoration-dot: rgba(59, 130, 246, 0.45);
+  --decoration-circle: rgba(18, 165, 148, 0.12);
+  --decoration-dot: rgba(15, 111, 255, 0.42);
 
   --orbit-color: rgba(59, 130, 246, 0.45);
   --orbit-dot: #6fa9ff;
@@ -143,9 +147,9 @@ a {
   :root {
     color-scheme: light;
 
-    --page-bg: #edf4fd;
+    --page-bg: #eef7f8;
     --page-gradient-start: #f8fbff;
-    --page-gradient-end: #eaf2fd;
+    --page-gradient-end: #e8f8f5;
 
     --surface: #ffffff;
     --surface-header: rgba(255, 255, 255, 0.98);
@@ -154,23 +158,27 @@ a {
     --text-secondary: #6f819d;
     --text-placeholder: #8c9bb2;
 
-    --border: #cfdeef;
-    --card-border: #abcdfb;
+    --border: #cfe3e8;
+    --card-border: #a9d8dc;
 
-    --input-bg: #f8fbff;
-    --input-border: #bdd5f4;
+    --input-bg: #f8fcfc;
+    --input-border: #b9dce2;
 
-    --primary: #0868f6;
-    --primary-hover: #075bdd;
-    --primary-soft: #eaf2ff;
+    --primary: #0f6fff;
+    --primary-hover: #0a5ed8;
+    --primary-soft: #eaf3ff;
+    --teal: #12a594;
+    --teal-hover: #0d8b7d;
+    --teal-soft: #e6f8f5;
+    --brand-gradient: linear-gradient(135deg, #0f6fff 0%, #0b8ec8 52%, #12a594 100%);
 
-    --browser-bg: #e8f2ff;
-    --browser-header: #a8caf5;
+    --browser-bg: #e8f7f6;
+    --browser-header: #9edbd7;
     --browser-line: rgba(90, 137, 196, 0.22);
     --browser-side: rgba(90, 137, 196, 0.16);
 
-    --decoration-circle: rgba(96, 165, 250, 0.12);
-    --decoration-dot: rgba(59, 130, 246, 0.45);
+    --decoration-circle: rgba(18, 165, 148, 0.12);
+    --decoration-dot: rgba(15, 111, 255, 0.42);
 
     --orbit-color: rgba(59, 130, 246, 0.45);
     --orbit-dot: #6fa9ff;

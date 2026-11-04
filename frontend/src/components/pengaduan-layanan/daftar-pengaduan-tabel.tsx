@@ -132,6 +132,21 @@ export function DaftarPengaduanTabel({
     }
   }
 
+  async function hapusPengaduan(id: number) {
+    if (!window.confirm('Hapus pengaduan ini beserta seluruh fotonya? Data yang dihapus tidak dapat dikembalikan.')) return;
+
+    setProsesId(id);
+    setError('');
+    try {
+      await pengaduanLayananApi.hapus(id);
+      await muatUlangRekap();
+    } catch (err) {
+      setError(err instanceof PengaduanLayananApiError ? err.message : 'Gagal menghapus pengaduan.');
+    } finally {
+      setProsesId(null);
+    }
+  }
+
   return (
     <div className={styles.daftarCard}>
       <span className={styles.statLabel}>Daftar Pengaduan Bulan Ini</span>
@@ -220,17 +235,19 @@ export function DaftarPengaduanTabel({
                   </div>
                 </td>
 
-                {bolehKelolaStatus && <td>
-                  {item.status === 'DISETUJUI' && <button type="button" className={`${styles.tombolAksi} ${styles.tombolProgress}`} disabled={prosesId === item.id} onClick={() => ubahProgress(item.id, item.progress ?? 0)}>Update %</button>}
-                  {item.status === 'MENUNGGU' || item.status === 'DITAHAN' ? (
-                    <div className={styles.aksiGroup}>
+                {bolehKelolaStatus && <td className={styles.kolomAksi}>
+                  <div className={styles.aksiStack}>
+                    {item.status === 'DISETUJUI' && <button type="button" className={`${styles.tombolAksi} ${styles.tombolProgress}`} disabled={prosesId === item.id} onClick={() => ubahProgress(item.id, item.progress ?? 0)}>Update %</button>}
+                    {item.status === 'MENUNGGU' || item.status === 'DITAHAN' ? (
+                      <div className={styles.aksiGroup}>
                       <button type="button" className={`${styles.tombolAksi} ${styles.tombolApprove}`} disabled={prosesId === item.id} onClick={() => ubahStatus(item.id, 'DISETUJUI')}>Approve</button>
                       {item.status === 'MENUNGGU' && <button type="button" className={`${styles.tombolAksi} ${styles.tombolHold}`} disabled={prosesId === item.id} onClick={() => ubahStatus(item.id, 'DITAHAN')}>Hold</button>}
                       <button type="button" className={`${styles.tombolAksi} ${styles.tombolReject}`} disabled={prosesId === item.id} onClick={() => ubahStatus(item.id, 'DITOLAK')}>Reject</button>
                       <button type="button" className={`${styles.tombolAksi} ${styles.tombolSelesai}`} disabled={prosesId === item.id} onClick={() => ubahStatus(item.id, 'SELESAI')}>Close</button>
-                    </div>                  ) : (
-                    '-'
-                  )}
+                      </div>
+                    ) : null}
+                    <button type="button" className={`${styles.tombolAksi} ${styles.tombolHapus}`} disabled={prosesId === item.id} onClick={() => hapusPengaduan(item.id)}>Hapus</button>
+                  </div>
                 </td>}
               </tr>
             ))}

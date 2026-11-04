@@ -85,7 +85,7 @@ export class DatabaseKaryawanController {
   async importExcel(@Aktor() aktor: AktorMcu, @UploadedFile() file?: Express.Multer.File) {
     this.akses.wajibPeran(aktor, UserRole.HC);
     if (!file?.buffer) throw new BadRequestException('File Excel wajib dipilih');
-    return this.service.importMasterExcel(file.buffer, true);
+    return this.service.importMasterExcel(file.buffer);
   }
 
   @Get(':id')

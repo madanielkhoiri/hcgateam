@@ -199,6 +199,18 @@ export const pengaduanLayananApi = {
       throw new PengaduanLayananApiError(await bacaError(response), response.status);
     }
   },
+
+  hapus: async (id: number): Promise<void> => {
+    const response = await fetch(`${API_URL}/pengaduan-layanan/${id}`, {
+      method: 'DELETE',
+      headers: headerAuth(),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new PengaduanLayananApiError(await bacaError(response), response.status);
+    }
+  },
 };
 
 export const LABEL_DIVISI_PENGADUAN: Record<DivisiPengaduan, string> = {
