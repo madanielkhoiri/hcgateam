@@ -36,10 +36,37 @@ type P5mRow = {
   supervisors: unknown;
   documentationPaths: string[];
   notes: string | null;
+  status: "DRAFT" | "OPEN" | "CLOSED";
+  startTime: string;
+  endTime: string | null;
+  _count?: { attendances: number };
+  attendances?: Array<{ id: number }>;
   creator?: {
     id: number;
     name: string;
   };
+};
+
+type AttendanceForm = {
+  sleep72: boolean; sleep48: boolean;
+  sleep24: "LESS_THAN_4" | "BETWEEN_4_6" | "MORE_THAN_6";
+  nutritionEnough: boolean; noAlcoholMedicine: boolean;
+  noExcessActivity: boolean; noExcessStress: boolean;
+  noSeriousIllness: boolean; noFamilyProblem: boolean;
+  understandsWork: boolean; health: "HEALTHY" | "SICK";
+};
+type AttendanceRow = AttendanceForm & {
+  id: number; nameSnapshot: string; nrpSnapshot: string;
+  jobTitleSnapshot: string; departmentSnapshot: string;
+  allowedToWork: boolean | null; reviewNote: string | null;
+};
+
+const emptyAttendance: AttendanceForm = {
+  sleep72: false, sleep48: false, sleep24: "MORE_THAN_6",
+  nutritionEnough: false, noAlcoholMedicine: false,
+  noExcessActivity: false, noExcessStress: false,
+  noSeriousIllness: false, noFamilyProblem: false,
+  understandsWork: false, health: "HEALTHY",
 };
 
 type Pagination = {
@@ -167,6 +194,7 @@ async function readError(response: Response) {
 }
 
 export default function P5mPage() {
+  const [canManage, setCanManage] = useState(false);
   const [rows, setRows] = useState<P5mRow[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -200,6 +228,17 @@ export default function P5mPage() {
   const [manualSupervisor, setManualSupervisor] = useState("");
 
   const [documentationPaths, setDocumentationPaths] = useState<string[]>([]);
+  const [attendanceTarget, setAttendanceTarget] = useState<P5mRow | null>(null);
+  const [attendanceForm, setAttendanceForm] = useState<AttendanceForm>(emptyAttendance);
+  const [reviewTarget, setReviewTarget] = useState<(Omit<P5mRow, "attendances"> & { attendances: AttendanceRow[] }) | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("hcga_user") || sessionStorage.getItem("hcga_user") || localStorage.getItem("user") || sessionStorage.getItem("user");
+      const role = raw ? JSON.parse(raw).role : "";
+      setCanManage(["SUPER_ADMIN", "ADMIN", "SECTION_HEAD", "GRUP_LEADER", "GRUP_LEADER_IR", "GRUP_LEADER_COMBEN", "GRUP_LEADER_GA", "GRUP_LEADER_RND"].includes(role));
+    } catch { setCanManage(false); }
+  }, []);
 
   const availableYears = useMemo(() => {
     const current = new Date().getFullYear();
@@ -534,6 +573,69 @@ export default function P5mPage() {
     }
   }
 
+  async function sessionAction(row: P5mRow, action: "open" | "close") {
+    setError("");
+    try {
+      let body: string | undefined;
+      if (action === "open") {
+        const current = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(".", ":");
+        const startTime = window.prompt("Tentukan jam mulai P5M (HH:mm)", current);
+        if (!startTime) return;
+        body = JSON.stringify({ startTime });
+      }
+      const response = await fetch(`${API_URL}/p5m/${row.id}/${action}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}`, ...(body ? { "Content-Type": "application/json" } : {}) },
+        body,
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      setMessage(action === "open" ? "Sesi P5M dibuka. Karyawan sudah dapat mengisi absensi." : "Sesi P5M ditutup.");
+      await loadData(pagination.page);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Status sesi gagal diperbarui."); }
+  }
+
+  async function submitAttendance(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!attendanceTarget) return;
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`${API_URL}/p5m/${attendanceTarget.id}/attendance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(attendanceForm),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      setAttendanceTarget(null);
+      setMessage("Absensi dan pemeriksaan kesiapan kerja berhasil dikirim.");
+      await loadData(pagination.page);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Absensi gagal dikirim."); }
+    finally { setSaving(false); }
+  }
+
+  async function openReview(row: P5mRow) {
+    setError("");
+    try {
+      const response = await fetch(`${API_URL}/p5m/${row.id}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!response.ok) throw new Error(await readError(response));
+      setReviewTarget(await response.json());
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Absensi gagal dimuat."); }
+  }
+
+  async function reviewAttendance(item: AttendanceRow, allowedToWork: boolean) {
+    if (!reviewTarget) return;
+    const reviewNote = window.prompt(allowedToWork ? "Keterangan (boleh dikosongkan)" : "Alasan tidak boleh kerja", item.reviewNote || "");
+    if (reviewNote === null) return;
+    try {
+      const response = await fetch(`${API_URL}/p5m/${reviewTarget.id}/attendance/${item.id}/review`, {
+        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ allowedToWork, reviewNote }),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      await openReview(reviewTarget);
+      setMessage("Hasil pemeriksaan peserta diperbarui.");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Review gagal disimpan."); }
+  }
+
   function resetFilters() {
     setSearch("");
     setMonth("");
@@ -556,10 +658,10 @@ export default function P5mPage() {
           </div>
         </div>
 
-        <button className={styles.primaryButton} onClick={openCreate}>
+        {canManage && <button className={styles.primaryButton} onClick={openCreate}>
           <Plus size={18} />
           Tambah P5M
-        </button>
+        </button>}
       </section>
 
       {message && <div className={styles.success}>{message}</div>}
@@ -623,6 +725,7 @@ export default function P5mPage() {
                 <th>PESERTA</th>
                 <th>MATERI</th>
                 <th>DOKUMENTASI</th>
+                <th>STATUS / ABSENSI</th>
                 <th>AKSI</th>
               </tr>
             </thead>
@@ -630,7 +733,7 @@ export default function P5mPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     <div className={styles.emptyState}>
                       <Loader2 className={styles.spinner} size={28} />
                       Memuat data P5M...
@@ -659,24 +762,41 @@ export default function P5mPage() {
                       <td>{row.topic}</td>
                       <td>{row.documentationPaths.length} foto</td>
                       <td>
+                        <strong>{row.status === "OPEN" ? "Dibuka" : row.status === "CLOSED" ? "Ditutup" : "Draft"}</strong><br />
+                        {row._count?.attendances ?? 0} peserta
+                      </td>
+                      <td>
                         <div className={styles.actions}>
-                          <button
+                          {canManage && row.status !== "CLOSED" && (
+                            <button className={styles.viewButton} type="button" onClick={() => void sessionAction(row, row.status === "OPEN" ? "close" : "open")}>
+                              {row.status === "OPEN" ? "Tutup" : "Buka"}
+                            </button>
+                          )}
+                          {canManage && (
+                            <button className={styles.viewButton} type="button" onClick={() => void openReview(row)}>Review</button>
+                          )}
+                          {!canManage && row.status === "OPEN" && (
+                            <button className={styles.viewButton} type="button" disabled={Boolean(row.attendances?.length)} onClick={() => { setAttendanceForm(emptyAttendance); setAttendanceTarget(row); }}>
+                              {row.attendances?.length ? "Sudah Absen" : "Isi Absensi"}
+                            </button>
+                          )}
+                          {canManage && <button
                             className={styles.viewButton}
                             title="Buka PDF"
                             type="button"
                             onClick={() => void openPdf(row)}
                           >
                             <FileDown size={16} />
-                          </button>
+                          </button>}
 
-                          <button
+                          {canManage && <button
                             className={styles.editButton}
                             title="Edit"
                             type="button"
                             onClick={() => openEdit(row)}
                           >
                             <Edit3 size={16} />
-                          </button>
+                          </button>}
 
                           <button
                             className={styles.deleteButton}
@@ -693,7 +813,7 @@ export default function P5mPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     <div className={styles.emptyState}>Belum ada data P5M.</div>
                   </td>
                 </tr>
@@ -872,12 +992,12 @@ export default function P5mPage() {
                   </div>
 
                   <label className={styles.fullField}>
-                    <span>Peserta</span>
+                    <span>Peserta (otomatis dari absensi online)</span>
                     <textarea
                       rows={3}
                       value={form.participants}
-                      required
-                      placeholder="Nama peserta atau jumlah peserta"
+                      placeholder="Akan terisi otomatis setelah karyawan melakukan absensi"
+                      disabled={!editingRow}
                       onChange={(event) =>
                         updateField("participants", event.target.value)
                       }
@@ -976,6 +1096,62 @@ export default function P5mPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {attendanceTarget && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.formModal}>
+            <div className={styles.modalHeader}>
+              <div><h2>Absensi & Kesiapan Kerja</h2><p>{attendanceTarget.topic} · {attendanceTarget.location}</p></div>
+              <button className={styles.closeButton} type="button" onClick={() => setAttendanceTarget(null)}><X size={20} /></button>
+            </div>
+            <form onSubmit={submitAttendance}>
+              <div className={styles.modalBody}>
+                <p>Nama, NRP, jabatan, dan departemen diambil otomatis dari akun Anda.</p>
+                {([
+                  ["sleep72", "Tidur cukup 72 jam terakhir (minimal 18 jam)"],
+                  ["sleep48", "Tidur cukup 48 jam terakhir (minimal 12 jam)"],
+                  ["nutritionEnough", "Asupan gizi cukup"],
+                  ["noAlcoholMedicine", "Tidak konsumsi alkohol/obat termasuk herbal"],
+                  ["noExcessActivity", "Tidak melakukan aktivitas berlebih sebelum kerja"],
+                  ["noExcessStress", "Bebas beban pikiran/stres"],
+                  ["noSeriousIllness", "Bebas penyakit serius dan telah diobati"],
+                  ["noFamilyProblem", "Bebas masalah keluarga"],
+                  ["understandsWork", "Memahami pekerjaan yang akan dilakukan"],
+                ] as Array<[keyof AttendanceForm, string]>).map(([key, label]) => (
+                  <label key={key} style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
+                    <input type="checkbox" checked={Boolean(attendanceForm[key])} onChange={(e) => setAttendanceForm((v) => ({ ...v, [key]: e.target.checked }))} /> {label}
+                  </label>
+                ))}
+                <label><span>Tidur 24 jam terakhir</span><select value={attendanceForm.sleep24} onChange={(e) => setAttendanceForm((v) => ({ ...v, sleep24: e.target.value as AttendanceForm["sleep24"] }))}><option value="LESS_THAN_4">Kurang dari 4 jam</option><option value="BETWEEN_4_6">4–6 jam</option><option value="MORE_THAN_6">Lebih dari 6 jam</option></select></label>
+                <label><span>Kondisi kesehatan</span><select value={attendanceForm.health} onChange={(e) => setAttendanceForm((v) => ({ ...v, health: e.target.value as AttendanceForm["health"] }))}><option value="HEALTHY">Sehat</option><option value="SICK">Sakit</option></select></label>
+              </div>
+              <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={() => setAttendanceTarget(null)}>Batal</button><button className={styles.primaryButton} disabled={saving}>{saving ? "Mengirim..." : "Kirim Absensi"}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {reviewTarget && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.formModal}>
+            <div className={styles.modalHeader}>
+              <div><h2>Review Absensi P5M</h2><p>{reviewTarget.attendances.length} peserta · keputusan Boleh Kerja oleh GL</p></div>
+              <button className={styles.closeButton} type="button" onClick={() => setReviewTarget(null)}><X size={20} /></button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.tableWrap}><table><thead><tr><th>Nama / NRP</th><th>Jabatan</th><th>Kesehatan</th><th>Boleh Kerja</th><th>Keterangan</th><th>Aksi GL</th></tr></thead><tbody>
+                {reviewTarget.attendances.map((item) => <tr key={item.id}>
+                  <td><strong>{item.nameSnapshot}</strong><br />{item.nrpSnapshot}</td><td>{item.jobTitleSnapshot}</td>
+                  <td>{item.health === "HEALTHY" ? "Sehat" : "Sakit"}</td>
+                  <td>{item.allowedToWork == null ? "Belum direview" : item.allowedToWork ? "Ya" : "Tidak"}</td><td>{item.reviewNote || "-"}</td>
+                  <td><div className={styles.actions}><button className={styles.viewButton} type="button" onClick={() => void reviewAttendance(item, true)}>Boleh</button><button className={styles.deleteButton} type="button" onClick={() => void reviewAttendance(item, false)}>Tidak</button></div></td>
+                </tr>)}
+                {!reviewTarget.attendances.length && <tr><td colSpan={6}>Belum ada karyawan yang mengisi absensi.</td></tr>}
+              </tbody></table></div>
+            </div>
           </div>
         </div>
       )}

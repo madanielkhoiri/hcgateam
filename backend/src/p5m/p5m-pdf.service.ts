@@ -405,6 +405,73 @@ export class P5mPdfService {
 
     return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
   }
+
+  private drawAttendancePages(doc: PDFKit.PDFDocument, data: any, logo: string | null) {
+    const rows = Array.isArray(data.attendances) ? data.attendances : [];
+    const chunks = rows.length
+      ? Array.from({ length: Math.ceil(rows.length / 35) }, (_, index) => rows.slice(index * 35, index * 35 + 35))
+      : [[]];
+    const topics = String(data.topic ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean)
+      .map((value, index) => `${index + 1}) ${value}`).join('  ');
+    const date = new Date(data.activityDate);
+    const day = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(date);
+    const dateText = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+
+    chunks.forEach((items: any[], pageIndex) => {
+      doc.addPage({ size: 'A4', layout: 'landscape', margin: 16 });
+      const width = doc.page.width - 32;
+      if (logo) { try { doc.image(logo, 19, 17, { fit: [45, 40] }); } catch {} }
+      doc.font('Helvetica-Bold').fillColor('#111827').fontSize(12).text('FORM SAFETY TALK & P5M', 70, 18, { width: width - 140, align: 'center' });
+      doc.fontSize(7).text('PPA-ADRO-F-SHE-13A · Rev. 3', 70, 35, { width: width - 140, align: 'center' });
+      doc.font('Helvetica').fontSize(6.5).text(`Halaman ${pageIndex + 2}`, doc.page.width - 90, 22, { width: 70, align: 'right' });
+
+      const infoY = 58;
+      const info = [
+        `Hari / Tanggal: ${day}, ${dateText}`,
+        `Waktu: ${data.startTime || '-'}${data.endTime ? ` - ${data.endTime}` : ''}`,
+        'Departemen: HCGA',
+        `Lokasi: ${data.location || '-'}`,
+        `Penyaji: ${data.speaker || '-'}`,
+      ];
+      info.forEach((text, index) => doc.font('Helvetica').fontSize(6.5).fillColor('#111827').text(text, 18 + (index % 3) * 270, infoY + Math.floor(index / 3) * 13, { width: 260 }));
+      doc.font('Helvetica-Bold').fontSize(6.5).text(`Judul / Topik K3PLM: ${topics || '-'}`, 18, 86, { width });
+
+      const y = 111;
+      const columns = [22, 74, 48, 62, 64, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 37, 38, 42, 68];
+      const headers = ['No', 'Nama', 'NRP', 'Jabatan', 'Dept.', 'Tidur\n72 jam', 'Tidur\n48 jam', 'Tidur\n24 jam', 'Gizi\ncukup', 'Tanpa\nalkohol/obat', 'Tanpa aktivitas\nberlebih', 'Bebas\nstres', 'Bebas penyakit\nserius', 'Bebas masalah\nkeluarga', 'Paham\npekerjaan', 'Sehat /\nSakit', 'Tanda\ntangan', 'Boleh\nkerja', 'Keterangan'];
+      let x = 18;
+      headers.forEach((header, index) => {
+        doc.rect(x, y, columns[index], 38).fillAndStroke('#E8F2F7', '#607080');
+        doc.font('Helvetica-Bold').fillColor('#111827').fontSize(4.8).text(header, x + 1, y + 7, { width: columns[index] - 2, height: 29, align: 'center' });
+        x += columns[index];
+      });
+      const mark = (value: boolean) => value ? 'Ya' : 'Tidak';
+      for (let rowIndex = 0; rowIndex < 35; rowIndex += 1) {
+        const item = items[rowIndex];
+        const rowY = y + 38 + rowIndex * 11.5;
+        const values = item ? [
+          String(pageIndex * 35 + rowIndex + 1), item.nameSnapshot, item.nrpSnapshot,
+          item.jobTitleSnapshot, item.departmentSnapshot,
+          mark(item.sleep72), mark(item.sleep48),
+          item.sleep24 === 'LESS_THAN_4' ? '<4' : item.sleep24 === 'BETWEEN_4_6' ? '4-6' : '>6',
+          mark(item.nutritionEnough), mark(item.noAlcoholMedicine), mark(item.noExcessActivity),
+          mark(item.noExcessStress), mark(item.noSeriousIllness), mark(item.noFamilyProblem),
+          mark(item.understandsWork), item.health === 'HEALTHY' ? 'Sehat' : 'Sakit',
+          'Digital', item.allowedToWork == null ? '-' : item.allowedToWork ? 'Ya' : 'Tidak', item.reviewNote || '',
+        ] : Array(headers.length).fill('');
+        x = 18;
+        values.forEach((value, index) => {
+          doc.rect(x, rowY, columns[index], 11.5).strokeColor('#8796A5').stroke();
+          doc.font('Helvetica').fillColor('#111827').fontSize(index === 1 || index === 18 ? 4.8 : 5).text(String(value), x + 1, rowY + 3, { width: columns[index] - 2, height: 8, align: index < 5 || index === 18 ? 'left' : 'center', ellipsis: true });
+          x += columns[index];
+        });
+      }
+      const footerY = y + 38 + 35 * 11.5 + 8;
+      doc.font('Helvetica-Bold').fontSize(6).fillColor('#111827').text('Kesimpulan pemeriksaan kesiapan kerja:', 18, footerY);
+      doc.font('Helvetica').fontSize(5.5).text('Peserta dinyatakan siap bekerja setelah seluruh kondisi diperiksa. Keputusan akhir “Boleh Kerja” dan keterangannya diisi oleh Group Leader.', 18, footerY + 10, { width: 600 });
+      doc.font('Helvetica-Bold').fontSize(6).text(`Group Leader / Pengawas: ${this.normalizeSupervisors(data.supervisors).join(', ') || '-'}`, 620, footerY, { width: 190, align: 'center' });
+    });
+  }
   async generate(id: number): Promise<Buffer> {
     const data = await this.p5mService.findOne(id);
     const gambarSiap = await this.siapkanGambarDokumentasi(
@@ -519,6 +586,8 @@ export class P5mPdfService {
         contentWidth,
         gambarSiap,
       );
+
+      this.drawAttendancePages(doc, data, logo);
 
       /*
        * Footer sengaja tidak dibuat.

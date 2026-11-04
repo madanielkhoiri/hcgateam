@@ -19,7 +19,8 @@ export class CreateP5mDto {
   speaker!: string;
 
   @IsString()
-  participants!: string;
+  @IsOptional()
+  participants?: string;
 
   @IsString()
   topic!: string;

@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateP5mDto } from './dto/create-p5m.dto';
 import { UpdateP5mDto } from './dto/update-p5m.dto';
+import { SubmitP5mAttendanceDto } from './dto/submit-p5m-attendance.dto';
+import { ReviewP5mAttendanceDto } from './dto/review-p5m-attendance.dto';
 
 @Injectable()
 export class P5mService {
@@ -24,6 +26,7 @@ export class P5mService {
     year?: number;
     page?: number;
     limit?: number;
+    currentUserId?: number;
   }) {
     const page = Math.max(params.page ?? 1, 1);
     const limit = Math.min(Math.max(params.limit ?? 10, 1), 100);
@@ -96,6 +99,11 @@ export class P5mService {
               name: true,
             },
           },
+          _count: { select: { attendances: true } },
+          attendances: {
+            where: params.currentUserId ? { userId: params.currentUserId } : { id: -1 },
+            select: { id: true, submittedAt: true },
+          },
         },
       }),
 
@@ -127,6 +135,12 @@ export class P5mService {
             name: true,
           },
         },
+        attendances: {
+          orderBy: [{ submittedAt: 'asc' }, { id: 'asc' }],
+          include: {
+            reviewer: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -148,7 +162,7 @@ export class P5mService {
         activityDate: new Date(`${dto.activityDate}T00:00:00.000Z`),
         location: dto.location.trim(),
         speaker: dto.speaker.trim(),
-        participants: dto.participants.trim(),
+        participants: dto.participants?.trim() || null,
         topic: dto.topic.trim(),
         supervisors,
         documentationPaths,
@@ -266,5 +280,89 @@ export class P5mService {
     return {
       message: 'Data P5M berhasil dihapus.',
     };
+  }
+
+  async open(id: number, startTime: string) {
+    const meeting = await this.findOne(id);
+    if (meeting.status === 'CLOSED') {
+      throw new ConflictException('Sesi P5M sudah ditutup.');
+    }
+    return this.prisma.p5mMeeting.update({
+      where: { id },
+      data: { status: 'OPEN', startTime, openedAt: new Date(), closedAt: null },
+    });
+  }
+
+  async close(id: number) {
+    const meeting = await this.findOne(id);
+    if (meeting.status !== 'OPEN') {
+      throw new ConflictException('Hanya sesi yang sedang dibuka yang dapat ditutup.');
+    }
+    const now = new Date();
+    const endTime = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(now).replace('.', ':');
+    return this.prisma.p5mMeeting.update({
+      where: { id },
+      data: { status: 'CLOSED', endTime, closedAt: now },
+    });
+  }
+
+  async submitAttendance(id: number, userId: number, dto: SubmitP5mAttendanceDto) {
+    const meeting = await this.findOne(id);
+    if (meeting.status !== 'OPEN') {
+      throw new ConflictException('Absensi hanya dapat diisi saat sesi P5M dibuka.');
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, name: true, nrp: true, jabatan: true, departemen: true,
+        profilKaryawan: {
+          select: { nik: true, nama: true, jabatan: true, departemen: { select: { namaDepartemen: true } } },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('Akun karyawan tidak ditemukan.');
+    const nrp = user.nrp?.trim() || user.profilKaryawan?.nik?.trim();
+    if (!nrp) throw new ConflictException('NRP akun belum dilengkapi.');
+
+    const attendance = await this.prisma.p5mAttendance.upsert({
+      where: { meetingId_userId: { meetingId: id, userId } },
+      create: {
+        meetingId: id, userId,
+        nameSnapshot: user.name || user.profilKaryawan?.nama || '-',
+        nrpSnapshot: nrp,
+        jobTitleSnapshot: user.jabatan?.trim() || user.profilKaryawan?.jabatan?.trim() || '-',
+        departmentSnapshot: user.departemen?.trim() || user.profilKaryawan?.departemen.namaDepartemen?.trim() || 'HCGA',
+        ...dto,
+      },
+      update: { ...dto, nameSnapshot: user.name || user.profilKaryawan?.nama || '-', nrpSnapshot: nrp,
+        jobTitleSnapshot: user.jabatan?.trim() || user.profilKaryawan?.jabatan?.trim() || '-',
+        departmentSnapshot: user.departemen?.trim() || user.profilKaryawan?.departemen.namaDepartemen?.trim() || 'HCGA' },
+    });
+    const names = await this.prisma.p5mAttendance.findMany({
+      where: { meetingId: id }, orderBy: { submittedAt: 'asc' }, select: { nameSnapshot: true },
+    });
+    await this.prisma.p5mMeeting.update({
+      where: { id },
+      data: { participantNames: names.map((item) => item.nameSnapshot), participants: `${names.length} karyawan` },
+    });
+    return attendance;
+  }
+
+  async reviewAttendance(id: number, attendanceId: number, reviewerId: number, dto: ReviewP5mAttendanceDto) {
+    const attendance = await this.prisma.p5mAttendance.findFirst({
+      where: { id: attendanceId, meetingId: id },
+    });
+    if (!attendance) throw new NotFoundException('Absensi peserta tidak ditemukan.');
+    return this.prisma.p5mAttendance.update({
+      where: { id: attendanceId },
+      data: {
+        allowedToWork: dto.allowedToWork,
+        reviewNote: dto.reviewNote?.trim() || null,
+        reviewedById: reviewerId,
+        reviewedAt: new Date(),
+      },
+    });
   }
 }

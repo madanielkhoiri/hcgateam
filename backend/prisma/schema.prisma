@@ -58,6 +58,23 @@ enum MessOccupantShift {
   CUTI
 }
 
+enum P5mStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum P5mSleep24 {
+  LESS_THAN_4
+  BETWEEN_4_6
+  MORE_THAN_6
+}
+
+enum P5mHealth {
+  HEALTHY
+  SICK
+}
+
 enum StatusKwitansiObat {
   DISETUJUI
   DITRANSFER
@@ -121,6 +138,8 @@ model User {
   postActivities    PostActivity[]          @relation("PostActivityCreator")
 
   p5mMeetings           P5mMeeting[]          @relation("P5mMeetingCreator")
+  p5mAttendances        P5mAttendance[]        @relation("P5mAttendanceUser")
+  p5mReviews            P5mAttendance[]        @relation("P5mAttendanceReviewer")
   preActivities         PreActivity[]         @relation("PreActivityCreator")
   safetyMeetings        SafetyMeeting[]
   transportRecords      TransportRecord[]     @relation("TransportRecordCreator")
@@ -778,16 +797,56 @@ model P5mMeeting {
   participantNames   String[] @default([]) @map("participant_names")
   documentationPaths String[] @default([]) @map("documentation_paths")
   notes              String?  @db.Text
+  status             P5mStatus @default(DRAFT)
+  openedAt           DateTime? @map("opened_at")
+  closedAt           DateTime? @map("closed_at")
   createdBy          Int      @map("created_by")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   creator User @relation("P5mMeetingCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  attendances P5mAttendance[]
 
   @@index([activityDate])
   @@index([supervisorName])
   @@index([createdBy])
   @@map("p5m_meetings")
+}
+
+model P5mAttendance {
+  id                         Int        @id @default(autoincrement())
+  meetingId                  Int        @map("meeting_id")
+  userId                     Int        @map("user_id")
+  nameSnapshot               String     @map("name_snapshot")
+  nrpSnapshot                String     @map("nrp_snapshot")
+  jobTitleSnapshot           String     @map("job_title_snapshot")
+  departmentSnapshot         String     @default("HCGA") @map("department_snapshot")
+  sleep72                    Boolean    @map("sleep_72")
+  sleep48                    Boolean    @map("sleep_48")
+  sleep24                    P5mSleep24 @map("sleep_24")
+  nutritionEnough            Boolean    @map("nutrition_enough")
+  noAlcoholMedicine          Boolean    @map("no_alcohol_medicine")
+  noExcessActivity           Boolean    @map("no_excess_activity")
+  noExcessStress             Boolean    @map("no_excess_stress")
+  noSeriousIllness           Boolean    @map("no_serious_illness")
+  noFamilyProblem            Boolean    @map("no_family_problem")
+  understandsWork            Boolean    @map("understands_work")
+  health                     P5mHealth
+  allowedToWork              Boolean?   @map("allowed_to_work")
+  reviewNote                 String?    @map("review_note") @db.Text
+  reviewedById               Int?       @map("reviewed_by_id")
+  submittedAt                DateTime   @default(now()) @map("submitted_at")
+  reviewedAt                 DateTime?  @map("reviewed_at")
+  updatedAt                  DateTime   @updatedAt @map("updated_at")
+
+  meeting P5mMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user User @relation("P5mAttendanceUser", fields: [userId], references: [id], onDelete: Restrict)
+  reviewer User? @relation("P5mAttendanceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([meetingId, userId])
+  @@index([meetingId, submittedAt])
+  @@index([userId])
+  @@map("p5m_attendances")
 }
 
 model PreActivity {
