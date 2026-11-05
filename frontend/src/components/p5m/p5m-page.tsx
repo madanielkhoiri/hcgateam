@@ -261,8 +261,14 @@ export default function P5mPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("hcga_user") || sessionStorage.getItem("hcga_user") || localStorage.getItem("user") || sessionStorage.getItem("user");
-      const role = raw ? JSON.parse(raw).role : "";
-      setCanManage(["SUPER_ADMIN", "ADMIN", "SECTION_HEAD", "GRUP_LEADER", "GRUP_LEADER_IR", "GRUP_LEADER_COMBEN", "GRUP_LEADER_GA", "GRUP_LEADER_RND"].includes(role));
+      const storedUser = raw ? JSON.parse(raw) : null;
+      const role = storedUser?.role ?? "";
+      const accessKeys: string[] = storedUser?.accessKeys ?? [];
+      setCanManage(
+        ["SUPER_ADMIN", "ADMIN", "SECTION_HEAD", "PJO"].includes(role) ||
+        accessKeys.includes("ALL") ||
+        accessKeys.includes("GA_SAFETY_MEETING")
+      );
     } catch { setCanManage(false); }
   }, []);
 

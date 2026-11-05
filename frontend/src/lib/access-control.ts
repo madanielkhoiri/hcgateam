@@ -192,6 +192,19 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return true;
   }
 
+  const keys = user.accessKeys ?? [];
+
+  // Beberapa fitur secara organisasi berada di panel Administrasi, tetapi
+  // access key-nya memakai nama domain asal. Izin salah satu fitur tersebut
+  // harus membuka card/panel Administrasi tanpa membuka fitur saudaranya.
+  const administrasiChildKeys = [ACCESS_KEYS.GA_SAFETY_MEETING];
+  if (
+    accessKey === ACCESS_KEYS.ADMINISTRASI &&
+    administrasiChildKeys.some((key) => keys.includes(key))
+  ) {
+    return true;
+  }
+
   const groupLeaderDomain: Record<string, (key: string) => boolean> = {
     GRUP_LEADER_IR: (key) => key === ACCESS_KEYS.HC_IR,
     GRUP_LEADER_COMBEN: (key) => key === ACCESS_KEYS.HC_COMBEN,
@@ -220,7 +233,6 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return true;
   }
 
-  const keys = user.accessKeys ?? [];
   if (keys.includes(accessKey) || keys.includes('ALL')) return true;
   // A child permission also opens its department card (e.g. HC_MCU -> HC).
   if (['HC', 'GA', 'CIVIL', 'ADMINISTRASI'].includes(accessKey)) {

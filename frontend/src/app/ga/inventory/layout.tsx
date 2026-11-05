@@ -408,9 +408,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
     }
 
     const bolehMasuk =
-      activeSection === "safety"
-        ? true
-        : activeSection === "inventory"
+      activeSection === "inventory"
         ? hasAccess(storedUser, ACCESS_KEYS.GA_INVENTORY) ||
           hasAccess(storedUser, ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC)
         : hasAccess(storedUser, requiredAccessKey);

@@ -29,6 +29,7 @@ import { P5mService } from './p5m.service';
 import { OpenP5mDto } from './dto/open-p5m.dto';
 import { SubmitP5mAttendanceDto } from './dto/submit-p5m-attendance.dto';
 import { ReviewP5mAttendanceDto } from './dto/review-p5m-attendance.dto';
+import { RequireAccessKey } from '../auth/require-access-key.decorator';
 
 const uploadDirectory = resolve(process.cwd(), 'uploads', 'p5m');
 
@@ -54,6 +55,7 @@ const uploadStorage = diskStorage({
 
 @Controller('p5m')
 @UseGuards(JwtAuthGuard)
+@RequireAccessKey('GA_SAFETY_MEETING')
 export class P5mController {
   constructor(
     private readonly service: P5mService,
@@ -66,13 +68,16 @@ export class P5mController {
 
   private assertManager(request: any) {
     const allowed: UserRole[] = [
-      UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SECTION_HEAD,
-      UserRole.GRUP_LEADER, UserRole.GRUP_LEADER_IR,
-      UserRole.GRUP_LEADER_COMBEN, UserRole.GRUP_LEADER_GA,
-      UserRole.GRUP_LEADER_RND,
+      UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SECTION_HEAD, UserRole.PJO,
     ];
-    if (!allowed.includes(request.user?.role)) {
-      throw new ForbiddenException('Hanya Group Leader, Section Head, atau Admin yang dapat mengelola P5M.');
+    const accessKeys: string[] = request.user?.accessKeys ?? [];
+    const punyaAksesPenuh =
+      allowed.includes(request.user?.role) ||
+      accessKeys.includes('ALL') ||
+      accessKeys.includes('GA_SAFETY_MEETING');
+
+    if (!punyaAksesPenuh) {
+      throw new ForbiddenException('Akun ini belum diberi akses penuh ke card P5M.');
     }
   }
 

@@ -160,6 +160,19 @@ describe("hasAccess", () => {
  expect(hasAccess(user, ACCESS_KEYS.HC_MCU)).toBe(true);
  });
 
+ it("akses P5M membuka card ADMINISTRASI tanpa membuka fitur ADM lainnya", () => {
+ const user = buatUser({ role: "KARYAWAN", accessKeys: [ACCESS_KEYS.GA_SAFETY_MEETING] });
+ expect(hasAccess(user, ACCESS_KEYS.ADMINISTRASI)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.GA_SAFETY_MEETING)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.ADMINISTRASI_POSTINGAN)).toBe(false);
+ });
+
+ it("Group Leader GA yang diberi P5M dapat melihat card ADMINISTRASI", () => {
+ const user = buatUser({ role: "GRUP_LEADER_GA", accessKeys: [ACCESS_KEYS.GA_SAFETY_MEETING] });
+ expect(hasAccess(user, ACCESS_KEYS.ADMINISTRASI)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.GA_SAFETY_MEETING)).toBe(true);
+ });
+
  it("accessKeys berisi 'ALL' membuka semua access key", () => {
  const user = buatUser({ role: "KARYAWAN", accessKeys: ["ALL"] });
  expect(hasAccess(user, ACCESS_KEYS.CIVIL_TPS3R)).toBe(true);

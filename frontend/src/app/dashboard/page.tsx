@@ -25,6 +25,7 @@ import {
   Save,
   Scale,
   ScrollText,
+  ShieldCheck,
   Ticket,
   UserCog,
   UsersRound,
@@ -1123,6 +1124,20 @@ export default function DashboardPage() {
                   <span>
                     <strong>Dokumentasi</strong>
                     <small>Foto dan dokumentasi kegiatan</small>
+                  </span>
+                  <ChevronRight />
+                </button>
+              )}
+
+              {hasAccess(user, ACCESS_KEYS.GA_SAFETY_MEETING) && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/ga/inventory/p5m')}
+                >
+                  <ShieldCheck />
+                  <span>
+                    <strong>P5M / Safety Meeting</strong>
+                    <small>Kelola pelaksanaan, absensi, dan dokumentasi P5M</small>
                   </span>
                   <ChevronRight />
                 </button>
