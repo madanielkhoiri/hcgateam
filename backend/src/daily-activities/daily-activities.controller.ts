@@ -35,7 +35,7 @@ type AuthenticatedRequest = {
 
 @Controller('daily-activities')
 @UseGuards(JwtAuthGuard)
-@RequireAccessKey('GA_AKTIVITAS_HARIAN')
+@RequireAccessKey('GA_AKTIVITAS_HARIAN', 'CIVIL_GA_MEP')
 export class DailyActivitiesController {
   constructor(
     private readonly dailyActivitiesService: DailyActivitiesService,

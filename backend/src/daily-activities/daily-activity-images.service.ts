@@ -10,7 +10,10 @@ import sharp from 'sharp';
 
 export type DailyImageCategory = 'profiles' | 'pre-activities' | 'progresses';
 
-export type DailyImageScope = 'daily-activities' | 'grass-cutting';
+export type DailyImageScope =
+  | 'daily-activities'
+  | 'ga-mep-daily-activities'
+  | 'grass-cutting';
 
 const UKURAN_MAKS_BYTE = 15 * 1024 * 1024;
 
@@ -115,6 +118,7 @@ export class DailyActivityImagesService {
 
     if (
       !normalizedPath.startsWith('uploads/daily-activities/') &&
+      !normalizedPath.startsWith('uploads/ga-mep-daily-activities/') &&
       !normalizedPath.startsWith('uploads/grass-cutting/')
     ) {
       return;

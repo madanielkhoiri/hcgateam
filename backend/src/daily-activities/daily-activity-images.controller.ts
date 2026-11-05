@@ -23,7 +23,7 @@ import {
 } from './daily-activity-images.service';
 
 @Controller('daily-activity-images')
-@RequireAccessKey('GA_AKTIVITAS_HARIAN')
+@RequireAccessKey('GA_AKTIVITAS_HARIAN', 'CIVIL_GA_MEP')
 export class DailyActivityImagesController {
   constructor(private readonly imagesService: DailyActivityImagesService) {}
 
@@ -101,7 +101,6 @@ export class DailyActivityImagesController {
   }
 
   @Get(':scope/:category/:filename')
-  @UseGuards(JwtAuthGuard)
   viewImage(
     @Param('scope') scopeValue: string,
     @Param('category') categoryValue: string,
@@ -125,6 +124,10 @@ export class DailyActivityImagesController {
   private parseScope(value?: string): DailyImageScope {
     if (value === 'grass-cutting') {
       return 'grass-cutting';
+    }
+
+    if (value === 'ga-mep-daily-activities') {
+      return 'ga-mep-daily-activities';
     }
 
     if (!value || value === 'daily-activities') {

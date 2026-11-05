@@ -621,6 +621,7 @@ model Handover {
 
 enum DailyActivityType {
   DAILY_ACTIVITY
+  GA_MEP_DAILY_ACTIVITY
   GRASS_CUTTING
 }
 

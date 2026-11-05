@@ -48,6 +48,17 @@ function buatCivilTree(approval: RingkasanApproval | null): MenuTreeNode[] {
     soft: '#e5f7fb',
     children: [
       {
+        key: 'CIVIL_GA_MEP_DAILY_ACTIVITY',
+        title: 'Daily Activity GA MEP',
+        description: 'Aktivitas harian khusus tim GA MEP.',
+        status: 'Tersedia',
+        href: '/civil/ga-mep/daily-activity',
+        icon: ClipboardList,
+        accessKey: ACCESS_KEYS.CIVIL_GA_MEP,
+        accent: '#0783a8',
+        soft: '#e5f7fb',
+      },
+      {
         key: 'CIVIL_ELECTRIC',
         title: 'Electric',
         description: 'Inventory Electric.',

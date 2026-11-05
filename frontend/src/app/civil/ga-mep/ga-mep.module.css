@@ -1,0 +1,18 @@
+.body {
+  min-height: calc(100vh - 72px);
+  padding: 24px;
+}
+
+.loading {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  color: #315b73;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .body {
+    padding: 16px;
+  }
+}

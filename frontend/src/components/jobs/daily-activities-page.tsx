@@ -15,7 +15,10 @@ import styles from "./daily-activities.module.css";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 const UKURAN_HALAMAN = 20;
 
-type ActivityType = "DAILY_ACTIVITY" | "GRASS_CUTTING";
+type ActivityType =
+  | "DAILY_ACTIVITY"
+  | "GA_MEP_DAILY_ACTIVITY"
+  | "GRASS_CUTTING";
 
 type ActivityStatus = "OPEN" | "ON_PROGRESS" | "WAITING_APPROVAL" | "CLOSE";
 
@@ -185,8 +188,17 @@ function approvalLabel(status: ApprovalStatus): string {
 
 export default function DailyActivitiesPage({ activityType }: PageProps) {
   const isGrassCutting = activityType === "GRASS_CUTTING";
-  const title = isGrassCutting ? "Potong Rumput" : "Daily Activity";
-  const scope = isGrassCutting ? "grass-cutting" : "daily-activities";
+  const isGaMep = activityType === "GA_MEP_DAILY_ACTIVITY";
+  const title = isGrassCutting
+    ? "Potong Rumput"
+    : isGaMep
+      ? "Daily Activity GA MEP"
+      : "Daily Activity";
+  const scope = isGrassCutting
+    ? "grass-cutting"
+    : isGaMep
+      ? "ga-mep-daily-activities"
+      : "daily-activities";
 
   const [rows, setRows] = useState<DailyActivity[]>([]);
   const [detail, setDetail] = useState<DailyActivity | null>(null);
@@ -357,7 +369,15 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
 
   function imageUrl(path: string): string {
     const normalized = path.replace(/\\/g, "/");
-    const parts = normalized.split("/");
+    const parts = normalized.replace(/^\/+/, "").split("/");
+
+    if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+      return normalized;
+    }
+
+    if (parts[0] !== "uploads" || !parts[1] || !parts[2] || !parts[3]) {
+      return `${API_URL}${normalized.startsWith("/") ? "" : "/"}${normalized}`;
+    }
 
     return `${API_URL}/daily-activity-images/${parts[1]}/${parts[2]}/${parts[3]}`;
   }
