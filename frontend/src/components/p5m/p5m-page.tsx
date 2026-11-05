@@ -672,7 +672,7 @@ export default function P5mPage() {
         body,
       });
       if (!response.ok) throw new Error(await readError(response));
-      setMessage(action === "open" ? "Sesi P5M dibuka. Karyawan sudah dapat mengisi absensi." : "Sesi P5M ditutup.");
+      setMessage(action === "open" ? "Absensi P5M dibuka. Karyawan sudah dapat mengisi absensi." : "Absensi P5M ditutup.");
       await loadData(pagination.page);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Status sesi gagal diperbarui."); }
   }
@@ -716,7 +716,7 @@ export default function P5mPage() {
       if (!response.ok) throw new Error(await readError(response));
       await openReview(reviewTarget);
       setMessage("Hasil pemeriksaan peserta diperbarui.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Review gagal disimpan."); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Pemeriksaan absensi gagal disimpan."); }
   }
 
   function resetFilters() {
@@ -808,7 +808,7 @@ export default function P5mPage() {
                 <th>PESERTA</th>
                 <th>MATERI</th>
                 <th>DOKUMENTASI</th>
-                <th>STATUS / ABSENSI</th>
+                <th>STATUS ABSENSI</th>
                 <th>AKSI</th>
               </tr>
             </thead>
@@ -851,12 +851,14 @@ export default function P5mPage() {
                       <td>
                         <div className={styles.actions}>
                           {canManage && row.status === "OPEN" && (
-                            <button className={styles.viewButton} type="button" onClick={() => void sessionAction(row, row.status === "OPEN" ? "close" : "open")}>
-                              Tutup P5M
+                            <button className={styles.editButton} type="button" onClick={() => void sessionAction(row, "close")}>
+                              Tutup Absensi
                             </button>
                           )}
                           {canManage && (
-                            <button className={styles.viewButton} type="button" onClick={() => void openReview(row)}>Review</button>
+                            <button className={styles.viewButton} type="button" onClick={() => void openReview(row)}>
+                              <Users size={15} /> Daftar Absensi
+                            </button>
                           )}
                           {!canManage && row.status === "OPEN" && (
                             <button className={styles.viewButton} type="button" disabled={Boolean(row.attendances?.length)} onClick={() => { setAttendanceForm(emptyAttendance); setAttendanceTarget(row); }}>
@@ -864,8 +866,8 @@ export default function P5mPage() {
                             </button>
                           )}
                           {canManage && row.status === "CLOSED" && row.speaker && row.topic !== "Menunggu hasil pelaksanaan P5M" && row.documentationPaths.length > 0 && <button
-                            className={styles.viewButton}
-                            title="Buka PDF"
+                            className={`${styles.viewButton} ${styles.iconButton}`}
+                            title="Buka PDF hasil P5M"
                             type="button"
                             onClick={() => void openPdf(row)}
                           >
@@ -881,14 +883,14 @@ export default function P5mPage() {
                             <Edit3 size={16} /> Lengkapi Hasil
                           </button>}
 
-                          <button
-                            className={styles.deleteButton}
-                            title="Hapus"
-                            type="button"
-                            onClick={() => setDeleteTarget(row)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {canManage && <button
+                              className={`${styles.deleteButton} ${styles.iconButton}`}
+                              title="Hapus data P5M"
+                              type="button"
+                              onClick={() => setDeleteTarget(row)}
+                            >
+                              <Trash2 size={16} />
+                            </button>}
                         </div>
                       </td>
                     </tr>
@@ -1287,7 +1289,7 @@ export default function P5mPage() {
         <div className={styles.modalBackdrop}>
           <div className={styles.formModal}>
             <div className={styles.modalHeader}>
-              <div><h2>Review Absensi P5M</h2><p>{reviewTarget.attendances.length} peserta · keputusan Boleh Kerja oleh GL</p></div>
+              <div><h2>Daftar Absensi P5M</h2><p>{reviewTarget.attendances.length} peserta · pemeriksaan kesiapan kerja oleh GL</p></div>
               <button className={styles.closeButton} type="button" onClick={() => setReviewTarget(null)}><X size={20} /></button>
             </div>
             <div className={styles.modalBody}>
@@ -1295,8 +1297,8 @@ export default function P5mPage() {
                 {reviewTarget.attendances.map((item) => <tr key={item.id}>
                   <td><strong>{item.nameSnapshot}</strong><br />{item.nrpSnapshot}</td><td>{item.jobTitleSnapshot}</td>
                   <td>{item.health === "HEALTHY" ? "Sehat" : "Sakit"}</td>
-                  <td>{item.allowedToWork == null ? "Belum direview" : item.allowedToWork ? "Ya" : "Tidak"}</td><td>{item.reviewNote || "-"}</td>
-                  <td><div className={styles.actions}><button className={styles.viewButton} type="button" onClick={() => void reviewAttendance(item, true)}>Boleh</button><button className={styles.deleteButton} type="button" onClick={() => void reviewAttendance(item, false)}>Tidak</button></div></td>
+                  <td>{item.allowedToWork == null ? "Belum diperiksa" : item.allowedToWork ? "Ya" : "Tidak"}</td><td>{item.reviewNote || "-"}</td>
+                  <td><div className={styles.actions}><button className={styles.viewButton} type="button" onClick={() => void reviewAttendance(item, true)}>Boleh Kerja</button><button className={styles.deleteButton} type="button" onClick={() => void reviewAttendance(item, false)}>Tidak Boleh</button></div></td>
                 </tr>)}
                 {!reviewTarget.attendances.length && <tr><td colSpan={6}>Belum ada karyawan yang mengisi absensi.</td></tr>}
               </tbody></table></div>

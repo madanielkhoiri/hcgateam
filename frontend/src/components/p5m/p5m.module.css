@@ -141,6 +141,11 @@
   text-align: left;
 }
 
+.tableWrap th:last-child,
+.tableWrap td:last-child {
+  min-width: 285px;
+}
+
 .tableWrap td {
   padding: 12px 10px;
   border-top: 1px solid #e2ebf3;
@@ -158,6 +163,7 @@
 .actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -171,8 +177,23 @@
 }
 
 .actions button {
-  width: 30px;
-  height: 30px;
+  display: inline-flex;
+  width: auto;
+  min-height: 32px;
+  height: auto;
+  padding: 6px 10px;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.actions .iconButton {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
 }
 
 .viewButton {
