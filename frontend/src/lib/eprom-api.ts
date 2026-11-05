@@ -1417,7 +1417,8 @@ export function isEpromOwner(user: PortalUser | null): boolean {
     user?.role === 'OWNER' ||
     user?.role === 'ADMIN' ||
     user?.role === 'SUPER_ADMIN' ||
-    user?.role === 'SECTION_HEAD'
+    user?.role === 'SECTION_HEAD' ||
+    user?.role === 'GRUP_LEADER_GA'
   );
 }
 

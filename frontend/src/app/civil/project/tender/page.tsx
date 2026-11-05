@@ -30,7 +30,7 @@ export default function TenderListPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [aksesTender, setAksesTender] = useState<TenderProcess | null>(null);
-  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(getStoredUser()?.role ?? '');
+  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(getStoredUser()?.role ?? '');
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNama, setEditNama] = useState("");

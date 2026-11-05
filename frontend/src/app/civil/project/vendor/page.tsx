@@ -10,7 +10,7 @@ import styles from "../kontrak/kontrak.module.css";
 export default function MasterVendorPage() {
   const user = getStoredUser();
   const boleh = isEpromOwner(user);
-  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role ?? '');
+  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(user?.role ?? '');
 
   const [vendorList, setVendorList] = useState<Vendor[]>([]);
   const [error, setError] = useState<string | null>(null);

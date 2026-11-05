@@ -17,7 +17,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 
 /** Sama seperti ROLE_SETARA_OWNER di EpromAksesService — chat cuma untuk staff Owner, vendor balas lewat email. */
-const ROLE_OWNER_SETARA = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
+const ROLE_OWNER_SETARA = [
+  'OWNER',
+  'ADMIN',
+  'SUPER_ADMIN',
+  'SECTION_HEAD',
+  'GRUP_LEADER_GA',
+];
 
 @WebSocketGateway({
   namespace: '/eprom-tender-chat',

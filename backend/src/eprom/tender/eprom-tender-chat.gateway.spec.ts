@@ -54,6 +54,16 @@ describe('EpromTenderChatGateway.handleConnection', () => {
 
     expect(client.disconnect).not.toHaveBeenCalled();
   });
+
+  it('membiarkan koneksi Group Leader GA sebagai role setara Owner', () => {
+    const jwt = { verify: jest.fn().mockReturnValue({ role: 'GRUP_LEADER_GA' }) } as unknown as JwtService;
+    const gateway = new EpromTenderChatGateway(jwt);
+    const client = buatClient('token-gl-ga');
+
+    gateway.handleConnection(client);
+
+    expect(client.disconnect).not.toHaveBeenCalled();
+  });
 });
 
 describe('EpromTenderChatGateway.emitPesanBaru', () => {

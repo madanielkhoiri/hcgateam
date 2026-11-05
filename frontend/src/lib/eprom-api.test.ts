@@ -134,11 +134,12 @@ describe("formatRupiah", () => {
 });
 
 describe("isEpromOwner", () => {
- it("mengizinkan OWNER, ADMIN, SUPER_ADMIN, dan SECTION_HEAD", () => {
+ it("mengizinkan OWNER, ADMIN, SUPER_ADMIN, SECTION_HEAD, dan GRUP_LEADER_GA", () => {
  expect(isEpromOwner(buatUser("OWNER"))).toBe(true);
  expect(isEpromOwner(buatUser("ADMIN"))).toBe(true);
  expect(isEpromOwner(buatUser("SUPER_ADMIN"))).toBe(true);
  expect(isEpromOwner(buatUser("SECTION_HEAD"))).toBe(true);
+ expect(isEpromOwner(buatUser("GRUP_LEADER_GA"))).toBe(true);
  });
 
  it("menolak VENDOR dan role lain", () => {
