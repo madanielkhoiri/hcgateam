@@ -316,15 +316,17 @@ export class P5mService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, name: true, nrp: true, jabatan: true, departemen: true,
+        id: true, username: true, name: true, nrp: true, jabatan: true, departemen: true,
         profilKaryawan: {
           select: { nik: true, nama: true, jabatan: true, departemen: { select: { namaDepartemen: true } } },
         },
       },
     });
     if (!user) throw new NotFoundException('Akun karyawan tidak ditemukan.');
-    const nrp = user.nrp?.trim() || user.profilKaryawan?.nik?.trim();
-    if (!nrp) throw new ConflictException('NRP akun belum dilengkapi.');
+    const nrp = user.nrp?.trim()
+      || user.profilKaryawan?.nik?.trim()
+      || user.username?.trim()
+      || `USER-${user.id}`;
 
     const attendance = await this.prisma.p5mAttendance.upsert({
       where: { meetingId_userId: { meetingId: id, userId } },

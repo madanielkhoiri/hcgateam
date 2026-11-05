@@ -138,7 +138,7 @@
   background: #edf4fb;
   color: #234f78;
   font-size: 11px;
-  text-align: left;
+  text-align: center;
 }
 
 .tableWrap th:last-child,
@@ -152,17 +152,20 @@
   color: #183f64;
   font-size: 12px;
   vertical-align: middle;
+  text-align: center;
 }
 
 .location {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
 }
 
 .actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 6px;
 }

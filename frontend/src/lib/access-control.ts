@@ -218,6 +218,11 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     ACCESS_KEYS.HC_TUGAS_DINAS,
   ];
   const aturanGroupLeader = groupLeaderDomain[user.role];
+  // Access key yang diberikan langsung lewat Manajemen Akun harus tetap
+  // berlaku, termasuk P5M untuk Group Leader di luar domain GA.
+  if (keys.includes(accessKey)) {
+    return true;
+  }
   if (
     aturanGroupLeader &&
     accessKey !== ACCESS_KEYS.HC &&
@@ -233,7 +238,7 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return true;
   }
 
-  if (keys.includes(accessKey) || keys.includes('ALL')) return true;
+  if (keys.includes('ALL')) return true;
   // A child permission also opens its department card (e.g. HC_MCU -> HC).
   if (['HC', 'GA', 'CIVIL', 'ADMINISTRASI'].includes(accessKey)) {
     return keys.some((key) => key.startsWith(`${accessKey}_`));

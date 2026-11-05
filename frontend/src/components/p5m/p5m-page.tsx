@@ -860,7 +860,7 @@ export default function P5mPage() {
                               <Users size={15} /> Daftar Absensi
                             </button>
                           )}
-                          {!canManage && row.status === "OPEN" && (
+                          {row.status === "OPEN" && (
                             <button className={styles.viewButton} type="button" disabled={Boolean(row.attendances?.length)} onClick={() => { setAttendanceForm(emptyAttendance); setAttendanceTarget(row); }}>
                               {row.attendances?.length ? "Sudah Absen" : "Isi Absensi"}
                             </button>

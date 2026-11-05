@@ -122,9 +122,15 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
+    const ownedAccessKeys = user.accessKeys ?? [];
+    const memilikiAksesLangsung = requiredAccessKeys.some((key) =>
+      ownedAccessKeys.includes(key),
+    );
+
     if (
       user &&
       GROUP_LEADER_ROLES.has(user.role) &&
+      !memilikiAksesLangsung &&
       !requiredAccessKeys.some((key) => aksesSesuaiDomainGroupLeader(user.role, key))
     ) {
       throw new ForbiddenException('Group Leader tidak memiliki akses pengelolaan ke domain ini');
@@ -138,8 +144,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ) {
       return true;
     }
-
-    const ownedAccessKeys = user.accessKeys ?? [];
 
     const punyaAkses = requiredAccessKeys.some((key) =>
       ownedAccessKeys.includes(key) ||

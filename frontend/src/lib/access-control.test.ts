@@ -173,6 +173,12 @@ describe("hasAccess", () => {
  expect(hasAccess(user, ACCESS_KEYS.GA_SAFETY_MEETING)).toBe(true);
  });
 
+ it("Group Leader domain lain tetap dapat membuka P5M saat aksesnya diberikan langsung", () => {
+ const user = buatUser({ role: "GRUP_LEADER_IR", accessKeys: [ACCESS_KEYS.GA_SAFETY_MEETING] });
+ expect(hasAccess(user, ACCESS_KEYS.ADMINISTRASI)).toBe(true);
+ expect(hasAccess(user, ACCESS_KEYS.GA_SAFETY_MEETING)).toBe(true);
+ });
+
  it("accessKeys berisi 'ALL' membuka semua access key", () => {
  const user = buatUser({ role: "KARYAWAN", accessKeys: ["ALL"] });
  expect(hasAccess(user, ACCESS_KEYS.CIVIL_TPS3R)).toBe(true);
