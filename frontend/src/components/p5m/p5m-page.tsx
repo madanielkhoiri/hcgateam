@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Clock3,
   Edit3,
   FileDown,
   ImagePlus,
@@ -39,6 +40,8 @@ type P5mRow = {
   status: "DRAFT" | "OPEN" | "CLOSED";
   startTime: string;
   endTime: string | null;
+  openedAt: string | null;
+  closedAt: string | null;
   _count?: { attendances: number };
   attendances?: Array<{ id: number }>;
   creator?: {
@@ -191,6 +194,24 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function formatDuration(row: P5mRow, now: number) {
+  if (!row.openedAt) return row.status === "DRAFT" ? "Belum dimulai" : "-";
+
+  const startedAt = new Date(row.openedAt).getTime();
+  const finishedAt = row.closedAt ? new Date(row.closedAt).getTime() : now;
+  const totalSeconds = Math.max(0, Math.floor((finishedAt - startedAt) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const duration = hours > 0
+    ? `${hours} jam ${String(minutes).padStart(2, "0")} menit`
+    : minutes > 0
+      ? `${minutes} menit ${String(seconds).padStart(2, "0")} detik`
+      : `${seconds} detik`;
+
+  return row.status === "OPEN" ? `Berjalan · ${duration}` : duration;
+}
+
 function fileUrl(path: string) {
   if (!path) {
     return "";
@@ -257,6 +278,12 @@ export default function P5mPage() {
   const [attendanceTarget, setAttendanceTarget] = useState<P5mRow | null>(null);
   const [attendanceForm, setAttendanceForm] = useState<AttendanceForm>(emptyAttendance);
   const [reviewTarget, setReviewTarget] = useState<(Omit<P5mRow, "attendances"> & { attendances: AttendanceRow[] }) | null>(null);
+  const [durationNow, setDurationNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setDurationNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     try {
@@ -809,6 +836,7 @@ export default function P5mPage() {
                 <th>MATERI</th>
                 <th>DOKUMENTASI</th>
                 <th>STATUS ABSENSI</th>
+                <th>DURASI</th>
                 <th>AKSI</th>
               </tr>
             </thead>
@@ -816,7 +844,7 @@ export default function P5mPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={10}>
+                  <td colSpan={11}>
                     <div className={styles.emptyState}>
                       <Loader2 className={styles.spinner} size={28} />
                       Memuat data P5M...
@@ -847,6 +875,13 @@ export default function P5mPage() {
                       <td>
                         <strong>{row.status === "OPEN" ? "Dibuka" : row.status === "CLOSED" ? "Ditutup" : "Draft"}</strong><br />
                         {row._count?.attendances ?? 0} peserta
+                      </td>
+                      <td>
+                        <span className={styles.durationCell}>
+                          <Clock3 size={14} />
+                          <strong>{formatDuration(row, durationNow)}</strong>
+                          {row.openedAt && <small>{row.startTime}{row.endTime ? ` – ${row.endTime}` : " – sekarang"}</small>}
+                        </span>
                       </td>
                       <td>
                         <div className={styles.actions}>
@@ -1260,7 +1295,7 @@ export default function P5mPage() {
             </div>
             <form onSubmit={submitAttendance}>
               <div className={styles.modalBody}>
-                <p>Nama, NRP, jabatan, dan departemen diambil otomatis dari akun Anda.</p>
+                <div className={styles.attendanceChecklist}>
                 {([
                   ["sleep72", "Tidur cukup 72 jam terakhir (minimal 18 jam)"],
                   ["sleep48", "Tidur cukup 48 jam terakhir (minimal 12 jam)"],
@@ -1272,12 +1307,15 @@ export default function P5mPage() {
                   ["noFamilyProblem", "Bebas masalah keluarga"],
                   ["understandsWork", "Memahami pekerjaan yang akan dilakukan"],
                 ] as Array<[keyof AttendanceForm, string]>).map(([key, label]) => (
-                  <label key={key} style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
+                  <label className={styles.attendanceCheck} key={key}>
                     <input type="checkbox" checked={Boolean(attendanceForm[key])} onChange={(e) => setAttendanceForm((v) => ({ ...v, [key]: e.target.checked }))} /> {label}
                   </label>
                 ))}
-                <label><span>Tidur 24 jam terakhir</span><select value={attendanceForm.sleep24} onChange={(e) => setAttendanceForm((v) => ({ ...v, sleep24: e.target.value as AttendanceForm["sleep24"] }))}><option value="LESS_THAN_4">Kurang dari 4 jam</option><option value="BETWEEN_4_6">4–6 jam</option><option value="MORE_THAN_6">Lebih dari 6 jam</option></select></label>
-                <label><span>Kondisi kesehatan</span><select value={attendanceForm.health} onChange={(e) => setAttendanceForm((v) => ({ ...v, health: e.target.value as AttendanceForm["health"] }))}><option value="HEALTHY">Sehat</option><option value="SICK">Sakit</option></select></label>
+                </div>
+                <div className={styles.attendanceSelects}>
+                  <label><span>Tidur 24 jam terakhir</span><select value={attendanceForm.sleep24} onChange={(e) => setAttendanceForm((v) => ({ ...v, sleep24: e.target.value as AttendanceForm["sleep24"] }))}><option value="LESS_THAN_4">Kurang dari 4 jam</option><option value="BETWEEN_4_6">4–6 jam</option><option value="MORE_THAN_6">Lebih dari 6 jam</option></select></label>
+                  <label><span>Kondisi kesehatan</span><select value={attendanceForm.health} onChange={(e) => setAttendanceForm((v) => ({ ...v, health: e.target.value as AttendanceForm["health"] }))}><option value="HEALTHY">Sehat</option><option value="SICK">Sakit</option></select></label>
+                </div>
               </div>
               <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={() => setAttendanceTarget(null)}>Batal</button><button className={styles.primaryButton} disabled={saving}>{saving ? "Mengirim..." : "Kirim Absensi"}</button></div>
             </form>
