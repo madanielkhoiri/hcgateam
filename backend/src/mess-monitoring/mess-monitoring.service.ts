@@ -3,6 +3,7 @@ import { MessOccupantShift, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AktorPostingan } from '../postingan/postingan-aktor';
 import type { CreateMessRoomDto, MessOccupantDto, UpdateMessOccupantDto } from './dto/mess-monitoring.dto';
+import { MESS_ROOM_CATALOG } from './mess-room-catalog';
 
 const VIEWERS: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.PJO];
 const ADMINS: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
@@ -33,6 +34,8 @@ export class MessMonitoringService {
       return { ...room, cleanliness: doneToday ? 'SUDAH' : 'BELUM', activeCleaning: active, lastCleaning: latest };
     });
   }
+
+  catalog() { return MESS_ROOM_CATALOG; }
 
   async list(actor: AktorPostingan) { this.require(actor, VIEWERS); return this.rows(); }
   async operations(actor: AktorPostingan) { this.require(actor, OPERATORS); return this.rows(); }

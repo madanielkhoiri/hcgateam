@@ -407,7 +407,7 @@ export default function JadwalMcuPage() {
         ) : jadwal.length === 0 ? (
           <Kosong
             judul="Belum ada jadwal MCU"
-            keterangan="Buat jadwal untuk karyawan yang sudah masuk masa reminder H-3 bulan."
+            keterangan="Buat jadwal kapan saja untuk karyawan yang sudah terdaftar. Sisa masa MCU dihitung otomatis setiap hari."
           />
         ) : (
           <div className={styles.tableWrap}>

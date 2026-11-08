@@ -95,6 +95,7 @@ function buatService(overrides: {
 }
 
 describe('McuRekomendasiService.submit', () => {
+  const pdf = { filePdfRekomendasi: 'mcu/rekomendasi/hasil.pdf' };
   it('menolak role selain Dokter', async () => {
     const { service } = buatService();
 
@@ -115,14 +116,14 @@ describe('McuRekomendasiService.submit', () => {
     const { service } = buatService();
 
     await expect(
-      service.submit(100, { status: StatusRekomendasi.FOLLOW_UP } as any, aktor(UserRole.DOKTER)),
+      service.submit(100, { status: StatusRekomendasi.FOLLOW_UP, ...pdf } as any, aktor(UserRole.DOKTER)),
     ).rejects.toThrow('Surat rujukan FU wajib diterbitkan Dokter');
   });
 
   it('rekomendasi FIT: siklusKe mulai dari 1 kalau belum pernah ada rekomendasi', async () => {
     const { service, create } = buatService({ hasilMcu: hasilMcuFixture() });
 
-    await service.submit(100, { status: StatusRekomendasi.FIT } as any, aktor(UserRole.DOKTER, 9));
+    await service.submit(100, { status: StatusRekomendasi.FIT, ...pdf } as any, aktor(UserRole.DOKTER, 9));
 
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ siklusKe: 1, dokterId: 9 }) }),
@@ -132,7 +133,7 @@ describe('McuRekomendasiService.submit', () => {
   it('siklusKe lanjut dari rekomendasi sebelumnya (mis. sebelumnya 2 -> jadi 3)', async () => {
     const { service, create } = buatService({ hasilMcu: hasilMcuFixture({ siklusSebelumnya: 2 }) });
 
-    await service.submit(100, { status: StatusRekomendasi.FIT } as any, aktor(UserRole.DOKTER));
+    await service.submit(100, { status: StatusRekomendasi.FIT, ...pdf } as any, aktor(UserRole.DOKTER));
 
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ siklusKe: 3 }) }));
   });
@@ -140,7 +141,7 @@ describe('McuRekomendasiService.submit', () => {
   it('rekomendasi FIT menandai hasilMcu SELESAI dan TIDAK membuat record Follow Up baru', async () => {
     const { service, hasilMcuUpdate, followUpCreate } = buatService();
 
-    await service.submit(100, { status: StatusRekomendasi.FIT } as any, aktor(UserRole.DOKTER));
+    await service.submit(100, { status: StatusRekomendasi.FIT, ...pdf } as any, aktor(UserRole.DOKTER));
 
     expect(hasilMcuUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { statusReview: StatusReview.SELESAI } }),
@@ -153,7 +154,7 @@ describe('McuRekomendasiService.submit', () => {
 
     await service.submit(
       100,
-      { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf', penyakit: 'Hipertensi' } as any,
+      { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf', penyakit: 'Hipertensi', ...pdf } as any,
       aktor(UserRole.DOKTER),
     );
 
@@ -169,7 +170,7 @@ describe('McuRekomendasiService.submit', () => {
 
     await service.submit(
       100,
-      { status: StatusRekomendasi.FIT, hasilFollowUpAsalId: 55 } as any,
+      { status: StatusRekomendasi.FIT, hasilFollowUpAsalId: 55, ...pdf } as any,
       aktor(UserRole.DOKTER),
     );
 
@@ -183,7 +184,8 @@ describe('McuRekomendasiService.submit', () => {
 });
 
 describe('McuRekomendasiService — nama penyakit rekomendasi Follow Up', () => {
-  const fu = { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf' };
+  const pdf = { filePdfRekomendasi: 'mcu/rekomendasi/hasil.pdf' };
+  const fu = { status: StatusRekomendasi.FOLLOW_UP, suratRujukanFu: 'mcu/rujukan/1.pdf', ...pdf };
 
   it('menolak rekomendasi FOLLOW_UP tanpa nama penyakit', async () => {
     const { service, create } = buatService();
@@ -217,7 +219,7 @@ describe('McuRekomendasiService — nama penyakit rekomendasi Follow Up', () => 
   it('rekomendasi FIT tidak menyimpan penyakit walau ada yang terkirim', async () => {
     const { service, create } = buatService();
 
-    await service.submit(100, { status: StatusRekomendasi.FIT, penyakit: 'Hipertensi' } as any, aktor(UserRole.DOKTER));
+    await service.submit(100, { status: StatusRekomendasi.FIT, penyakit: 'Hipertensi', ...pdf } as any, aktor(UserRole.DOKTER));
 
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ penyakit: null }) }),

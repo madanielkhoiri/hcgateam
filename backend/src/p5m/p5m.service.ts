@@ -337,10 +337,17 @@ export class P5mService {
         jobTitleSnapshot: user.jabatan?.trim() || user.profilKaryawan?.jabatan?.trim() || '-',
         departmentSnapshot: user.departemen?.trim() || user.profilKaryawan?.departemen.namaDepartemen?.trim() || 'HCGA',
         ...dto,
+        allowedToWork: dto.health === 'HEALTHY',
+        reviewNote: dto.health === 'SICK' ? 'Perlu observasi' : null,
       },
       update: { ...dto, nameSnapshot: user.name || user.profilKaryawan?.nama || '-', nrpSnapshot: nrp,
         jobTitleSnapshot: user.jabatan?.trim() || user.profilKaryawan?.jabatan?.trim() || '-',
-        departmentSnapshot: user.departemen?.trim() || user.profilKaryawan?.departemen.namaDepartemen?.trim() || 'HCGA' },
+        departmentSnapshot: user.departemen?.trim() || user.profilKaryawan?.departemen.namaDepartemen?.trim() || 'HCGA',
+        allowedToWork: dto.health === 'HEALTHY',
+        reviewNote: dto.health === 'SICK' ? 'Perlu observasi' : null,
+        reviewedById: null,
+        reviewedAt: null,
+      },
     });
     const names = await this.prisma.p5mAttendance.findMany({
       where: { meetingId: id }, orderBy: { submittedAt: 'asc' }, select: { nameSnapshot: true },

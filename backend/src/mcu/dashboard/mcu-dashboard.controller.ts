@@ -6,6 +6,7 @@
 import {
   BadRequestException,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
@@ -21,7 +22,7 @@ import type { AktorMcu } from '../common/mcu-aktor';
 import { McuDashboardService } from './mcu-dashboard.service';
 
 /** Ringkasan/tren/history lintas karyawan — bukan konsumsi Karyawan/SHE/Klinik. */
-const PERAN_DASHBOARD = [UserRole.HC, UserRole.DOKTER];
+const ROLE_DASHBOARD: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
 
 @Controller('mcu')
 @UseGuards(JwtAuthGuard)
@@ -32,21 +33,29 @@ export class McuDashboardController {
     private readonly akses: McuAksesService,
   ) {}
 
+  private wajibAdminDashboard(aktor: AktorMcu): void {
+    if (!ROLE_DASHBOARD.includes(aktor.role)) {
+      throw new ForbiddenException(
+        'Dashboard MCU hanya dapat diakses oleh Admin Utama dan Admin HC',
+      );
+    }
+  }
+
   @Get('ringkasan')
   ringkasan(@Aktor() aktor: AktorMcu) {
-    this.akses.wajibPeran(aktor, ...PERAN_DASHBOARD);
+    this.wajibAdminDashboard(aktor);
     return this.service.ringkasan();
   }
 
   @Get('dashboard/tren')
   trenDanStatus(@Aktor() aktor: AktorMcu) {
-    this.akses.wajibPeran(aktor, ...PERAN_DASHBOARD);
+    this.wajibAdminDashboard(aktor);
     return this.service.trenDanStatus();
   }
 
   @Get('durasi-proses')
   durasiProses(@Aktor() aktor: AktorMcu) {
-    this.akses.wajibPeran(aktor, ...PERAN_DASHBOARD);
+    this.wajibAdminDashboard(aktor);
     return this.service.durasiProses();
   }
 
@@ -58,7 +67,7 @@ export class McuDashboardController {
     @Query('tahun') tahun?: string,
     @Query('bulan') bulan?: string,
   ) {
-    this.akses.wajibPeran(aktor, UserRole.HC, UserRole.DOKTER);
+    this.wajibAdminDashboard(aktor);
 
     const periodeValid = (periode ?? 'TAHUN').toUpperCase();
 
@@ -89,10 +98,10 @@ export class McuDashboardController {
     @Aktor() aktor: AktorMcu,
     @Param('karyawanId', ParseIntPipe) karyawanId: number,
   ) {
-    this.akses.wajibPeran(aktor, ...PERAN_DASHBOARD);
+    this.wajibAdminDashboard(aktor);
     return this.service.historyKaryawan(
       karyawanId,
-      this.akses.punyaPeran(aktor, UserRole.HC, UserRole.DOKTER),
+      true,
     );
   }
 }

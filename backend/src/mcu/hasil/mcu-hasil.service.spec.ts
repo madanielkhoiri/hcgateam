@@ -165,7 +165,7 @@ describe('McuHasilService.pathFile', () => {
     await expect(service.pathFile(1, aktor(role))).resolves.toBe('/abs/mcu/hasil-mcu/x.pdf');
   });
 
-  it.each([UserRole.ADMIN_DEPT, UserRole.KLINIK])(
+  it.each([UserRole.ADMIN_DEPT, UserRole.KLINIK, UserRole.SHE])(
     'menolak role %s membuka file medis mentah',
     async (role) => {
       const { service } = buatService();
@@ -174,28 +174,13 @@ describe('McuHasilService.pathFile', () => {
     },
   );
 
-  it('Karyawan yang belum tertaut ke data karyawan ditolak', async () => {
-    const { service } = buatService({ karyawanDariAkun: null });
-
-    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(NotFoundException);
-  });
-
-  it('Karyawan yang bukan pemilik hasil MCU ini ditolak', async () => {
-    const { service } = buatService({
-      hasil: hasilFixture({ karyawanId: 7 }),
-      karyawanDariAkun: { id: 999 },
-    });
-
-    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(NotFoundException);
-  });
-
-  it('Karyawan pemilik hasil MCU ini boleh unduh file miliknya sendiri', async () => {
+  it('Karyawan hanya melihat rekomendasi dan tidak boleh mengunduh file MCU mentah', async () => {
     const { service } = buatService({
       hasil: hasilFixture({ karyawanId: 7 }),
       karyawanDariAkun: { id: 7 },
     });
 
-    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).resolves.toBe('/abs/mcu/hasil-mcu/x.pdf');
+    await expect(service.pathFile(1, aktor(UserRole.KARYAWAN))).rejects.toThrow(ForbiddenException);
   });
 
   it('menolak kalau file sudah dihapus sesuai kebijakan retensi', async () => {

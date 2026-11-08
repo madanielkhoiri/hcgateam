@@ -253,7 +253,7 @@ export class McuRekomendasiService {
   /**
    * Dokter submit rekomendasi FIT atau FU.
    * Bila FU, surat rujukan Dokter wajib dilampirkan dan
-   * record FOLLOW_UP otomatis dibuat (biaya selalu mandiri).
+   * record FOLLOW_UP otomatis dibuat; pembiayaan kemudian ditentukan HC.
    */
   async submit(hasilMcuId: number, dto: SubmitRekomendasiDto, aktor: AktorMcu) {
     this.akses.wajibPeran(aktor, UserRole.DOKTER);
@@ -268,6 +268,12 @@ export class McuRekomendasiService {
 
     if (!hasil) {
       throw new NotFoundException('Hasil MCU tidak ditemukan');
+    }
+
+    if (!dto.filePdfRekomendasi) {
+      throw new BadRequestException(
+        'PDF rekomendasi Dokter wajib dilampirkan untuk keputusan FIT maupun Follow Up',
+      );
     }
 
     if (dto.status === StatusRekomendasi.FOLLOW_UP && !dto.suratRujukanFu) {

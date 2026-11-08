@@ -2,7 +2,7 @@
 // FILE: backend/src/mcu/follow-up/mcu-follow-up.service.ts
 // FUNGSI: Siklus Follow Up sampai FIT tanpa dead-end
 // Referensi: Bagian 4.7 alur-workflow-mcu-periodik-v3.md
-// Aturan: biaya selalu mandiri, batas waktu manual oleh HC,
+// Aturan: pembiayaan dipilih HC, batas waktu manual oleh HC,
 // maksimal 2 bulan setelah MCU ulang, dan bila terlewat HC
 // me-reminder Admin Dept untuk penjadwalan FU ulang.
 // ==================================================
@@ -13,8 +13,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import {
+  PosBiayaFollowUp,
   Prisma,
   StatusFollowUp,
   StatusReview,
@@ -47,6 +48,9 @@ export class TetapkanBatasFuDto {
   @IsOptional()
   @IsInt()
   klinikId?: number;
+
+  @IsEnum(PosBiayaFollowUp)
+  posBiaya: PosBiayaFollowUp;
 }
 
 export class PilihTanggalFuDto {
@@ -281,6 +285,7 @@ export class McuFollowUpService {
       where: { id },
       data: {
         batasWaktuFu: batas,
+        posBiaya: dto.posBiaya,
         ditetapkanOlehHcId: aktor.id,
         ditetapkanAt: new Date(),
         ...(dto.klinikId !== undefined ? { klinikId: dto.klinikId } : {}),
@@ -437,6 +442,7 @@ export class McuFollowUpService {
     const target = [
       ...(await this.notifikasi.penerimaPeran(UserRole.HC)),
       ...(await this.notifikasi.penerimaPeran(UserRole.DOKTER)),
+      ...(await this.notifikasi.penerimaPeran(UserRole.SHE)),
     ].filter((item) => item.penerimaId);
 
     await this.notifikasi.kirimBanyak(

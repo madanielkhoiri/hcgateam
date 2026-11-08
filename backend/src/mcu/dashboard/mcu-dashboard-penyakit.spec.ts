@@ -162,7 +162,7 @@ describe('McuDashboardController.penyakitTerbanyak — akses & validasi', () => 
 
   const aktor = (role: UserRole): AktorMcu => ({ id: 1, role, username: 'u' });
 
-  it.each([UserRole.HC, UserRole.DOKTER, UserRole.ADMIN, UserRole.SUPER_ADMIN])('mengizinkan %s', (role) => {
+  it.each([UserRole.ADMIN, UserRole.SUPER_ADMIN])('mengizinkan %s', (role) => {
     const { controller, service } = buatController();
 
     controller.penyakitTerbanyak(aktor(role), 'TAHUN', '2026');
@@ -170,7 +170,15 @@ describe('McuDashboardController.penyakitTerbanyak — akses & validasi', () => 
     expect(service.penyakitTerbanyak).toHaveBeenCalledWith('TAHUN', 2026, expect.any(Number));
   });
 
-  it.each([UserRole.ADMIN_DEPT, UserRole.KARYAWAN, UserRole.SHE, UserRole.KLINIK])(
+  it.each([
+    UserRole.HC,
+    UserRole.DOKTER,
+    UserRole.ADMIN_DEPT,
+    UserRole.KARYAWAN,
+    UserRole.KLINIK,
+    UserRole.SHE,
+    UserRole.SECTION_HEAD,
+  ])(
     'menolak %s (data medis)',
     (role) => {
       const { controller, service } = buatController();
@@ -183,19 +191,19 @@ describe('McuDashboardController.penyakitTerbanyak — akses & validasi', () => 
   it('menolak periode, tahun, dan bulan yang tidak valid', () => {
     const { controller } = buatController();
 
-    expect(() => controller.penyakitTerbanyak(aktor(UserRole.HC), 'HARI', '2026')).toThrow(BadRequestException);
-    expect(() => controller.penyakitTerbanyak(aktor(UserRole.HC), 'TAHUN', '1999')).toThrow(BadRequestException);
-    expect(() => controller.penyakitTerbanyak(aktor(UserRole.HC), 'TAHUN', 'abc')).toThrow(BadRequestException);
-    expect(() => controller.penyakitTerbanyak(aktor(UserRole.HC), 'BULAN', '2026', '13')).toThrow(BadRequestException);
+    expect(() => controller.penyakitTerbanyak(aktor(UserRole.ADMIN), 'HARI', '2026')).toThrow(BadRequestException);
+    expect(() => controller.penyakitTerbanyak(aktor(UserRole.ADMIN), 'TAHUN', '1999')).toThrow(BadRequestException);
+    expect(() => controller.penyakitTerbanyak(aktor(UserRole.ADMIN), 'TAHUN', 'abc')).toThrow(BadRequestException);
+    expect(() => controller.penyakitTerbanyak(aktor(UserRole.ADMIN), 'BULAN', '2026', '13')).toThrow(BadRequestException);
   });
 
   it('periode bawaan TAHUN dan bulan valid diteruskan untuk mode BULAN', () => {
     const { controller, service } = buatController();
 
-    controller.penyakitTerbanyak(aktor(UserRole.HC), undefined, '2026');
+    controller.penyakitTerbanyak(aktor(UserRole.ADMIN), undefined, '2026');
     expect(service.penyakitTerbanyak).toHaveBeenLastCalledWith('TAHUN', 2026, expect.any(Number));
 
-    controller.penyakitTerbanyak(aktor(UserRole.HC), 'bulan', '2026', '5');
+    controller.penyakitTerbanyak(aktor(UserRole.ADMIN), 'bulan', '2026', '5');
     expect(service.penyakitTerbanyak).toHaveBeenLastCalledWith('BULAN', 2026, 5);
   });
 });

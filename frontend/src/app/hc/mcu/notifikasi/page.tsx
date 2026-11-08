@@ -132,24 +132,6 @@ export default function NotifikasiMcuPage() {
     }
   }
 
-  async function prosesAntreanEmail() {
-    setProses(true);
-    setGalat(null);
-
-    try {
-      const hasil = await mcuApi.kirim<{ diproses: number }>(
-        '/notifikasi/proses-antrean',
-      );
-
-      setSukses(`${hasil.diproses} email dalam antrean berhasil diproses.`);
-      await muat();
-    } catch (error) {
-      setGalat((error as Error).message);
-    } finally {
-      setProses(false);
-    }
-  }
-
   return (
     <>
       <div className={styles.breadcrumb}>
@@ -167,8 +149,8 @@ export default function NotifikasiMcuPage() {
           <div>
             <h1>Notifikasi &amp; Master Departemen</h1>
             <p>
-              Seluruh notifikasi dikirim in-app dan via email Outlook (SMTP
-              internal). Peran akun MCU (Admin Dept, HC, Dokter, SHE, Klinik
+              Seluruh notifikasi operasional dikirim melalui aplikasi dan
+              WhatsApp. Peran akun MCU (Admin Dept, HC, Dokter, SHE, Klinik
               Provider) diatur lewat kolom Role pada halaman Manajemen Akun -
               satu akun satu role.
             </p>
@@ -184,17 +166,6 @@ export default function NotifikasiMcuPage() {
             Kembali
           </Link>
 
-          {adalahHc ? (
-            <button
-              type="button"
-              className={`${styles.tombol} ${styles.tombolLembut}`}
-              onClick={prosesAntreanEmail}
-              disabled={proses}
-            >
-              <BellRing size={15} />
-              Proses Antrean Email
-            </button>
-          ) : null}
         </div>
       </div>
 

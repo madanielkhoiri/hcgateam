@@ -786,6 +786,7 @@ function RekomendasiAdminPage() {
                 onClick={submitRekomendasi}
                 disabled={
                   proses ||
+                  !filePdfRekomendasi ||
                   (status === 'FOLLOW_UP' && !suratRujukanFu) ||
                   (status === 'FOLLOW_UP' && !penyakit.trim()) ||
                   mengunggah !== null
@@ -821,7 +822,7 @@ function RekomendasiAdminPage() {
               />
             </Field>
 
-            <Field label="PDF Rekomendasi (opsional)" lebar>
+            <Field label="PDF Rekomendasi Dokter (wajib)" lebar>
               <input
                 className={styles.input}
                 type="file"
@@ -890,9 +891,9 @@ function RekomendasiAdminPage() {
           {status === 'FOLLOW_UP' ? (
             <div style={{ marginTop: 12 }}>
               <Pesan jenis="info">
-                Rekomendasi Follow Up otomatis membuat kasus FU dengan biaya
-                mandiri. Batas waktunya ditetapkan HC secara manual, maksimal 2
-                bulan setelah MCU ulang.
+                Rekomendasi Follow Up otomatis membuat kasus FU. Pos biaya,
+                klinik, dan batas waktunya ditetapkan HC secara manual, maksimal
+                2 bulan setelah MCU ulang.
               </Pesan>
             </div>
           ) : null}

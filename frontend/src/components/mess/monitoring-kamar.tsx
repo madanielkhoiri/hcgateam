@@ -7,7 +7,8 @@ import styles from '@/app/ga/mess/mess.module.css';
 
 type PersonForm = { id?: number; nrp: string; name: string; shift: ShiftMess };
 const emptyPerson = (): PersonForm => ({ nrp: '', name: '', shift: 'PAGI' });
-const BUILDINGS = ['1', '2', '3', 'A', 'B', 'C', 'D', 'E', 'F'];
+const BUILDINGS = ['A', 'B', 'C', 'D', 'E', 'F', '1', '2', '3'];
+const buildingLabel = (value: string) => /^[123]$/.test(value) ? `Staff ${value}` : `Mess ${value}`;
 
 function formatDuration(seconds?: number | null) {
   if (seconds === null || seconds === undefined) return '-';
@@ -44,7 +45,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
     const keyword = query.trim().toLowerCase();
     return rows.filter((room) => {
       const matchesQuery = !keyword || room.number.toLowerCase().includes(keyword)
-        || `gedung ${room.building}`.toLowerCase().includes(keyword)
+        || buildingLabel(room.building).toLowerCase().includes(keyword)
         || room.occupants.some((person) => person.name.toLowerCase().includes(keyword) || person.nrp.toLowerCase().includes(keyword));
       return matchesQuery
         && (filterBuilding === 'ALL' || room.building === filterBuilding)
@@ -96,7 +97,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
     {error && !open && <div className={styles.error}>{error}</div>}
     <section className={styles.filters}>
       <label className={styles.filterSearch}>Cari Kamar / Karyawan<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nomor kamar, nama, atau NRP..." /></label>
-      <label>Gedung<select value={filterBuilding} onChange={(event) => setFilterBuilding(event.target.value)}><option value="ALL">Semua Gedung</option>{BUILDINGS.map((item) => <option key={item} value={item}>Gedung {item}</option>)}</select></label>
+      <label>Gedung<select value={filterBuilding} onChange={(event) => setFilterBuilding(event.target.value)}><option value="ALL">Semua Gedung</option>{BUILDINGS.map((item) => <option key={item} value={item}>{buildingLabel(item)}</option>)}</select></label>
       <label>Status Kamar<select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}><option value="ALL">Semua Status</option><option value="BELUM">Belum</option><option value="SUDAH">Sudah</option></select></label>
       <label>Shift<select value={filterShift} onChange={(event) => setFilterShift(event.target.value)}><option value="ALL">Semua Shift</option><option value="PAGI">Shift Pagi</option><option value="MALAM">Shift Malam</option><option value="CUTI">Cuti</option></select></label>
       <button className={styles.filterReset} onClick={resetFilters} disabled={!query && filterBuilding === 'ALL' && filterStatus === 'ALL' && filterShift === 'ALL'}>Reset</button>
@@ -106,7 +107,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
       <table>
         <thead><tr><th>No</th><th>Gedung</th><th>Kamar</th><th>Karyawan</th><th>Status & Durasi Kebersihan</th>{admin && <th>Aksi</th>}</tr></thead>
         <tbody>{filteredRows.map((room, index) => <tr key={room.id}>
-          <td>{index + 1}</td><td><b>Gedung {room.building}</b></td><td><b>Kamar {room.number}</b></td>
+          <td>{index + 1}</td><td><b>{buildingLabel(room.building)}</b></td><td><b>Kamar {room.number}</b></td>
           <td><div className={styles.peopleCompact}>
             {room.occupants.map((person) => <div key={person.id} className={styles.personCompact}>
               <span className={`${styles.dot} ${styles[person.shift.toLowerCase()]}`} />
@@ -135,7 +136,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
       <div className={styles.modalHead}><div><h2>{editing ? 'Edit Kamar' : 'Tambah Kamar'}</h2><p>Atur kamar dan seluruh karyawan di dalamnya.</p></div><button onClick={() => setOpen(false)}>×</button></div>
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.roomFields}>
-        <label>Gedung<select value={building} onChange={(e) => setBuilding(e.target.value)}>{BUILDINGS.map((item) => <option key={item} value={item}>Gedung {item}</option>)}</select></label>
+        <label>Gedung<select value={building} onChange={(e) => setBuilding(e.target.value)}>{BUILDINGS.map((item) => <option key={item} value={item}>{buildingLabel(item)}</option>)}</select></label>
         <label>Nomor Kamar<input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Contoh: 212" /></label>
       </div>
       <div className={styles.modalTitle}><b>Daftar Karyawan</b><button onClick={() => setPeople((current) => [...current, emptyPerson()])}>+ Tambah Karyawan</button></div>

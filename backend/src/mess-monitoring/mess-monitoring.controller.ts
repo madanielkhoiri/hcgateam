@@ -8,6 +8,7 @@ import { MessMonitoringService } from './mess-monitoring.service';
 @UseGuards(JwtAuthGuard)
 export class MessMonitoringController {
   constructor(private readonly service: MessMonitoringService) {}
+  @Get('catalog') catalog() { return this.service.catalog(); }
   @Get('dashboard') dashboard(@Aktor() a: AktorPostingan) { return this.service.dashboard(a); }
   @Get('rooms') rooms(@Aktor() a: AktorPostingan) { return this.service.list(a); }
   @Get('operations') operations(@Aktor() a: AktorPostingan) { return this.service.operations(a); }

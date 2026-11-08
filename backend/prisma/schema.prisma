@@ -82,15 +82,15 @@ enum StatusKwitansiObat {
 }
 
 model KwitansiObatNotifikasi {
-  id           Int                @id @default(autoincrement())
-  karyawanId   Int
-  status       StatusKwitansiObat
-  nominal      Decimal?           @db.Decimal(15, 2)
-  alasan       String?            @db.Text
-  tanggalStatus DateTime          @default(now())
-  dibuatOlehId Int
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id            Int                @id @default(autoincrement())
+  karyawanId    Int
+  status        StatusKwitansiObat
+  nominal       Decimal?           @db.Decimal(15, 2)
+  alasan        String?            @db.Text
+  tanggalStatus DateTime           @default(now())
+  dibuatOlehId  Int
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@index([karyawanId, createdAt])
   @@index([status, createdAt])
@@ -138,8 +138,8 @@ model User {
   postActivities    PostActivity[]          @relation("PostActivityCreator")
 
   p5mMeetings           P5mMeeting[]          @relation("P5mMeetingCreator")
-  p5mAttendances        P5mAttendance[]        @relation("P5mAttendanceUser")
-  p5mReviews            P5mAttendance[]        @relation("P5mAttendanceReviewer")
+  p5mAttendances        P5mAttendance[]       @relation("P5mAttendanceUser")
+  p5mReviews            P5mAttendance[]       @relation("P5mAttendanceReviewer")
   preActivities         PreActivity[]         @relation("PreActivityCreator")
   safetyMeetings        SafetyMeeting[]
   transportRecords      TransportRecord[]     @relation("TransportRecordCreator")
@@ -497,22 +497,22 @@ model ToolAsset {
 }
 
 model ToolLoan {
-  id                 Int                  @id @default(autoincrement())
-  toolId             Int                  @map("tool_id")
-  borrowerId         Int                  @map("borrower_id")
-  borrowedAt         DateTime             @default(now()) @map("borrowed_at")
-  returnedAt         DateTime?            @map("returned_at")
-  returnerId         Int?                 @map("returner_id")
-  returnCondition    ToolReturnCondition? @map("return_condition")
-  returnNote         String?              @db.Text @map("return_note")
-  borrowedByUserId   Int                  @map("borrowed_by_user_id")
-  returnedByUserId   Int?                 @map("returned_by_user_id")
-  createdAt          DateTime             @default(now()) @map("created_at")
-  updatedAt          DateTime             @updatedAt @map("updated_at")
+  id               Int                  @id @default(autoincrement())
+  toolId           Int                  @map("tool_id")
+  borrowerId       Int                  @map("borrower_id")
+  borrowedAt       DateTime             @default(now()) @map("borrowed_at")
+  returnedAt       DateTime?            @map("returned_at")
+  returnerId       Int?                 @map("returner_id")
+  returnCondition  ToolReturnCondition? @map("return_condition")
+  returnNote       String?              @map("return_note") @db.Text
+  borrowedByUserId Int                  @map("borrowed_by_user_id")
+  returnedByUserId Int?                 @map("returned_by_user_id")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
 
-  tool      ToolAsset          @relation(fields: [toolId], references: [id], onDelete: Restrict)
-  borrower  ToolBorrowEmployee @relation("ToolLoanBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
-  returner  ToolBorrowEmployee? @relation("ToolLoanReturner", fields: [returnerId], references: [id], onDelete: Restrict)
+  tool     ToolAsset           @relation(fields: [toolId], references: [id], onDelete: Restrict)
+  borrower ToolBorrowEmployee  @relation("ToolLoanBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+  returner ToolBorrowEmployee? @relation("ToolLoanReturner", fields: [returnerId], references: [id], onDelete: Restrict)
 
   @@index([toolId, returnedAt])
   @@index([borrowerId, borrowedAt])
@@ -784,28 +784,28 @@ model PostActivity {
 }
 
 model P5mMeeting {
-  id                 Int      @id @default(autoincrement())
-  activityDate       DateTime @map("activity_date") @db.Date
-  startTime          String   @default("00:00") @map("start_time")
-  endTime            String?  @map("end_time")
+  id                 Int       @id @default(autoincrement())
+  activityDate       DateTime  @map("activity_date") @db.Date
+  startTime          String    @default("00:00") @map("start_time")
+  endTime            String?   @map("end_time")
   location           String
-  topic              String   @db.Text
+  topic              String    @db.Text
   speaker            String?
-  participants       String?  @db.Text
-  supervisors        Json     @default("[]")
-  supervisorName     String   @default("") @map("supervisor_name")
-  supervisorSignPath String?  @map("supervisor_sign_path")
-  participantNames   String[] @default([]) @map("participant_names")
-  documentationPaths String[] @default([]) @map("documentation_paths")
-  notes              String?  @db.Text
+  participants       String?   @db.Text
+  supervisors        Json      @default("[]")
+  supervisorName     String    @default("") @map("supervisor_name")
+  supervisorSignPath String?   @map("supervisor_sign_path")
+  participantNames   String[]  @default([]) @map("participant_names")
+  documentationPaths String[]  @default([]) @map("documentation_paths")
+  notes              String?   @db.Text
   status             P5mStatus @default(DRAFT)
   openedAt           DateTime? @map("opened_at")
   closedAt           DateTime? @map("closed_at")
-  createdBy          Int      @map("created_by")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  createdBy          Int       @map("created_by")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  creator User @relation("P5mMeetingCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  creator     User            @relation("P5mMeetingCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   attendances P5mAttendance[]
 
   @@index([activityDate])
@@ -815,34 +815,34 @@ model P5mMeeting {
 }
 
 model P5mAttendance {
-  id                         Int        @id @default(autoincrement())
-  meetingId                  Int        @map("meeting_id")
-  userId                     Int        @map("user_id")
-  nameSnapshot               String     @map("name_snapshot")
-  nrpSnapshot                String     @map("nrp_snapshot")
-  jobTitleSnapshot           String     @map("job_title_snapshot")
-  departmentSnapshot         String     @default("HCGA") @map("department_snapshot")
-  sleep72                    Boolean    @map("sleep_72")
-  sleep48                    Boolean    @map("sleep_48")
-  sleep24                    P5mSleep24 @map("sleep_24")
-  nutritionEnough            Boolean    @map("nutrition_enough")
-  noAlcoholMedicine          Boolean    @map("no_alcohol_medicine")
-  noExcessActivity           Boolean    @map("no_excess_activity")
-  noExcessStress             Boolean    @map("no_excess_stress")
-  noSeriousIllness           Boolean    @map("no_serious_illness")
-  noFamilyProblem            Boolean    @map("no_family_problem")
-  understandsWork            Boolean    @map("understands_work")
-  health                     P5mHealth
-  allowedToWork              Boolean?   @map("allowed_to_work")
-  reviewNote                 String?    @map("review_note") @db.Text
-  reviewedById               Int?       @map("reviewed_by_id")
-  submittedAt                DateTime   @default(now()) @map("submitted_at")
-  reviewedAt                 DateTime?  @map("reviewed_at")
-  updatedAt                  DateTime   @updatedAt @map("updated_at")
+  id                 Int        @id @default(autoincrement())
+  meetingId          Int        @map("meeting_id")
+  userId             Int        @map("user_id")
+  nameSnapshot       String     @map("name_snapshot")
+  nrpSnapshot        String     @map("nrp_snapshot")
+  jobTitleSnapshot   String     @map("job_title_snapshot")
+  departmentSnapshot String     @default("HCGA") @map("department_snapshot")
+  sleep72            Boolean    @map("sleep_72")
+  sleep48            Boolean    @map("sleep_48")
+  sleep24            P5mSleep24 @map("sleep_24")
+  nutritionEnough    Boolean    @map("nutrition_enough")
+  noAlcoholMedicine  Boolean    @map("no_alcohol_medicine")
+  noExcessActivity   Boolean    @map("no_excess_activity")
+  noExcessStress     Boolean    @map("no_excess_stress")
+  noSeriousIllness   Boolean    @map("no_serious_illness")
+  noFamilyProblem    Boolean    @map("no_family_problem")
+  understandsWork    Boolean    @map("understands_work")
+  health             P5mHealth
+  allowedToWork      Boolean?   @map("allowed_to_work")
+  reviewNote         String?    @map("review_note") @db.Text
+  reviewedById       Int?       @map("reviewed_by_id")
+  submittedAt        DateTime   @default(now()) @map("submitted_at")
+  reviewedAt         DateTime?  @map("reviewed_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
-  meeting P5mMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  user User @relation("P5mAttendanceUser", fields: [userId], references: [id], onDelete: Restrict)
-  reviewer User? @relation("P5mAttendanceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  meeting  P5mMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user     User       @relation("P5mAttendanceUser", fields: [userId], references: [id], onDelete: Restrict)
+  reviewer User?      @relation("P5mAttendanceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@unique([meetingId, userId])
   @@index([meetingId, submittedAt])
@@ -1313,9 +1313,10 @@ enum StatusRekomendasi {
   FOLLOW_UP
 }
 
-// Keputusan #3: seluruh biaya FU ditanggung karyawan.
+// Pembiayaan FU dipilih HC: mandiri atau ditanggung HCGA.
 enum PosBiayaFollowUp {
   MANDIRI
+  DITANGGUNG_HCGA
 }
 
 enum StatusFollowUp {
@@ -3463,16 +3464,16 @@ model MonitoringRkb {
 }
 
 model MonitoringRkbBarang {
-  id         Int           @id @default(autoincrement())
-  rkbId      Int           @map("rkb_id")
-  namaBarang String        @map("nama_barang")
-  qty        Decimal       @db.Decimal(15, 2)
+  id         Int            @id @default(autoincrement())
+  rkbId      Int            @map("rkb_id")
+  namaBarang String         @map("nama_barang")
+  qty        Decimal        @db.Decimal(15, 2)
   satuan     String
   keterangan KeteranganRkb?
-  fotoUrl    String?       @map("foto_url")
-  status     StatusRkb     @default(WAITING_APPROVAL)
-  urutan     Int           @default(0)
-  rkb        MonitoringRkb @relation(fields: [rkbId], references: [id], onDelete: Cascade)
+  fotoUrl    String?        @map("foto_url")
+  status     StatusRkb      @default(WAITING_APPROVAL)
+  urutan     Int            @default(0)
+  rkb        MonitoringRkb  @relation(fields: [rkbId], references: [id], onDelete: Cascade)
 
   @@index([rkbId, urutan])
   @@map("ga_monitoring_rkb_barang")

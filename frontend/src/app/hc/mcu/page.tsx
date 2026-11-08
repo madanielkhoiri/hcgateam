@@ -15,10 +15,10 @@ import { useMcu } from './layout';
 
 export default function McuRootPage() {
   const router = useRouter();
-  const { punyaPeran } = useMcu();
+  const { punyaPeran, user } = useMcu();
 
   useEffect(() => {
-    if (punyaPeran('HC', 'DOKTER')) {
+    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
       router.replace('/hc/mcu/dashboard');
     } else if (punyaPeran('ADMIN_DEPT')) {
       router.replace('/hc/mcu/jadwal');
@@ -31,7 +31,7 @@ export default function McuRootPage() {
     } else {
       router.replace('/hc/mcu/notifikasi');
     }
-  }, [router, punyaPeran]);
+  }, [router, punyaPeran, user.role]);
 
   return null;
 }

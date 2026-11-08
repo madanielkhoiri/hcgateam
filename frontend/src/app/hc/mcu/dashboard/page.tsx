@@ -10,6 +10,7 @@
 
 import Link from 'next/link';
 import { HeartPulse } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Memuat, Pesan } from '@/components/mcu/mcu-ui';
 import { StatCardRow, type StatCard } from '@/components/module-shell/stat-card-row';
@@ -26,14 +27,20 @@ const NAMA_BULAN = [
 ];
 
 export default function DashboardMcuPage() {
-  // Rekap penyakit = data medis: hanya HC & Dokter (admin utama otomatis memegang semua peran).
-  const { punyaPeran } = useMcu();
+  const router = useRouter();
+  const { user } = useMcu();
+  const adminDashboard = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
   const [ringkasan, setRingkasan] = useState<RingkasanMcu | null>(null);
   const [tren, setTren] = useState<TrenDashboardMcu | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
   const [memuat, setMemuat] = useState(true);
 
   useEffect(() => {
+    if (!adminDashboard) {
+      router.replace('/hc/mcu');
+      return;
+    }
+
     let aktif = true;
 
     Promise.all([
@@ -60,7 +67,7 @@ export default function DashboardMcuPage() {
     return () => {
       aktif = false;
     };
-  }, []);
+  }, [adminDashboard, router]);
 
   const statCards: StatCard[] = ringkasan
     ? [
@@ -168,7 +175,7 @@ export default function DashboardMcuPage() {
             />
           </div>
 
-          {punyaPeran('HC', 'DOKTER') ? <RekapPenyakit /> : null}
+      {adminDashboard ? <RekapPenyakit /> : null}
         </>
       )}
 

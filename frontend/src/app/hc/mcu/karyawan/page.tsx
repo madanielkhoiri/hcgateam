@@ -282,7 +282,7 @@ export default function KaryawanMcuPage() {
       <div className={styles.breadcrumb}>
         <Link href="/hc/mcu">MCU Periodik</Link>
         <span>/</span>
-        <strong>Data Karyawan &amp; Reminder H-3 Bulan</strong>
+        <strong>Data Karyawan &amp; Masa MCU</strong>
       </div>
 
       <div className={styles.pageHead}>
@@ -292,15 +292,16 @@ export default function KaryawanMcuPage() {
           </span>
 
           <div>
-            <h1>Data Karyawan &amp; Reminder H-3 Bulan</h1>
+            <h1>Data Karyawan &amp; Masa MCU</h1>
             <p>
               Karyawan diambil dari card{' '}
               <Link href="/hc/karyawan" style={{ color: 'inherit', fontWeight: 800 }}>
                 Database Karyawan
               </Link>{' '}
               (nama &amp; NIK). Tanggal expired otomatis 1 tahun dari MCU
-              terakhir, dan jadwal reminder otomatis 3 bulan sebelum
-              expired.
+              terakhir dan sisa harinya dihitung otomatis setiap hari sejak
+              karyawan terdaftar. Pengingat WA dikirim saat memasuki periode
+              pengingat tanpa membatasi kapan jadwal dapat dibuat.
             </p>
           </div>
         </div>
@@ -447,6 +448,13 @@ export default function KaryawanMcuPage() {
 
                     <td>
                       {formatTanggal(item.tanggalMcuExpired)}
+                      {item.sisaHariExpired !== null ? (
+                        <div style={{ marginTop: 4, fontSize: 11, color: '#61738d' }}>
+                          {item.sisaHariExpired >= 0
+                            ? `${item.sisaHariExpired} hari lagi`
+                            : `Lewat ${Math.abs(item.sisaHariExpired)} hari`}
+                        </div>
+                      ) : null}
                       {item.mcuKedaluwarsa ? (
                         <div style={{ marginTop: 4 }}>
                           <BadgeStatus nilai="DIBATALKAN" teks="Kedaluwarsa" />
@@ -521,7 +529,7 @@ export default function KaryawanMcuPage() {
       {karyawanDiedit ? (
         <Dialog
           judul={`Data MCU - ${karyawanDiedit.nama}`}
-          keterangan="Identitas karyawan dikelola di card Database Karyawan. Tanggal expired otomatis terisi 1 tahun dari MCU terakhir (bisa diubah manual), dan jadwal reminder otomatis dihitung 3 bulan sebelum expired."
+          keterangan="Identitas karyawan dikelola di card Database Karyawan. Tanggal expired otomatis terisi 1 tahun dari MCU terakhir (bisa diubah manual), dan sisa hari selalu dihitung otomatis sejak data didaftarkan."
           onTutup={() => setKaryawanDiedit(null)}
           aksi={
             <>

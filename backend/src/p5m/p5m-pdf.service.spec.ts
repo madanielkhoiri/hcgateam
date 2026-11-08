@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { PDFDocument } from 'pdf-lib';
 import { P5mService } from './p5m.service';
 import { P5mPdfService } from './p5m-pdf.service';
 
@@ -79,6 +80,37 @@ describe('P5mPdfService.generate', () => {
     const buffer = await service.generate(1);
 
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+  });
+
+  it('menghasilkan halaman absensi dengan kondisi sehat dan sakit', async () => {
+    const service = buatService(dataFixture({
+      startTime: '07:00',
+      endTime: '07:30',
+      attendances: [
+        {
+          nameSnapshot: 'Peserta Sehat', nrpSnapshot: '10001', jobTitleSnapshot: 'Staff', departmentSnapshot: 'HCGA',
+          sleep72: true, sleep48: true, sleep24: 'MORE_THAN_6', nutritionEnough: true,
+          noAlcoholMedicine: true, noExcessActivity: true, noExcessStress: true,
+          noSeriousIllness: true, noFamilyProblem: true, understandsWork: true, health: 'HEALTHY',
+        },
+        {
+          nameSnapshot: 'Peserta Sakit', nrpSnapshot: '10002', jobTitleSnapshot: 'Staff', departmentSnapshot: 'HCGA',
+          sleep72: false, sleep48: false, sleep24: 'LESS_THAN_4', nutritionEnough: false,
+          noAlcoholMedicine: true, noExcessActivity: false, noExcessStress: false,
+          noSeriousIllness: false, noFamilyProblem: true, understandsWork: true, health: 'SICK',
+        },
+      ],
+    }));
+
+    const buffer = await service.generate(1);
+
+    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+    expect(buffer.length).toBeGreaterThan(1000);
+
+    const parsed = await PDFDocument.load(buffer);
+    const attendancePage = parsed.getPages()[1];
+    const { width, height } = attendancePage.getSize();
+    expect(height).toBeGreaterThan(width);
   });
 });
 

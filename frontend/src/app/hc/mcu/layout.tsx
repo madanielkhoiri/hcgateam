@@ -26,7 +26,10 @@ import { mcuApi, type PeranMcu, type PeranSaya } from '@/lib/mcu-api';
 import { ModuleShell, type ModuleShellMenuItem } from '@/components/module-shell/module-shell';
 import styles from './mcu.module.css';
 
-type ItemMenuMcu = ModuleShellMenuItem & { peran: PeranMcu[] };
+type ItemMenuMcu = ModuleShellMenuItem & {
+  peran: PeranMcu[];
+  khususAdmin?: boolean;
+};
 
 // Peran yang boleh lihat tiap menu — dicocokkan ke pengecekan role sungguhan
 // di backend (McuAksesService.wajibPeran per endpoint), BUKAN sekadar
@@ -36,7 +39,7 @@ type ItemMenuMcu = ModuleShellMenuItem & { peran: PeranMcu[] };
 // /hasil/saya). Menu murni administratif (Surat Pengantar, Klinik, dst)
 // tetap disembunyikan karena endpoint-nya memang menolak role Karyawan.
 const MENU_MCU: ItemMenuMcu[] = [
-  { label: 'Dashboard', href: '/hc/mcu/dashboard', initial: 'DB', peran: ['HC', 'DOKTER'] },
+  { label: 'Dashboard', href: '/hc/mcu/dashboard', initial: 'DB', peran: ['HC'], khususAdmin: true },
   { label: 'Jadwal', href: '/hc/mcu/jadwal', initial: 'JD', peran: ['HC', 'ADMIN_DEPT', 'KARYAWAN'] },
   { label: 'Hasil MCU', href: '/hc/mcu/hasil', initial: 'HM', peran: ['HC', 'DOKTER', 'KLINIK', 'KARYAWAN'] },
   { label: 'Follow Up', href: '/hc/mcu/follow-up', initial: 'FU', peran: ['HC', 'DOKTER', 'KARYAWAN', 'KLINIK'] },
@@ -50,8 +53,13 @@ const MENU_MCU: ItemMenuMcu[] = [
   { label: 'Karyawan', href: '/hc/mcu/karyawan', initial: 'KR', peran: ['HC'] },
 ];
 
-function menuUntukPeran(peran: PeranMcu[]): ModuleShellMenuItem[] {
-  return MENU_MCU.filter((item) => item.peran.some((p) => peran.includes(p)));
+function menuUntukPeran(peran: PeranMcu[], rolePortal: string): ModuleShellMenuItem[] {
+  const adminDashboard = rolePortal === 'ADMIN' || rolePortal === 'SUPER_ADMIN';
+  return MENU_MCU.filter(
+    (item) =>
+      (!item.khususAdmin || adminDashboard) &&
+      item.peran.some((p) => peran.includes(p)),
+  );
 }
 
 const API_URL =
@@ -153,7 +161,7 @@ export default function LayoutMcu({ children }: { children: ReactNode }) {
   }
 
   const peran = profil?.peran ?? [];
-  const menuMcu = menuUntukPeran(peran);
+  const menuMcu = menuUntukPeran(peran, user.role);
 
   const konteks: KonteksMcu = {
     user,

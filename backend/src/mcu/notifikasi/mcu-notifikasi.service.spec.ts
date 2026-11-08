@@ -13,11 +13,11 @@ const ISI_DASAR = {
 describe('McuNotifikasiService.duaKanal', () => {
   const service = new McuNotifikasiService({} as unknown as PrismaService);
 
-  it('menghasilkan 2 entri (IN_APP + EMAIL_OUTLOOK) kalau penerimaEmail ada', () => {
+  it('menghasilkan IN_APP saja agar notifikasi operasional dikirim lewat WA', () => {
     const hasil = service.duaKanal({ ...ISI_DASAR, penerimaId: 1, penerimaEmail: 'a@x.com' });
 
-    expect(hasil).toHaveLength(2);
-    expect(hasil.map((h) => h.kanal)).toEqual([KanalNotifikasi.IN_APP, KanalNotifikasi.EMAIL_OUTLOOK]);
+    expect(hasil).toHaveLength(1);
+    expect(hasil.map((h) => h.kanal)).toEqual([KanalNotifikasi.IN_APP]);
   });
 
   it('menghasilkan 1 entri (IN_APP saja) kalau penerimaEmail kosong', () => {

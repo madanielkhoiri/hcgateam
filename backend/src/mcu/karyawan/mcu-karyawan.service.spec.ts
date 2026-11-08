@@ -189,6 +189,7 @@ describe('McuKaryawanService.buatKaryawan', () => {
       }),
     );
   });
+
 });
 
 describe('McuKaryawanService.ubahKaryawan', () => {

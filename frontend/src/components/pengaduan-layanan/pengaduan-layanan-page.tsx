@@ -22,11 +22,11 @@ import {
 } from '@/lib/pengaduan-layanan-api';
 import { StarRating } from './star-rating';
 import { DaftarPengaduanTabel } from './daftar-pengaduan-tabel';
+import { messApi, type MessRoomCatalogBuilding } from '@/lib/mess-monitoring-api';
 import styles from './pengaduan-layanan.module.css';
 
 const DAFTAR_LOKASI: LokasiPengaduan[] = ['TAMBANG', 'MESS'];
 const LOKASI_TAMBANG = ['CSA MONTE BARU', 'CSA MONTE SUPPORT', 'CSA MONTE GIBSON', 'WORKSHOP', 'OFFICE PLANT', 'WAREHOUSE', 'OFFICE BARU', 'OFFICE LAMA', 'REFUELING SARANA', 'OFFICE FUEL'];
-const GEDUNG_MESS = ['1', '2', '3', 'A', 'B', 'C', 'D', 'E', 'F'];
 const KATEGORI = [
   ['LISTRIK', '⚡'], ['AIR', '💧'], ['AC', '❄️'], ['FURNITURE', '🪑'], ['KEBERSIHAN', '🧹'],
   ['KEAMANAN', '🛡️'], ['KAMAR MANDI', '🚿'], ['BANGUNAN', '🏠'], ['LAINNYA', '➕'],
@@ -60,6 +60,7 @@ export function PengaduanLayananPage({
   const [gedung, setGedung] = useState('');
   const [lantai, setLantai] = useState('');
   const [kamarArea, setKamarArea] = useState('');
+  const [katalogKamar, setKatalogKamar] = useState<MessRoomCatalogBuilding[]>([]);
   const [kategori, setKategori] = useState('');
   const [jenisLaporan, setJenisLaporan] = useState('');
   const [rating, setRating] = useState(0);
@@ -87,6 +88,14 @@ export function PengaduanLayananPage({
     setNrpPelapor(stored.nrp ?? '');
     setNamaPelapor(stored.name ?? '');
   }, [divisi, router]);
+
+  useEffect(() => {
+    if (!user || !butuhLokasi) return;
+    messApi.catalog().then(setKatalogKamar).catch(() => setKatalogKamar([]));
+  }, [user, butuhLokasi]);
+
+  const gedungTerpilih = katalogKamar.find((item) => item.value === gedung);
+  const lantaiTerpilih = gedungTerpilih?.floors.find((item) => item.value === lantai);
 
   function lanjutKeAduan() {
     setError('');
@@ -375,18 +384,24 @@ export function PengaduanLayananPage({
                   <>
                     <label className={styles.fieldGroup}>
                       <span>Gedung</span>
-                      <select value={gedung} onChange={(e) => setGedung(e.target.value)}>
+                      <select value={gedung} onChange={(e) => { setGedung(e.target.value); setLantai(''); setKamarArea(''); }}>
                         <option value="">Pilih gedung</option>
-                        {GEDUNG_MESS.map((item) => <option key={item} value={item}>Gedung {item}</option>)}
+                        {katalogKamar.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                       </select>
                     </label>
                     <label className={styles.fieldGroup}>
                       <span>Lantai</span>
-                      <input value={lantai} onChange={(e) => setLantai(e.target.value)} placeholder="Masukkan lantai" />
+                      <select value={lantai} onChange={(e) => { setLantai(e.target.value); setKamarArea(''); }} disabled={!gedungTerpilih}>
+                        <option value="">Pilih lantai</option>
+                        {gedungTerpilih?.floors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                      </select>
                     </label>
                     <label className={styles.fieldGroup}>
-                      <span>No. Kamar / Area</span>
-                      <input value={kamarArea} onChange={(e) => setKamarArea(e.target.value)} placeholder="Masukkan kamar / area" />
+                      <span>No. Kamar</span>
+                      <select value={kamarArea} onChange={(e) => setKamarArea(e.target.value)} disabled={!lantaiTerpilih}>
+                        <option value="">Pilih kamar</option>
+                        {lantaiTerpilih?.rooms.map((item) => <option key={item} value={item}>{item}</option>)}
+                      </select>
                     </label>
                   </>
                 ) : null}

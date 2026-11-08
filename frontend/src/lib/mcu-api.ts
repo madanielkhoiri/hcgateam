@@ -241,7 +241,7 @@ export type HasilMcuSaya = {
 export type FollowUp = {
   id: number;
   karyawanId: number;
-  posBiaya: 'MANDIRI';
+  posBiaya: 'MANDIRI' | 'DITANGGUNG_HCGA';
   batasWaktuFu: string | null;
   tanggalPilihanKaryawan: string | null;
   status: StatusFollowUp;

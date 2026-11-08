@@ -71,6 +71,7 @@ export default function FollowUpPage() {
 
   const [inputTanggal, setInputTanggal] = useState('');
   const [inputKlinik, setInputKlinik] = useState('');
+  const [inputPosBiaya, setInputPosBiaya] = useState<'MANDIRI' | 'DITANGGUNG_HCGA'>('MANDIRI');
   const [inputCatatan, setInputCatatan] = useState('');
   const [berkas, setBerkas] = useState<File | null>(null);
 
@@ -134,6 +135,7 @@ export default function FollowUpPage() {
       await mcuApi.kirim(`/follow-up/${dialogBatas.id}/batas-waktu`, {
         batasWaktuFu: inputTanggal,
         klinikId: inputKlinik ? Number(inputKlinik) : undefined,
+        posBiaya: inputPosBiaya,
       });
 
       setSukses(
@@ -471,6 +473,7 @@ export default function FollowUpPage() {
                                 setInputKlinik(
                                   item.klinik ? String(item.klinik.id) : '',
                                 );
+                                setInputPosBiaya(item.posBiaya);
                               }}
                             >
                               <Timer size={12} />
@@ -607,6 +610,19 @@ export default function FollowUpPage() {
                 ))}
               </select>
             </Field>
+
+            <Field label="Pembiayaan Follow Up">
+              <select
+                className={styles.select}
+                value={inputPosBiaya}
+                onChange={(event) =>
+                  setInputPosBiaya(event.target.value as 'MANDIRI' | 'DITANGGUNG_HCGA')
+                }
+              >
+                <option value="MANDIRI">Mandiri oleh karyawan</option>
+                <option value="DITANGGUNG_HCGA">Ditanggung HCGA</option>
+              </select>
+            </Field>
           </div>
         </Dialog>
       ) : null}
@@ -667,8 +683,10 @@ export default function FollowUpPage() {
           <div style={{ marginTop: 12 }}>
             <Pesan jenis="info">
               Surat rujukan FU sudah diterbitkan Dokter pada tahap rekomendasi
-              dan dapat diunduh dari halaman Rekomendasi. Biaya FU ditanggung
-              mandiri.
+              dan dapat diunduh dari halaman Rekomendasi. Pembiayaan mengikuti
+              keputusan HC: {dialogTanggal.posBiaya === 'DITANGGUNG_HCGA'
+                ? 'ditanggung HCGA'
+                : 'mandiri oleh karyawan'}.
             </Pesan>
           </div>
         </Dialog>

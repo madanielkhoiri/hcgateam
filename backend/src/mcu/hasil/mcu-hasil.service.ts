@@ -290,23 +290,10 @@ export class McuHasilService {
     return hasil;
   }
 
-  /**
-   * Buka file mentah — HC/Dokter boleh lintas karyawan; Karyawan HANYA
-   * boleh unduh hasil MCU miliknya sendiri (dicek lewat jadwalMcu.karyawanId,
-   * bukan percaya siapa pun yang tahu id-nya).
-   */
+  /** File MCU mentah hanya untuk petugas medis/MCU, bukan akun karyawan. */
   async pathFile(id: number, aktor: AktorMcu) {
     const hasil = await this.detail(id);
-
-    if (aktor.role === UserRole.KARYAWAN) {
-      const karyawan = await this.akses.karyawanDariAkun(aktor);
-
-      if (!karyawan || hasil.jadwalMcu.karyawanId !== karyawan.id) {
-        throw new NotFoundException('Hasil MCU tidak ditemukan');
-      }
-    } else {
-      this.akses.wajibBolehLihatFileMedis(aktor);
-    }
+    this.akses.wajibBolehLihatFileMedis(aktor);
 
     if (hasil.fileDihapusAt) {
       throw new NotFoundException(

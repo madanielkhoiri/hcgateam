@@ -444,7 +444,8 @@ export default function P5mPage() {
       location: row.location,
       speaker: row.speaker ?? "",
       participants: row.participants ?? "",
-      topic: row.topic,
+      topic:
+        row.topic === "Menunggu hasil pelaksanaan P5M" ? "" : row.topic,
       notes: row.notes ?? "",
     });
 
@@ -572,6 +573,13 @@ export default function P5mPage() {
 
       if (!documentationPaths.length) {
         throw new Error("Minimal satu foto dokumentasi wajib diunggah.");
+      }
+
+      if (
+        !form.topic.trim() ||
+        form.topic.trim() === "Menunggu hasil pelaksanaan P5M"
+      ) {
+        throw new Error("Materi P5M wajib diisi sebelum hasil disimpan.");
       }
 
       const payload = {
@@ -731,21 +739,6 @@ export default function P5mPage() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Absensi gagal dimuat."); }
   }
 
-  async function reviewAttendance(item: AttendanceRow, allowedToWork: boolean) {
-    if (!reviewTarget) return;
-    const reviewNote = window.prompt(allowedToWork ? "Keterangan (boleh dikosongkan)" : "Alasan tidak boleh kerja", item.reviewNote || "");
-    if (reviewNote === null) return;
-    try {
-      const response = await fetch(`${API_URL}/p5m/${reviewTarget.id}/attendance/${item.id}/review`, {
-        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ allowedToWork, reviewNote }),
-      });
-      if (!response.ok) throw new Error(await readError(response));
-      await openReview(reviewTarget);
-      setMessage("Hasil pemeriksaan peserta diperbarui.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Pemeriksaan absensi gagal disimpan."); }
-  }
-
   function resetFilters() {
     setSearch("");
     setMonth("");
@@ -900,13 +893,13 @@ export default function P5mPage() {
                               {row.attendances?.length ? "Sudah Absen" : "Isi Absensi"}
                             </button>
                           )}
-                          {canManage && row.status === "CLOSED" && row.speaker && row.topic !== "Menunggu hasil pelaksanaan P5M" && row.documentationPaths.length > 0 && <button
-                            className={`${styles.viewButton} ${styles.iconButton}`}
+                          {canManage && row.status === "CLOSED" && row.documentationPaths.length > 0 && <button
+                            className={styles.viewButton}
                             title="Buka PDF hasil P5M"
                             type="button"
                             onClick={() => void openPdf(row)}
                           >
-                            <FileDown size={16} />
+                            <FileDown size={16} /> PDF
                           </button>}
 
                           {canManage && row.status === "CLOSED" && <button
@@ -1327,18 +1320,18 @@ export default function P5mPage() {
         <div className={styles.modalBackdrop}>
           <div className={styles.formModal}>
             <div className={styles.modalHeader}>
-              <div><h2>Daftar Absensi P5M</h2><p>{reviewTarget.attendances.length} peserta · pemeriksaan kesiapan kerja oleh GL</p></div>
+              <div><h2>Daftar Absensi P5M</h2><p>{reviewTarget.attendances.length} peserta · sehat otomatis siap bekerja, sakit perlu observasi</p></div>
               <button className={styles.closeButton} type="button" onClick={() => setReviewTarget(null)}><X size={20} /></button>
             </div>
             <div className={styles.modalBody}>
-              <div className={styles.tableWrap}><table><thead><tr><th>Nama / NRP</th><th>Jabatan</th><th>Kesehatan</th><th>Boleh Kerja</th><th>Keterangan</th><th>Aksi GL</th></tr></thead><tbody>
+              <div className={styles.tableWrap}><table><thead><tr><th>Nama / NRP</th><th>Jabatan</th><th>Kesehatan</th><th>Hasil Otomatis</th><th>Keterangan</th></tr></thead><tbody>
                 {reviewTarget.attendances.map((item) => <tr key={item.id}>
                   <td><strong>{item.nameSnapshot}</strong><br />{item.nrpSnapshot}</td><td>{item.jobTitleSnapshot}</td>
                   <td>{item.health === "HEALTHY" ? "Sehat" : "Sakit"}</td>
-                  <td>{item.allowedToWork == null ? "Belum diperiksa" : item.allowedToWork ? "Ya" : "Tidak"}</td><td>{item.reviewNote || "-"}</td>
-                  <td><div className={styles.actions}><button className={styles.viewButton} type="button" onClick={() => void reviewAttendance(item, true)}>Boleh Kerja</button><button className={styles.deleteButton} type="button" onClick={() => void reviewAttendance(item, false)}>Tidak Boleh</button></div></td>
+                  <td>{item.health === "HEALTHY" ? "Siap bekerja" : "Perlu observasi"}</td>
+                  <td>{item.health === "SICK" ? (item.reviewNote || "Perlu observasi") : "-"}</td>
                 </tr>)}
-                {!reviewTarget.attendances.length && <tr><td colSpan={6}>Belum ada karyawan yang mengisi absensi.</td></tr>}
+                {!reviewTarget.attendances.length && <tr><td colSpan={5}>Belum ada karyawan yang mengisi absensi.</td></tr>}
               </tbody></table></div>
             </div>
           </div>

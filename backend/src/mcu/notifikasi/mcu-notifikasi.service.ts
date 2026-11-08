@@ -2,7 +2,7 @@
 // FILE: backend/src/mcu/notifikasi/mcu-notifikasi.service.ts
 // FUNGSI: Pencatatan & pengiriman notifikasi MCU
 // Referensi: Bagian 4.13 alur-workflow-mcu-periodik-v3.md
-// Kanal email memakai SMTP internal/Outlook (Keputusan #8).
+// Notifikasi operasional MCU memakai in-app dan WhatsApp.
 // ==================================================
 
 import { Injectable, Logger, Optional } from '@nestjs/common';
@@ -70,7 +70,7 @@ export class McuNotifikasiService {
     });
   }
 
-  /** Kirim satu pesan ke banyak penerima sekaligus (in-app + email). */
+  /** Kirim satu pesan ke banyak penerima sekaligus (in-app + WhatsApp). */
   async kirimBanyak(
     daftar: IsiNotifikasi[],
     tx?: Prisma.TransactionClient,
@@ -124,17 +124,11 @@ export class McuNotifikasiService {
   }
 
   /**
-   * Setiap notifikasi dikirim in-app sekaligus email Outlook
-   * bila alamat email penerima tersedia.
+   * Notifikasi MCU dicatat in-app. Pengiriman keluar memakai WhatsApp pada
+   * kirimBanyak; email tidak lagi dibuat untuk alur MCU.
    */
   duaKanal(isi: IsiNotifikasi): IsiNotifikasi[] {
-    const daftar: IsiNotifikasi[] = [{ ...isi, kanal: KanalNotifikasi.IN_APP }];
-
-    if (isi.penerimaEmail) {
-      daftar.push({ ...isi, kanal: KanalNotifikasi.EMAIL_OUTLOOK });
-    }
-
-    return daftar;
+    return [{ ...isi, kanal: KanalNotifikasi.IN_APP }];
   }
 
   async daftar(params: {
