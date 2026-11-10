@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Printer, Save, Trash2 } from "lucide-react";
+import { CheckCircle2, Plus, Printer, Save, Trash2 } from "lucide-react";
 import {
   epromApi,
   formatRupiah,
@@ -154,9 +154,11 @@ const pill = (label: string, color: string) => (
 );
 export function TenderEvaluationForm({
   tenderId,
+  canSetWinner = false,
 }: {
   tenderId: number;
   styles?: Record<string, string>;
+  canSetWinner?: boolean;
 }) {
   const [report, setReport] = useState<TenderEvaluationReport | null>(null),
     [selected, setSelected] = useState<number | null>(null),
@@ -194,6 +196,7 @@ export function TenderEvaluationForm({
     void load();
   }, [tenderId]);
   const vendor = report?.vendors.find((v) => v.vendorId === selected);
+  const myFinal = vendor?.myEvaluation?.status === "FINAL";
   const admin = selected === null ? [] : adminDrafts[selected] || [];
   const hse = selected === null ? [] : hseDrafts[selected] || [];
   const setAdmin = (updater: File[] | ((current: File[]) => File[])) => {
@@ -220,26 +223,26 @@ export function TenderEvaluationForm({
   const results = useMemo(() => {
     if (!report) return [];
     const participants = report.vendors.filter((v) => {
-      const draft = drafts[v.vendorId] || v.data;
+      const draft = v.aggregateData || v.data;
       return draft.response !== "tidak";
     });
     const priceDurationReady = participants.length > 0 && participants.every((v) => {
-      const draft = drafts[v.vendorId] || v.data;
+      const draft = v.aggregateData || v.data;
       return finalPrice(draft) !== null && Number(draft.durationDays) > 0;
     });
     const pool = participants.filter((v) => {
-      const draft = drafts[v.vendorId] || v.data;
+      const draft = v.aggregateData || v.data;
       return finalPrice(draft) !== null && Number(draft.durationDays) > 0;
     });
     const minP = priceDurationReady && pool.length
-        ? Math.min(...pool.map((v) => finalPrice(drafts[v.vendorId] || v.data)!))
+        ? Math.min(...pool.map((v) => finalPrice(v.aggregateData || v.data)!))
         : null,
       minD = priceDurationReady && pool.length
-        ? Math.min(...pool.map((v) => Number((drafts[v.vendorId] || v.data).durationDays)))
+        ? Math.min(...pool.map((v) => Number((v.aggregateData || v.data).durationDays)))
         : null;
     return report.vendors
       .map((v) => {
-        const d = drafts[v.vendorId] || (v.vendorId === selected ? data : v.data),
+        const d = v.aggregateData || v.data,
           price = finalPrice(d),
           rounds = d.sphRounds || [],
           pres = questions.map(([k]) => {
@@ -318,6 +321,26 @@ export function TenderEvaluationForm({
       setHseDrafts((all) => ({ ...all, [selected]: [] }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const finalizeMyEvaluation = async () => {
+    if (!selected || myFinal) return;
+    setSaving(true);
+    setError("");
+    try {
+      const adjusted = { ...data, finalSph: finalPrice(data) ?? undefined };
+      await epromApi.tender.evaluasiVendor.ubah(tenderId, selected, adjusted, config, admin, hse);
+      const refreshed = await epromApi.tender.evaluasiVendor.finalisasi(tenderId, selected);
+      setReport(refreshed);
+      const mine = normalizeEvaluation(refreshed.vendors.find((v) => v.vendorId === selected)?.data);
+      setData(mine);
+      setDrafts((all) => ({ ...all, [selected]: mine }));
+      setAdminDrafts((all) => ({ ...all, [selected]: [] }));
+      setHseDrafts((all) => ({ ...all, [selected]: [] }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memfinalisasi penilaian");
     } finally {
       setSaving(false);
     }
@@ -408,8 +431,11 @@ export function TenderEvaluationForm({
       <div
         style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "14px 0" }}
       >
-        <button style={primary} onClick={save} disabled={saving || locked}>
+        <button style={primary} onClick={save} disabled={saving || locked || myFinal}>
           <Save size={14} /> {saving ? "Menyimpan..." : "Simpan"}
+        </button>
+        <button style={{ ...btn, borderColor: "#15965b", color: "#08783f" }} onClick={finalizeMyEvaluation} disabled={saving || locked || myFinal}>
+          <CheckCircle2 size={14} /> {myFinal ? "Penilaian Sudah Final" : "Finalkan Penilaian Saya"}
         </button>
         <button style={btn} onClick={pdf}>
           <Printer size={14} /> Cetak / PDF
@@ -418,6 +444,12 @@ export function TenderEvaluationForm({
       {locked && (
         <div style={{ ...box, color: "#08783f", background: "#e9f8ef", borderColor: "#a8dfbd" }}>
           <b>Evaluasi telah dikunci.</b> Pemenang tender sudah ditetapkan kepada <b>{report.pemenang?.namaVendor || config.finalDecision?.vendorName || "vendor terpilih"}</b>. Seluruh nilai, SPH, dan dokumen evaluasi hanya dapat dilihat dan tidak dapat diubah lagi.
+        </div>
+      )}
+      {!locked && (
+        <div style={{ ...box, background: "#edf5ff", fontSize: 13 }}>
+          <b>{report.evaluators?.length || 0} penilai sudah final.</b> Ranking memakai rata-rata nilai dari akun yang telah memfinalkan penilaian. Tender tetap dapat diputuskan tanpa menunggu lima penilai.
+          {!canSetWinner && <><br />Anda mengisi Bagian C dan D. Data tender bersama pada Bagian A, B, dan E hanya dapat dilihat.</>}
         </div>
       )}
       {error && <div style={{ ...box, color: "#a72c3b" }}>{error}</div>}
@@ -464,7 +496,7 @@ export function TenderEvaluationForm({
             </button>
           ))}
         </aside>
-        <fieldset disabled={locked} style={{ minWidth: 0, margin: 0, padding: 0, border: 0 }}>
+        <fieldset disabled={locked || myFinal} style={{ minWidth: 0, margin: 0, padding: 0, border: 0 }}>
         <main style={{ minWidth: 0 }}>
           <section id="eval-dashboard" style={box}>
             <h2>Dashboard Perbandingan Vendor • Ranking Otomatis</h2>
@@ -592,7 +624,7 @@ export function TenderEvaluationForm({
             <div style={{ overflowX: "auto" }}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr><th>Aspek</th><th>Bobot</th><th>Skor / 100</th><th>Kontribusi</th></tr></thead><tbody>{weights.map(([key, weight]) => { const value=current?.parts[key]; return <tr key={key}><td>{key}</td><td>{weight}%</td><td>{value == null ? "Menunggu" : (value*100).toFixed(2)}</td><td>{value == null ? "—" : `${(value*weight).toFixed(2)} poin`}</td></tr> })}</tbody></table></div>
             <p style={{color:"#62748c",fontSize:12}}>Bobot: C 20%, D 40%, Harga 30%, Durasi 10%. Harga terendah sah dan durasi tercepat memperoleh skor 100. Nilai sementara dihitung hanya dari aspek yang sudah lengkap.</p>
           </section>
-          <section id="eval-A" style={box}>
+          <section id="eval-A" style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
             <h2>A. Identitas Tender & Respons Undangan</h2>
             <div style={grid}>
               <label>
@@ -660,7 +692,7 @@ export function TenderEvaluationForm({
                   : "Respons undangan belum lengkap. Tanpa batas respons, ketepatan waktu respons tidak dinilai."}
             </div>
           </section>
-          <section id="eval-B" style={box}>
+          <section id="eval-B" style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
             <div
               style={{
                 display: "flex",
@@ -1077,7 +1109,7 @@ export function TenderEvaluationForm({
               />
             </label>
           </section>
-          <section id="eval-E" style={box}>
+          <section id="eval-E" style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
             <h2>E. Manpower & Pemberdayaan Lokal</h2>
             <div style={grid}>
               <label>
@@ -1164,7 +1196,7 @@ export function TenderEvaluationForm({
                   : "Lengkapi kebutuhan dan penawaran manpower."}
             </div>
           </section>
-          <section id="eval-finalisasi" style={box}>
+          {canSetWinner && <section id="eval-finalisasi" style={box}>
             <h2>Finalisasi Tender & Keputusan Manajemen</h2>
             <p style={{color:"#62748c",fontSize:12}}>Ranking objektif tidak diubah. Vendor berstatus hijau maupun kuning dapat ditetapkan. Gunakan keputusan khusus manajemen jika memilih selain ranking 1.</p>
             <div style={grid}>
@@ -1177,7 +1209,7 @@ export function TenderEvaluationForm({
             <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${leader.score?.toFixed(2)}/100` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
             <button style={primary} onClick={finalizeTender} disabled={saving}>{saving ? "Memfinalkan..." : "Finalkan & Tetapkan Pemenang"}</button>
             {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
-          </section>
+          </section>}
         </main>
         </fieldset>
       </div>

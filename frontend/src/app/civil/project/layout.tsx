@@ -59,6 +59,7 @@ import {
   getAccessToken,
   getStoredUser,
   hasAccess,
+  isTenderEvaluator,
   saveStoredUser,
   type PortalUser,
 } from "@/lib/access-control";
@@ -220,7 +221,6 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [closingPending, setClosingPending] = useState(0);
   const [closingRingkasan, setClosingRingkasan] = useState<RingkasanPendingClosing | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
   // null = akses vendor belum selesai dimuat. Pada kondisi ini jangan pernah
   // membuka semua submenu (fail closed), terutama di jaringan mobile lambat.
@@ -228,6 +228,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
   const [activeTender, setActiveTender] = useState<TenderProcess | null>(null);
 
   const boleh = isEpromOwner(user);
+  const evaluatorTender = isTenderEvaluator(user) && !boleh;
   const vendorSaya = isEpromVendor(user);
   const tenderDetailMatch = /^\/civil\/project\/tender\/(\d+)/.exec(pathname);
   const activeTenderId = tenderDetailMatch ? tenderDetailMatch[1] : null;
@@ -513,15 +514,40 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
     },
   ];
 
-  const bottomNavItems = [
-    ...(boleh ? [{ label: dashboardItem.label, href: dashboardItem.href }] : []),
-    ...(boleh ? navGroups.map((g) => ({ label: g.label, href: g.items[0]?.href })) : []),
-    ...(boleh ? [{ label: kontrakGroup.label, href: kontrakGroup.items[0]?.href }] : []),
-    ...projectAreaGroups.map((g) => ({ label: g.label, href: g.items[0]?.href })),
-  ]
-    .filter((item): item is { label: string; href: string } => Boolean(item.href))
-    .slice(0, 5)
+  const bottomNavItems = (evaluatorTender
+    ? [{ label: "Tender", href: "/civil/project/tender" }]
+    : projectAreaGroups
+        .map((g) => ({ label: g.label, href: g.items[0]?.href }))
+        .filter((item): item is { label: string; href: string } => Boolean(item.href)))
     .map((item) => ({ ...item, initial: buatInisial(item.label) }));
+
+  const contextGroupId = activeTenderId
+    ? "tender"
+    : activeEngineerProjectId || (activeFileProjectId && activeTab === "dokpro")
+      ? "engineer"
+      : activeKonstruksiProjectId || (activeFileProjectId && activeTab === "izin-kerja-khusus")
+        ? "konstruksi"
+        : activeMeetingProjectId
+          ? "meeting"
+          : activeSafetyMeetingProjectId
+            ? "safety-meeting"
+            : activeDokumenProjectId
+              ? "dokumen"
+              : activeFinancialProjectId
+                ? "financial"
+                : activeClosingProjectId
+                  ? "closing"
+                  : null;
+  const contextGroup = [...navGroups, ...projectAreaGroups].find(
+    (group) => group.id === contextGroupId,
+  );
+  const contextItems = (contextGroup?.items.slice(1) ?? []).filter((item) => {
+    const query = item.href.split("?")[1];
+    const key = query ? new URLSearchParams(query).get("tab") : null;
+    if (!key) return true;
+    if (!vendorSaya) return !(menuNonaktifInternal ?? []).includes(key);
+    return menuNonaktifVendor !== null && !menuNonaktifVendor.includes(key);
+  });
 
   useEffect(() => {
     let active = true;
@@ -563,6 +589,15 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
         return;
       }
 
+      if (
+        isTenderEvaluator(current) &&
+        !isEpromOwner(current) &&
+        !pathname.startsWith("/civil/project/tender")
+      ) {
+        router.replace("/civil/project/tender");
+        return;
+      }
+
       if (active) {
         setUser(current);
       }
@@ -573,10 +608,15 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [pathname, router]);
 
   useEffect(() => {
     if (!user) {
+      return;
+    }
+
+    if (evaluatorTender) {
+      setMenuNonaktifVendor([]);
       return;
     }
 
@@ -676,7 +716,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       window.removeEventListener("eprom-financial-updated", muatFinancialPending);
       window.removeEventListener("eprom-closing-updated", muatClosingPending);
     };
-  }, [user]);
+  }, [evaluatorTender, user]);
 
   useEffect(() => {
     if (!vendorSaya || !user || !activeTab || typeof window === 'undefined') return;
@@ -787,36 +827,12 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
     setMobileSidebarOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    const activeGroup = [...navGroups, ...projectAreaGroups].find((group) =>
-      group.items.some((item) => pathname === item.href.split("?")[0]),
-    );
-
-    if (!activeGroup) {
-      return;
-    }
-
-    setOpenGroups((current) =>
-      current.includes(activeGroup.id) ? current : [...current, activeGroup.id],
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-
-  function toggleGroup(groupId: string) {
-    setOpenGroups((current) =>
-      current.includes(groupId)
-        ? current.filter((id) => id !== groupId)
-        : [...current, groupId],
-    );
-  }
-
   if (!user) {
     return <main className={styles.loading}>Memuat modul Project...</main>;
   }
 
   function renderGroup(group: NavGroup) {
     const GroupIcon = group.icon;
-    const isOpen = openGroups.includes(group.id);
     const itemsTerlihat = group.items.filter((item) => {
       if (!vendorSaya && menuNonaktifInternal === null) return true;
       const query = item.href.split('?')[1];
@@ -828,14 +844,16 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
       return menuNonaktifVendor !== null && !menuNonaktifVendor.includes(key);
     });
     if (itemsTerlihat.length === 0) return null;
-    const isGroupActive = itemsTerlihat.some((item) => pathname === item.href.split("?")[0]);
+    const tujuanUtama = itemsTerlihat[0]?.href;
+    if (!tujuanUtama) return null;
+    const basePath = tujuanUtama.split("?")[0];
+    const isGroupActive = pathname === basePath || pathname.startsWith(`${basePath}/`);
 
     return (
       <div className={styles.menuGroup} key={group.id}>
-        <button
-          type="button"
+        <Link
+          href={tujuanUtama}
           className={`${styles.groupButton} ${isGroupActive ? styles.groupButtonActive : ""}`}
-          onClick={() => toggleGroup(group.id)}
         >
           <GroupIcon size={18} />
           <span>{group.label}</span>
@@ -847,38 +865,7 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
             </span>
           )}
           {!group.statusBadges && !!group.badge && <span className={styles.navBadge}>{group.badge}</span>}
-          <ChevronDown size={16} className={isOpen ? styles.groupChevronOpen : styles.groupChevron} />
-        </button>
-
-        {isOpen && (
-          <div className={styles.submenu}>
-            {itemsTerlihat.map((item) => {
-              const ItemIcon = item.icon;
-              const [itemPath, itemQuery] = item.href.split("?");
-              const isItemActive =
-                pathname === itemPath &&
-                (!itemQuery || activeTab === new URLSearchParams(itemQuery).get("tab"));
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`${styles.submenuItem} ${isItemActive ? styles.submenuItemActive : ""}`}
-                >
-                  <ItemIcon size={15} />
-                  <span>{item.label}</span>
-                  {item.statusBadges ? (
-                    <span className={styles.statusBadgeGroup} aria-label="Ringkasan status approval">
-                      {!!item.statusBadges.PENDING && <span className={`${styles.statusBadge} ${styles.statusPending}`} title="Pending">{item.statusBadges.PENDING}</span>}
-                      {!!item.statusBadges.APPROVED && <span className={`${styles.statusBadge} ${styles.statusApproved}`} title="Approved belum dilihat">{item.statusBadges.APPROVED}</span>}
-                      {!!item.statusBadges.REJECTED && <span className={`${styles.statusBadge} ${styles.statusRejected}`} title="Rejected">{item.statusBadges.REJECTED}</span>}
-                    </span>
-                  ) : !!item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        </Link>
       </div>
     );
   }
@@ -956,15 +943,15 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
             </Link>
           )}
 
-          {boleh && navGroups.map(renderGroup)}
+          {(boleh || evaluatorTender) && navGroups.map(renderGroup)}
 
           {boleh && activeTender?.jenisTender !== "INTERNAL" && renderGroup(kontrakGroup)}
 
-          <div className={styles.navLabel}>PROJECT AREA</div>
+          {!evaluatorTender && <div className={styles.navLabel}>PROJECT AREA</div>}
 
-          {projectAreaGroups.map(renderGroup)}
+          {!evaluatorTender && projectAreaGroups.map(renderGroup)}
 
-          {segeraHadirItems.map((item) => {
+          {!evaluatorTender && segeraHadirItems.map((item) => {
             const ItemIcon = item.icon;
 
             return (
@@ -1041,12 +1028,49 @@ function CivilProjectLayoutInner({ children }: ProjectLayoutProps) {
           </div>
         </header>
 
+        {contextItems.length > 0 && (
+          <nav className={styles.contextNav} aria-label={`Menu ${contextGroup?.label ?? "project"}`}>
+            {contextItems.map((item) => {
+              const ItemIcon = item.icon;
+              const [itemPath, itemQuery] = item.href.split("?");
+              const itemTab = itemQuery
+                ? new URLSearchParams(itemQuery).get("tab")
+                : null;
+              const isActive =
+                pathname === itemPath && (!itemTab || activeTab === itemTab);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`${styles.contextNavItem} ${isActive ? styles.contextNavItemActive : ""}`}
+                >
+                  <ItemIcon size={17} />
+                  <span>{item.label}</span>
+                  {item.statusBadges ? (
+                    <span className={styles.statusBadgeGroup} aria-label="Ringkasan status approval">
+                      {!!item.statusBadges.PENDING && <span className={`${styles.statusBadge} ${styles.statusPending}`}>{item.statusBadges.PENDING}</span>}
+                      {!!item.statusBadges.APPROVED && <span className={`${styles.statusBadge} ${styles.statusApproved}`}>{item.statusBadges.APPROVED}</span>}
+                      {!!item.statusBadges.REJECTED && <span className={`${styles.statusBadge} ${styles.statusRejected}`}>{item.statusBadges.REJECTED}</span>}
+                    </span>
+                  ) : !!item.badge && <span className={styles.navBadge}>{item.badge}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+
         <div className={styles.pageContent}>
           <PageTransition>{children}</PageTransition>
         </div>
       </section>
 
-      <MobileBottomNav items={bottomNavItems} deptColor="#e0752a" deptSoft="#fff0e4" />
+      <MobileBottomNav
+        items={bottomNavItems}
+        deptColor="#e0752a"
+        deptSoft="#fff0e4"
+        max={7}
+        rows={2}
+      />
     </div>
   );
 }

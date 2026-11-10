@@ -191,6 +191,7 @@ model User {
 
   deviasiStokDiubah  DeviasiStok[]
   tenderPesanDikirim TenderPesan[]
+  evaluasiTender     EvaluasiVendorPenilai[] @relation("EvaluasiVendorPenilaiUser")
 
   dokumenIrDiupload        DokumenIr[]            @relation("DokumenIrUploader")
   aspirasiPertanyaanDibuat AspirasiPertanyaan[]   @relation("AspirasiPertanyaanCreator")
@@ -2070,6 +2071,7 @@ model Vendor {
   kontrak         Kontrak[]
   documentFolders DocumentFolder[]
   evaluasiVendor  EvaluasiVendor[]
+  evaluasiPenilai EvaluasiVendorPenilai[]
 
   @@map("eprom_vendors")
 }
@@ -2094,6 +2096,7 @@ model TenderProcess {
   undangan        TenderUndangan[]
   sph             TenderSPH[]
   evaluasiVendor  EvaluasiVendor[]
+  evaluasiPenilai EvaluasiVendorPenilai[]
   kontrak         Kontrak?
 
   @@map("eprom_tender_process")
@@ -2145,6 +2148,30 @@ model EvaluasiVendor {
 
   @@unique([tenderId, vendorId])
   @@map("eprom_evaluasi_vendor")
+}
+
+/// Nilai subjektif C dan D milik masing-masing evaluator. Data objektif tender
+/// (SPH, durasi, respons, manpower, serta dokumen) tetap di EvaluasiVendor.
+model EvaluasiVendorPenilai {
+  id               Int       @id @default(autoincrement())
+  tenderId         Int       @map("tender_id")
+  vendorId         Int       @map("vendor_id")
+  userId           Int       @map("user_id")
+  data             Json      @default("{}")
+  status           String    @default("DRAFT")
+  namaSnapshot     String    @map("nama_snapshot")
+  jabatanSnapshot  String?   @map("jabatan_snapshot")
+  finalizedAt      DateTime? @map("finalized_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User          @relation("EvaluasiVendorPenilaiUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenderId, vendorId, userId])
+  @@index([tenderId, status])
+  @@map("eprom_evaluasi_vendor_penilai")
 }
 
 model TenderUndangan {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, MessageCircle, Pencil, Plus, Power, Printer, Trash2, Trophy, X } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
-import { getStoredUser } from "@/lib/access-control";
+import { getStoredUser, isTenderEvaluator } from "@/lib/access-control";
 import { urlUploads } from "@/lib/uploads-url";
 import {
   epromApi,
@@ -38,6 +38,7 @@ export default function TenderDetailPage() {
   const tenderId = Number(params.id);
   const user = getStoredUser();
   const boleh = isEpromOwner(user);
+  const bolehMenilai = boleh || isTenderEvaluator(user);
   const vendorSaya = isEpromVendor(user);
 
   const tabFromUrl = searchParams.get("tab") as Tab | null;
@@ -690,7 +691,7 @@ export default function TenderDetailPage() {
           })}
           </>}
 
-          {boleh && detail.undangan.length > 0 && <TenderEvaluationForm tenderId={tenderId} styles={styles} />}
+          {bolehMenilai && detail.undangan.length > 0 && <TenderEvaluationForm tenderId={tenderId} styles={styles} canSetWinner={boleh} />}
 
           {false && boleh && detail!.undangan.length > 0 && (
             <>

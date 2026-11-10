@@ -213,7 +213,19 @@ export type TenderEvaluationData = {
   manpowerOffered?: number; localWorkers?: number; nonLocalWorkers?: number;
   recommendationStatus?: '' | 'recommended' | 'not_recommended'; decisionNotes?: string;
 };
-export type TenderEvaluationReport = { tenderId: number; namaTender: string; locked: boolean; pemenang: { id: number; namaVendor: string } | null; config: Record<string, any>; vendors: Array<{ vendorId: number; namaVendor: string; evaluasi: ({ dokumenAdminFiles: string[]; dokumenHseFiles: string[] } & Record<string, any>) | null; data: TenderEvaluationData; eligible: boolean; score: number | null; localPercent: number }> };
+export type TenderEvaluationReport = {
+  tenderId: number; namaTender: string; locked: boolean;
+  pemenang: { id: number; namaVendor: string } | null;
+  config: Record<string, any>;
+  evaluators: Array<{ userId: number; nama: string; jabatan?: string | null; finalizedAt?: string | null }>;
+  vendors: Array<{
+    vendorId: number; namaVendor: string;
+    evaluasi: ({ dokumenAdminFiles: string[]; dokumenHseFiles: string[] } & Record<string, any>) | null;
+    data: TenderEvaluationData; aggregateData: TenderEvaluationData;
+    myEvaluation: { status: 'DRAFT' | 'FINAL'; finalizedAt?: string | null } | null;
+    evaluatorCount: number; eligible: boolean; score: number | null; localPercent: number;
+  }>;
+};
 
 export type Kontrak = {
   id: number;
@@ -814,6 +826,8 @@ export const epromApi = {
           method: 'PATCH',
           body: form,
         }); },
+        finalisasi: (tenderId: number, vendorId: number) =>
+          request<TenderEvaluationReport>(`/tender/${tenderId}/evaluasi-vendor/${vendorId}/finalisasi`, { method: 'PATCH' }),
       pdf: (tenderId: number) => unduhBlob(`/tender/${tenderId}/evaluasi-vendor/pdf/final`),
       hapusDokumen: (tenderId: number, vendorId: number, jenis: 'admin' | 'hse', index: number) =>
         request<TenderEvaluationReport>(`/tender/${tenderId}/evaluasi-vendor/${vendorId}/dokumen?jenis=${jenis}&index=${index}`, { method: 'DELETE' }),

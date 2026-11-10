@@ -160,6 +160,26 @@ export function clearSession(): void {
   sessionStorage.removeItem('hcga_user');
 }
 
+const JABATAN_EVALUATOR_TENDER = new Set([
+  'SECTION HEAD FAW-SCM',
+  'GROUP LEADER FAW-SCM',
+]);
+
+export function normalizeJabatan(jabatan?: string | null): string {
+  return (jabatan ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/[–—]/g, '-')
+    .replace(/\s*-\s*/g, '-')
+    .replace(/\s+/g, ' ');
+}
+
+export function isTenderEvaluator(user: PortalUser | null): boolean {
+  if (!user) return false;
+  if (['SECTION_HEAD', 'PJO', 'GRUP_LEADER_GA'].includes(user.role)) return true;
+  return JABATAN_EVALUATOR_TENDER.has(normalizeJabatan(user.jabatan));
+}
+
 export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
   if (!user) {
     return false;
@@ -176,7 +196,16 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
   // Admin Departemen mengikuti akses yang diberikan di Manajemen Akun.
   // Pembatasan per fitur tetap diberlakukan oleh layout dan backend.
 
-  // Karyawan tidak boleh masuk e-ProM/Civil Project maupun Inventory.
+  // Evaluator FAW-SCM hanya mendapat pintu masuk Civil > e-ProM > Tender.
+  // Hak mengelola tender dan menetapkan pemenang tetap ditentukan terpisah.
+  if (
+    isTenderEvaluator(user) &&
+    ([ACCESS_KEYS.CIVIL, ACCESS_KEYS.CIVIL_PROJECT, ACCESS_KEYS.CIVIL_PROJECT_TENDER] as string[]).includes(accessKey)
+  ) {
+    return true;
+  }
+
+  // Karyawan biasa tidak boleh masuk e-ProM/Civil Project maupun Inventory.
   if (user.role === 'KARYAWAN') {
     if (accessKey === ACCESS_KEYS.GA_INVENTORY || accessKey.startsWith('CIVIL_INVENTORY') || accessKey.startsWith('CIVIL_PROJECT')) {
       return false;

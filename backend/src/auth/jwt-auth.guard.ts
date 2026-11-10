@@ -8,6 +8,10 @@ import { Reflector } from '@nestjs/core';
 import { UserRole } from '@prisma/client';
 import { firstValueFrom, isObservable } from 'rxjs';
 import { REQUIRE_ACCESS_KEY } from './require-access-key.decorator';
+import {
+  bolehAksesRouteEvaluatorTender,
+  isJabatanEvaluatorTender,
+} from './tender-evaluator-access';
 
 // ==================================================
 // InventoryDashboardController & InventoryAreaController SENGAJA TIDAK
@@ -43,9 +47,11 @@ const DYNAMIC_SCOPE_ROUTES: Array<{ pattern: RegExp; accessKey: string[] }> = [
 type GuardRequest = {
   originalUrl?: string;
   url?: string;
+  method?: string;
   user?: {
     id: number;
     role: UserRole;
+    jabatan?: string | null;
     accessKeys?: string[];
   };
 };
@@ -110,6 +116,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     )?.accessKey;
 
     const requiredAccessKeys = requiredFromDecorator ?? requiredFromScope;
+
+    // Dua jabatan FAW-SCM menjadi evaluator tender tanpa diberi hak Owner.
+    // Mereka hanya boleh membaca data tender dan mengisi evaluasi vendor.
+    if (
+      user?.role === UserRole.KARYAWAN &&
+      isJabatanEvaluatorTender(user.jabatan) &&
+      bolehAksesRouteEvaluatorTender(request.method, requestUrl)
+    ) {
+      return true;
+    }
 
     // Akun karyawan tidak boleh membuka e-ProM maupun Inventory.
     if (user?.role === UserRole.KARYAWAN && requiredAccessKeys?.some((key) =>

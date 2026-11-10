@@ -27,9 +27,10 @@ type MobileBottomNavProps = {
   deptColor: string;
   deptSoft: string;
   max?: number;
+  rows?: 1 | 2;
 };
 
-export function MobileBottomNav({ items, deptColor, deptSoft, max = 5 }: MobileBottomNavProps) {
+export function MobileBottomNav({ items, deptColor, deptSoft, max = 5, rows = 1 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const visible = items.slice(0, max);
 
@@ -38,7 +39,9 @@ export function MobileBottomNav({ items, deptColor, deptSoft, max = 5 }: MobileB
   }
 
   return (
-    <nav className={styles.mobileBottomNav}>
+    <nav
+      className={`${styles.mobileBottomNav} ${rows === 2 ? styles.mobileBottomNavTwoRows : ''}`}
+    >
       {visible.map((item) => {
         const active = item.exact
           ? pathname === item.href

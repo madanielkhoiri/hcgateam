@@ -499,4 +499,29 @@
     font-size: 9.5px;
     font-weight: 750;
   }
+
+  .mobileBottomNavTwoRows {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 6px;
+    padding-top: 7px;
+  }
+
+  .mobileBottomNavTwoRows .mobileBottomNavItem {
+    min-height: 50px;
+    padding: 5px 3px;
+  }
+
+  .mobileBottomNavTwoRows .mobileBottomNavLabel {
+    display: -webkit-box;
+    min-height: 22px;
+    overflow: hidden;
+    white-space: normal;
+    text-align: center;
+    line-height: 11px;
+    text-overflow: clip;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
