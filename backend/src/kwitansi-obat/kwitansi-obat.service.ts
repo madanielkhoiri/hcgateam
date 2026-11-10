@@ -330,7 +330,7 @@ export class KwitansiObatService {
             nomor,
             pesan,
             undefined,
-            'HC',
+            'COMBEN',
           );
           if (sukses) terkirim += 1;
           else gagal += 1;
@@ -413,7 +413,7 @@ export class KwitansiObatService {
       karyawan.noTelepon,
       pesan,
       undefined,
-      'HC',
+      'COMBEN',
     );
     return { ...log, terkirim };
   }

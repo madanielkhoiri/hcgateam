@@ -2,9 +2,8 @@
 // FILE: backend/src/whatsapp/whatsapp.service.ts
 // FUNGSI: Kirim notifikasi WhatsApp keluar lewat Fonnte (fonnte.com).
 // Kredensial diisi lewat env: FONNTE_TOKEN (device default/GA),
-// FONNTE_TOKEN_HC (device WA milik HC — dipakai kalau parameter
-// `departemen: 'HC'` diisi saat kirim, fallback ke device default kalau
-// belum dikonfigurasi). Bila token belum diisi, pengiriman notifikasi
+// FONNTE_TOKEN_HC (device WA milik HC) dan FONNTE_TOKEN_COMBEN
+// (device WA Comben). Bila token belum diisi, pengiriman notifikasi
 // dilewati (fitur lain tetap jalan) dan dicatat di log.
 // ==================================================
 
@@ -18,10 +17,12 @@ export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly token: string | undefined;
   private readonly tokenHc: string | undefined;
+  private readonly tokenComben: string | undefined;
 
   constructor() {
     this.token = process.env.FONNTE_TOKEN || undefined;
     this.tokenHc = process.env.FONNTE_TOKEN_HC || undefined;
+    this.tokenComben = process.env.FONNTE_TOKEN_COMBEN || undefined;
 
     if (!this.token) {
       this.logger.warn(
@@ -34,7 +35,10 @@ export class WhatsappService {
     return Boolean(this.token);
   }
 
-  private pilihToken(departemen?: 'HC'): string | undefined {
+  private pilihToken(departemen?: 'HC' | 'COMBEN'): string | undefined {
+    // Sender Comben tidak boleh fallback supaya notifikasi Kwitansi Obat
+    // tidak terkirim dari nomor HC/GA tanpa disadari.
+    if (departemen === 'COMBEN') return this.tokenComben;
     return departemen === 'HC' ? this.tokenHc || this.token : this.token;
   }
 
@@ -68,7 +72,7 @@ export class WhatsappService {
     tujuan: string | undefined | null,
     pesan: string,
     lampiran?: { url: string; namaFile?: string },
-    departemen?: 'HC',
+    departemen?: 'HC' | 'COMBEN',
   ): Promise<boolean> {
     const token = this.pilihToken(departemen);
 
@@ -119,7 +123,7 @@ export class WhatsappService {
    */
   async validasiTerdaftar(
     nomor: string | undefined | null,
-    departemen?: 'HC',
+    departemen?: 'HC' | 'COMBEN',
   ): Promise<boolean | null> {
     const token = this.pilihToken(departemen);
 

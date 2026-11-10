@@ -2,8 +2,13 @@ import { WhatsappService } from './whatsapp.service';
 
 const TOKEN_ASLI = process.env.FONNTE_TOKEN;
 const TOKEN_HC_ASLI = process.env.FONNTE_TOKEN_HC;
+const TOKEN_COMBEN_ASLI = process.env.FONNTE_TOKEN_COMBEN;
 
-function buatServiceDenganToken(token: string | undefined, tokenHc?: string | undefined) {
+function buatServiceDenganToken(
+  token: string | undefined,
+  tokenHc?: string | undefined,
+  tokenComben?: string | undefined,
+) {
   if (token === undefined) {
     delete process.env.FONNTE_TOKEN;
   } else {
@@ -14,6 +19,12 @@ function buatServiceDenganToken(token: string | undefined, tokenHc?: string | un
     delete process.env.FONNTE_TOKEN_HC;
   } else {
     process.env.FONNTE_TOKEN_HC = tokenHc;
+  }
+
+  if (tokenComben === undefined) {
+    delete process.env.FONNTE_TOKEN_COMBEN;
+  } else {
+    process.env.FONNTE_TOKEN_COMBEN = tokenComben;
   }
 
   return new WhatsappService();
@@ -30,6 +41,12 @@ afterEach(() => {
     delete process.env.FONNTE_TOKEN_HC;
   } else {
     process.env.FONNTE_TOKEN_HC = TOKEN_HC_ASLI;
+  }
+
+  if (TOKEN_COMBEN_ASLI === undefined) {
+    delete process.env.FONNTE_TOKEN_COMBEN;
+  } else {
+    process.env.FONNTE_TOKEN_COMBEN = TOKEN_COMBEN_ASLI;
   }
 
   jest.restoreAllMocks();
@@ -177,6 +194,28 @@ describe('WhatsappService.kirim', () => {
       'https://api.fonnte.com/send',
       expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'token-ga' }) }),
     );
+  });
+
+  it('departemen "COMBEN" memakai FONNTE_TOKEN_COMBEN', async () => {
+    const service = buatServiceDenganToken('token-ga', 'token-hc', 'token-comben');
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await service.kirim('08123456789', 'Halo', undefined, 'COMBEN');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.fonnte.com/send',
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'token-comben' }) }),
+    );
+  });
+
+  it('departemen "COMBEN" tidak fallback kalau token Comben belum diisi', async () => {
+    const service = buatServiceDenganToken('token-ga', 'token-hc');
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    expect(await service.kirim('08123456789', 'Halo', undefined, 'COMBEN')).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
