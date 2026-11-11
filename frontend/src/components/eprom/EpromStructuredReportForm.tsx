@@ -69,7 +69,7 @@ function P5mReportFormContent({ projectId, disabled, onSaved, editId, initialDat
 function ReportModal({ title, buttonLabel, disabled, compact = false, children }: { title: string; buttonLabel: string; disabled: boolean; compact?: boolean; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return <>
-    <button type="button" className={`${styles.openModal} ${compact ? styles.openModalCompact : ""}`} disabled={disabled} onClick={() => setOpen(true)} {...(compact ? { title: buttonLabel, "aria-label": buttonLabel, style: { width: 28, height: 28, minHeight: 0, padding: 0, justifyContent: "center" } } : {})}>{compact ? <Pencil size={13}/> : <><Plus size={16}/> {buttonLabel}</>}</button>
+    <button type="button" className={`${styles.openModal} ${compact ? styles.openModalCompact : ""}`} disabled={disabled} onClick={() => setOpen(true)} {...(compact ? { title: buttonLabel, "aria-label": buttonLabel, style: { display: "grid", placeItems: "center", width: 30, height: 30, minHeight: 0, margin: 0, padding: 0, flexShrink: 0, color: "#34506f", background: "#ffffff", border: "1px solid #d8e4f2", borderRadius: 8, boxShadow: "none", cursor: "pointer" } } : {})}>{compact ? <Pencil size={13} style={{ display: "block" }}/> : <><Plus size={16}/> {buttonLabel}</>}</button>
     {open && <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setOpen(false)}>
       <section className={styles.modal} role="dialog" aria-modal="true" aria-label={title} onMouseDown={e => e.stopPropagation()}>
         <header className={styles.modalHeader}><h2>{title}</h2><button type="button" onClick={() => setOpen(false)} aria-label="Tutup"><X size={20}/></button></header>
