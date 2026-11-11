@@ -47,8 +47,8 @@
   text-decoration: none;
 }
 .brandLogo {
-  width: 43px;
-  height: 43px;
+  width: 150px;
+  height: 54px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -57,7 +57,7 @@
   border-radius: 0;
   box-shadow: none;
 }
-.brandLogo img { width: 150px; height: 54px; object-fit: contain; }
+.brandLogo img { width: 150px; height: 54px; max-width: none; object-fit: contain; }
 .brandText {
   overflow: hidden;
   font-size: 19px;
