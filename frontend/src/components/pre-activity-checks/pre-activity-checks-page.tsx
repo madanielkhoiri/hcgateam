@@ -1276,7 +1276,7 @@ export default function PreActivityChecksPage() {
                               updateField("coordinatorName", item.name);
                             }}
                           >
-                            <img src={fileUrl(item.path)} alt={item.name} />
+                            <img loading="lazy" decoding="async" src={fileUrl(item.path)} alt={item.name} />
                             <span>{item.name}</span>
                           </button>
                         );
@@ -1346,7 +1346,7 @@ export default function PreActivityChecksPage() {
                               updateField("supervisorName", item.name);
                             }}
                           >
-                            <img src={fileUrl(item.path)} alt={item.name} />
+                            <img loading="lazy" decoding="async" src={fileUrl(item.path)} alt={item.name} />
                             <span>{item.name}</span>
                           </button>
                         );
@@ -1429,7 +1429,7 @@ export default function PreActivityChecksPage() {
 
                           {storedPath ? (
                             <div className={styles.documentPreview}>
-                              <img src={fileUrl(storedPath)} alt={label} />
+                              <img loading="lazy" decoding="async" src={fileUrl(storedPath)} alt={label} />
 
                               <button
                                 type="button"
@@ -1564,7 +1564,7 @@ export default function PreActivityChecksPage() {
                     key={`${path}-${index}`}
                     onClick={() => window.open(fileUrl(path), "_blank")}
                   >
-                    <img src={fileUrl(path)} alt={`Dokumentasi ${index + 1}`} />
+                    <img loading="lazy" decoding="async" src={fileUrl(path)} alt={`Dokumentasi ${index + 1}`} />
                   </button>
                 ))}
               </div>

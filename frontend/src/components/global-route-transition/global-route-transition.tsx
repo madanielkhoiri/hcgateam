@@ -36,17 +36,18 @@ export function GlobalRouteTransition() {
 
     if (targetRef.current) {
       targetRef.current = null;
-      setPhase('leaving');
-      later(() => setPhase('hidden'), 280);
+      // Jika overlay belum sempat muncul (navigasi cepat), tetap tersembunyi.
+      setPhase((current) => (current === 'hidden' ? 'hidden' : 'leaving'));
+      later(() => setPhase('hidden'), 200);
       return;
     }
 
     // Logo hanya untuk refresh/akses URL langsung dan sesudah login.
     if (previousPath === null || previousPath === '/login') {
       setPhase('buffering');
-      later(() => setPhase('logo'), 280);
-      later(() => setPhase('leaving'), 850);
-      later(() => setPhase('hidden'), 1100);
+      later(() => setPhase('logo'), 150);
+      later(() => setPhase('leaving'), 650);
+      later(() => setPhase('hidden'), 850);
     } else {
       setPhase('hidden');
     }
@@ -66,17 +67,17 @@ export function GlobalRouteTransition() {
       event.preventDefault();
       clearTimers();
       targetRef.current = `${destination.pathname}${destination.search}${destination.hash}`;
-      setPhase('buffering');
-      router.prefetch(targetRef.current);
+      // Pindah langsung; overlay baru tampil bila navigasi lebih lama dari 250 ms.
+      router.push(targetRef.current);
       later(() => {
-        if (targetRef.current) router.push(targetRef.current);
-      }, 360);
+        if (targetRef.current) setPhase('buffering');
+      }, 250);
       // Pengaman jika route tujuan tidak memicu perubahan pathname.
       later(() => {
         if (targetRef.current) {
           targetRef.current = null;
           setPhase('leaving');
-          later(() => setPhase('hidden'), 280);
+          later(() => setPhase('hidden'), 200);
         }
       }, 5000);
     }

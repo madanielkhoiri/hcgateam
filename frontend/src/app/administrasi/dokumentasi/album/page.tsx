@@ -286,7 +286,7 @@ export default function AlbumDokumentasiPage() {
                     style={{ display: 'block', width: '100%', border: 0, background: 'none', cursor: 'pointer', padding: 0 }}
                   >
                     {album.sampul ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={urlFotoAlbum(album.sampul)}
                         alt={album.judul}
                         className={styles.posterThumb}
@@ -439,7 +439,7 @@ export default function AlbumDokumentasiPage() {
             >
               {albumAktif.foto.map((foto) => (
                 <div key={foto.id} style={{ position: 'relative' }}>
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={urlFotoAlbum(foto.urlFoto)}
                     alt=""
                     onClick={() => setPreviewFoto(urlFotoAlbum(foto.urlFoto))}
@@ -585,7 +585,7 @@ export default function AlbumDokumentasiPage() {
               </button>
             </div>
             <div className={styles.previewBody}>
-              <img src={previewFoto} alt="" className={styles.previewImage} />
+              <img loading="lazy" decoding="async" src={previewFoto} alt="" className={styles.previewImage} />
             </div>
           </div>
         </div>

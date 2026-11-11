@@ -99,7 +99,7 @@ export default function TravelDetailAdminPage() {
             <div className={styles.panel}>
               <h3>Check-in / Check-out Driver</h3>
               {jadwal.driverCheckInFoto && (
-                <img
+                <img loading="lazy" decoding="async"
                   src={urlFileTransport(jadwal.driverCheckInFoto)}
                   alt="Foto check-in driver"
                   style={{ width: '100%', maxWidth: 280, borderRadius: 12, marginBottom: 12 }}

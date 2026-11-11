@@ -776,7 +776,7 @@ export default function HandoversPage() {
                               removed ? styles.imageMarkedForRemoval : ""
                             }`}
                           >
-                            <img
+                            <img loading="lazy" decoding="async"
                               src={`${API_URL}/handovers/images/${encodeURIComponent(
                                 filename,
                               )}`}
@@ -839,7 +839,7 @@ export default function HandoversPage() {
                         key={`${file.name}-${file.lastModified}-${index}`}
                         className={styles.handoverImageCard}
                       >
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={URL.createObjectURL(file)}
                           alt={`Foto baru ${index + 1}`}
                         />

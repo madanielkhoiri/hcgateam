@@ -846,7 +846,7 @@ export function EngineerDocumentApproval({
                         }
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={signaturePreviews[signature.filename] ?? urlFileEprom(signature.path)}
                           alt={`Tanda tangan ${signature.name}`}
                           draggable={false}

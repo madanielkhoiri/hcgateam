@@ -212,7 +212,7 @@ export function DaftarPengaduanTabel({
                           className={styles.fotoThumb}
                           title={f.namaFile}
                         >
-                          <img src={urlFotoPengaduan(f.urlFoto)} alt={f.namaFile} />
+                          <img loading="lazy" decoding="async" src={urlFotoPengaduan(f.urlFoto)} alt={f.namaFile} />
                         </a>
                       ))}
                     </div>

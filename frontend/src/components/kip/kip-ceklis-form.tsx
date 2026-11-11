@@ -136,7 +136,7 @@ export function KipCeklisForm({
 
       {preview && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <img loading="lazy" decoding="async"
           src={preview}
           alt="Preview dokumentasi"
           style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 10 }}

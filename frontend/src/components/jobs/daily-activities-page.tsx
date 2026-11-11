@@ -834,7 +834,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
                   <tr key={row.id}>
                     <td>{index + 1}</td>
                     <td>
-                      <img
+                      <img loading="lazy" decoding="async"
                         className={styles.profileThumbnail}
                         role="button"
                         tabIndex={0}
@@ -1312,7 +1312,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
 
             <div className={styles.modalBody}>
               <div className={styles.detailSummary}>
-                <img
+                <img loading="lazy" decoding="async"
                   role="button"
                   tabIndex={0}
                   onClick={() =>
@@ -1372,7 +1372,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
                             className={styles.imageButton}
                             onClick={() => setPreviewImage(imageUrl(path))}
                           >
-                            <img src={imageUrl(path)} alt="Pre-Activity" />
+                            <img loading="lazy" decoding="async" src={imageUrl(path)} alt="Pre-Activity" />
                           </button>
                         ))}
                       </div>
@@ -1395,7 +1395,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
                             className={styles.imageButton}
                             onClick={() => setPreviewImage(imageUrl(path))}
                           >
-                            <img src={imageUrl(path)} alt="Progress" />
+                            <img loading="lazy" decoding="async" src={imageUrl(path)} alt="Progress" />
                           </button>
                         ))}
                       </div>
@@ -1454,7 +1454,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
               Tutup
             </button>
 
-            <img src={previewImage} alt="Preview dokumentasi" />
+            <img loading="lazy" decoding="async" src={previewImage} alt="Preview dokumentasi" />
           </div>
         </div>
       )}

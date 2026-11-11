@@ -204,6 +204,7 @@ export default function WorkOrderDashboardPage() {
     void loadDashboard();
 
     const interval = window.setInterval(() => {
+      if (document.hidden) return; // jangan polling saat tab tidak terlihat
       void loadDashboard(true);
     }, 10000);
 

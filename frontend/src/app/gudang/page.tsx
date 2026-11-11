@@ -83,7 +83,7 @@ function TileFoto({
 
   if (item.photoPath) {
     return (
-      <img
+      <img loading="lazy" decoding="async"
         src={urlFotoGudang(item.photoPath, 'items')}
         alt=""
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -826,7 +826,7 @@ function GudangPageInner() {
                   {checkoutPhoto && (
                     <div className={styles.photoPreviewCard}>
                       {checkoutPhotoPreview && (
-                        <img src={checkoutPhotoPreview} alt="Pratinjau bukti pengambilan" />
+                        <img loading="lazy" decoding="async" src={checkoutPhotoPreview} alt="Pratinjau bukti pengambilan" />
                       )}
                       <div>
                         <strong>{checkoutPhoto.name}</strong>

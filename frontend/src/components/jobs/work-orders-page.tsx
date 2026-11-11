@@ -904,7 +904,7 @@ export default function WorkOrdersPage() {
                               className={styles.thumbnailButton}
                               onClick={() => setZoomImage(photoUrl(image))}
                             >
-                              <img src={photoUrl(image)} alt="Dokumentasi WO" />
+                              <img loading="lazy" decoding="async" src={photoUrl(image)} alt="Dokumentasi WO" />
                             </button>
                           ))}
 
@@ -1306,7 +1306,7 @@ export default function WorkOrdersPage() {
                               className={styles.photoPreviewButton}
                               onClick={() => setZoomImage(photoUrl(image))}
                             >
-                              <img
+                              <img loading="lazy" decoding="async"
                                 src={photoUrl(image)}
                                 alt="Foto Work Order"
                               />
@@ -1337,7 +1337,7 @@ export default function WorkOrdersPage() {
                               className={styles.photoPreviewButton}
                               onClick={() => setZoomImage(preview)}
                             >
-                              <img src={preview} alt={`Preview ${index + 1}`} />
+                              <img loading="lazy" decoding="async" src={preview} alt={`Preview ${index + 1}`} />
                             </button>
 
                             <button
@@ -1389,7 +1389,7 @@ export default function WorkOrdersPage() {
             {"\u00D7"}
           </button>
 
-          <img
+          <img loading="lazy" decoding="async"
             src={zoomImage}
             alt="Foto dokumentasi"
             onClick={(event) => event.stopPropagation()}

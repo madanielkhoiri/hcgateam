@@ -540,7 +540,7 @@ export default function DokumenIrPage() {
 
             <div className={styles.previewBody}>
               {apakahGambar(preview.namaFile) ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={urlFileIr(preview.urlFile)}
                   alt={preview.judul}
                   className={styles.previewImage}

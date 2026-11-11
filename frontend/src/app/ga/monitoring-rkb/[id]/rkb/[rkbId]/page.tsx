@@ -167,7 +167,7 @@ export default function DetailRkb() {
                     <td>{Number(b.qty).toLocaleString("id-ID")}</td>
                     <td>{b.satuan}</td>
                     <td><select className={`${styles.statusSelect} ${b.keterangan === "TIDAK_SESUAI" ? styles.notConform : b.keterangan === "SESUAI" ? styles.conform : ""}`} value={b.keterangan ?? ""} disabled={keteranganDiproses === b.id} onChange={(e) => void setKeteranganBarang(b.id!, e.target.value ? e.target.value as KeteranganRkb : null)}><option value="">Pilih Keterangan</option><option value="SESUAI">Sesuai</option><option value="TIDAK_SESUAI">Tidak Sesuai</option></select></td>
-                    <td>{b.fotoUrl ? <a href={urlUploads(b.fotoUrl)} target="_blank" rel="noreferrer"><img className={styles.itemPhoto} src={urlUploads(b.fotoUrl)} alt={`Foto ${b.namaBarang}`}/></a> : <span className={styles.noPhoto}>Belum ada</span>}</td>
+                    <td>{b.fotoUrl ? <a href={urlUploads(b.fotoUrl)} target="_blank" rel="noreferrer"><img loading="lazy" decoding="async" className={styles.itemPhoto} src={urlUploads(b.fotoUrl)} alt={`Foto ${b.namaBarang}`}/></a> : <span className={styles.noPhoto}>Belum ada</span>}</td>
                     <td>
                       <select
                         className={`${styles.statusSelect} ${styles[statusClass[b.status ?? "WAITING_APPROVAL"]]}`}

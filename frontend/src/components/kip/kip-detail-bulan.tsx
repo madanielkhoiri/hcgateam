@@ -40,7 +40,7 @@ export function KipDetailBulan({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {baris.fotoBukti && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <img loading="lazy" decoding="async"
             src={urlFotoKip(baris.fotoBukti)}
             alt="Foto dokumentasi bukti inspeksi"
             style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 10, background: '#f1f5f9' }}

@@ -378,7 +378,7 @@ export default function SignaturePickerModal({
                           onClose();
                         }}
                       >
-                        <img src={fileUrl(apiUrl, item.path)} alt={item.name} />
+                        <img loading="lazy" decoding="async" src={fileUrl(apiUrl, item.path)} alt={item.name} />
 
                         <span>{item.name}</span>
 

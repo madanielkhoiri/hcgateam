@@ -1236,7 +1236,7 @@ export default function P5mPage() {
                 <div className={styles.imageGrid}>
                   {documentationPaths.map((path, index) => (
                     <div className={styles.imageCard} key={`${path}-${index}`}>
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={fileUrl(path)}
                         alt={`Dokumentasi ${index + 1}`}
                       />

@@ -343,7 +343,7 @@ export default function LaporanHousekeepingIndoorPage() {
           <article key={item.id} className={styles.card}>
             <div className={styles.cardCover} onClick={() => setGaleri(item)}>
               {item.foto[0] ? (
-                <img src={urlFileHousekeepingIndoor(item.foto[0].fileUrl)} alt="Cover laporan" />
+                <img loading="lazy" decoding="async" src={urlFileHousekeepingIndoor(item.foto[0].fileUrl)} alt="Cover laporan" />
               ) : (
                 <div className={styles.cardCoverEmpty}>
                   <Images size={30} />
@@ -445,7 +445,7 @@ export default function LaporanHousekeepingIndoorPage() {
                 <div className={styles.previewGrid}>
                   {previews.map((url, index) => (
                     <div key={url} className={styles.previewItem}>
-                      <img src={url} alt={`Preview ${index + 1}`} />
+                      <img loading="lazy" decoding="async" src={url} alt={`Preview ${index + 1}`} />
                       <button type="button" className={styles.previewRemove} onClick={() => hapusFile(index)}>
                         <X />
                       </button>
@@ -503,7 +503,7 @@ export default function LaporanHousekeepingIndoorPage() {
             <div className={styles.masonry}>
               {galeri.foto.map((f, index) => (
                 <button key={f.id} type="button" className={styles.masonryItem} onClick={() => setLightboxIndex(index)}>
-                  <img src={urlFileHousekeepingIndoor(f.fileUrl)} alt={`Foto ${index + 1}`} />
+                  <img loading="lazy" decoding="async" src={urlFileHousekeepingIndoor(f.fileUrl)} alt={`Foto ${index + 1}`} />
                 </button>
               ))}
               {!galeri.foto.length && <p style={{ color: '#8a9bb0', fontSize: 13 }}>Belum ada foto pada laporan ini.</p>}
@@ -528,7 +528,7 @@ export default function LaporanHousekeepingIndoorPage() {
               <ChevronLeft size={22} />
             </button>
           )}
-          <img
+          <img loading="lazy" decoding="async"
             src={urlFileHousekeepingIndoor(galeri.foto[lightboxIndex].fileUrl)}
             alt={`Foto ${lightboxIndex + 1}`}
             onClick={(e) => e.stopPropagation()}
@@ -633,7 +633,7 @@ export default function LaporanHousekeepingIndoorPage() {
           <div className={styles.cetakPhotoGrid}>
             {galeri.foto.map((f, index) => (
               <figure key={f.id}>
-                <img src={urlFileHousekeepingIndoor(f.fileUrl)} alt={`Foto ${index + 1}`} />
+                <img loading="lazy" decoding="async" src={urlFileHousekeepingIndoor(f.fileUrl)} alt={`Foto ${index + 1}`} />
                 <figcaption>Foto {index + 1}</figcaption>
               </figure>
             ))}

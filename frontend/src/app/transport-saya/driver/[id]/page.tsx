@@ -227,7 +227,7 @@ export default function DriverTripDetailPage() {
 
             {previewFoto && !kameraAktif && (
               <div>
-                <img src={previewFoto} alt="Preview foto check-in" className={styles.photoPreview} />
+                <img loading="lazy" decoding="async" src={previewFoto} alt="Preview foto check-in" className={styles.photoPreview} />
                 <div style={{ marginTop: 8 }}>
                   <button
                     type="button"
@@ -254,7 +254,7 @@ export default function DriverTripDetailPage() {
         {jadwal.driverCheckIn && (
           <>
             {jadwal.driverCheckInFoto && (
-              <img src={urlFileTransport(jadwal.driverCheckInFoto)} alt="Foto check-in" className={styles.photoPreview} />
+              <img loading="lazy" decoding="async" src={urlFileTransport(jadwal.driverCheckInFoto)} alt="Foto check-in" className={styles.photoPreview} />
             )}
             <p className={`${styles.pill} ${styles.pillGreen}`} style={{ marginTop: 8 }}>
               Check-in: {formatWaktu(jadwal.driverCheckIn)}

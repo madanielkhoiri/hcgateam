@@ -243,7 +243,7 @@ export default function KelolaPostinganPage() {
           {daftar.map((item) => (
             <div key={item.id} className={styles.docCard}>
               {item.tipe === 'POSTER' ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={urlMediaPostingan(item.urlMedia)}
                   alt={item.judul}
                   className={styles.previewImage}

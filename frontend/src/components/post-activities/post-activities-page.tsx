@@ -572,7 +572,7 @@ export default function PostActivitiesPage() {
                             type="button"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={imageUrl(path)} alt="Dokumentasi" />
+                            <img loading="lazy" decoding="async" src={imageUrl(path)} alt="Dokumentasi" />
                           </button>
                         ))}
 
@@ -846,7 +846,7 @@ export default function PostActivitiesPage() {
                   {retainedPhotos.map((path) => (
                     <article key={path}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imageUrl(path)} alt="Foto tersimpan" />
+                      <img loading="lazy" decoding="async" src={imageUrl(path)} alt="Foto tersimpan" />
                       <button
                         type="button"
                         onClick={() => removeRetainedPhoto(path)}
@@ -859,7 +859,7 @@ export default function PostActivitiesPage() {
                   {newFiles.map((file, index) => (
                     <article key={`${file.name}-${file.lastModified}-${index}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={URL.createObjectURL(file)} alt={file.name} />
+                      <img loading="lazy" decoding="async" src={URL.createObjectURL(file)} alt={file.name} />
                       <button
                         type="button"
                         onClick={() => removeNewFile(index)}
@@ -907,7 +907,7 @@ export default function PostActivitiesPage() {
           </button>
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <img loading="lazy" decoding="async"
             src={previewPhoto}
             alt="Preview dokumentasi"
             onClick={(event) => event.stopPropagation()}

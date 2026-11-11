@@ -251,7 +251,7 @@ function ElectricPhotoThumbnail({
       onClick={() => onZoom(imageUrl)}
       title="Klik untuk memperbesar foto"
     >
-      <img
+      <img loading="lazy" decoding="async"
         src={imageUrl}
         alt="Dokumentasi barang keluar Electric"
         className={styles.photoThumbnail}
@@ -1617,7 +1617,7 @@ export default function InventoryCrud({
                         <span className={styles.currentPhotoLabel}>
                           Foto saat ini
                         </span>
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={urlUploads(`items/${existingPhotoPath}`)}
                           alt="Foto barang"
                           style={{
@@ -2581,7 +2581,7 @@ export default function InventoryCrud({
               <X size={22} />
             </button>
 
-            <img
+            <img loading="lazy" decoding="async"
               src={zoomImageUrl}
               alt="Foto dokumentasi barang keluar Electric"
               className={styles.imageZoomPhoto}
