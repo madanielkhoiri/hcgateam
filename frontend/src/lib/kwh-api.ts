@@ -17,6 +17,8 @@ export type KwhPencatatan = {
   tahun: number;
   bulan: number;
   standMeter: number;
+  /** Stand meter pencatatan bulan lalu (meter yang sama); null bila belum dicatat. */
+  standBulanLalu: number | null;
   /** Stand bulan ini dikurangi stand bulan lalu; null bila bulan lalu belum dicatat. */
   pemakaian: number | null;
   tanggalCatat: string;

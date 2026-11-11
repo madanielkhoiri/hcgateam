@@ -138,6 +138,40 @@ export default function DataKwhPage() {
     }
   }
 
+  // Riwayat meter terpilih (semua tahun) untuk menghitung pemakaian langsung di form.
+  const [riwayat, setRiwayat] = useState<KwhPencatatan[]>([]);
+  useEffect(() => {
+    if (!modal || !form.meter || form.meter === BARU) {
+      setRiwayat([]);
+      return;
+    }
+    let aktif = true;
+    kwhApi
+      .daftarPencatatan({ meterId: Number(form.meter) })
+      .then((rows) => {
+        if (aktif) setRiwayat(rows);
+      })
+      .catch(() => {
+        if (aktif) setRiwayat([]);
+      });
+    return () => {
+      aktif = false;
+    };
+  }, [modal, form.meter]);
+
+  const tanggalForm = form.tanggalCatat ? new Date(form.tanggalCatat) : new Date();
+  const skorForm = tanggalForm.getFullYear() * 12 + tanggalForm.getMonth();
+  const tanggalLalu = new Date(tanggalForm.getFullYear(), tanggalForm.getMonth() - 1, 1);
+  const labelBulanLalu = `${NAMA_BULAN[tanggalLalu.getMonth()]} ${tanggalLalu.getFullYear()}`;
+  const labelBulanIni = `${NAMA_BULAN[tanggalForm.getMonth()]} ${tanggalForm.getFullYear()}`;
+  const standLaluForm =
+    riwayat.find((r) => r.id !== editId && r.tahun * 12 + (r.bulan - 1) === skorForm - 1)?.standMeter ?? null;
+  const standIniForm = form.standMeter.trim() === '' ? null : Number(form.standMeter);
+  const pemakaianForm =
+    standLaluForm !== null && standIniForm !== null && !Number.isNaN(standIniForm)
+      ? Math.round((standIniForm - standLaluForm) * 100) / 100
+      : null;
+
   const tahunPilihan = Array.from({ length: 6 }, (_, i) => sekarang.getFullYear() - i);
 
   return (
@@ -204,7 +238,8 @@ export default function DataKwhPage() {
                 <th>No</th>
                 <th>Meter</th>
                 <th>Periode</th>
-                <th>Stand Meter (kWh)</th>
+                <th>Stand Bulan Lalu</th>
+                <th>Stand Bulan Ini</th>
                 <th>Pemakaian (kWh)</th>
                 <th>Tanggal Catat</th>
                 <th>Jadwal</th>
@@ -223,6 +258,7 @@ export default function DataKwhPage() {
                   <td>
                     {NAMA_BULAN[item.bulan - 1]} {item.tahun}
                   </td>
+                  <td>{item.standBulanLalu === null ? <span style={{ color: '#71839d' }}>-</span> : format(item.standBulanLalu)}</td>
                   <td>{format(item.standMeter)}</td>
                   <td>
                     {item.pemakaian === null ? (
@@ -264,7 +300,7 @@ export default function DataKwhPage() {
               ))}
               {!data.length && (
                 <tr>
-                  <td colSpan={9} className={styles.empty}>
+                  <td colSpan={10} className={styles.empty}>
                     Belum ada data pencatatan KWH.
                   </td>
                 </tr>
@@ -352,6 +388,49 @@ export default function DataKwhPage() {
                   Sesuai jadwal bila tanggal 1 di atas pukul 10.00 WITA.
                 </span>
               </label>
+              <div
+                style={{
+                  gridColumn: '1/-1',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: 10,
+                  padding: 12,
+                  background: '#f8fbff',
+                  border: '1px solid #d5e1ef',
+                  borderRadius: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Stand {labelBulanLalu}</div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: '#12355f' }}>
+                    {standLaluForm === null ? '-' : `${format(standLaluForm)} kWh`}
+                  </div>
+                  {standLaluForm === null && form.meter !== BARU ? (
+                    <div style={{ fontSize: 10.5, color: '#b0701a' }}>Bulan lalu belum dicatat</div>
+                  ) : null}
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Stand {labelBulanIni}</div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: '#12355f' }}>
+                    {standIniForm === null || Number.isNaN(standIniForm) ? '-' : `${format(standIniForm)} kWh`}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Pemakaian (bulan ini - bulan lalu)</div>
+                  <div
+                    style={{
+                      fontSize: 19,
+                      fontWeight: 800,
+                      color: pemakaianForm !== null && pemakaianForm < 0 ? '#b02031' : '#067b46',
+                    }}
+                  >
+                    {pemakaianForm === null ? '-' : `${format(pemakaianForm)} kWh`}
+                  </div>
+                  {pemakaianForm !== null && pemakaianForm < 0 ? (
+                    <div style={{ fontSize: 10.5, color: '#b02031' }}>Stand lebih kecil dari bulan lalu</div>
+                  ) : null}
+                </div>
+              </div>
               <label style={{ gridColumn: '1/-1' }}>
                 Catatan (opsional)
                 <input

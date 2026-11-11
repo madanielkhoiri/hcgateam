@@ -99,6 +99,7 @@ export class KwhService {
       tahun: r.tahun,
       bulan: r.bulan,
       standMeter: Number(r.standMeter),
+      standBulanLalu: peta.get(`${r.meterId}:${skor(r.tahun, r.bulan) - 1}`) ?? null,
       pemakaian: pemakaianDari(peta, r.meterId, r.tahun, r.bulan),
       tanggalCatat: r.tanggalCatat,
       tepatWaktu: r.tepatWaktu,
