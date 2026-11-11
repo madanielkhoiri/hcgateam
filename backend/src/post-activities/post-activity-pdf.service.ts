@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument = require('pdfkit');
 import QRCode = require('qrcode');
 import { existsSync } from 'node:fs';
-import { basename, join, normalize } from 'node:path';
+import { basename, join, normalize, resolve } from 'node:path';
 import { siapkanGambarUntukPdfKit } from '../common/pdf-image.util';
 import { PostActivitiesService } from './post-activities.service';
 
@@ -694,11 +694,16 @@ export class PostActivityPdfService {
       .replace(/^uploads[/\\]/i, '');
 
     const filename = basename(cleaned);
+    const backendRoot = resolve(__dirname, '..', '..');
 
     const candidates = [
       join(process.cwd(), 'uploads', cleaned),
       join(process.cwd(), 'uploads', 'post-activities', filename),
       join(process.cwd(), cleaned),
+      join(process.cwd(), 'backend', 'uploads', cleaned),
+      join(process.cwd(), 'backend', 'uploads', 'post-activities', filename),
+      join(backendRoot, 'uploads', cleaned),
+      join(backendRoot, 'uploads', 'post-activities', filename),
     ];
 
     return candidates.find((candidate) => existsSync(candidate)) ?? null;

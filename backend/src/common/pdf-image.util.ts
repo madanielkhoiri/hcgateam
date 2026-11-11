@@ -8,7 +8,6 @@
 // ==================================================
 
 import { readFileSync } from 'node:fs';
-import { extname } from 'node:path';
 import sharp from 'sharp';
 
 /**
@@ -18,19 +17,16 @@ import sharp from 'sharp';
  */
 export async function siapkanGambarUntukPdfKit(
   absolutePath: string,
-): Promise<string | Buffer> {
-  const ekstensi = extname(absolutePath).toLowerCase();
-
-  if (ekstensi === '.jpg' || ekstensi === '.jpeg' || ekstensi === '.png') {
-    return absolutePath;
-  }
-
-  return sharp(readFileSync(absolutePath)).png().toBuffer();
+): Promise<Buffer> {
+  return sharp(readFileSync(absolutePath), { failOn: 'none' })
+    .rotate()
+    .png()
+    .toBuffer();
 }
 
 /** Konversi buffer unggahan browser (WebP/JPEG/PNG dan format yang didukung sharp) ke PNG. */
 export async function siapkanBufferGambarUntukPdfKit(
   buffer: Buffer,
 ): Promise<Buffer> {
-  return sharp(buffer).rotate().png().toBuffer();
+  return sharp(buffer, { failOn: 'none' }).rotate().png().toBuffer();
 }

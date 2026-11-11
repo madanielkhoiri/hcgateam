@@ -56,25 +56,35 @@ export class P5mPdfService {
   }
 
   private resolveImage(storedPath: string): string | null {
-    const normalized = storedPath
+    const normalized = decodeURIComponent(storedPath)
       .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/[?#].*$/, '')
       .replace(/^\/+/, '');
 
-    const withoutUploads = normalized.replace(/^uploads\//, '');
+    const withoutApi = normalized.replace(/^api\//i, '');
+    const withoutUploads = withoutApi.replace(/^uploads\//i, '');
+    const backendRoot = path.resolve(__dirname, '..', '..');
 
     const candidates = [
       path.resolve(process.cwd(), normalized),
+      path.resolve(process.cwd(), withoutApi),
       path.resolve(process.cwd(), 'uploads', withoutUploads),
+      path.resolve(process.cwd(), 'backend', withoutApi),
+      path.resolve(process.cwd(), 'backend', 'uploads', withoutUploads),
       path.resolve(process.cwd(), '..', normalized),
+      path.resolve(backendRoot, withoutApi),
+      path.resolve(backendRoot, 'uploads', withoutUploads),
     ];
 
-    return candidates.find((file) => fs.existsSync(file)) ?? null;
+    return (
+      candidates.find(
+        (file) => fs.existsSync(file) && fs.statSync(file).isFile(),
+      ) ?? null
+    );
   }
 
   /** PDFKit hanya baca JPEG/PNG — foto WebP hasil kompresi frontend dikonversi dulu. */
-  private async siapkanGambarDokumentasi(
-    paths: string[],
-  ): Promise<GambarSiap> {
+  private async siapkanGambarDokumentasi(paths: string[]): Promise<GambarSiap> {
     const gambarSiap: GambarSiap = new Map();
 
     for (const storedPath of paths.slice(0, 4)) {
@@ -406,24 +416,62 @@ export class P5mPdfService {
     return lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
   }
 
-  private drawAttendancePagesLegacy(doc: PDFKit.PDFDocument, data: any, logo: string | null) {
+  private drawAttendancePagesLegacy(
+    doc: PDFKit.PDFDocument,
+    data: any,
+    logo: string | null,
+  ) {
     const rows = Array.isArray(data.attendances) ? data.attendances : [];
     const chunks = rows.length
-      ? Array.from({ length: Math.ceil(rows.length / 35) }, (_, index) => rows.slice(index * 35, index * 35 + 35))
+      ? Array.from({ length: Math.ceil(rows.length / 35) }, (_, index) =>
+          rows.slice(index * 35, index * 35 + 35),
+        )
       : [[]];
-    const topics = String(data.topic ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean)
-      .map((value, index) => `${index + 1}) ${value}`).join('  ');
+    const topics = String(data.topic ?? '')
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map((value, index) => `${index + 1}) ${value}`)
+      .join('  ');
     const date = new Date(data.activityDate);
-    const day = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(date);
-    const dateText = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+    const day = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(
+      date,
+    );
+    const dateText = new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
 
     chunks.forEach((items: any[], pageIndex) => {
       doc.addPage({ size: 'A4', layout: 'landscape', margin: 16 });
       const width = doc.page.width - 32;
-      if (logo) { try { doc.image(logo, 19, 17, { fit: [45, 40] }); } catch {} }
-      doc.font('Helvetica-Bold').fillColor('#111827').fontSize(12).text('FORM SAFETY TALK & P5M', 70, 18, { width: width - 140, align: 'center' });
-      doc.fontSize(7).text('PPA-ADRO-F-SHE-13A · Rev. 3', 70, 35, { width: width - 140, align: 'center' });
-      doc.font('Helvetica').fontSize(6.5).text(`Halaman ${pageIndex + 2}`, doc.page.width - 90, 22, { width: 70, align: 'right' });
+      if (logo) {
+        try {
+          doc.image(logo, 19, 17, { fit: [45, 40] });
+        } catch {}
+      }
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .fontSize(12)
+        .text('FORM SAFETY TALK & P5M', 70, 18, {
+          width: width - 140,
+          align: 'center',
+        });
+      doc
+        .fontSize(7)
+        .text('PPA-ADRO-F-SHE-13A · Rev. 3', 70, 35, {
+          width: width - 140,
+          align: 'center',
+        });
+      doc
+        .font('Helvetica')
+        .fontSize(6.5)
+        .text(`Halaman ${pageIndex + 2}`, doc.page.width - 90, 22, {
+          width: 70,
+          align: 'right',
+        });
 
       const infoY = 58;
       const info = [
@@ -433,55 +481,169 @@ export class P5mPdfService {
         `Lokasi: ${data.location || '-'}`,
         `Penyaji: ${data.speaker || '-'}`,
       ];
-      info.forEach((text, index) => doc.font('Helvetica').fontSize(6.5).fillColor('#111827').text(text, 18 + (index % 3) * 270, infoY + Math.floor(index / 3) * 13, { width: 260 }));
-      doc.font('Helvetica-Bold').fontSize(6.5).text(`Judul / Topik K3PLM: ${topics || '-'}`, 18, 86, { width });
+      info.forEach((text, index) =>
+        doc
+          .font('Helvetica')
+          .fontSize(6.5)
+          .fillColor('#111827')
+          .text(
+            text,
+            18 + (index % 3) * 270,
+            infoY + Math.floor(index / 3) * 13,
+            { width: 260 },
+          ),
+      );
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(6.5)
+        .text(`Judul / Topik K3PLM: ${topics || '-'}`, 18, 86, { width });
 
       const y = 111;
-      const columns = [22, 74, 48, 62, 64, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 37, 38, 42, 68];
-      const headers = ['No', 'Nama', 'NRP', 'Jabatan', 'Dept.', 'Tidur\n72 jam', 'Tidur\n48 jam', 'Tidur\n24 jam', 'Gizi\ncukup', 'Tanpa\nalkohol/obat', 'Tanpa aktivitas\nberlebih', 'Bebas\nstres', 'Bebas penyakit\nserius', 'Bebas masalah\nkeluarga', 'Paham\npekerjaan', 'Sehat /\nSakit', 'Tanda\ntangan', 'Boleh\nkerja', 'Keterangan'];
+      const columns = [
+        22, 74, 48, 62, 64, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 37, 38, 42,
+        68,
+      ];
+      const headers = [
+        'No',
+        'Nama',
+        'NRP',
+        'Jabatan',
+        'Dept.',
+        'Tidur\n72 jam',
+        'Tidur\n48 jam',
+        'Tidur\n24 jam',
+        'Gizi\ncukup',
+        'Tanpa\nalkohol/obat',
+        'Tanpa aktivitas\nberlebih',
+        'Bebas\nstres',
+        'Bebas penyakit\nserius',
+        'Bebas masalah\nkeluarga',
+        'Paham\npekerjaan',
+        'Sehat /\nSakit',
+        'Tanda\ntangan',
+        'Boleh\nkerja',
+        'Keterangan',
+      ];
       let x = 18;
       headers.forEach((header, index) => {
         doc.rect(x, y, columns[index], 38).fillAndStroke('#E8F2F7', '#607080');
-        doc.font('Helvetica-Bold').fillColor('#111827').fontSize(4.8).text(header, x + 1, y + 7, { width: columns[index] - 2, height: 29, align: 'center' });
+        doc
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .fontSize(4.8)
+          .text(header, x + 1, y + 7, {
+            width: columns[index] - 2,
+            height: 29,
+            align: 'center',
+          });
         x += columns[index];
       });
-      const mark = (value: boolean) => value ? 'Ya' : 'Tidak';
+      const mark = (value: boolean) => (value ? 'Ya' : 'Tidak');
       for (let rowIndex = 0; rowIndex < 35; rowIndex += 1) {
         const item = items[rowIndex];
         const rowY = y + 38 + rowIndex * 11.5;
-        const values = item ? [
-          String(pageIndex * 35 + rowIndex + 1), item.nameSnapshot, item.nrpSnapshot,
-          item.jobTitleSnapshot, item.departmentSnapshot,
-          mark(item.sleep72), mark(item.sleep48),
-          item.sleep24 === 'LESS_THAN_4' ? '<4' : item.sleep24 === 'BETWEEN_4_6' ? '4-6' : '>6',
-          mark(item.nutritionEnough), mark(item.noAlcoholMedicine), mark(item.noExcessActivity),
-          mark(item.noExcessStress), mark(item.noSeriousIllness), mark(item.noFamilyProblem),
-          mark(item.understandsWork), item.health === 'HEALTHY' ? 'Sehat' : 'Sakit',
-          'Digital', item.allowedToWork == null ? '-' : item.allowedToWork ? 'Ya' : 'Tidak', item.reviewNote || '',
-        ] : Array(headers.length).fill('');
+        const values = item
+          ? [
+              String(pageIndex * 35 + rowIndex + 1),
+              item.nameSnapshot,
+              item.nrpSnapshot,
+              item.jobTitleSnapshot,
+              item.departmentSnapshot,
+              mark(item.sleep72),
+              mark(item.sleep48),
+              item.sleep24 === 'LESS_THAN_4'
+                ? '<4'
+                : item.sleep24 === 'BETWEEN_4_6'
+                  ? '4-6'
+                  : '>6',
+              mark(item.nutritionEnough),
+              mark(item.noAlcoholMedicine),
+              mark(item.noExcessActivity),
+              mark(item.noExcessStress),
+              mark(item.noSeriousIllness),
+              mark(item.noFamilyProblem),
+              mark(item.understandsWork),
+              item.health === 'HEALTHY' ? 'Sehat' : 'Sakit',
+              'Digital',
+              item.allowedToWork == null
+                ? '-'
+                : item.allowedToWork
+                  ? 'Ya'
+                  : 'Tidak',
+              item.reviewNote || '',
+            ]
+          : Array(headers.length).fill('');
         x = 18;
         values.forEach((value, index) => {
-          doc.rect(x, rowY, columns[index], 11.5).strokeColor('#8796A5').stroke();
-          doc.font('Helvetica').fillColor('#111827').fontSize(index === 1 || index === 18 ? 4.8 : 5).text(String(value), x + 1, rowY + 3, { width: columns[index] - 2, height: 8, align: index < 5 || index === 18 ? 'left' : 'center', ellipsis: true });
+          doc
+            .rect(x, rowY, columns[index], 11.5)
+            .strokeColor('#8796A5')
+            .stroke();
+          doc
+            .font('Helvetica')
+            .fillColor('#111827')
+            .fontSize(index === 1 || index === 18 ? 4.8 : 5)
+            .text(String(value), x + 1, rowY + 3, {
+              width: columns[index] - 2,
+              height: 8,
+              align: index < 5 || index === 18 ? 'left' : 'center',
+              ellipsis: true,
+            });
           x += columns[index];
         });
       }
       const footerY = y + 38 + 35 * 11.5 + 8;
-      doc.font('Helvetica-Bold').fontSize(6).fillColor('#111827').text('Kesimpulan pemeriksaan kesiapan kerja:', 18, footerY);
-      doc.font('Helvetica').fontSize(5.5).text('Peserta dinyatakan siap bekerja setelah seluruh kondisi diperiksa. Keputusan akhir “Boleh Kerja” dan keterangannya diisi oleh Group Leader.', 18, footerY + 10, { width: 600 });
-      doc.font('Helvetica-Bold').fontSize(6).text(`Group Leader / Pengawas: ${this.normalizeSupervisors(data.supervisors).join(', ') || '-'}`, 620, footerY, { width: 190, align: 'center' });
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(6)
+        .fillColor('#111827')
+        .text('Kesimpulan pemeriksaan kesiapan kerja:', 18, footerY);
+      doc
+        .font('Helvetica')
+        .fontSize(5.5)
+        .text(
+          'Peserta dinyatakan siap bekerja setelah seluruh kondisi diperiksa. Keputusan akhir “Boleh Kerja” dan keterangannya diisi oleh Group Leader.',
+          18,
+          footerY + 10,
+          { width: 600 },
+        );
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(6)
+        .text(
+          `Group Leader / Pengawas: ${this.normalizeSupervisors(data.supervisors).join(', ') || '-'}`,
+          620,
+          footerY,
+          { width: 190, align: 'center' },
+        );
     });
   }
-  private drawAttendancePages(doc: PDFKit.PDFDocument, data: any, logo: string | null) {
+  private drawAttendancePages(
+    doc: PDFKit.PDFDocument,
+    data: any,
+    logo: string | null,
+  ) {
     const rows = Array.isArray(data.attendances) ? data.attendances : [];
     const chunks: any[][] = rows.length
-      ? Array.from({ length: Math.ceil(rows.length / 35) }, (_, index) => rows.slice(index * 35, index * 35 + 35))
+      ? Array.from({ length: Math.ceil(rows.length / 35) }, (_, index) =>
+          rows.slice(index * 35, index * 35 + 35),
+        )
       : [[]];
-    const topics = String(data.topic ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean)
-      .map((value, index) => `${index + 1}) ${value}`).join('  ');
+    const topics = String(data.topic ?? '')
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map((value, index) => `${index + 1}) ${value}`)
+      .join('  ');
     const date = new Date(data.activityDate);
-    const day = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(date);
-    const dateText = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+    const day = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(
+      date,
+    );
+    const dateText = new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
 
     const drawVerticalText = (
       text: string,
@@ -494,7 +656,10 @@ export class P5mPdfService {
       doc.save();
       doc.translate(x + width / 2, y + height / 2);
       doc.rotate(-90);
-      doc.font('Helvetica-Bold').fillColor('#111827').fontSize(fontSize)
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .fontSize(fontSize)
         .text(text, -height / 2 + 4, -width / 2 + 1, {
           width: height - 8,
           height: Math.max(width - 2, 5),
@@ -533,64 +698,144 @@ export class P5mPdfService {
 
       doc.rect(left, 12, tableWidth, 43).stroke(border);
       doc.rect(left, 12, 58, 43).stroke(border);
-      if (logo) { try { doc.image(logo, left + 5, 16, { fit: [48, 34] }); } catch {} }
+      if (logo) {
+        try {
+          doc.image(logo, left + 5, 16, { fit: [48, 34] });
+        } catch {}
+      }
       doc.rect(left + 58, 12, tableWidth - 250, 43).stroke(border);
-      doc.font('Helvetica-Bold').fillColor('#111827').fontSize(10)
-        .text('DAFTAR HADIR PERTEMUAN', left + 63, 19, { width: tableWidth - 260, align: 'center' })
-        .text('SAFETY TALK / P5M DAN BUGAR SELAMAT', left + 63, 33, { width: tableWidth - 260, align: 'center' });
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .fontSize(10)
+        .text('DAFTAR HADIR PERTEMUAN', left + 63, 19, {
+          width: tableWidth - 260,
+          align: 'center',
+        })
+        .text('SAFETY TALK / P5M DAN BUGAR SELAMAT', left + 63, 33, {
+          width: tableWidth - 260,
+          align: 'center',
+        });
       const metaX = left + tableWidth - 192;
       const metaRows = [
-        ['No. Dokumen', ': PPA-ADRO-F-SHE-13A'], ['Revisi', ': 3'],
-        ['Tgl Efektif', ': 25 Desember 2022'], ['Halaman', `: ${pageIndex + 2} dari ${chunks.length + 1}`],
+        ['No. Dokumen', ': PPA-ADRO-F-SHE-13A'],
+        ['Revisi', ': 3'],
+        ['Tgl Efektif', ': 25 Desember 2022'],
+        ['Halaman', `: ${pageIndex + 2} dari ${chunks.length + 1}`],
       ];
       metaRows.forEach(([label, value], index) => {
         const rowY = 12 + index * 10.75;
-        doc.rect(metaX, rowY, 62, 10.75).stroke(border).rect(metaX + 62, rowY, 130, 10.75).stroke(border);
-        doc.font('Helvetica').fontSize(5.7).text(label, metaX + 2, rowY + 2.5, { width: 58 });
+        doc
+          .rect(metaX, rowY, 62, 10.75)
+          .stroke(border)
+          .rect(metaX + 62, rowY, 130, 10.75)
+          .stroke(border);
+        doc
+          .font('Helvetica')
+          .fontSize(5.7)
+          .text(label, metaX + 2, rowY + 2.5, { width: 58 });
         doc.text(value, metaX + 64, rowY + 2.5, { width: 126 });
       });
 
-      const info = (label: string, value: string, x: number, y: number, width: number) => {
-        doc.font('Helvetica-Bold').fontSize(6).text(label, x, y + 2, { width: 88 });
-        doc.font('Helvetica').text(`: ${value}`, x + 88, y + 2, { width: width - 88 });
+      const info = (
+        label: string,
+        value: string,
+        x: number,
+        y: number,
+        width: number,
+      ) => {
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(6)
+          .text(label, x, y + 2, { width: 88 });
+        doc
+          .font('Helvetica')
+          .text(`: ${value}`, x + 88, y + 2, { width: width - 88 });
       };
       const infoHalf = tableWidth / 2;
       info('HARI, TANGGAL', `${day}, ${dateText}`, left, 59, infoHalf);
       info('DEPARTEMEN', 'HCGA', left + infoHalf, 59, infoHalf);
-      info('WAKTU', `${data.startTime || '-'}${data.endTime ? ` - ${data.endTime}` : ''}`, left, 70, infoHalf);
+      info(
+        'WAKTU',
+        `${data.startTime || '-'}${data.endTime ? ` - ${data.endTime}` : ''}`,
+        left,
+        70,
+        infoHalf,
+      );
       info('LOKASI', data.location || '-', left + infoHalf, 70, infoHalf);
       info('JUDUL TOPIK K3PLM', topics || '-', left, 81, infoHalf);
       info('PENYAJI', data.speaker || '-', left + infoHalf, 81, infoHalf);
 
       const y = 96;
       const headers = [
-        'No', 'Nama', 'NRP', 'Jabatan', 'Departemen', 'Tidur cukup dalam 72 jam terakhir (minimal 18 jam) *',
-        'Tidur cukup dalam 48 jam terakhir (minimal 12 jam) *', '<4', '4-6', '>6', 'Asupan gizi cukup *',
+        'No',
+        'Nama',
+        'NRP',
+        'Jabatan',
+        'Departemen',
+        'Tidur cukup dalam 72 jam terakhir (minimal 18 jam) *',
+        'Tidur cukup dalam 48 jam terakhir (minimal 12 jam) *',
+        '<4',
+        '4-6',
+        '>6',
+        'Asupan gizi cukup *',
         'Tidak mengkonsumsi alkohol dan obat-obatan (termasuk alternatif/herbal) *',
-        'Tidak melakukan aktivitas berlebih sebelum bekerja *', 'Bebas beban pikiran/stress berlebihan *',
-        'Bebas dari penyakit serius dan telah diobati *', 'Bebas dari permasalahan keluarga *',
-        'Memahami pekerjaan yang akan dilakukan *', 'Sehat', 'Sakit', 'Tanda Tangan', 'Keterangan',
+        'Tidak melakukan aktivitas berlebih sebelum bekerja *',
+        'Bebas beban pikiran/stress berlebihan *',
+        'Bebas dari penyakit serius dan telah diobati *',
+        'Bebas dari permasalahan keluarga *',
+        'Memahami pekerjaan yang akan dilakukan *',
+        'Sehat',
+        'Sakit',
+        'Tanda Tangan',
+        'Keterangan',
       ];
-      const rawWidths = [1097, 4571, 2413, 2962, 2669, 1536, 1682, 841, 877, 841, 1097, 1974, 1462, 1426, 1426, 1426, 1609, 1097, 1353, 2413, 3657];
+      const rawWidths = [
+        1097, 4571, 2413, 2962, 2669, 1536, 1682, 841, 877, 841, 1097, 1974,
+        1462, 1426, 1426, 1426, 1609, 1097, 1353, 2413, 3657,
+      ];
       const rawTotal = rawWidths.reduce((total, width) => total + width, 0);
-      const columns = rawWidths.map((width) => tableWidth * width / rawTotal);
+      const columns = rawWidths.map((width) => (tableWidth * width) / rawTotal);
       const headerHeight = 118;
       let x = left;
       headers.forEach((header, index) => {
         const yellow = index >= 5 && index <= 9;
-        doc.rect(x, y, columns[index], headerHeight)
+        doc
+          .rect(x, y, columns[index], headerHeight)
           .fillAndStroke(yellow ? '#FFF200' : '#FFFFFF', border);
 
         if (index < 5 || index === 19 || index === 20) {
-          drawCenteredHeader(header, x, y, columns[index], headerHeight, index === 1 ? 6.2 : 5.7);
-        } else if (!(index >= 7 && index <= 9) && !(index >= 17 && index <= 18)) {
-          drawVerticalText(header, x, y, columns[index], headerHeight, yellow ? 5.2 : 5.05);
+          drawCenteredHeader(
+            header,
+            x,
+            y,
+            columns[index],
+            headerHeight,
+            index === 1 ? 6.2 : 5.7,
+          );
+        } else if (
+          !(index >= 7 && index <= 9) &&
+          !(index >= 17 && index <= 18)
+        ) {
+          drawVerticalText(
+            header,
+            x,
+            y,
+            columns[index],
+            headerHeight,
+            yellow ? 5.2 : 5.05,
+          );
         }
         x += columns[index];
       });
-      const sleepGroupX = left + columns.slice(0, 7).reduce((sum, width) => sum + width, 0);
-      const sleepGroupWidth = columns.slice(7, 10).reduce((sum, width) => sum + width, 0);
-      doc.rect(sleepGroupX, y, sleepGroupWidth, headerHeight).fillAndStroke('#FFF200', border);
+      const sleepGroupX =
+        left + columns.slice(0, 7).reduce((sum, width) => sum + width, 0);
+      const sleepGroupWidth = columns
+        .slice(7, 10)
+        .reduce((sum, width) => sum + width, 0);
+      doc
+        .rect(sleepGroupX, y, sleepGroupWidth, headerHeight)
+        .fillAndStroke('#FFF200', border);
       drawVerticalText(
         'Tidur cukup dalam 24 jam terakhir (minimal 6 jam) (centang salah satu)',
         sleepGroupX,
@@ -602,24 +847,52 @@ export class P5mPdfService {
       const subHeaderHeight = 13;
       let sleepX = sleepGroupX;
       ['<4', '4-6', '>6'].forEach((label, offset) => {
-        doc.rect(sleepX, y + headerHeight - subHeaderHeight, columns[7 + offset], subHeaderHeight)
+        doc
+          .rect(
+            sleepX,
+            y + headerHeight - subHeaderHeight,
+            columns[7 + offset],
+            subHeaderHeight,
+          )
           .fillAndStroke('#FFF200', border);
-        doc.font('Helvetica-Bold').fontSize(4.4).fillColor('#111827')
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(4.4)
+          .fillColor('#111827')
           .text(label, sleepX, y + headerHeight - 9.5, {
             width: columns[7 + offset],
             align: 'center',
           });
         sleepX += columns[7 + offset];
       });
-      const healthX = left + columns.slice(0, 17).reduce((sum, width) => sum + width, 0);
+      const healthX =
+        left + columns.slice(0, 17).reduce((sum, width) => sum + width, 0);
       const healthWidth = columns[17] + columns[18];
-      doc.rect(healthX, y, healthWidth, headerHeight).fillAndStroke('#FFFFFF', border);
-      drawVerticalText('Kondisi kesehatan *', healthX, y, healthWidth, headerHeight, 5.05);
+      doc
+        .rect(healthX, y, healthWidth, headerHeight)
+        .fillAndStroke('#FFFFFF', border);
+      drawVerticalText(
+        'Kondisi kesehatan *',
+        healthX,
+        y,
+        healthWidth,
+        headerHeight,
+        5.05,
+      );
       let healthXPosition = healthX;
       ['Sehat', 'Sakit'].forEach((label, offset) => {
-        doc.rect(healthXPosition, y + headerHeight - subHeaderHeight, columns[17 + offset], subHeaderHeight)
+        doc
+          .rect(
+            healthXPosition,
+            y + headerHeight - subHeaderHeight,
+            columns[17 + offset],
+            subHeaderHeight,
+          )
           .fillAndStroke('#FFFFFF', border);
-        doc.font('Helvetica-Bold').fontSize(3.9).fillColor('#111827')
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(3.9)
+          .fillColor('#111827')
           .text(label, healthXPosition, y + headerHeight - 9.5, {
             width: columns[17 + offset],
             align: 'center',
@@ -627,20 +900,39 @@ export class P5mPdfService {
         healthXPosition += columns[17 + offset];
       });
 
-      const mark = (value: boolean) => value ? '__CHECK__' : 'X';
+      const mark = (value: boolean) => (value ? '__CHECK__' : 'X');
       const rowHeight = 14;
       for (let rowIndex = 0; rowIndex < 35; rowIndex += 1) {
         const item = items[rowIndex];
         const rowY = y + headerHeight + rowIndex * rowHeight;
-        const values = item ? [
-          String(pageIndex * 35 + rowIndex + 1), item.nameSnapshot, item.nrpSnapshot, item.jobTitleSnapshot,
-          item.departmentSnapshot, mark(item.sleep72), mark(item.sleep48),
-          item.sleep24 === 'LESS_THAN_4' ? '__CHECK__' : '', item.sleep24 === 'BETWEEN_4_6' ? '__CHECK__' : '',
-          item.sleep24 === 'MORE_THAN_6' ? '__CHECK__' : '', mark(item.nutritionEnough), mark(item.noAlcoholMedicine),
-          mark(item.noExcessActivity), mark(item.noExcessStress), mark(item.noSeriousIllness),
-          mark(item.noFamilyProblem), mark(item.understandsWork), item.health === 'HEALTHY' ? '__CHECK__' : '',
-          item.health === 'SICK' ? '__CHECK__' : '', '', item.health === 'SICK' ? 'Perlu observasi' : 'Boleh kerja',
-        ] : [String(pageIndex * 35 + rowIndex + 1), ...Array(headers.length - 1).fill('')];
+        const values = item
+          ? [
+              String(pageIndex * 35 + rowIndex + 1),
+              item.nameSnapshot,
+              item.nrpSnapshot,
+              item.jobTitleSnapshot,
+              item.departmentSnapshot,
+              mark(item.sleep72),
+              mark(item.sleep48),
+              item.sleep24 === 'LESS_THAN_4' ? '__CHECK__' : '',
+              item.sleep24 === 'BETWEEN_4_6' ? '__CHECK__' : '',
+              item.sleep24 === 'MORE_THAN_6' ? '__CHECK__' : '',
+              mark(item.nutritionEnough),
+              mark(item.noAlcoholMedicine),
+              mark(item.noExcessActivity),
+              mark(item.noExcessStress),
+              mark(item.noSeriousIllness),
+              mark(item.noFamilyProblem),
+              mark(item.understandsWork),
+              item.health === 'HEALTHY' ? '__CHECK__' : '',
+              item.health === 'SICK' ? '__CHECK__' : '',
+              '',
+              item.health === 'SICK' ? 'Perlu observasi' : 'Boleh kerja',
+            ]
+          : [
+              String(pageIndex * 35 + rowIndex + 1),
+              ...Array(headers.length - 1).fill(''),
+            ];
         x = left;
         values.forEach((value, index) => {
           doc.rect(x, rowY, columns[index], rowHeight).stroke(border);
@@ -648,7 +940,8 @@ export class P5mPdfService {
           if (isCheck) {
             const centerX = x + columns[index] / 2;
             const centerY = rowY + rowHeight / 2;
-            doc.save()
+            doc
+              .save()
               .lineWidth(1.15)
               .lineCap('round')
               .lineJoin('round')
@@ -660,8 +953,16 @@ export class P5mPdfService {
               .restore();
           } else {
             const identityColumn = index >= 1 && index <= 4;
-            const fontSize = index === 1 ? 4.9 : index === 20 ? 4.7 : identityColumn ? 4.7 : 4.8;
-            doc.font(index >= 5 && index <= 18 ? 'Helvetica-Bold' : 'Helvetica')
+            const fontSize =
+              index === 1
+                ? 4.9
+                : index === 20
+                  ? 4.7
+                  : identityColumn
+                    ? 4.7
+                    : 4.8;
+            doc
+              .font(index >= 5 && index <= 18 ? 'Helvetica-Bold' : 'Helvetica')
               .fillColor('#111827')
               .fontSize(fontSize)
               .text(String(value), x + 1.2, rowY + 3, {
@@ -676,14 +977,49 @@ export class P5mPdfService {
       }
 
       const footerY = y + headerHeight + 35 * rowHeight + 5;
-      doc.font('Helvetica').fillColor('#111827').fontSize(5.3)
-        .text('* Beri tanda centang jika "Ya" dan silang (X) jika "Tidak" pada kolom bertanda *.', left, footerY, { width: tableWidth });
-      doc.font('Helvetica-Bold').fontSize(5.4).text('Kesimpulan:', left, footerY + 12);
-      doc.font('Helvetica').fontSize(5.1)
+      doc
+        .font('Helvetica')
+        .fillColor('#111827')
+        .fontSize(5.3)
+        .text(
+          '* Beri tanda centang jika "Ya" dan silang (X) jika "Tidak" pada kolom bertanda *.',
+          left,
+          footerY,
+          { width: tableWidth },
+        );
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(5.4)
+        .text('Kesimpulan:', left, footerY + 12);
+      doc
+        .font('Helvetica')
+        .fontSize(5.1)
         .text('Sehat: otomatis boleh kerja.', left + 65, footerY + 12)
-        .text('Sakit: perlu observasi dan tindak lanjut bersama pengawas/tenaga medis.', left + 65, footerY + 21, { width: tableWidth - 70 });
-      doc.font('Helvetica-Bold').fontSize(5.5).text('Pengawas / Group Leader', left + tableWidth - 165, footerY + 36, { width: 165, align: 'center' });
-      doc.font('Helvetica').fontSize(5.2).text(this.normalizeSupervisors(data.supervisors).join(', ') || '(........................................)', left + tableWidth - 165, footerY + 53, { width: 165, align: 'center' });
+        .text(
+          'Sakit: perlu observasi dan tindak lanjut bersama pengawas/tenaga medis.',
+          left + 65,
+          footerY + 21,
+          { width: tableWidth - 70 },
+        );
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(5.5)
+        .text(
+          'Pengawas / Group Leader',
+          left + tableWidth - 165,
+          footerY + 36,
+          { width: 165, align: 'center' },
+        );
+      doc
+        .font('Helvetica')
+        .fontSize(5.2)
+        .text(
+          this.normalizeSupervisors(data.supervisors).join(', ') ||
+            '(........................................)',
+          left + tableWidth - 165,
+          footerY + 53,
+          { width: 165, align: 'center' },
+        );
     });
   }
 

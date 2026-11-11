@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import PDFDocument = require('pdfkit');
 import { existsSync, readdirSync, statSync } from 'node:fs';
-import { basename, join, normalize } from 'node:path';
+import { basename, join, normalize, resolve } from 'node:path';
 import { siapkanGambarUntukPdfKit } from '../common/pdf-image.util';
 import { PreActivityChecksService } from './pre-activity-checks.service';
 
@@ -985,7 +985,11 @@ export class PreActivityCheckPdfService {
     const kategoriTerisi: Kategori[] = [];
 
     if (data.jsa_image && gambarSiap.has(data.jsa_image)) {
-      kategoriTerisi.push({ title: 'JSA', kind: 'single', path: data.jsa_image });
+      kategoriTerisi.push({
+        title: 'JSA',
+        kind: 'single',
+        path: data.jsa_image,
+      });
     }
 
     if (data.checklist_image && gambarSiap.has(data.checklist_image)) {
@@ -1428,12 +1432,17 @@ export class PreActivityCheckPdfService {
       .replace(/^uploads[/\\]/i, '');
 
     const filename = basename(cleaned);
+    const backendRoot = resolve(__dirname, '..', '..');
 
     const candidates = [
       join(process.cwd(), 'uploads', cleaned),
       join(process.cwd(), cleaned),
+      join(process.cwd(), 'backend', 'uploads', cleaned),
       join(process.cwd(), 'uploads', 'pre-activity-checks', filename),
       join(process.cwd(), 'uploads', 'signatures', filename),
+      join(backendRoot, 'uploads', cleaned),
+      join(backendRoot, 'uploads', 'pre-activity-checks', filename),
+      join(backendRoot, 'uploads', 'signatures', filename),
     ];
 
     const direct = candidates.find((candidate) => existsSync(candidate));
@@ -1442,7 +1451,11 @@ export class PreActivityCheckPdfService {
       return direct;
     }
 
-    return this.searchFile(join(process.cwd(), 'uploads'), filename);
+    return (
+      this.searchFile(join(process.cwd(), 'uploads'), filename) ??
+      this.searchFile(join(process.cwd(), 'backend', 'uploads'), filename) ??
+      this.searchFile(join(backendRoot, 'uploads'), filename)
+    );
   }
 
   private searchFile(directory: string, targetFilename: string): string | null {

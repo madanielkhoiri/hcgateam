@@ -26,7 +26,9 @@ function dataFixture(overrides: Record<string, unknown> = {}) {
 }
 
 function buatService(data: unknown) {
-  const p5mService = { findOne: jest.fn().mockResolvedValue(data) } as unknown as P5mService;
+  const p5mService = {
+    findOne: jest.fn().mockResolvedValue(data),
+  } as unknown as P5mService;
 
   return new P5mPdfService(p5mService);
 }
@@ -56,7 +58,10 @@ describe('P5mPdfService.generate', () => {
   });
 
   it('tetap berhasil generate dengan logo perusahaan yang ada', async () => {
-    writeFileSync(join(direktoriUji, 'uploads', 'signatures', 'PPA_cut.png'), PNG_1X1_VALID);
+    writeFileSync(
+      join(direktoriUji, 'uploads', 'signatures', 'PPA_cut.png'),
+      PNG_1X1_VALID,
+    );
     const service = buatService(dataFixture());
 
     const buffer = await service.generate(1);
@@ -66,16 +71,45 @@ describe('P5mPdfService.generate', () => {
 
   it('tetap berhasil generate dengan foto dokumentasi yang ada', async () => {
     mkdirSync(join(direktoriUji, 'uploads', 'p5m'), { recursive: true });
-    writeFileSync(join(direktoriUji, 'uploads', 'p5m', 'foto.png'), PNG_1X1_VALID);
-    const service = buatService(dataFixture({ documentationPaths: ['uploads/p5m/foto.png'] }));
+    writeFileSync(
+      join(direktoriUji, 'uploads', 'p5m', 'foto.png'),
+      PNG_1X1_VALID,
+    );
+    const service = buatService(
+      dataFixture({ documentationPaths: ['uploads/p5m/foto.png'] }),
+    );
 
     const buffer = await service.generate(1);
 
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
   });
 
+  it('menemukan foto saat backend dijalankan dari root proyek', () => {
+    const filePath = join(
+      direktoriUji,
+      'backend',
+      'uploads',
+      'p5m',
+      'foto-root.png',
+    );
+    mkdirSync(join(direktoriUji, 'backend', 'uploads', 'p5m'), {
+      recursive: true,
+    });
+    writeFileSync(filePath, PNG_1X1_VALID);
+
+    const service = buatService(dataFixture());
+
+    expect(
+      (
+        service as unknown as { resolveImage: (value: string) => string | null }
+      ).resolveImage('/uploads/p5m/foto-root.png'),
+    ).toBe(filePath);
+  });
+
   it('tetap berhasil generate walau path dokumentasi tidak ditemukan', async () => {
-    const service = buatService(dataFixture({ documentationPaths: ['uploads/p5m/tidak-ada.png'] }));
+    const service = buatService(
+      dataFixture({ documentationPaths: ['uploads/p5m/tidak-ada.png'] }),
+    );
 
     const buffer = await service.generate(1);
 
@@ -83,24 +117,48 @@ describe('P5mPdfService.generate', () => {
   });
 
   it('menghasilkan halaman absensi dengan kondisi sehat dan sakit', async () => {
-    const service = buatService(dataFixture({
-      startTime: '07:00',
-      endTime: '07:30',
-      attendances: [
-        {
-          nameSnapshot: 'Peserta Sehat', nrpSnapshot: '10001', jobTitleSnapshot: 'Staff', departmentSnapshot: 'HCGA',
-          sleep72: true, sleep48: true, sleep24: 'MORE_THAN_6', nutritionEnough: true,
-          noAlcoholMedicine: true, noExcessActivity: true, noExcessStress: true,
-          noSeriousIllness: true, noFamilyProblem: true, understandsWork: true, health: 'HEALTHY',
-        },
-        {
-          nameSnapshot: 'Peserta Sakit', nrpSnapshot: '10002', jobTitleSnapshot: 'Staff', departmentSnapshot: 'HCGA',
-          sleep72: false, sleep48: false, sleep24: 'LESS_THAN_4', nutritionEnough: false,
-          noAlcoholMedicine: true, noExcessActivity: false, noExcessStress: false,
-          noSeriousIllness: false, noFamilyProblem: true, understandsWork: true, health: 'SICK',
-        },
-      ],
-    }));
+    const service = buatService(
+      dataFixture({
+        startTime: '07:00',
+        endTime: '07:30',
+        attendances: [
+          {
+            nameSnapshot: 'Peserta Sehat',
+            nrpSnapshot: '10001',
+            jobTitleSnapshot: 'Staff',
+            departmentSnapshot: 'HCGA',
+            sleep72: true,
+            sleep48: true,
+            sleep24: 'MORE_THAN_6',
+            nutritionEnough: true,
+            noAlcoholMedicine: true,
+            noExcessActivity: true,
+            noExcessStress: true,
+            noSeriousIllness: true,
+            noFamilyProblem: true,
+            understandsWork: true,
+            health: 'HEALTHY',
+          },
+          {
+            nameSnapshot: 'Peserta Sakit',
+            nrpSnapshot: '10002',
+            jobTitleSnapshot: 'Staff',
+            departmentSnapshot: 'HCGA',
+            sleep72: false,
+            sleep48: false,
+            sleep24: 'LESS_THAN_4',
+            nutritionEnough: false,
+            noAlcoholMedicine: true,
+            noExcessActivity: false,
+            noExcessStress: false,
+            noSeriousIllness: false,
+            noFamilyProblem: true,
+            understandsWork: true,
+            health: 'SICK',
+          },
+        ],
+      }),
+    );
 
     const buffer = await service.generate(1);
 
@@ -119,15 +177,22 @@ describe('P5mPdfService — helper murni', () => {
 
   describe('normalizeSupervisors', () => {
     it('menerima array string dan membuang entri kosong', () => {
-      expect((service as any).normalizeSupervisors(['Budi', ' ', 'Siti'])).toEqual(['Budi', 'Siti']);
+      expect(
+        (service as any).normalizeSupervisors(['Budi', ' ', 'Siti']),
+      ).toEqual(['Budi', 'Siti']);
     });
 
     it('mem-parse string JSON array (data lama)', () => {
-      expect((service as any).normalizeSupervisors(JSON.stringify(['Budi', 'Siti']))).toEqual(['Budi', 'Siti']);
+      expect(
+        (service as any).normalizeSupervisors(JSON.stringify(['Budi', 'Siti'])),
+      ).toEqual(['Budi', 'Siti']);
     });
 
     it('fallback split koma kalau string bukan JSON valid', () => {
-      expect((service as any).normalizeSupervisors('Budi, Siti')).toEqual(['Budi', 'Siti']);
+      expect((service as any).normalizeSupervisors('Budi, Siti')).toEqual([
+        'Budi',
+        'Siti',
+      ]);
     });
 
     it('mengembalikan array kosong untuk nilai lain (null/number/dst)', () => {
@@ -143,11 +208,14 @@ describe('P5mPdfService — helper murni', () => {
     });
 
     it('membuang penomoran/bullet lama lalu menomori ulang', () => {
-      const input = '1. Pakai helm\n2) Pakai sepatu safety\n- Cek APD\n• Laporkan bahaya';
+      const input =
+        '1. Pakai helm\n2) Pakai sepatu safety\n- Cek APD\n• Laporkan bahaya';
 
       const hasil = (service as any).normalizeNumberedText(input);
 
-      expect(hasil).toBe('1. Pakai helm\n2. Pakai sepatu safety\n3. Cek APD\n4. Laporkan bahaya');
+      expect(hasil).toBe(
+        '1. Pakai helm\n2. Pakai sepatu safety\n3. Cek APD\n4. Laporkan bahaya',
+      );
     });
 
     it('membuang baris kosong sebelum menomori', () => {
