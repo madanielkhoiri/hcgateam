@@ -486,12 +486,13 @@ export class EpromReportPdfService {
         doc.font('Helvetica-Bold').fontSize(13).fillColor('#147A70').text(title, margin, y, { width: contentWidth });
         const boxY = y + 24; doc.lineWidth(.8).strokeColor('#C6D0D8').fillColor('#FAFBFC').rect(margin, boxY, contentWidth, height).fillAndStroke();
         fit(value, margin + 12, boxY + 12, contentWidth - 24, height - 24);
+        return boxY + height + 14;
       };
-      section('Materi', numbered(data.topic), 222, 78);
-      section('Pengawas', peopleText(data.supervisors), 323, 82);
+      let nextSectionY = section('Materi', numbered(data.topic), 222, 78);
+      nextSectionY = section('Pengawas', peopleText(data.supervisors), nextSectionY, 82);
 
-      doc.font('Helvetica-Bold').fontSize(13).fillColor('#147A70').text('Dokumentasi', margin, 428, { width: contentWidth });
-      const gap = 12; const cardWidth = (contentWidth - gap) / 2; const cardHeight = 164; const startY = 455;
+      doc.font('Helvetica-Bold').fontSize(13).fillColor('#147A70').text('Dokumentasi', margin, nextSectionY, { width: contentWidth });
+      const gap = 12; const cardWidth = (contentWidth - gap) / 2; const cardHeight = 164; const startY = nextSectionY + 27;
       if (!photos.length) {
         doc.lineWidth(.8).strokeColor('#C6D0D8').roundedRect(margin, startY, contentWidth, 105, 8).stroke();
         fit('Belum ada dokumentasi.', margin, startY + 44, contentWidth, 20, { color: '#718091', align: 'center', size: 9 });
