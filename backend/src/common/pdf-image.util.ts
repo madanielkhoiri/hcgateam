@@ -18,15 +18,26 @@ import sharp from 'sharp';
 export async function siapkanGambarUntukPdfKit(
   absolutePath: string,
 ): Promise<Buffer> {
-  return sharp(readFileSync(absolutePath), { failOn: 'none' })
-    .rotate()
-    .png()
-    .toBuffer();
+  return siapkanBufferGambarUntukPdfKit(readFileSync(absolutePath));
 }
 
 /** Konversi buffer unggahan browser (WebP/JPEG/PNG dan format yang didukung sharp) ke PNG. */
 export async function siapkanBufferGambarUntukPdfKit(
   buffer: Buffer,
 ): Promise<Buffer> {
-  return sharp(buffer, { failOn: 'none' }).rotate().png().toBuffer();
+  return sharp(buffer, { failOn: 'none', sequentialRead: true })
+    .rotate()
+    .resize({
+      width: 1600,
+      height: 1600,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .flatten({ background: '#ffffff' })
+    .jpeg({
+      quality: 75,
+      progressive: false,
+      chromaSubsampling: '4:2:0',
+    })
+    .toBuffer();
 }
