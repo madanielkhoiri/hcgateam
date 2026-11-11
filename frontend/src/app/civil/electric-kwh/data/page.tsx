@@ -165,27 +165,37 @@ export default function DataKwhPage() {
 
       {error && <p className={styles.pageError}>{error}</p>}
 
+      <div className={styles.filterPanel} style={{ gridTemplateColumns: 'minmax(140px, 200px) minmax(180px, 320px) auto' }}>
+        <select value={tahun} onChange={(e) => setTahun(Number(e.target.value))} aria-label="Filter tahun">
+          {tahunPilihan.map((t) => (
+            <option key={t} value={t}>
+              Tahun {t}
+            </option>
+          ))}
+        </select>
+        <select value={meterFilter} onChange={(e) => setMeterFilter(e.target.value)} aria-label="Filter meter">
+          <option value="">Semua meter</option>
+          {daftarMeter.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nama}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            setTahun(sekarang.getFullYear());
+            setMeterFilter('');
+          }}
+        >
+          Reset
+        </button>
+      </div>
+
       <div className={styles.tablePanel}>
         <div className={styles.tableTitle}>
           <h3>Data Pencatatan KWH</h3>
-          <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select value={tahun} onChange={(e) => setTahun(Number(e.target.value))} aria-label="Tahun">
-              {tahunPilihan.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <select value={meterFilter} onChange={(e) => setMeterFilter(e.target.value)} aria-label="Meter">
-              <option value="">Semua meter</option>
-              {daftarMeter.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nama}
-                </option>
-              ))}
-            </select>
-            Total {data.length} data
-          </span>
+          <span>Total {data.length} data</span>
         </div>
         <div className={styles.tableScroll}>
           <table>
