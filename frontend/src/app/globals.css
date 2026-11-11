@@ -275,3 +275,20 @@ a {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Performa HP (iOS/Android): blur backdrop sangat berat saat scroll/animasi. */
+@media (hover: none) and (pointer: coarse) {
+  *, *::before, *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+}
