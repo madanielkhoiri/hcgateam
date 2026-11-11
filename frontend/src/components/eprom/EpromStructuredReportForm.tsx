@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { epromApi } from "@/lib/eprom-api";
 import styles from "./eprom-structured-report.module.css";
@@ -66,10 +66,10 @@ function P5mReportFormContent({ projectId, disabled, onSaved, editId, initialDat
   return <form className={styles.form} onSubmit={submit}><div className={styles.notice}>{photoOnly?"Di luar batas jam upload, hanya foto dokumentasi yang dapat diganti.":editId?"Data lama sudah terisi. Pilih ulang foto dokumentasi untuk membuat PDF pengganti.":"Nama kontraktor otomatis dari Vendor project. Pemateri dan Pengawas dapat ditambahkan lebih dari satu."}</div><div className={styles.grid}><label>Tanggal<input disabled={photoOnly} type="date" value={data.activityDate} onChange={e=>setData({...data,activityDate:e.target.value})} required/></label><label>Lokasi<input disabled={photoOnly} value={data.location} onChange={e=>setData({...data,location:e.target.value})} required/></label></div>{people("Pemateri","speakers")}{people("Pengawas","supervisors")}<label>Peserta<textarea disabled={photoOnly} rows={3} value={data.participants} onChange={e=>setData({...data,participants:e.target.value})} required/></label><label>Materi<textarea disabled={photoOnly} rows={5} value={data.topic} onChange={e=>setData({...data,topic:e.target.value})} required/></label><label>Dokumentasi (maksimal 4 foto)<input type="file" accept="image/*" multiple required={Boolean(editId)} onChange={e=>setFiles(Array.from(e.target.files??[]).slice(0,4))}/>{files.length} foto dipilih</label>{error&&<p className={styles.error}>{error}</p>}<button className={styles.submit} disabled={disabled||saving}>{saving?"Membuat PDF...":editId?"Ganti Foto & Perbarui PDF":"Simpan P5M & PDF"}</button></form>;
 }
 
-function ReportModal({ title, buttonLabel, disabled, children }: { title: string; buttonLabel: string; disabled: boolean; children: (close: () => void) => React.ReactNode }) {
+function ReportModal({ title, buttonLabel, disabled, compact = false, children }: { title: string; buttonLabel: string; disabled: boolean; compact?: boolean; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return <>
-    <button type="button" className={styles.openModal} disabled={disabled} onClick={() => setOpen(true)}><Plus size={16}/> {buttonLabel}</button>
+    <button type="button" className={`${styles.openModal} ${compact ? styles.openModalCompact : ""}`} disabled={disabled} onClick={() => setOpen(true)} {...(compact ? { title: buttonLabel, "aria-label": buttonLabel, style: { width: 28, height: 28, minHeight: 0, padding: 0, justifyContent: "center" } } : {})}>{compact ? <Pencil size={13}/> : <><Plus size={16}/> {buttonLabel}</>}</button>
     {open && <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setOpen(false)}>
       <section className={styles.modal} role="dialog" aria-modal="true" aria-label={title} onMouseDown={e => e.stopPropagation()}>
         <header className={styles.modalHeader}><h2>{title}</h2><button type="button" onClick={() => setOpen(false)} aria-label="Tutup"><X size={20}/></button></header>
@@ -94,5 +94,5 @@ export function P5mReportForm(props: ReportProps) {
 }
 
 export function P5mReportEditForm(props: ReportProps & { itemId: number; initialData?: Record<string, unknown> | null; photoOnly?: boolean }) {
-  return <ReportModal title="Perbaiki Foto Laporan P5M" buttonLabel="Edit / Upload Ulang Foto" disabled={props.disabled}>{close => <P5mReportFormContent {...props} editId={props.itemId} initialData={props.initialData} photoOnly={props.photoOnly} onSaved={() => { props.onSaved(); close(); }}/>}</ReportModal>;
+  return <ReportModal title="Perbaiki Foto Laporan P5M" buttonLabel="Edit" compact disabled={props.disabled}>{close => <P5mReportFormContent {...props} editId={props.itemId} initialData={props.initialData} photoOnly={props.photoOnly} onSaved={() => { props.onSaved(); close(); }}/>}</ReportModal>;
 }
