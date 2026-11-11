@@ -556,6 +556,7 @@ export type SafetyMeetingFileItem = {
   originalFileName: string;
   uploadedAt: string;
   uploadedBy: { id: number; name: string };
+  formData?: Record<string, unknown> | null;
 };
 
 export type StatusKewajibanUpload = 'HIJAU' | 'MERAH' | 'ABU_ABU' | 'ORANYE';
@@ -1242,6 +1243,13 @@ export const epromApi = {
       form.append('formData', JSON.stringify(data));
       files.forEach((file) => form.append('file', file));
       return request<SafetyMeetingFileItem>('/safety-meeting/p5m/form/create', { method: 'POST', body: form });
+    },
+    perbaikiP5mForm: (id: number, projectId: number, data: unknown, files: File[]) => {
+      const form = new FormData();
+      form.append('projectId', String(projectId));
+      form.append('formData', JSON.stringify(data));
+      files.forEach((file) => form.append('file', file));
+      return request<SafetyMeetingFileItem>(`/safety-meeting/p5m/form/${id}`, { method: 'PATCH', body: form });
     },
     hapus: (tipe: TipeSafetyMeeting, id: number) =>
       request<{ message: string }>(`/safety-meeting/${tipe}/${id}`, {

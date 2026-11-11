@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   ParseIntPipe,
   Post,
   Query,
@@ -65,6 +66,17 @@ export class EpromSafetyMeetingController {
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
     return this.service.buatP5mForm(aktor, dto.projectId, dto.formData ?? '', files);
+  }
+
+  @Patch('p5m/form/:id')
+  @UseInterceptors(FilesInterceptor('file', 4, { storage: memoryStorage() }))
+  perbaikiP5mForm(
+    @Aktor() aktor: AktorEprom,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UploadSafetyMeetingDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    return this.service.perbaikiP5mForm(aktor, id, dto.projectId, dto.formData ?? '', files);
   }
 
   @Delete(':tipe/:id')

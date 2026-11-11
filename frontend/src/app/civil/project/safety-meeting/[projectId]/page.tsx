@@ -5,7 +5,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getStoredUser } from "@/lib/access-control";
-import { P5mReportForm } from "@/components/eprom/EpromStructuredReportForm";
+import { EpromCreatePanel } from "@/components/eprom/EpromCreatePanel";
+import { P5mReportEditForm, P5mReportForm } from "@/components/eprom/EpromStructuredReportForm";
 import {
   epromApi,
   formatWaktuWITA,
@@ -196,10 +197,13 @@ function SafetyMeetingFileTab({
       )}
 
       {bolehMengelola && tipe === "p5m" && !p5mDitutup && (
-        <P5mReportForm projectId={projectId} disabled={p5mDitutup} onSaved={muat} />
+        <EpromCreatePanel label="Tambah P5M" title="Input Laporan P5M">
+          <P5mReportForm projectId={projectId} disabled={p5mDitutup} onSaved={muat} />
+        </EpromCreatePanel>
       )}
 
       {bolehMengelola && tipe !== "p5m" && !p5mDitutup && (
+        <EpromCreatePanel label="Tambah Data" title={`Tambah ${LABEL_TIPE_SAFETY_MEETING[tipe]}`}>
         <form
           className={styles.formCard}
           onSubmit={unggah}
@@ -227,6 +231,7 @@ function SafetyMeetingFileTab({
             {submitting ? "Mengunggah..." : "Unggah File"}
           </button>
         </form>
+        </EpromCreatePanel>
       )}
 
       {bolehMengelola && p5mDitutup && (
@@ -253,7 +258,17 @@ function SafetyMeetingFileTab({
           >
             <div className={styles.itemRowTop}>
               <strong>{item.originalFileName}</strong>
-              {bolehMengelola && (
+              {bolehMengelola && <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {tipe === "p5m" && item.formData && (
+                  <P5mReportEditForm
+                    projectId={projectId}
+                    itemId={item.id}
+                    initialData={item.formData}
+                    photoOnly={p5mDitutup}
+                    disabled={false}
+                    onSaved={muat}
+                  />
+                )}
                 <button
                   type="button"
                   className={styles.iconButtonDanger}
@@ -262,7 +277,7 @@ function SafetyMeetingFileTab({
                 >
                   <Trash2 size={13} />
                 </button>
-              )}
+              </div>}
             </div>
             <div className={styles.itemRowMeta}>
               <a

@@ -114,6 +114,40 @@ export class EpromSafetyMeetingService {
     }
   }
 
+  async perbaikiP5mForm(aktor: AktorEprom, id: number, projectId: number, formDataRaw: string, photos: Express.Multer.File[] = []) {
+    const item = await this.prisma.epromSafetyMeetingFile.findUnique({ where: { id } });
+    if (!item || item.tipe !== EpromSafetyMeetingType.P5M || item.projectId !== projectId) throw new NotFoundException('Laporan P5M tidak ditemukan');
+    await this.akses.wajibAksesMenuProject(aktor, projectId, 'p5m');
+    if (!this.akses.isOwner(aktor) && item.uploadedById !== aktor.id) throw new BadRequestException('Laporan P5M hanya dapat diperbaiki oleh pengunggahnya');
+    if (!photos.length) throw new BadRequestException('Pilih minimal satu foto pengganti');
+    let formData: any;
+    try {
+      formData = !this.akses.isOwner(aktor) && lewatBatasUploadP5m()
+        ? item.formData
+        : (formDataRaw ? JSON.parse(formDataRaw) : item.formData);
+    } catch { throw new BadRequestException('Data form P5M tidak valid'); }
+    for (const field of ['activityDate', 'location', 'participants', 'topic']) if (!String(formData?.[field] ?? '').trim()) throw new BadRequestException(`${field} wajib diisi`);
+    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { namaProject: true, kontrak: { select: { vendor: { select: { namaVendor: true } } } } } });
+    if (!project) throw new NotFoundException('Project tidak ditemukan');
+    const photoUrls: string[] = [];
+    let newPdfUrl = '';
+    try {
+      for (const photo of photos) photoUrls.push(this.file.simpanDokumen(photo, `project/${projectId}/safety-meeting/p5m/documentation`));
+      const pdf = await this.reportPdf.p5m(formData, project, photos);
+      const originalFileName = `P5M-${formData.activityDate}.pdf`;
+      newPdfUrl = this.file.simpanBuffer(pdf, originalFileName, `project/${projectId}/safety-meeting/p5m`);
+      const updated = await this.prisma.epromSafetyMeetingFile.update({ where: { id }, data: { fileUrl: newPdfUrl, originalFileName, formData: { ...formData, documentationPaths: photoUrls } }, include: { uploadedBy: { select: { id: true, name: true } } } });
+      this.file.hapus(item.fileUrl);
+      const oldPaths = Array.isArray((item.formData as any)?.documentationPaths) ? (item.formData as any).documentationPaths : [];
+      oldPaths.forEach((path: string) => this.file.hapus(path));
+      return updated;
+    } catch (error) {
+      if (newPdfUrl) this.file.hapus(newPdfUrl);
+      photoUrls.forEach((path) => this.file.hapus(path));
+      throw error;
+    }
+  }
+
   validasiTipe(tipe: string): TipeSafetyMeeting {
     if (!TIPE_SAFETY_MEETING.includes(tipe as TipeSafetyMeeting)) {
       throw new BadRequestException('Tipe Safety Meeting tidak valid');
