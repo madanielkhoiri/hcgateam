@@ -292,3 +292,31 @@ html {
 body {
   -webkit-overflow-scrolling: touch;
 }
+
+/* Scroll halus */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* iOS Safari: 100vh melebihi layar karena address bar; pakai dvh bila tersedia */
+@supports (height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+}
+
+/* Area yang bisa discroll sendiri (sidebar/modal/tabel): momentum iOS + tidak "bocor" ke halaman */
+[class*="sidebar"],
+[class*="modal"],
+[class*="drawer"],
+[class*="tableWrap"],
+[class*="tableWrapper"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
