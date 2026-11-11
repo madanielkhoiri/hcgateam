@@ -67,6 +67,7 @@ import { MonitoringRkbModule } from './monitoring-rkb/monitoring-rkb.module';
 import { DriveModule } from './drive/drive.module';
 import { AlbumModule } from './album/album.module';
 import { KipModule } from './kip/kip.module';
+import { KwhModule } from './kwh/kwh.module';
 import { KwitansiObatModule } from './kwitansi-obat/kwitansi-obat.module';
 import { CivilMonitoringProjectModule } from './civil-monitoring-project/civil-monitoring-project.module';
 import { MessMonitoringModule } from './mess-monitoring/mess-monitoring.module';
@@ -138,6 +139,7 @@ import { MessMonitoringModule } from './mess-monitoring/mess-monitoring.module';
     DriveModule,
     AlbumModule,
     KipModule,
+    KwhModule,
     KwitansiObatModule,
     CivilMonitoringProjectModule,
     MessMonitoringModule,

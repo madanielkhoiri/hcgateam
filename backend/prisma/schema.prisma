@@ -188,6 +188,7 @@ model User {
 
   kipDibuat    Kip[]
   kipDiperiksa KipChecklistBulan[]
+  kwhDicatat   KwhPencatatan[]
 
   deviasiStokDiubah  DeviasiStok[]
   tenderPesanDikirim TenderPesan[]
@@ -3126,6 +3127,50 @@ model KipLokasiGps {
 
 // ==================================================
 // SELESAI: CIVIL ▸ GA MEP ▸ ELECTRIC ▸ KIP
+// ==================================================
+
+/**
+ * CIVIL ▸ GA MEP ▸ ELECTRIC ▸ PERHITUNGAN KWH
+ * Master meter listrik. Pemakaian bulan berjalan = stand bulan ini - stand bulan lalu.
+ */
+model KwhMeter {
+  id        Int      @id @default(autoincrement())
+  nama      String   @unique
+  lokasi    String?
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  pencatatan KwhPencatatan[]
+
+  @@map("civil_kwh_meter")
+}
+
+/**
+ * Pencatatan stand meter per meter per bulan. Jadwal pencatatan: tanggal 1 setiap bulan, di atas pukul 10.00 WITA.
+ */
+model KwhPencatatan {
+  id           Int      @id @default(autoincrement())
+  meterId      Int      @map("meter_id")
+  tahun        Int
+  bulan        Int
+  standMeter   Decimal  @map("stand_meter") @db.Decimal(14, 2)
+  tanggalCatat DateTime @map("tanggal_catat")
+  tepatWaktu   Boolean  @default(false) @map("tepat_waktu")
+  catatan      String?
+  dicatatOleh  Int      @map("dicatat_oleh")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  meter   KwhMeter @relation(fields: [meterId], references: [id], onDelete: Cascade)
+  pencatat User    @relation(fields: [dicatatOleh], references: [id], onDelete: Restrict)
+
+  @@unique([meterId, tahun, bulan])
+  @@index([tahun, bulan])
+  @@map("civil_kwh_pencatatan")
+}
+
+// ==================================================
+// SELESAI: CIVIL ▸ GA MEP ▸ ELECTRIC ▸ PERHITUNGAN KWH
 // ==================================================
 
 // ==================================================

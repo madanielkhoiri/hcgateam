@@ -260,6 +260,14 @@ export const ACCESS_CATALOG: AccessCatalogItem[] = [
     level: 'card',
   },
   {
+    key: 'CIVIL_ELECTRIC_KWH',
+    title: 'Perhitungan KWH',
+    description:
+      'Pencatatan stand meter listrik bulanan (tanggal 1 di atas pukul 10.00 WITA) dan perhitungan pemakaian KWH: bulan berjalan dikurangi bulan lalu.',
+    parentKey: 'CIVIL_ELECTRIC',
+    level: 'card',
+  },
+  {
     key: 'CIVIL_AIR',
     title: 'Air',
     description: 'Belum tersedia, pembatas untuk pengembangan berikutnya.',
