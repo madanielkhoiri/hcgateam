@@ -140,6 +140,64 @@ export class KwhService {
     }
   }
 
+  /**
+   * Bila stand bulan lalu dikirim dan bulan lalu belum pernah dicatat untuk meter ini,
+   * simpan sebagai pencatatan bulan lalu supaya pemakaian bulan ini bisa dihitung.
+   * Jika bulan lalu sudah tercatat, angka yang tersimpan dipakai (tidak ditimpa dari sini).
+   */
+  private async catatStandBulanLalu(
+    meterId: number,
+    tahun: number,
+    bulan: number,
+    standIni: number,
+    standLalu: number | undefined,
+    aktor: AktorKwh,
+    abaikanId?: number,
+  ) {
+    if (standLalu === undefined || standLalu === null) return;
+
+    const tahunLalu = bulan === 1 ? tahun - 1 : tahun;
+    const bulanLalu = bulan === 1 ? 12 : bulan - 1;
+
+    const sudahAda = await this.prisma.kwhPencatatan.findFirst({
+      where: { meterId, tahun: tahunLalu, bulan: bulanLalu, ...(abaikanId ? { id: { not: abaikanId } } : {}) },
+      select: { id: true },
+    });
+    if (sudahAda) return;
+
+    if (standLalu > standIni) {
+      throw new BadRequestException(
+        `Stand bulan lalu (${standLalu}) tidak boleh lebih besar dari stand bulan ini (${standIni}).`,
+      );
+    }
+    await this.validasiUrutan(meterId, tahunLalu, bulanLalu, standLalu);
+
+    // 10.00 WITA tanggal 1 bulan lalu = 02.00 UTC
+    const waktuLalu = new Date(Date.UTC(tahunLalu, bulanLalu - 1, 1, 2, 0, 0));
+    const dibuat = await this.prisma.kwhPencatatan.create({
+      data: {
+        meterId,
+        tahun: tahunLalu,
+        bulan: bulanLalu,
+        standMeter: standLalu,
+        tanggalCatat: waktuLalu,
+        tepatWaktu: false,
+        catatan: 'Stand bulan lalu (diinput bersama pencatatan bulan berikutnya)',
+        dicatatOleh: aktor.id,
+      },
+    });
+    await this.auditLog.catat({
+      actorId: aktor.id,
+      actorUsername: aktor.username,
+      actorName: aktor.nama,
+      actorNrp: aktor.nrp,
+      aksi: 'KWH_DICATAT',
+      entitas: 'KwhPencatatan',
+      entitasId: dibuat.id,
+      detail: { meterId, tahun: tahunLalu, bulan: bulanLalu, standMeter: standLalu, dariFormBulanBerikutnya: true },
+    });
+  }
+
   async buat(dto: BuatPencatatanKwhDto, aktor: AktorKwh) {
     let meterId = dto.meterId;
     const namaBaru = dto.namaMeterBaru?.trim();
@@ -159,6 +217,7 @@ export class KwhService {
 
     const { waktu, tahun, bulan, tepatWaktu } = this.tentukanWaktu(dto.tanggalCatat);
     await this.validasiUrutan(meterId, tahun, bulan, dto.standMeter);
+    await this.catatStandBulanLalu(meterId, tahun, bulan, dto.standMeter, dto.standBulanLalu, aktor);
 
     try {
       const dibuat = await this.prisma.kwhPencatatan.create({
@@ -201,6 +260,7 @@ export class KwhService {
       : { waktu: ada.tanggalCatat, tahun: ada.tahun, bulan: ada.bulan, tepatWaktu: ada.tepatWaktu };
 
     await this.validasiUrutan(ada.meterId, tahun, bulan, dto.standMeter, id);
+    await this.catatStandBulanLalu(ada.meterId, tahun, bulan, dto.standMeter, dto.standBulanLalu, aktor, id);
 
     try {
       const diubah = await this.prisma.kwhPencatatan.update({

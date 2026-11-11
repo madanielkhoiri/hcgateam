@@ -31,6 +31,7 @@ const formKosong = () => ({
   meter: '' as string,
   namaMeterBaru: '',
   lokasiMeterBaru: '',
+  standBulanLalu: '',
   standMeter: '',
   tanggalCatat: keInputLokal(new Date()),
   catatan: '',
@@ -81,6 +82,7 @@ export default function DataKwhPage() {
       meter: String(item.meterId),
       namaMeterBaru: '',
       lokasiMeterBaru: '',
+      standBulanLalu: item.standBulanLalu === null ? '' : String(item.standBulanLalu),
       standMeter: String(item.standMeter),
       tanggalCatat: keInputLokal(new Date(item.tanggalCatat)),
       catatan: item.catatan ?? '',
@@ -103,18 +105,33 @@ export default function DataKwhPage() {
       return;
     }
 
+    // Bila bulan lalu belum tercatat, stand bulan lalu wajib diisi (jadi dasar hitungan pemakaian).
+    const laluBelumTercatat = standLaluForm === null;
+    const lalu = Number(form.standBulanLalu);
+    const laluTerisi = form.standBulanLalu.trim() !== '' && !Number.isNaN(lalu) && lalu >= 0;
+    if (laluBelumTercatat && editId == null && !laluTerisi) {
+      setFormError('Isi KWH bulan lalu - bulan lalu belum pernah dicatat untuk meter ini');
+      return;
+    }
+    if (laluBelumTercatat && laluTerisi && lalu > stand) {
+      setFormError('KWH bulan lalu tidak boleh lebih besar dari KWH bulan ini');
+      return;
+    }
+    const standBulanLalu = laluBelumTercatat && laluTerisi ? lalu : undefined;
+
     const tanggalCatat = form.tanggalCatat ? new Date(form.tanggalCatat).toISOString() : undefined;
 
     setSubmitting(true);
     try {
       if (editId != null) {
-        await kwhApi.ubah(editId, { standMeter: stand, tanggalCatat, catatan: form.catatan || undefined });
+        await kwhApi.ubah(editId, { standMeter: stand, standBulanLalu, tanggalCatat, catatan: form.catatan || undefined });
       } else {
         await kwhApi.buat({
           ...(form.meter === BARU
             ? { namaMeterBaru: form.namaMeterBaru.trim(), lokasiMeterBaru: form.lokasiMeterBaru.trim() || undefined }
             : { meterId: Number(form.meter) }),
           standMeter: stand,
+          standBulanLalu,
           tanggalCatat,
           catatan: form.catatan || undefined,
         });
@@ -167,10 +184,20 @@ export default function DataKwhPage() {
   const standLaluForm =
     riwayat.find((r) => r.id !== editId && r.tahun * 12 + (r.bulan - 1) === skorForm - 1)?.standMeter ?? null;
   const standIniForm = form.standMeter.trim() === '' ? null : Number(form.standMeter);
+  const laluKetik = form.standBulanLalu.trim() === '' ? null : Number(form.standBulanLalu);
+  // Bulan lalu yang sudah tercatat dipakai apa adanya; bila belum, pakai angka yang diketik.
+  const laluDipakai = standLaluForm !== null ? standLaluForm : laluKetik !== null && !Number.isNaN(laluKetik) ? laluKetik : null;
   const pemakaianForm =
-    standLaluForm !== null && standIniForm !== null && !Number.isNaN(standIniForm)
-      ? Math.round((standIniForm - standLaluForm) * 100) / 100
+    laluDipakai !== null && standIniForm !== null && !Number.isNaN(standIniForm)
+      ? Math.round((standIniForm - laluDipakai) * 100) / 100
       : null;
+
+  // Bulan lalu yang sudah tercatat: isi otomatis dan kunci.
+  useEffect(() => {
+    if (standLaluForm !== null) {
+      setForm((cur) => (cur.standBulanLalu === String(standLaluForm) ? cur : { ...cur, standBulanLalu: String(standLaluForm) }));
+    }
+  }, [standLaluForm]);
 
   const tahunPilihan = Array.from({ length: 6 }, (_, i) => sekarang.getFullYear() - i);
 
@@ -364,14 +391,34 @@ export default function DataKwhPage() {
               )}
 
               <label>
-                Stand Meter (kWh)
+                KWH Bulan Lalu - {labelBulanLalu}
+                <input
+                  required={standLaluForm === null && editId == null}
+                  readOnly={standLaluForm !== null}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder={standLaluForm === null ? 'Contoh: 10000' : undefined}
+                  value={form.standBulanLalu}
+                  onChange={(e) => setForm((cur) => ({ ...cur, standBulanLalu: e.target.value }))}
+                  style={standLaluForm !== null ? { background: '#eef3f9', color: '#4a5d77' } : undefined}
+                />
+                <span style={{ fontSize: 11, color: '#71839d' }}>
+                  {standLaluForm !== null
+                    ? 'Diambil otomatis dari pencatatan bulan lalu.'
+                    : 'Bulan lalu belum pernah dicatat - isi angka KWH bulan lalu.'}
+                </span>
+              </label>
+              <label>
+                KWH Bulan Ini - {labelBulanIni}
                 <input
                   required
                   type="number"
                   min={0}
                   step="0.01"
                   inputMode="decimal"
-                  placeholder="Angka pada meter"
+                  placeholder="Contoh: 20000"
                   value={form.standMeter}
                   onChange={(e) => setForm((cur) => ({ ...cur, standMeter: e.target.value }))}
                 />
@@ -401,22 +448,15 @@ export default function DataKwhPage() {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Stand {labelBulanLalu}</div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: '#12355f' }}>
-                    {standLaluForm === null ? '-' : `${format(standLaluForm)} kWh`}
+                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Perhitungan</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#12355f', marginTop: 4 }}>
+                    {standIniForm === null || Number.isNaN(standIniForm) ? '...' : format(standIniForm)} -{' '}
+                    {laluDipakai === null ? '...' : format(laluDipakai)}
                   </div>
-                  {standLaluForm === null && form.meter !== BARU ? (
-                    <div style={{ fontSize: 10.5, color: '#b0701a' }}>Bulan lalu belum dicatat</div>
-                  ) : null}
+                  <div style={{ fontSize: 10.5, color: '#71839d' }}>KWH bulan ini dikurangi KWH bulan lalu</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Stand {labelBulanIni}</div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: '#12355f' }}>
-                    {standIniForm === null || Number.isNaN(standIniForm) ? '-' : `${format(standIniForm)} kWh`}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Pemakaian (bulan ini - bulan lalu)</div>
+                  <div style={{ fontSize: 11, color: '#71839d', fontWeight: 700 }}>Pemakaian</div>
                   <div
                     style={{
                       fontSize: 19,

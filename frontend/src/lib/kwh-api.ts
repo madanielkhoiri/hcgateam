@@ -50,6 +50,8 @@ export type PayloadBuatKwh = {
   namaMeterBaru?: string;
   lokasiMeterBaru?: string;
   standMeter: number;
+  /** Diisi hanya bila bulan lalu belum pernah dicatat untuk meter ini. */
+  standBulanLalu?: number;
   tanggalCatat?: string;
   catatan?: string;
 };
@@ -102,7 +104,7 @@ export const kwhApi = {
   },
   buat: (payload: PayloadBuatKwh) =>
     request<unknown>('/kwh/pencatatan', { method: 'POST', body: JSON.stringify(payload) }),
-  ubah: (id: number, payload: { standMeter: number; tanggalCatat?: string; catatan?: string }) =>
+  ubah: (id: number, payload: { standMeter: number; standBulanLalu?: number; tanggalCatat?: string; catatan?: string }) =>
     request<unknown>(`/kwh/pencatatan/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   hapus: (id: number) => request<unknown>(`/kwh/pencatatan/${id}`, { method: 'DELETE' }),
 };

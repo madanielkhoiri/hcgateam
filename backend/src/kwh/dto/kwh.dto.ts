@@ -31,6 +31,14 @@ export class BuatPencatatanKwhDto {
   @Max(999999999999)
   standMeter: number;
 
+  /** Stand bulan lalu - dipakai hanya bila bulan lalu belum pernah dicatat untuk meter ini. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(999999999999)
+  standBulanLalu?: number;
+
   /** ISO datetime; kosong = sekarang. */
   @IsOptional()
   @IsString()
@@ -48,6 +56,14 @@ export class UbahPencatatanKwhDto {
   @Min(0)
   @Max(999999999999)
   standMeter: number;
+
+  /** Stand bulan lalu - dipakai hanya bila bulan lalu belum pernah dicatat untuk meter ini. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(999999999999)
+  standBulanLalu?: number;
 
   @IsOptional()
   @IsString()
