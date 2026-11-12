@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { MessOccupantShift, UserRole } from '@prisma/client';
+import { MessCleaningStatus, MessOccupantShift, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AktorPostingan } from '../postingan/postingan-aktor';
 import type { CreateMessRoomDto, MessOccupantDto, UpdateMessOccupantDto } from './dto/mess-monitoring.dto';
@@ -29,9 +29,15 @@ export class MessMonitoringService {
     const today = this.dayKey(new Date());
     return rooms.map(({ cleanings, ...room }) => {
       const latest = cleanings[0] ?? null;
+      // Status dihitung dari sesi terakhir yang selesai HARI INI (WITA), jadi otomatis kembali BELUM tiap pergantian hari.
       const doneToday = !!latest?.finishedAt && this.dayKey(latest.finishedAt) === today;
       const active = latest && !latest.finishedAt ? latest : null;
-      return { ...room, cleanliness: doneToday ? 'SUDAH' : 'BELUM', activeCleaning: active, lastCleaning: latest };
+      const cleanliness: 'SUDAH' | 'TIDAK_DIBERSIHKAN' | 'BELUM' = !doneToday
+        ? 'BELUM'
+        : latest?.status === MessCleaningStatus.TIDAK_DIBERSIHKAN
+          ? 'TIDAK_DIBERSIHKAN'
+          : 'SUDAH';
+      return { ...room, cleanliness, activeCleaning: active, lastCleaning: latest };
     });
   }
 
@@ -44,9 +50,10 @@ export class MessMonitoringService {
     this.require(actor, VIEWERS);
     const rooms = await this.rows();
     const done = rooms.filter((r) => r.cleanliness === 'SUDAH').length;
+    const skipped = rooms.filter((r) => r.cleanliness === 'TIDAK_DIBERSIHKAN').length;
     const shifts = { PAGI: 0, MALAM: 0, CUTI: 0 };
     rooms.flatMap((r) => r.occupants).forEach((o) => shifts[o.shift]++);
-    return { totalRooms: rooms.length, done, pending: rooms.length - done, totalOccupants: Object.values(shifts).reduce((a, b) => a + b, 0), shifts };
+    return { totalRooms: rooms.length, done, skipped, pending: rooms.length - done - skipped, totalOccupants: Object.values(shifts).reduce((a, b) => a + b, 0), shifts };
   }
 
   async createRoom(actor: AktorPostingan, dto: CreateMessRoomDto) {
@@ -71,6 +78,18 @@ export class MessMonitoringService {
     const active = await this.prisma.messCleaningSession.findFirst({ where: { roomId, finishedAt: null } });
     if (active) throw new BadRequestException('Kamar sedang dibersihkan');
     return this.prisma.messCleaningSession.create({ data: { roomId, houseManId: actor.id } });
+  }
+  /** Houseman menandai kamar TIDAK dibersihkan; alasan wajib dan tampil di tabel monitoring. */
+  async skip(actor: AktorPostingan, roomId: number, alasan: string) {
+    this.require(actor, OPERATORS); await this.findRoom(roomId);
+    const catatan = (alasan ?? '').trim();
+    if (catatan.length < 3) throw new BadRequestException('Alasan tidak dibersihkan wajib diisi');
+    const active = await this.prisma.messCleaningSession.findFirst({ where: { roomId, finishedAt: null } });
+    if (active) throw new BadRequestException('Kamar sedang dibersihkan. Selesaikan dulu pembersihannya.');
+    const now = new Date();
+    return this.prisma.messCleaningSession.create({
+      data: { roomId, houseManId: actor.id, startedAt: now, finishedAt: now, durationSec: null, status: MessCleaningStatus.TIDAK_DIBERSIHKAN, alasan: catatan },
+    });
   }
   async finish(actor: AktorPostingan, roomId: number) {
     this.require(actor, OPERATORS);

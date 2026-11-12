@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { messApi, type MessRoom } from '@/lib/mess-monitoring-api';
 import styles from '../mess.module.css';
 
-const BUILDINGS = ['A', 'B', 'C', 'D', 'E', 'F', '1', '2', '3'];
+// Urutan tampil: Staff 1-3 dulu, baru Mess A-F.
+const BUILDINGS = ['1', '2', '3', 'A', 'B', 'C', 'D', 'E', 'F'];
 const buildingLabel = (value: string) => /^[123]$/.test(value) ? `Staff ${value}` : `Mess ${value}`;
 
 function duration(start: string, now: number) {
@@ -24,6 +25,10 @@ export default function Operations() {
   const [query, setQuery] = useState('');
   const [filterBuilding, setFilterBuilding] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [skipRoom, setSkipRoom] = useState<MessRoom | null>(null);
+  const [skipReason, setSkipReason] = useState('');
+  const [skipError, setSkipError] = useState('');
+  const [skipBusy, setSkipBusy] = useState(false);
   const load = () => messApi.operations().then(setRows).catch((caught) => setError(caught.message));
 
   useEffect(() => {
@@ -60,6 +65,32 @@ export default function Operations() {
     }
   }
 
+  function openSkip(room: MessRoom) {
+    setSkipRoom(room);
+    setSkipReason('');
+    setSkipError('');
+  }
+
+  async function submitSkip(event: React.FormEvent) {
+    event.preventDefault();
+    if (!skipRoom) return;
+    if (skipReason.trim().length < 3) {
+      setSkipError('Catatan alasan wajib diisi (minimal 3 karakter)');
+      return;
+    }
+    setSkipBusy(true);
+    setSkipError('');
+    try {
+      await messApi.skip(skipRoom.id, skipReason.trim());
+      setSkipRoom(null);
+      await load();
+    } catch (caught) {
+      setSkipError(caught instanceof Error ? caught.message : 'Gagal menyimpan');
+    } finally {
+      setSkipBusy(false);
+    }
+  }
+
   const resetFilters = () => { setQuery(''); setFilterBuilding('ALL'); setFilterStatus('ALL'); };
 
   return <>
@@ -70,7 +101,7 @@ export default function Operations() {
     <section className={styles.filters}>
       <label className={styles.filterSearch}>Cari Kamar / Karyawan<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nomor kamar, nama, atau NRP..." /></label>
       <label>Gedung<select value={filterBuilding} onChange={(event) => setFilterBuilding(event.target.value)}><option value="ALL">Semua Gedung</option>{BUILDINGS.map((item) => <option key={item} value={item}>{buildingLabel(item)}</option>)}</select></label>
-      <label>Status Operasional<select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}><option value="ALL">Semua Status</option><option value="BELUM">Belum</option><option value="SEDANG">Sedang Dibersihkan</option><option value="SUDAH">Sudah</option></select></label>
+      <label>Status Operasional<select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}><option value="ALL">Semua Status</option><option value="BELUM">Belum</option><option value="SEDANG">Sedang Dibersihkan</option><option value="SUDAH">Sudah</option><option value="TIDAK_DIBERSIHKAN">Tidak Dibersihkan</option></select></label>
       <button className={styles.filterReset} onClick={resetFilters} disabled={!query && filterBuilding === 'ALL' && filterStatus === 'ALL'}>Reset</button>
     </section>
     <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
@@ -80,15 +111,30 @@ export default function Operations() {
         <div className={styles.opsGrid}>
           {group.rooms.map((room) => <article className={styles.roomCard} key={room.id}>
             <div><small>KAMAR</small><h2>{room.number}</h2></div>
-            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : styles.pending}>{room.activeCleaning ? 'Sedang' : room.cleanliness === 'SUDAH' ? 'Sudah' : 'Belum'}</span>
+            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? styles.skipped : styles.pending}>{room.activeCleaning ? 'Sedang' : room.cleanliness === 'SUDAH' ? 'Sudah' : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? 'Tidak Dibersihkan' : 'Belum'}</span>
             <p>{room.occupants.length} penghuni</p>
             {room.activeCleaning && <div className={styles.timer}><small>Sedang dibersihkan oleh {room.activeCleaning.houseMan.name}</small><strong>{duration(room.activeCleaning.startedAt, now)}</strong></div>}
+            {!room.activeCleaning && room.cleanliness === 'TIDAK_DIBERSIHKAN' && room.lastCleaning && <div className={styles.skipNote}><small>Tidak dibersihkan - dicatat oleh {room.lastCleaning.houseMan.name}</small><strong>Alasan: {room.lastCleaning.alasan}</strong></div>}
             {!room.activeCleaning && room.cleanliness === 'SUDAH' && room.lastCleaning?.finishedAt && <div className={styles.completedCleaning}><small>Terakhir dibersihkan oleh {room.lastCleaning.houseMan.name}</small><strong>{completedDuration(room.lastCleaning.durationSec)}</strong><small>Durasi pembersihan</small></div>}
-            <button className={room.activeCleaning ? styles.finishButton : ''} onClick={() => act(room)}>{room.activeCleaning ? 'Selesai Bersihkan' : 'Mulai Bersihkan'}</button>
+            <div className={styles.roomButtons}>
+              <button className={room.activeCleaning ? styles.finishButton : ''} onClick={() => act(room)}>{room.activeCleaning ? 'Selesai Bersihkan' : 'Mulai Bersihkan'}</button>
+              {!room.activeCleaning && <button className={styles.skipButton} onClick={() => openSkip(room)}>Tidak Dibersihkan</button>}
+            </div>
           </article>)}
         </div>
       </section>)}
     </section>
+    {skipRoom && <div className={styles.modalBackdrop}><form className={`${styles.modal} ${styles.skipForm}`} style={{ width: 'min(520px, 100%)' }} onSubmit={submitSkip}>
+      <div className={styles.modalHead}><h2 style={{ margin: 0 }}>Tidak Dibersihkan - {buildingLabel(skipRoom.building)} Kamar {skipRoom.number}</h2><button type="button" onClick={() => setSkipRoom(null)}>×</button></div>
+      <label>Catatan alasan <span className={styles.skipHint}>(wajib, tampil di tabel Monitoring Kamar)</span>
+        <textarea autoFocus value={skipReason} onChange={(event) => setSkipReason(event.target.value)} placeholder="Contoh: Penghuni sedang istirahat shift malam / kamar terkunci" maxLength={500} required />
+      </label>
+      {skipError && <div className={styles.error}>{skipError}</div>}
+      <div className={styles.modalActions}>
+        <button type="button" className={styles.secondary} onClick={() => setSkipRoom(null)}>Batal</button>
+        <button type="submit" className={styles.skipWarn} disabled={skipBusy}>{skipBusy ? 'Menyimpan...' : 'Simpan'}</button>
+      </div>
+    </form></div>}
     {!rows.length && <div className={styles.empty}>Belum ada kamar untuk dibersihkan.</div>}
     {!!rows.length && !filteredRows.length && <div className={styles.empty}>Tidak ada kamar yang sesuai dengan filter.</div>}
   </>;

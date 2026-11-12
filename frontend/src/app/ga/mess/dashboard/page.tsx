@@ -9,6 +9,7 @@ import styles from '../mess.module.css';
 type DashboardData = {
   totalRooms: number;
   done: number;
+  skipped?: number;
   pending: number;
   totalOccupants: number;
   shifts: { PAGI: number; MALAM: number; CUTI: number };
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const summary = [
     ['Total Kamar', data.totalRooms],
     ['Sudah Dibersihkan', data.done],
+    ['Tidak Dibersihkan', data.skipped ?? 0],
     ['Belum Dibersihkan', data.pending],
     ['Total Penghuni', data.totalOccupants],
   ] as const;

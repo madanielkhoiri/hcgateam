@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MessOccupantShift } from '@prisma/client';
 
@@ -21,3 +21,8 @@ export class UpdateMessRoomDto {
 }
 
 export class UpdateMessOccupantDto extends MessOccupantDto {}
+
+/** Kamar tidak dibersihkan - houseman wajib mengisi alasan. */
+export class MessSkipCleaningDto {
+  @IsString() @IsNotEmpty() @MinLength(3) @MaxLength(500) alasan!: string;
+}

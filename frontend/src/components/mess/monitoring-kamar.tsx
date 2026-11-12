@@ -98,7 +98,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
     <section className={styles.filters}>
       <label className={styles.filterSearch}>Cari Kamar / Karyawan<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nomor kamar, nama, atau NRP..." /></label>
       <label>Gedung<select value={filterBuilding} onChange={(event) => setFilterBuilding(event.target.value)}><option value="ALL">Semua Gedung</option>{BUILDINGS.map((item) => <option key={item} value={item}>{buildingLabel(item)}</option>)}</select></label>
-      <label>Status Kamar<select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}><option value="ALL">Semua Status</option><option value="BELUM">Belum</option><option value="SUDAH">Sudah</option></select></label>
+      <label>Status Kamar<select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}><option value="ALL">Semua Status</option><option value="BELUM">Belum</option><option value="SUDAH">Sudah</option><option value="TIDAK_DIBERSIHKAN">Tidak Dibersihkan</option></select></label>
       <label>Shift<select value={filterShift} onChange={(event) => setFilterShift(event.target.value)}><option value="ALL">Semua Shift</option><option value="PAGI">Shift Pagi</option><option value="MALAM">Shift Malam</option><option value="CUTI">Cuti</option></select></label>
       <button className={styles.filterReset} onClick={resetFilters} disabled={!query && filterBuilding === 'ALL' && filterStatus === 'ALL' && filterShift === 'ALL'}>Reset</button>
     </section>
@@ -117,8 +117,13 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
             {!room.occupants.length && <span className={styles.noOccupant}>Belum ada penghuni</span>}
           </div></td>
           <td><div className={styles.cleaningInfo}>
-            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : styles.pending}>{room.activeCleaning ? 'Sedang Dibersihkan' : room.cleanliness === 'SUDAH' ? 'Sudah' : 'Belum'}</span>
-            {room.lastCleaning && <>
+            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? styles.skipped : styles.pending}>{room.activeCleaning ? 'Sedang Dibersihkan' : room.cleanliness === 'SUDAH' ? 'Sudah' : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? 'Tidak Dibersihkan' : 'Belum'}</span>
+            {room.lastCleaning && room.lastCleaning.status === 'TIDAK_DIBERSIHKAN' && <>
+              <small><b>Petugas:</b> {room.lastCleaning.houseMan.name}</small>
+              <small><b>Dicatat:</b> {formatCleaningTime(room.lastCleaning.startedAt)}</small>
+              <strong style={{ color: '#92400e' }}>Alasan: {room.lastCleaning.alasan || '-'}</strong>
+            </>}
+            {room.lastCleaning && room.lastCleaning.status !== 'TIDAK_DIBERSIHKAN' && <>
               <small><b>Petugas:</b> {room.lastCleaning.houseMan.name}</small>
               <small><b>Mulai:</b> {formatCleaningTime(room.lastCleaning.startedAt)}</small>
               {room.lastCleaning.finishedAt && <small><b>Selesai:</b> {formatCleaningTime(room.lastCleaning.finishedAt)}</small>}

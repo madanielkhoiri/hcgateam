@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Aktor, type AktorPostingan } from '../postingan/postingan-aktor';
-import { CreateMessRoomDto, MessOccupantDto, UpdateMessOccupantDto, UpdateMessRoomDto } from './dto/mess-monitoring.dto';
+import { CreateMessRoomDto, MessOccupantDto, MessSkipCleaningDto, UpdateMessOccupantDto, UpdateMessRoomDto } from './dto/mess-monitoring.dto';
 import { MessMonitoringService } from './mess-monitoring.service';
 
 @Controller('mess-monitoring')
@@ -19,5 +19,6 @@ export class MessMonitoringController {
   @Patch('occupants/:id') updateOccupant(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number, @Body() d: UpdateMessOccupantDto) { return this.service.updateOccupant(a, id, d); }
   @Delete('occupants/:id') removeOccupant(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number) { return this.service.deleteOccupant(a, id); }
   @Post('rooms/:id/start') start(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number) { return this.service.start(a, id); }
+  @Post('rooms/:id/skip') skip(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number, @Body() d: MessSkipCleaningDto) { return this.service.skip(a, id, d.alasan); }
   @Post('rooms/:id/finish') finish(@Aktor() a: AktorPostingan, @Param('id', ParseIntPipe) id: number) { return this.service.finish(a, id); }
 }

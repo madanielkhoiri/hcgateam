@@ -58,6 +58,11 @@ enum MessOccupantShift {
   CUTI
 }
 
+enum MessCleaningStatus {
+  DIBERSIHKAN
+  TIDAK_DIBERSIHKAN
+}
+
 enum P5mStatus {
   DRAFT
   OPEN
@@ -245,6 +250,9 @@ model MessCleaningSession {
   startedAt   DateTime  @default(now()) @map("started_at")
   finishedAt  DateTime? @map("finished_at")
   durationSec Int?      @map("duration_sec")
+  /// DIBERSIHKAN = dikerjakan dengan timer; TIDAK_DIBERSIHKAN = dilewati houseman dan wajib ada alasan.
+  status      MessCleaningStatus @default(DIBERSIHKAN)
+  alasan      String?
   room        MessRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
   houseMan    User      @relation("MessCleaningHouseMan", fields: [houseManId], references: [id], onDelete: Restrict)
 
