@@ -20,7 +20,10 @@ function formatDuration(seconds?: number | null) {
 
 function formatCleaningTime(value?: string | null) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value));
+  // Selalu WITA (Asia/Makassar), apa pun zona waktu perangkat. Format: 12 Nov 19:11:02 WITA
+  const parts = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(value));
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('day')} ${get('month')} ${get('hour')}:${get('minute')}:${get('second')} WITA`;
 }
 
 export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }) {
