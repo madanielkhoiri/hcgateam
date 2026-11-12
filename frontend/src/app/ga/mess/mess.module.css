@@ -7,8 +7,8 @@
 .skipped{display:inline-flex;border-radius:99px;padding:6px 11px;font-size:12px;font-weight:800;background:#fef3c7;color:#b45309}
 .roomCard .skipButton{background:#fff;color:#b45309;border:1px solid #f3d38a}
 .roomCard .skipButton:hover{background:#fffbeb}
-.roomButtons{display:grid;gap:8px;margin-top:12px}.roomButtons button{margin-top:0!important}
+.roomButtons{display:grid;gap:8px;margin-top:12px}.roomButtons button{width:100%;margin-top:0;border:0;border-radius:10px;background:#0f766e;color:#fff;padding:11px 16px;font-weight:700;cursor:pointer}.roomButtons button:disabled{opacity:.6;cursor:default}
 .skipNote{display:grid;gap:4px;padding:12px;background:#fffbeb;border:1px solid #fde8b0;border-radius:10px}.skipNote small{color:#8a6a1f}.skipNote strong{color:#92400e;font-size:13px;line-height:1.4;word-break:break-word}
 .skipForm textarea{width:100%;min-height:96px;border:1px solid #cfddea;border-radius:9px;padding:11px;font:inherit;resize:vertical;box-sizing:border-box}.skipForm textarea:focus{outline:0;border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.12)}.skipForm .skipHint{color:#70829c;font-size:12px;font-weight:400}
 .modal .skipWarn{background:#d97706}
-.tableWrap th,.tableWrap td{text-align:center;vertical-align:middle}.tableWrap .personCompact{text-align:center;justify-items:center}.tableWrap .personCompact>span{text-align:center}.tableWrap .noOccupant{display:block;text-align:center}.tableWrap .cleaningInfo{justify-items:center;text-align:center}.tableWrap .peopleCompact{justify-content:center;margin:0 auto}.tableWrap .actions{justify-content:center}
+.tableWrap th,.tableWrap td{text-align:center;vertical-align:middle}.tableWrap .personCompact{text-align:center;justify-items:center}.tableWrap .personCompact>span{text-align:center}.tableWrap .noOccupant{grid-column:1/-1;display:block;text-align:center}.tableWrap .peopleCompact:has(.noOccupant){grid-template-columns:1fr;min-width:0}.tableWrap .cleaningInfo{min-width:0}.tableWrap td>.peopleCompact{width:100%}.tableWrap .cleaningInfo{justify-items:center;text-align:center}.tableWrap .peopleCompact{justify-content:center;margin:0 auto}.tableWrap .actions{justify-content:center}
