@@ -2,9 +2,9 @@ const DEFAULT_QUALITY = 0.75;
 const DEFAULT_MAX_WIDTH = 1920;
 const DEFAULT_MAX_HEIGHT = 1920;
 
-function changeExtensionToWebp(filename: string): string {
+function changeExtension(filename: string, extension: string): string {
   const nameWithoutExtension = filename.replace(/\.[^/.]+$/, "");
-  return `${nameWithoutExtension}.webp`;
+  return `${nameWithoutExtension}.${extension}`;
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {
@@ -29,6 +29,7 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 function canvasToBlob(
   canvas: HTMLCanvasElement,
   quality: number,
+  type: string,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -40,7 +41,7 @@ function canvasToBlob(
 
         resolve(blob);
       },
-      "image/webp",
+      type,
       quality,
     );
   });
@@ -82,10 +83,20 @@ export async function compressImage(
   context.imageSmoothingQuality = "high";
   context.drawImage(image, 0, 0, width, height);
 
-  const compressedBlob = await canvasToBlob(canvas, quality);
+  // Beberapa browser (mis. Safari iOS) belum bisa encode WebP dan diam-diam
+  // mengembalikan PNG. Pakai tipe hasil sebenarnya supaya nama/ekstensi/MIME
+  // file cocok dengan isinya, dan fallback ke JPEG bila WebP tidak didukung.
+  let compressedBlob = await canvasToBlob(canvas, quality, "image/webp");
 
-  return new File([compressedBlob], changeExtensionToWebp(file.name), {
-    type: "image/webp",
+  if (compressedBlob.type !== "image/webp") {
+    compressedBlob = await canvasToBlob(canvas, quality, "image/jpeg");
+  }
+
+  const outputType = compressedBlob.type === "image/webp" ? "image/webp" : "image/jpeg";
+  const outputExtension = outputType === "image/webp" ? "webp" : "jpg";
+
+  return new File([compressedBlob], changeExtension(file.name, outputExtension), {
+    type: outputType,
     lastModified: Date.now(),
   });
 }

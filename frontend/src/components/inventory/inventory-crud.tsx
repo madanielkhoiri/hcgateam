@@ -182,65 +182,27 @@ function ElectricPhotoThumbnail({
   filename,
   onZoom,
 }: ElectricPhotoThumbnailProps) {
-  const [imageUrl, setImageUrl] = useState("");
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
-  useEffect(() => {
-    let active = true;
-    let objectUrl = "";
-
-    async function loadPhoto() {
-      try {
-        const response = await fetch(
-          `${API_URL}/inventory-area/ELECTRIC/stock-outs/photo/${encodeURIComponent(filename)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${getToken()}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("Foto gagal dimuat");
-        }
-
-        const blob = await response.blob();
-        objectUrl = URL.createObjectURL(blob);
-
-        if (active) {
-          setImageUrl(objectUrl);
-        }
-      } catch {
-        if (active) {
-          setFailed(true);
-        }
-      }
-    }
-
-    void loadPhoto();
-
-    return () => {
-      active = false;
-
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [filename]);
+  // Foto disajikan lewat jalur file statis /api/uploads (sama seperti modul lain),
+  // token dikirim lewat query supaya <img> langsung bisa memuatnya.
+  const baseUrl = urlUploads(`inventory-electric/${encodeURIComponent(filename)}`);
+  const src = attempt > 0 ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}r=${attempt}` : baseUrl;
 
   if (failed) {
     return (
-      <span className={styles.photoUnavailable}>
-        Gagal dimuat
-      </span>
-    );
-  }
-
-  if (!imageUrl) {
-    return (
-      <span className={styles.photoLoading}>
-        Memuat...
-      </span>
+      <button
+        type="button"
+        className={styles.photoUnavailable}
+        onClick={() => {
+          setFailed(false);
+          setAttempt((current) => current + 1);
+        }}
+        title="Klik untuk coba muat ulang"
+      >
+        Gagal dimuat - coba lagi
+      </button>
     );
   }
 
@@ -248,13 +210,14 @@ function ElectricPhotoThumbnail({
     <button
       type="button"
       className={styles.photoThumbnailButton}
-      onClick={() => onZoom(imageUrl)}
+      onClick={() => onZoom(src)}
       title="Klik untuk memperbesar foto"
     >
-      <img loading="lazy" decoding="async"
-        src={imageUrl}
+      <img
+        src={src}
         alt="Dokumentasi barang keluar Electric"
         className={styles.photoThumbnail}
+        onError={() => setFailed(true)}
       />
     </button>
   );

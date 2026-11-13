@@ -11,4 +11,14 @@
 .skipNote{display:grid;gap:4px;padding:12px;background:#fffbeb;border:1px solid #fde8b0;border-radius:10px}.skipNote small{color:#8a6a1f}.skipNote strong{color:#92400e;font-size:13px;line-height:1.4;word-break:break-word}
 .skipForm textarea{width:100%;min-height:96px;border:1px solid #cfddea;border-radius:9px;padding:11px;font:inherit;resize:vertical;box-sizing:border-box}.skipForm textarea:focus{outline:0;border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.12)}.skipForm .skipHint{color:#70829c;font-size:12px;font-weight:400}
 .modal .skipWarn{background:#d97706}
-.tableWrap th,.tableWrap td{text-align:center;vertical-align:middle}.tableWrap .personCompact{text-align:center;justify-items:center}.tableWrap .personCompact>span{text-align:center}.tableWrap .noOccupant{grid-column:1/-1;display:block;text-align:center}.tableWrap .peopleCompact:has(.noOccupant){grid-template-columns:1fr;min-width:0}.tableWrap .cleaningInfo{min-width:0}.tableWrap td>.peopleCompact{width:100%}.tableWrap .cleaningInfo{justify-items:center;text-align:center}.tableWrap .peopleCompact{justify-content:center;margin:0 auto}.tableWrap .actions{justify-content:center}
+.tableWrap th,.tableWrap td{text-align:center;vertical-align:middle}.tableWrap .personCompact{text-align:center;justify-items:center}.tableWrap .personCompact>span{text-align:center}.tableWrap .noOccupant{grid-column:1/-1;display:block;text-align:center}.tableWrap .peopleCompact:has(.noOccupant){grid-template-columns:1fr;min-width:0}.folderHeader{display:flex;align-items:center;gap:14px;width:100%;padding:16px 20px;border:0;background:#eaf3f6;color:#10244a;text-align:left;cursor:pointer;font:inherit}
+.folderHeader:hover{background:#dfeef2}.folderHeader:focus-visible{outline:2px solid #0f766e;outline-offset:-2px}
+.folderIcon{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:12px;background:#fff;color:#0f766e;box-shadow:0 4px 12px rgba(15,118,110,.12)}
+.folderTitle{display:grid;gap:2px;min-width:0;flex:1}.folderTitle small{color:#0f766e;font-size:10px;font-weight:800;letter-spacing:.12em}.folderTitle b{font-size:19px}
+.folderStats{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.folderStats em{font-style:normal;font-size:11px;font-weight:800;padding:4px 9px;border-radius:99px}
+.folderStatDone{background:#dcfce7;color:#15803d}.folderStatSkip{background:#fef3c7;color:#b45309}.folderStatPending{background:#fee2e2;color:#b91c1c}
+.folderCount{padding:6px 10px;color:#536880;background:#fff;border-radius:99px;font-size:12px;white-space:nowrap}
+.folderChevron,.folderChevronOpen{flex:none;color:#536880;transition:transform .2s ease}.folderChevronOpen{transform:rotate(180deg)}
+.buildingGroup .opsGrid{border-top:1px solid #d9e4ef}
+@media(max-width:700px){.folderHeader{flex-wrap:wrap;padding:14px}.folderStats{order:5;width:100%;justify-content:flex-start}.folderCount{margin-left:auto}}
+.tableWrap .cleaningInfo{min-width:0}.tableWrap td>.peopleCompact{width:100%}.tableWrap .cleaningInfo{justify-items:center;text-align:center}.tableWrap .peopleCompact{justify-content:center;margin:0 auto}.tableWrap .actions{justify-content:center}

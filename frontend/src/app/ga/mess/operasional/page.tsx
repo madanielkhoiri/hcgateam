@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import { messApi, type MessRoom } from '@/lib/mess-monitoring-api';
 import styles from '../mess.module.css';
 
@@ -25,6 +26,7 @@ export default function Operations() {
   const [query, setQuery] = useState('');
   const [filterBuilding, setFilterBuilding] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [openBuildings, setOpenBuildings] = useState<string[]>([]);
   const [skipRoom, setSkipRoom] = useState<MessRoom | null>(null);
   const [skipReason, setSkipReason] = useState('');
   const [skipError, setSkipError] = useState('');
@@ -91,6 +93,12 @@ export default function Operations() {
     }
   }
 
+  // Gedung tampil seperti folder: klik dulu baru semua kamar di dalamnya terbuka.
+  // Saat sedang mencari/memfilter, folder yang berisi hasil otomatis terbuka.
+  const searching = Boolean(query.trim()) || filterStatus !== 'ALL' || filterBuilding !== 'ALL';
+  const isBuildingOpen = (building: string) => searching || openBuildings.includes(building);
+  const toggleBuilding = (building: string) => setOpenBuildings((current) => current.includes(building) ? current.filter((item) => item !== building) : [...current, building]);
+
   const resetFilters = () => { setQuery(''); setFilterBuilding('ALL'); setFilterStatus('ALL'); };
 
   return <>
@@ -107,8 +115,18 @@ export default function Operations() {
     <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
     <section className={styles.buildingGroups}>
       {groupedRows.map((group) => <section className={styles.buildingGroup} key={group.building}>
-        <header className={styles.buildingGroupHeader}><div><span>GEDUNG</span><h2>{buildingLabel(group.building)}</h2></div><strong>{group.rooms.length} kamar</strong></header>
-        <div className={styles.opsGrid}>
+        <button type="button" className={styles.folderHeader} aria-expanded={isBuildingOpen(group.building)} onClick={() => toggleBuilding(group.building)}>
+          <span className={styles.folderIcon}>{isBuildingOpen(group.building) ? <FolderOpen size={22} /> : <Folder size={22} />}</span>
+          <span className={styles.folderTitle}><small>GEDUNG</small><b>{buildingLabel(group.building)}</b></span>
+          <span className={styles.folderStats}>
+            <em className={styles.folderStatDone}>{group.rooms.filter((room) => room.cleanliness === 'SUDAH').length} sudah</em>
+            <em className={styles.folderStatSkip}>{group.rooms.filter((room) => room.cleanliness === 'TIDAK_DIBERSIHKAN').length} tidak</em>
+            <em className={styles.folderStatPending}>{group.rooms.filter((room) => room.cleanliness === 'BELUM').length} belum</em>
+          </span>
+          <strong className={styles.folderCount}>{group.rooms.length} kamar</strong>
+          <ChevronDown size={20} className={isBuildingOpen(group.building) ? styles.folderChevronOpen : styles.folderChevron} />
+        </button>
+        {isBuildingOpen(group.building) && <div className={styles.opsGrid}>
           {group.rooms.map((room) => <article className={styles.roomCard} key={room.id}>
             <div><small>KAMAR</small><h2>{room.number}</h2></div>
             <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? styles.skipped : styles.pending}>{room.activeCleaning ? 'Sedang' : room.cleanliness === 'SUDAH' ? 'Sudah' : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? 'Tidak Dibersihkan' : 'Belum'}</span>
@@ -121,7 +139,7 @@ export default function Operations() {
               {!room.activeCleaning && <button className={styles.skipButton} onClick={() => openSkip(room)}>Tidak Dibersihkan</button>}
             </div>
           </article>)}
-        </div>
+        </div>}
       </section>)}
     </section>
     {skipRoom && <div className={styles.modalBackdrop}><form className={`${styles.modal} ${styles.skipForm}`} style={{ width: 'min(520px, 100%)' }} onSubmit={submitSkip}>
