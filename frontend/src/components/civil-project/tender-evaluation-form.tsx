@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Plus, Printer, Save, Trash2 } from "lucide-react";
+import { CheckCircle2, Plus, Printer, Save, Trash2, Upload } from "lucide-react";
 import {
   epromApi,
   formatRupiah,
@@ -121,8 +121,10 @@ const scaleStyle = (value: number | null, n: number): React.CSSProperties => {
     const c = scaleColor(n);
     return { ...base, border: `1.5px solid ${c}55`, background: `${c}1f`, color: c };
   }
-  return { ...base, border: "1.5px solid #efd9c4", background: "#fff", color: "#7a6450" };
+  const c = scaleColor(n);
+  return { ...base, border: `1.5px solid ${c}55`, background: "#fff", color: c };
 };
+const scoreColor100 = (v: number) => (v <= 30 ? "#dc2626" : v <= 60 ? "#ca8a04" : v <= 80 ? "#65a30d" : "#16a34a");
 const n = (x: any) =>
   x === "" || x === null || x === undefined ? null : Number(x);
 const ontime = (r: any) =>
@@ -549,7 +551,7 @@ export function TenderEvaluationForm({
                   {belumSimpan && <small style={{ color: "#b45309", fontWeight: 800 }}>● Belum disimpan</small>}
                 </span>
                 {skor !== null && skor !== undefined && (
-                  <span style={{ fontSize: 17, fontWeight: 800, color: "#c2410c", fontVariantNumeric: "tabular-nums" }}>{skor.toFixed(1)}</span>
+                  <span style={{ fontSize: 17, fontWeight: 800, color: scoreColor100(skor), fontVariantNumeric: "tabular-nums" }}>{skor.toFixed(1)}</span>
                 )}
               </button>
             );
@@ -702,11 +704,11 @@ export function TenderEvaluationForm({
                           : "—"}
                       </td>
                       <td>{r.data.durationDays ? `${r.data.durationDays} hari` : "—"}</td>
-                      <td>{r.parts["Bagian C"] === null ? "—" : (r.parts["Bagian C"] * 10).toFixed(2)}</td>
-                      <td>{r.parts["Bagian D"] === null ? "—" : (r.parts["Bagian D"] * 10).toFixed(2)}</td>
-                      <td>{r.parts.Harga === null ? "Menunggu" : (r.parts.Harga * 100).toFixed(2)}</td>
-                      <td>{r.parts.Durasi === null ? "Menunggu" : (r.parts.Durasi * 100).toFixed(2)}</td>
-                      <td><b>{r.score !== null ? r.score.toFixed(2) : r.provisionalEligible ? `${r.provisionalScore!.toFixed(2)} *` : "—"}</b></td>
+                      <td style={{ fontWeight: 800, color: r.parts["Bagian C"] === null ? undefined : scoreColor100(r.parts["Bagian C"] * 100) }}>{r.parts["Bagian C"] === null ? "—" : (r.parts["Bagian C"] * 10).toFixed(2)}</td>
+                      <td style={{ fontWeight: 800, color: r.parts["Bagian D"] === null ? undefined : scoreColor100(r.parts["Bagian D"] * 100) }}>{r.parts["Bagian D"] === null ? "—" : (r.parts["Bagian D"] * 10).toFixed(2)}</td>
+                      <td style={{ fontWeight: 800, color: r.parts.Harga === null ? undefined : scoreColor100(r.parts.Harga * 100) }}>{r.parts.Harga === null ? "Menunggu" : (r.parts.Harga * 100).toFixed(2)}</td>
+                      <td style={{ fontWeight: 800, color: r.parts.Durasi === null ? undefined : scoreColor100(r.parts.Durasi * 100) }}>{r.parts.Durasi === null ? "Menunggu" : (r.parts.Durasi * 100).toFixed(2)}</td>
+                      <td><b style={{ color: (r.score ?? r.provisionalScore) == null ? undefined : scoreColor100((r.score ?? r.provisionalScore)!) }}>{r.score !== null ? r.score.toFixed(2) : r.provisionalEligible ? `${r.provisionalScore!.toFixed(2)} *` : "—"}</b></td>
                       <td>
                         {r.score !== null
                           ? pill(r.status === "fail" ? "Ranking lengkap • C perlu review" : "Ranking lengkap", r.status === "fail" ? "warn" : "good")
@@ -738,7 +740,7 @@ export function TenderEvaluationForm({
               Nilai C (dokumen) dan D (presentasi) menggunakan rata-rata angka 1–10; upload bukti dokumen C opsional untuk perhitungan skor. Harga dan durasi baru dinilai setelah seluruh vendor peserta mengisi SPH final sah dan durasi. Ranking sementara ditampilkan dari nilai yang sudah tersedia; ranking lengkap muncul setelah seluruh aspek C, D, Harga, dan Durasi lengkap. Upload bukti C tidak menghalangi ranking. Ranking tidak menetapkan pemenang secara otomatis. Bobot usulan harus disetujui sebelum evaluasi.
             </div>
             <h3>Rincian nilai vendor terpilih</h3>
-            <div style={{ overflowX: "auto" }}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr><th>Aspek</th><th>Bobot</th><th>Skor / 100</th><th>Kontribusi</th></tr></thead><tbody>{weights.map(([key, weight]) => { const value=current?.parts[key]; return <tr key={key}><td>{key}</td><td>{weight}%</td><td>{value == null ? "Menunggu" : (value*100).toFixed(2)}</td><td>{value == null ? "—" : `${(value*weight).toFixed(2)} poin`}</td></tr> })}</tbody></table></div>
+            <div style={{ overflowX: "auto" }}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr><th>Aspek</th><th>Bobot</th><th>Skor / 100</th><th>Kontribusi</th></tr></thead><tbody>{weights.map(([key, weight]) => { const value=current?.parts[key]; return <tr key={key}><td>{key}</td><td>{weight}%</td><td style={{ fontWeight: 800, color: value == null ? undefined : scoreColor100(value*100) }}>{value == null ? "Menunggu" : (value*100).toFixed(2)}</td><td>{value == null ? "—" : `${(value*weight).toFixed(2)} poin`}</td></tr> })}</tbody></table></div>
             <p style={{color:"#62748c",fontSize:12}}>Bobot: C 20%, D 40%, Harga 30%, Durasi 10%. Harga terendah sah dan durasi tercepat memperoleh skor 100. Nilai sementara dihitung hanya dari aspek yang sudah lengkap.</p>
           </section>
           <section id="eval-A" hidden={tab !== "A"} style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
@@ -839,163 +841,78 @@ export function TenderEvaluationForm({
               Catat SPH 1 sampai penawaran terakhir. Sistem menghitung ketepatan
               pengiriman setiap putaran dan harga terakhir yang sah.
             </p>
-            <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  minWidth: 900,
-                }}
-              >
-                <thead>
-                  <tr>
-                    {[
-                      "Putaran",
-                      "Deadline",
-                      "Diterima",
-                      "Nilai SPH (Rp)",
-                      "Verifikasi",
-                      "Ketepatan",
-                      "Aksi",
-                    ].map((x) => (
-                      <th
-                        key={x}
-                        style={{
-                          padding: 9,
-                          textAlign: "left",
-                          background:
-                            x === "Verifikasi" ? "#fff1df" : "#f5f8fd",
-                          color:
-                            x === "Verifikasi" ? "#a64b00" : "#162b48",
-                        }}
-                      >
-                        {x}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rounds.map((r, i) => (
-                    <tr key={i}>
-                      <td data-label="Putaran">
-                        <b>SPH {i + 1}</b>
-                      </td>
-                      <td data-label="Deadline">
-                        <input
-                          style={input}
-                          type="datetime-local"
-                          value={r.deadline || ""}
-                          onChange={(e) =>
-                            set(
-                              "sphRounds",
-                              rounds.map((x, n) =>
-                                n === i
-                                  ? { ...x, deadline: e.target.value }
-                                  : x,
-                              ),
-                            )
-                          }
-                        />
-                      </td>
-                      <td data-label="Diterima">
-                        <input
-                          style={input}
-                          type="datetime-local"
-                          value={r.receivedAt || ""}
-                          onChange={(e) =>
-                            set(
-                              "sphRounds",
-                              rounds.map((x, n) =>
-                                n === i
-                                  ? { ...x, receivedAt: e.target.value }
-                                  : x,
-                              ),
-                            )
-                          }
-                        />
-                      </td>
-                      <td data-label="Nilai SPH (Rp)">
-                        <input
-                          style={input}
-                          type="number"
-                          min="0"
-                          value={r.value ?? ""}
-                          onChange={(e) =>
-                            set(
-                              "sphRounds",
-                              rounds.map((x, n) =>
-                                n === i
-                                  ? { ...x, value: Number(e.target.value) }
-                                  : x,
-                              ),
-                            )
-                          }
-                        />
-                      </td>
-                      <td data-label="Verifikasi">
-                        <select
-                          aria-label={`Verifikasi SPH ${i + 1}`}
-                          style={{
-                            ...input,
-                            minWidth: 155,
-                            borderColor:
-                              r.verification === "yes"
-                                ? "#39a56a"
-                                : r.verification === "no"
-                                  ? "#dc5b66"
-                                  : "#f0a64a",
-                            background:
-                              r.verification === "yes"
-                                ? "#effaf3"
-                                : r.verification === "no"
-                                  ? "#fff2f3"
-                                  : "#fff8ef",
-                          }}
-                          value={r.verification || "pending"}
-                          onChange={(e) =>
-                            set(
-                              "sphRounds",
-                              rounds.map((x, n) =>
-                                n === i
-                                  ? {
-                                      ...x,
-                                      verification: e.target.value as any,
-                                    }
-                                  : x,
-                              ),
-                            )
-                          }
-                        >
-                          <option value="pending">Belum diperiksa</option>
-                          <option value="yes">SPH sah</option>
-                          <option value="no">SPH tidak sah</option>
-                        </select>
-                      </td>
-                      <td data-label="Ketepatan">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, margin: "6px 0 18px" }}>
+              {rounds.map((r, i) => {
+                const ubah = (patch: Record<string, unknown>) =>
+                  set("sphRounds", rounds.map((x, n) => (n === i ? { ...x, ...patch } : x)));
+                const lbl: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 7, fontSize: 12, fontWeight: 700, color: "#5b4636" };
+                return (
+                  <div key={i} style={{ border: "1.5px solid #efd9c4", borderRadius: 18, padding: 18, background: "#fffdfa", display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ width: 34, height: 34, borderRadius: 10, background: "#ffedd5", color: "#c2410c", display: "grid", placeItems: "center", fontWeight: 800 }}>{i + 1}</span>
+                        <b style={{ fontSize: 15 }}>SPH {i + 1}</b>
                         {ontime(r) === null
                           ? pill("Belum lengkap", "warn")
                           : ontime(r)
                             ? pill("Tepat waktu", "good")
                             : pill("Terlambat", "bad")}
-                      </td>
-                      <td data-label="Aksi">
-                        <button
-                          style={{ ...btn, color: "#b22e37" }}
-                          disabled={rounds.length === 1}
-                          onClick={() =>
-                            set(
-                              "sphRounds",
-                              rounds.filter((_, n) => n !== i),
-                            )
-                          }
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Hapus SPH ${i + 1}`}
+                        style={{ width: 38, height: 38, borderRadius: 10, border: "1.5px solid #f3c4c7", background: "#fff5f5", color: "#c0262d", cursor: "pointer", display: "grid", placeItems: "center", opacity: rounds.length === 1 ? 0.4 : 1 }}
+                        disabled={rounds.length === 1}
+                        onClick={() => set("sphRounds", rounds.filter((_, n) => n !== i))}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14 }}>
+                      <label style={lbl}>
+                        Deadline
+                        <input style={input} type="datetime-local" value={r.deadline || ""} onChange={(e) => ubah({ deadline: e.target.value })} />
+                      </label>
+                      <label style={lbl}>
+                        Diterima
+                        <input style={input} type="datetime-local" value={r.receivedAt || ""} onChange={(e) => ubah({ receivedAt: e.target.value })} />
+                      </label>
+                      <label style={lbl}>
+                        Nilai SPH
+                        <span style={{ display: "flex", alignItems: "center", height: 48, border: "1.5px solid #f0cfae", borderRadius: 14, background: "#fffaf5", overflow: "hidden" }}>
+                          <span style={{ flex: "none", height: "100%", display: "grid", placeItems: "center", padding: "0 14px", fontSize: 13, fontWeight: 800, color: "#c2410c", background: "#ffedd5", borderRight: "1.5px solid #f6d7b8" }}>Rp</span>
+                          <input
+                            style={{ flex: 1, minWidth: 0, height: "100%", border: 0, outline: 0, background: "transparent", padding: "0 14px", fontWeight: 700, fontSize: 14, color: "#2a1a0e" }}
+                            type="number"
+                            min="0"
+                            value={r.value ?? ""}
+                            onChange={(e) => ubah({ value: e.target.value === "" ? undefined : Number(e.target.value) })}
+                          />
+                        </span>
+                      </label>
+                    </div>
+                    <div style={lbl}>
+                      Verifikasi
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
+                        {([["pending", "Belum diperiksa", "#d97706"], ["yes", "SPH sah", "#16a34a"], ["no", "SPH tidak sah", "#dc2626"]] as const).map(([val, label, c]) => {
+                          const aktif = (r.verification || "pending") === val;
+                          return (
+                            <button
+                              key={val}
+                              type="button"
+                              aria-label={`${label} untuk SPH ${i + 1}`}
+                              onClick={() => ubah({ verification: val })}
+                              style={{ height: 42, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, border: `1.5px solid ${aktif ? c : "#efd9c4"}`, background: aktif ? `${c}1c` : "#fff", color: aktif ? c : "#7a6450" }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div
               className="evaluation-b-summary"
@@ -1110,8 +1027,15 @@ export function TenderEvaluationForm({
                     <div><label>Nilai dokumen (1–10)</label><div className="rating-buttons">{Array.from({length:10},(_,i)=>i+1).map((score)=><button key={score} type="button" style={scaleStyle(Number((data as any)[`${id}Score`]) || null, score)} onClick={()=>set(`${id}Score` as any,score)}>{score}</button>)}</div></div>
                     <label>
                       Upload dokumen pendukung
+                      <span style={{ display: "flex", alignItems: "center", gap: 12, border: "2px dashed #f5b97f", borderRadius: 14, background: "#fff7ed", padding: 16, cursor: "pointer", margin: "7px 0" }}>
+                        <span style={{ flex: "none", width: 40, height: 40, borderRadius: 12, background: "#ffedd5", color: "#c2410c", display: "grid", placeItems: "center" }}><Upload size={20} /></span>
+                        <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <b style={{ fontSize: 13, color: "#2a1a0e" }}>Pilih file</b>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: "#7a6450" }}>PDF, DOC, XLS, JPG, atau PNG · bisa lebih dari satu</span>
+                        </span>
+                      </span>
                       <input
-                        style={input}
+                        style={{ display: "none" }}
                         type="file"
                         multiple
                         accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
