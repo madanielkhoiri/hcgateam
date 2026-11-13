@@ -1955,3 +1955,47 @@
   padding-top: 12px !important;
   padding-bottom: 12px !important;
 }
+
+/* === WO DROPDOWN LEBIH RAMPING & TEKS TENGAH (13 Nov) === */
+.workOrderTable {
+  min-width: 1800px;
+}
+
+.workOrderTable th:nth-child(10),
+.workOrderTable td:nth-child(10) {
+  width: 122px !important;
+  min-width: 122px !important;
+}
+
+.workOrderTable th:nth-child(11),
+.workOrderTable td:nth-child(11) {
+  width: 152px !important;
+  min-width: 152px !important;
+}
+
+.workOrderTable th:nth-child(12),
+.workOrderTable td:nth-child(12) {
+  width: 122px !important;
+  min-width: 122px !important;
+}
+
+/* Panah dibuat sendiri + padding kiri-kanan sama => teks benar-benar di tengah */
+.workOrderTable .tableSelect {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 30px !important;
+  padding: 0 20px !important;
+  font-size: 11px !important;
+  line-height: 30px !important;
+  text-align: center !important;
+  text-align-last: center !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23374151' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 10px 6px !important;
+}
+
+.workOrderTable .selectOpen,
+.workOrderTable .selectClose {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+}
