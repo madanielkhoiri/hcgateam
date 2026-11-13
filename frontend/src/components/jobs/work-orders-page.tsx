@@ -14,7 +14,7 @@ import { urlUploads } from "@/lib/uploads-url";
 import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-const UKURAN_HALAMAN = 20;
+const UKURAN_HALAMAN = 10;
 
 type WorkOrderStatus = "OPEN" | "ON_PROGRESS" | "CLOSE";
 
