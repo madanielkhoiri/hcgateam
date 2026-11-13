@@ -1874,3 +1874,84 @@
   gap: 6px;
   margin-top: 6px;
 }
+
+/* === WO TABEL RAPIKAN AKSI & STATUS (13 Nov) === */
+.workOrderTable {
+  min-width: 1880px;
+}
+
+.workOrderTable th:nth-child(13),
+.workOrderTable td:nth-child(13) {
+  width: 230px !important;
+  min-width: 230px !important;
+}
+
+/* Tiga slot tombol tetap (PDF, Edit, Hapus) supaya sejajar di semua baris */
+.workOrderTable .actionButtons {
+  display: grid !important;
+  grid-template-columns: repeat(3, 58px) !important;
+  gap: 6px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-width: 0 !important;
+}
+
+.workOrderTable .pdfButton,
+.workOrderTable .editButton,
+.workOrderTable .deleteButton {
+  width: 58px !important;
+  min-width: 58px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+}
+
+/* Blok persetujuan di bawah status: rapi dan rata tengah */
+.workOrderTable .approvalHint {
+  max-width: 100%;
+  margin: 6px auto 0 !important;
+  color: #946200 !important;
+  font-size: 10.5px !important;
+  font-style: normal !important;
+  line-height: 1.3;
+  text-align: center;
+  white-space: normal !important;
+}
+
+.workOrderTable .approvalActions {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px !important;
+  margin: 6px auto 0 !important;
+  max-width: 140px;
+}
+
+.workOrderTable .approveButton,
+.workOrderTable .rejectButton {
+  width: 100%;
+  min-width: 0 !important;
+  height: 28px !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+}
+
+.workOrderTable .approveButton {
+  color: #ffffff !important;
+  background-color: #16a34a !important;
+  border: 1px solid #15803d !important;
+}
+
+.workOrderTable .rejectButton {
+  color: #ffffff !important;
+  background-color: #dc2626 !important;
+  border: 1px solid #b91c1c !important;
+}
+
+.workOrderTable td {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
