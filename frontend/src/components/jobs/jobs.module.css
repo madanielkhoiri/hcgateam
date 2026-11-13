@@ -1840,3 +1840,25 @@
   white-space: normal;
 }
 /* === WO TABEL REVISI (13 Nov) END === */
+
+/* === WO TERLAMBAT (durasi pekerjaan terlewati, belum Close) - merah, tanpa naik ke atas === */
+.workOrderTable tr.rowOverdue td {
+  color: #7f1d1d !important;
+  background-color: #fee2e2 !important;
+  border-top: 1px solid #fca5a5 !important;
+  border-bottom: 1px solid #fca5a5 !important;
+}
+
+.workOrderTable tr.rowOverdue td:first-child {
+  color: #b91c1c !important;
+  font-weight: 800 !important;
+}
+
+.overdueNote {
+  display: block;
+  margin-top: 3px;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}

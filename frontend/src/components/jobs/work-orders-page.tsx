@@ -88,6 +88,28 @@ function bisaUrgent(row: { priority: WorkOrderPriority; status: WorkOrderStatus 
   return row.priority === "P1" && row.status !== "CLOSE";
 }
 
+/**
+ * Keterlambatan pekerjaan: bila Durasi Pekerjaan (hari, manual) sudah tercapai/terlewati
+ * dihitung sejak tanggal WO sampai hari ini (WITA) dan WO belum Close, kembalikan
+ * selisih hari (0 = tepat jatuh tempo). Selain itu null.
+ */
+function hariTerlambat(row: {
+  status: WorkOrderStatus;
+  requestedAt: string;
+  workDurationDays?: number | null;
+}): number | null {
+  if (row.status === "CLOSE") return null;
+  if (row.workDurationDays === null || row.workDurationDays === undefined) return null;
+
+  const mulai = new Date(row.requestedAt.slice(0, 10) + "T00:00:00Z").getTime();
+  const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const hariIni = Date.UTC(wita.getUTCFullYear(), wita.getUTCMonth(), wita.getUTCDate());
+  if (Number.isNaN(mulai)) return null;
+
+  const berjalan = Math.max(0, Math.floor((hariIni - mulai) / 86400000));
+  return berjalan >= row.workDurationDays ? berjalan - row.workDurationDays : null;
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -911,7 +933,13 @@ export default function WorkOrdersPage() {
                 rows.map((row, index) => (
                   <tr
                     key={row.id}
-                    className={bisaUrgent(row) ? styles.rowUrgent : undefined}
+                    className={
+                      bisaUrgent(row)
+                        ? styles.rowUrgent
+                        : hariTerlambat(row) !== null
+                          ? styles.rowOverdue
+                          : undefined
+                    }
                   >
                     <td>{index + 1}</td>
 
@@ -958,6 +986,13 @@ export default function WorkOrdersPage() {
                       {row.workDurationDays === null || row.workDurationDays === undefined
                         ? "-"
                         : `${row.workDurationDays} hari`}
+                      {hariTerlambat(row) !== null && (
+                        <span className={styles.overdueNote}>
+                          {hariTerlambat(row) === 0
+                            ? "Jatuh tempo hari ini"
+                            : `Lewat ${hariTerlambat(row)} hari`}
+                        </span>
+                      )}
                     </td>
 
                     <td className={styles.centerCell}>
