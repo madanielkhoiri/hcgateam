@@ -62,17 +62,22 @@ const normalizeEvaluation = (
 };
 const box: React.CSSProperties = {
   background: "#fff",
-  border: "1px solid #d9e3f0",
-  borderRadius: 14,
-  padding: 19,
-  marginBottom: 15,
+  border: "1px solid #efd9c4",
+  borderRadius: 20,
+  padding: 24,
+  marginBottom: 16,
+  boxShadow: "0 1px 2px rgba(60,30,10,.04),0 10px 28px rgba(90,45,10,.07)",
 };
 const input: React.CSSProperties = {
   width: "100%",
-  padding: "10px",
-  border: "1px solid #c6d4e7",
-  borderRadius: 8,
-  color: "#162b48",
+  height: 48,
+  padding: "0 14px",
+  border: "1.5px solid #f0cfae",
+  borderRadius: 14,
+  background: "#fffaf5",
+  color: "#2a1a0e",
+  fontWeight: 600,
+  fontSize: 14,
 };
 const grid: React.CSSProperties = {
   display: "grid",
@@ -80,28 +85,43 @@ const grid: React.CSSProperties = {
   gap: 13,
 };
 const metric: React.CSSProperties = {
-  background: "#fff8ef",
-  padding: 13,
-  border: "1px solid #f4dfc5",
-  borderRadius: 11,
+  background: "linear-gradient(135deg,#ffedd5,#fff7ed)",
+  padding: 16,
+  border: "1px solid #fed7aa",
+  borderRadius: 16,
 };
 const btn: React.CSSProperties = {
-  border: "1px solid #d9e3f0",
+  border: "1.5px solid #efd9c4",
   background: "#fff",
-  padding: "9px 13px",
-  borderRadius: 9,
+  padding: "10px 16px",
+  borderRadius: 12,
   cursor: "pointer",
   fontWeight: 700,
-  color: "#162b48",
+  color: "#2a1a0e",
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
 };
 const primary: React.CSSProperties = {
   ...btn,
-  background: "#f36b00",
-  borderColor: "#f36b00",
+  background: "linear-gradient(135deg,#ea580c,#c2410c)",
+  borderColor: "#c2410c",
   color: "#fff",
+  boxShadow: "0 8px 18px rgba(194,65,12,.28)",
+};
+const scaleColor = (v: number) => (v <= 3 ? "#dc2626" : v <= 6 ? "#ca8a04" : v <= 8 ? "#65a30d" : "#16a34a");
+const levelWord = (v: number) => (v <= 3 ? "Kurang" : v <= 6 ? "Cukup" : v <= 8 ? "Baik" : "Sangat baik");
+const scaleStyle = (value: number | null, n: number): React.CSSProperties => {
+  const base: React.CSSProperties = { height: 42, borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 800, transition: "all .12s" };
+  if (value === n) {
+    const c = scaleColor(n);
+    return { ...base, border: 0, background: `linear-gradient(160deg,${c},${c}cc)`, color: "#fff", boxShadow: `0 8px 16px ${c}55`, transform: "translateY(-2px) scale(1.06)" };
+  }
+  if (value !== null && n < value) {
+    const c = scaleColor(n);
+    return { ...base, border: `1.5px solid ${c}55`, background: `${c}1f`, color: c };
+  }
+  return { ...base, border: "1.5px solid #efd9c4", background: "#fff", color: "#7a6450" };
 };
 const n = (x: any) =>
   x === "" || x === null || x === undefined ? null : Number(x);
@@ -167,7 +187,8 @@ export function TenderEvaluationForm({
     [adminDrafts, setAdminDrafts] = useState<Record<number, File[]>>({}),
     [hseDrafts, setHseDrafts] = useState<Record<number, File[]>>({}),
     [saving, setSaving] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [tab, setTab] = useState<string>(canSetWinner ? "ranking" : "C");
   const load = () =>
     epromApi.tender.evaluasiVendor
       .daftar(tenderId)
@@ -426,41 +447,57 @@ export function TenderEvaluationForm({
     <div style={{ color: "#162b48" }}>
       <header
         style={{
-          background: "linear-gradient(110deg,#102b50,#1e4778)",
-          borderLeft: "6px solid #f36b00",
+          position: "relative",
+          overflow: "hidden",
+          background: "linear-gradient(120deg,#9a3412 0%,#c2410c 45%,#f97316 100%)",
           color: "#fff",
-          padding: 22,
-          borderRadius: 14,
+          padding: "24px 28px",
+          borderRadius: 24,
+          boxShadow: "0 16px 36px rgba(194,65,12,.28)",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 18,
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 16,
         }}
       >
-        <h1 style={{ fontSize: 23, margin: 0 }}>
-          Evaluasi Tender & Rekomendasi Pemenang
-        </h1>
-        <p style={{ margin: "6px 0 0", color: "#e2eaf8" }}>
-          SPH bertahap • Harga internal & margin • Durasi pekerjaan • Presentasi
-          vendor • Manpower lokal
-        </p>
+        <div style={{ position: "absolute", right: -60, top: -90, width: 260, height: 260, borderRadius: "50%", background: "rgba(255,255,255,.08)" }} />
+        <div style={{ position: "relative", flex: "1 1 380px", minWidth: 260 }}>
+          <h1 style={{ fontSize: 28, margin: 0, fontWeight: 800, letterSpacing: "-0.02em", color: "#fff" }}>
+            {config.packageName || report.namaTender}
+          </h1>
+          <p style={{ margin: "6px 0 10px", opacity: 0.92, fontWeight: 500 }}>
+            Evaluasi Tender & Rekomendasi Pemenang
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, background: "rgba(60,20,4,.38)" }}>
+              ✓ {report.evaluators?.length || 0} penilai sudah final
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, background: "rgba(60,20,4,.38)" }}>
+              Bobot C 20% · D 40% · Harga 30% · Durasi 10%
+            </span>
+          </div>
+        </div>
+        <div style={{ position: "relative", display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button style={{ ...btn, background: "rgba(255,255,255,.14)", borderColor: "rgba(255,255,255,.55)", color: "#fff" }} onClick={pdf}>
+            <Printer size={14} /> Cetak / PDF
+          </button>
+          <button style={{ ...btn, background: "#fff", borderColor: "#fff", color: "#9a3412", fontWeight: 800 }} onClick={save} disabled={saving || locked || myFinal}>
+            <Save size={14} /> {saving ? "Menyimpan..." : "Simpan"}
+          </button>
+          <button style={{ ...btn, background: "#2a1a0e", borderColor: "#2a1a0e", color: "#fff", fontWeight: 800 }} onClick={finalizeMyEvaluation} disabled={saving || locked || myFinal}>
+            <CheckCircle2 size={14} /> {myFinal ? "Penilaian Sudah Final" : "Finalkan Penilaian Saya"}
+          </button>
+        </div>
       </header>
-      <div
-        style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "14px 0" }}
-      >
-        <button style={primary} onClick={save} disabled={saving || locked || myFinal}>
-          <Save size={14} /> {saving ? "Menyimpan..." : "Simpan"}
-        </button>
-        <button style={{ ...btn, borderColor: "#15965b", color: "#08783f" }} onClick={finalizeMyEvaluation} disabled={saving || locked || myFinal}>
-          <CheckCircle2 size={14} /> {myFinal ? "Penilaian Sudah Final" : "Finalkan Penilaian Saya"}
-        </button>
-        <button style={btn} onClick={pdf}>
-          <Printer size={14} /> Cetak / PDF
-        </button>
-      </div>
       {locked && (
         <div style={{ ...box, color: "#08783f", background: "#e9f8ef", borderColor: "#a8dfbd" }}>
           <b>Evaluasi telah dikunci.</b> Pemenang tender sudah ditetapkan kepada <b>{report.pemenang?.namaVendor || config.finalDecision?.vendorName || "vendor terpilih"}</b>. Seluruh nilai, SPH, dan dokumen evaluasi hanya dapat dilihat dan tidak dapat diubah lagi.
         </div>
       )}
       {!locked && (
-        <div style={{ ...box, background: "#edf5ff", fontSize: 13 }}>
+        <div style={{ ...box, background: "#ffedd5", borderColor: "#fed7aa", fontSize: 13, padding: 16 }}>
           <b>{report.evaluators?.length || 0} penilai sudah final.</b> Ranking memakai rata-rata nilai dari akun yang telah memfinalkan penilaian. Tender tetap dapat diputuskan tanpa menunggu lima penilai.
           {!canSetWinner && <><br />Anda mengisi Bagian C dan D. Data tender bersama pada Bagian A, B, dan E hanya dapat dilihat.</>}
         </div>
@@ -470,51 +507,94 @@ export function TenderEvaluationForm({
         className="evaluation-layout"
         style={{
           display: "grid",
-          gridTemplateColumns: "220px minmax(0,1fr)",
+          gridTemplateColumns: "260px minmax(0,1fr) 300px",
           gap: 16,
           alignItems: "start",
         }}
       >
         <aside
           className="evaluation-aside"
-          style={{ ...box, position: "sticky", top: 14, padding: 14 }}
+          style={{ position: "sticky", top: 14, display: "flex", flexDirection: "column", gap: 10 }}
         >
-          <h2 style={{ marginTop: 2 }}>Vendor Peserta</h2>
-          {report.vendors.map((v) => (
-            <button
-              key={v.vendorId}
-              style={{
-                ...btn,
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                margin: "6px 0",
-                background: v.vendorId === selected ? "#fff1df" : "#fff",
-                borderColor: v.vendorId === selected ? "#f36b00" : "#d9e3f0",
-                boxShadow:
-                  v.vendorId === selected ? "inset 3px 0 #f36b00" : "none",
-              }}
-              onClick={() => choose(v.vendorId)}
-            >
-              {v.namaVendor}
-              <small
-                style={{ display: "block", color: "#62748c", marginTop: 3 }}
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "#7a6450", textTransform: "uppercase", padding: "0 4px" }}>
+            Vendor peserta · urut ranking
+          </div>
+          {[...report.vendors].sort((x, y) => {
+            const ix = ranked.findIndex((q) => q.vendorId === x.vendorId), iy = ranked.findIndex((q) => q.vendorId === y.vendorId);
+            return (ix < 0 ? 999 : ix) - (iy < 0 ? 999 : iy);
+          }).map((v) => {
+            const pos = ranked.findIndex((q) => q.vendorId === v.vendorId);
+            const res = results.find((q) => q.vendorId === v.vendorId);
+            const skor = res ? (res.score ?? res.provisionalScore) : null;
+            const aktif = v.vendorId === selected;
+            const belumSimpan = drafts[v.vendorId] && JSON.stringify(drafts[v.vendorId]) !== JSON.stringify(normalizeEvaluation(v.data));
+            const harga = finalPrice(drafts[v.vendorId] ?? v.data);
+            return (
+              <button
+                key={v.vendorId}
+                onClick={() => choose(v.vendorId)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12, width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 18, cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                  border: `1.5px solid ${aktif ? "#ea580c" : "#efd9c4"}`,
+                  background: aktif ? "linear-gradient(135deg,#ffedd5,#fff)" : "#fff",
+                  boxShadow: aktif ? "0 10px 22px rgba(234,88,12,.18)" : "0 1px 2px rgba(60,30,10,.04)",
+                }}
               >
-                {finalPrice(drafts[v.vendorId] ?? v.data) === null
-                  ? "SPH belum sah"
-                  : formatRupiah(
-                      finalPrice(drafts[v.vendorId] ?? v.data)!,
-                    )}
-              </small>
-              {drafts[v.vendorId] && JSON.stringify(drafts[v.vendorId]) !== JSON.stringify(normalizeEvaluation(v.data)) && (
-                <small style={{ display: "block", color: "#a64b00", marginTop: 2, fontWeight: 700 }}>● Belum disimpan</small>
-              )}
-            </button>
-          ))}
+                <span style={{ flex: "none", width: 32, height: 32, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14, color: "#fff", background: pos === 0 ? "linear-gradient(135deg,#fbbf24,#d97706)" : "linear-gradient(135deg,#a08a74,#7d6850)" }}>
+                  {pos >= 0 ? pos + 1 : "—"}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                  <b style={{ fontSize: 14, color: "#2a1a0e" }}>{v.namaVendor}</b>
+                  <small style={{ color: "#7a6450", fontWeight: 500 }}>{harga === null ? "SPH belum sah" : formatRupiah(harga)}</small>
+                  {belumSimpan && <small style={{ color: "#b45309", fontWeight: 800 }}>● Belum disimpan</small>}
+                </span>
+                {skor !== null && skor !== undefined && (
+                  <span style={{ fontSize: 17, fontWeight: 800, color: "#c2410c", fontVariantNumeric: "tabular-nums" }}>{skor.toFixed(1)}</span>
+                )}
+              </button>
+            );
+          })}
+          <div style={{ padding: "12px 14px", borderRadius: 14, background: "#ffedd5", border: "1px solid #fed7aa", fontSize: 12, lineHeight: 1.55, color: "#7c2d12", fontWeight: 500 }}>
+            Pindah vendor kapan saja. Isian yang belum disimpan tetap aman dan ditandai oranye.
+          </div>
         </aside>
         <fieldset disabled={locked || myFinal} style={{ minWidth: 0, margin: 0, padding: 0, border: 0 }}>
         <main style={{ minWidth: 0 }}>
-          <section id="eval-dashboard" style={box}>
+          <nav style={{ ...box, padding: 8, display: "flex", gap: 6, overflowX: "auto" }}>
+            {([
+              ["ranking", "Ranking", "Perbandingan vendor", true],
+              ["A", "A. Identitas", "Respons undangan", Boolean(data.response) && Boolean(data.invitationDate)],
+              ["B", "B. Penawaran", "SPH & durasi", validPrice !== null && Number(data.durationDays) > 0],
+              ["C", "C. Dokumen", "Nilai & bukti", gateNames.every(([gid]) => Number((data as any)[`${gid}Score`]) >= 1)],
+              ["D", "D. Presentasi", `${questions.filter(([qid]) => Number((data.presentation as any)?.[qid]) >= 1).length} dari ${questions.length} terisi`, questions.every(([qid]) => Number((data.presentation as any)?.[qid]) >= 1)],
+              ["E", "E. Manpower", "Lokal & nonlokal", off !== null && local !== null],
+              ...(canSetWinner ? [["keputusan", "Keputusan", "Tetapkan pemenang", Boolean(report.locked)]] : []),
+            ] as Array<[string, string, string, boolean]>).map(([id, label, sub, done]) => {
+              const aktif = tab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  style={{
+                    flex: "1 0 auto", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 14, border: 0, cursor: "pointer", fontFamily: "inherit",
+                    color: aktif ? "#fff" : "#2a1a0e",
+                    background: aktif ? "linear-gradient(135deg,#ea580c,#c2410c)" : "transparent",
+                    boxShadow: aktif ? "0 8px 18px rgba(194,65,12,.3)" : "none",
+                  }}
+                >
+                  <span style={{ flex: "none", width: 26, height: 26, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800, background: aktif ? "rgba(255,255,255,.25)" : done ? "#dff3ea" : "#ffedd5", color: aktif ? "#fff" : done ? "#0b8a5b" : "#b45309" }}>
+                    {done ? "✓" : "•"}
+                  </span>
+                  <span style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                    <span style={{ fontSize: 13, fontWeight: 800 }}>{label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, opacity: aktif ? 0.88 : 0.7 }}>{sub}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+          <section id="eval-dashboard" hidden={tab !== "ranking"} style={box}>
             <h2>Dashboard Perbandingan Vendor • Ranking Otomatis</h2>
             <div style={{ display: "grid", gap: 8, margin: "4px 0 14px" }}>
               {ranked.length === 0 && <div style={{ ...metric, color: "#62748c" }}>Ranking muncul setelah ada penilai yang mengisi nilai vendor.</div>}
@@ -661,7 +741,7 @@ export function TenderEvaluationForm({
             <div style={{ overflowX: "auto" }}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr><th>Aspek</th><th>Bobot</th><th>Skor / 100</th><th>Kontribusi</th></tr></thead><tbody>{weights.map(([key, weight]) => { const value=current?.parts[key]; return <tr key={key}><td>{key}</td><td>{weight}%</td><td>{value == null ? "Menunggu" : (value*100).toFixed(2)}</td><td>{value == null ? "—" : `${(value*weight).toFixed(2)} poin`}</td></tr> })}</tbody></table></div>
             <p style={{color:"#62748c",fontSize:12}}>Bobot: C 20%, D 40%, Harga 30%, Durasi 10%. Harga terendah sah dan durasi tercepat memperoleh skor 100. Nilai sementara dihitung hanya dari aspek yang sudah lengkap.</p>
           </section>
-          <section id="eval-A" style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
+          <section id="eval-A" hidden={tab !== "A"} style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
             <h2>A. Identitas Tender & Respons Undangan</h2>
             <div style={grid}>
               <label>
@@ -729,7 +809,7 @@ export function TenderEvaluationForm({
                   : "Respons undangan belum lengkap. Tanpa batas respons, ketepatan waktu respons tidak dinilai."}
             </div>
           </section>
-          <section id="eval-B" style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
+          <section id="eval-B" hidden={tab !== "B"} style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
             <div
               style={{
                 display: "flex",
@@ -1005,7 +1085,7 @@ export function TenderEvaluationForm({
               keselamatan, dan didukung rencana kerja.
             </p>
           </section>
-          <section id="eval-C" style={box}>
+          <section id="eval-C" hidden={tab !== "C"} style={box}>
             <h2>C. Penilaian Dokumen Pendukung (1–10)</h2>
             <p style={{ color: "#62748c", fontSize: 12 }}>
               Klik nilai 1–10 untuk kedua indikator. Nilai Bagian C langsung dihitung dan masuk ranking tanpa harus mengunggah file. Upload bukti dokumen tetap tersedia secara opsional dan statusnya dicatat terpisah. Nilai di bawah 7/10 ditandai untuk ditinjau, tetapi tetap dihitung dalam perbandingan.
@@ -1027,7 +1107,7 @@ export function TenderEvaluationForm({
                 >
                   <b>{name}</b>
                   <div style={{ ...grid, marginTop: 7 }}>
-                    <div><label>Nilai dokumen (1–10)</label><div className="rating-buttons">{Array.from({length:10},(_,i)=>i+1).map((score)=><button key={score} type="button" className={`rating-btn ${(data as any)[`${id}Score`] === score ? "rating-active" : ""}`} onClick={()=>set(`${id}Score` as any,score)}>{score}</button>)}</div></div>
+                    <div><label>Nilai dokumen (1–10)</label><div className="rating-buttons">{Array.from({length:10},(_,i)=>i+1).map((score)=><button key={score} type="button" style={scaleStyle(Number((data as any)[`${id}Score`]) || null, score)} onClick={()=>set(`${id}Score` as any,score)}>{score}</button>)}</div></div>
                     <label>
                       Upload dokumen pendukung
                       <input
@@ -1134,7 +1214,7 @@ export function TenderEvaluationForm({
               );
             })()}
           </section>
-          <section id="eval-D" style={box}>
+          <section id="eval-D" hidden={tab !== "D"} style={box}>
             <h2>D. Presentasi & Pemahaman Vendor</h2>
             <p style={{ color: "#62748c", fontSize: 12 }}>
               Klik angka 1–10 untuk setiap indikator. Nilai rata-rata Bagian D dihitung otomatis. Semua vendor dinilai dengan kriteria yang sama.
@@ -1150,7 +1230,7 @@ export function TenderEvaluationForm({
                 }}
               >
                 <div className="presentation-head"><b>{name}</b><span className="presentation-value">Nilai: {(data.presentation as any)?.[id] || "—"}</span></div>
-                <div className="rating-buttons">{Array.from({length:10},(_,i)=>i+1).map((score)=><button key={score} type="button" className={`rating-btn ${Number((data.presentation as any)?.[id]) === score ? "rating-active" : ""}`} onClick={()=>set("presentation",{...data.presentation,[id]:score})}>{score}</button>)}</div>
+                <div className="rating-buttons">{Array.from({length:10},(_,i)=>i+1).map((score)=><button key={score} type="button" style={scaleStyle(Number((data.presentation as any)?.[id]) || null, score)} onClick={()=>set("presentation",{...data.presentation,[id]:score})}>{score}</button>)}</div>
               </div>
             ))}
             {(() => {
@@ -1176,7 +1256,7 @@ export function TenderEvaluationForm({
               />
             </label>
           </section>
-          <section id="eval-E" style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
+          <section id="eval-E" hidden={tab !== "E"} style={{ ...box, ...(!canSetWinner ? { pointerEvents: "none", opacity: 0.72 } : {}) }}>
             <h2>E. Manpower & Pemberdayaan Lokal</h2>
             <div style={grid}>
               <label>
@@ -1266,7 +1346,7 @@ export function TenderEvaluationForm({
               Persentase lokal ditampilkan sebagai informasi terukur. Jika ingin diberi bobot dalam ranking, kebijakan definisi dan target lokal harus ditetapkan sejak awal tender dan sesuai ketentuan yang berlaku.
             </p>
           </section>
-          {canSetWinner && <section id="eval-finalisasi" style={box}>
+          {canSetWinner && <section id="eval-finalisasi" hidden={tab !== "keputusan"} style={box}>
             <h2>Finalisasi Tender & Keputusan Manajemen</h2>
             <p style={{color:"#62748c",fontSize:12}}>Ranking objektif tidak diubah. Pemenang bebas dipilih dari vendor peserta mana pun, tidak harus ranking 1. Jika yang dipilih bukan ranking 1, keputusan dicatat sebagai keputusan manajemen.</p>
             <div style={grid}>
@@ -1281,6 +1361,52 @@ export function TenderEvaluationForm({
           </section>}
         </main>
         </fieldset>
+        <aside className="evaluation-summary" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <section style={{ borderRadius: 22, padding: 22, background: "linear-gradient(160deg,#9a3412 0%,#c2410c 65%,#f97316 100%)", color: "#fff", boxShadow: "0 16px 34px rgba(194,65,12,.28)", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 800, opacity: 0.88 }}>Skor {vendor?.namaVendor}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 46, fontWeight: 800, letterSpacing: "-0.03em" }}>
+                {current && (current.score ?? current.provisionalScore) != null ? (current.score ?? current.provisionalScore)!.toFixed(2) : "—"}
+              </span>
+              <span style={{ opacity: 0.88, fontSize: 14, fontWeight: 600 }}>/ 100{current && current.score === null && current.provisionalScore !== null ? " (sementara)" : ""}</span>
+            </div>
+            {weights.map(([key, weight]) => {
+              const value = current?.parts[key];
+              return (
+                <div key={key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                    <span>{key} <span style={{ opacity: 0.75 }}>· {weight}%</span></span>
+                    <b>{value == null ? "Menunggu" : `${(value * weight).toFixed(1)} poin`}</b>
+                  </div>
+                  <div style={{ height: 7, borderRadius: 999, background: "rgba(60,20,4,.45)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#fbbf24,#f59e0b)", width: `${value == null ? 0 : Math.round(value * 100)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+          <section style={{ ...box, padding: "18px 20px", marginBottom: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>Status penilai</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(report.evaluators || []).map((ev) => (
+                <div key={ev.userId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    <span style={{ flex: "none", width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#f97316,#c2410c)" }}>{(ev.nama || "?").charAt(0).toUpperCase()}</span>
+                    <span style={{ overflowWrap: "anywhere" }}>{ev.nama}</span>
+                  </span>
+                  <span style={{ flex: "none", fontSize: 12, fontWeight: 800, padding: "4px 11px", borderRadius: 999, background: "#dff3ea", color: "#0b6b43" }}>Final</span>
+                </div>
+              ))}
+              {!(report.evaluators || []).length && <div style={{ fontSize: 12, color: "#7a6450" }}>Belum ada penilai yang memfinalkan penilaian.</div>}
+              {vendor?.myEvaluation && vendor.myEvaluation.status !== "FINAL" && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}>
+                  <span>Anda (vendor ini)</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, padding: "4px 11px", borderRadius: 999, background: "#fff0d6", color: "#9a5304" }}>Draf</span>
+                </div>
+              )}
+            </div>
+          </section>
+        </aside>
       </div>
       <style jsx>{`
         .presentation-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
@@ -1289,6 +1415,10 @@ export function TenderEvaluationForm({
         .rating-btn { padding:10px 0; border:1px solid #cbd8eb; border-radius:8px; background:#fff; color:#193455; font-weight:700; cursor:pointer; }
         .rating-btn:hover { background:#fff1df; border-color:#f36b00; }
         .rating-btn.rating-active { background:#f36b00; border-color:#f36b00; color:#fff; }
+        @media (max-width: 1180px) {
+          .evaluation-layout { grid-template-columns: 240px minmax(0,1fr) !important; }
+          .evaluation-summary { grid-column: 1 / -1; }
+        }
         @media (max-width: 900px) {
           .evaluation-layout {
             grid-template-columns: 1fr !important;
