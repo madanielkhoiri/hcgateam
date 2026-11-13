@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Folder, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Folder, FolderOpen } from 'lucide-react';
 import { messApi, type MessRoom } from '@/lib/mess-monitoring-api';
 import styles from '../mess.module.css';
 
@@ -26,7 +26,7 @@ export default function Operations() {
   const [query, setQuery] = useState('');
   const [filterBuilding, setFilterBuilding] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
-  const [openBuildings, setOpenBuildings] = useState<string[]>([]);
+  const [activeBuilding, setActiveBuilding] = useState<string | null>(null);
   const [skipRoom, setSkipRoom] = useState<MessRoom | null>(null);
   const [skipReason, setSkipReason] = useState('');
   const [skipError, setSkipError] = useState('');
@@ -93,13 +93,41 @@ export default function Operations() {
     }
   }
 
-  // Gedung tampil seperti folder: klik dulu baru semua kamar di dalamnya terbuka.
-  // Saat sedang mencari/memfilter, folder yang berisi hasil otomatis terbuka.
-  const searching = Boolean(query.trim()) || filterStatus !== 'ALL' || filterBuilding !== 'ALL';
-  const isBuildingOpen = (building: string) => searching || openBuildings.includes(building);
-  const toggleBuilding = (building: string) => setOpenBuildings((current) => current.includes(building) ? current.filter((item) => item !== building) : [...current, building]);
+  // Gaya Google Drive: awalnya hanya folder gedung; klik folder baru kamar di dalamnya tampil.
+  // Saat mencari/memfilter status, hasil ditampilkan langsung (tanpa harus membuka folder).
+  const searching = Boolean(query.trim()) || filterStatus !== 'ALL';
+  const folderBuilding = filterBuilding !== 'ALL' ? filterBuilding : activeBuilding;
+  const folderTiles = useMemo(() => {
+    const known = BUILDINGS.filter((building) => rows.some((room) => room.building === building));
+    const others = [...new Set(rows.map((room) => room.building).filter((building) => !BUILDINGS.includes(building)))];
+    return [...known, ...others].map((building) => {
+      const rooms = rows.filter((room) => room.building === building);
+      return {
+        building,
+        total: rooms.length,
+        done: rooms.filter((room) => room.cleanliness === 'SUDAH').length,
+        skipped: rooms.filter((room) => room.cleanliness === 'TIDAK_DIBERSIHKAN').length,
+        pending: rooms.filter((room) => room.cleanliness === 'BELUM').length,
+      };
+    });
+  }, [rows]);
 
-  const resetFilters = () => { setQuery(''); setFilterBuilding('ALL'); setFilterStatus('ALL'); };
+  const renderRoom = (room: MessRoom) => (
+    <article className={styles.roomCard} key={room.id}>
+            <div><small>KAMAR</small><h2>{room.number}</h2></div>
+            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? styles.skipped : styles.pending}>{room.activeCleaning ? 'Sedang' : room.cleanliness === 'SUDAH' ? 'Sudah' : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? 'Tidak Dibersihkan' : 'Belum'}</span>
+            <p>{room.occupants.length} penghuni</p>
+            {room.activeCleaning && <div className={styles.timer}><small>Sedang dibersihkan oleh {room.activeCleaning.houseMan.name}</small><strong>{duration(room.activeCleaning.startedAt, now)}</strong></div>}
+            {!room.activeCleaning && room.cleanliness === 'TIDAK_DIBERSIHKAN' && room.lastCleaning && <div className={styles.skipNote}><small>Tidak dibersihkan - dicatat oleh {room.lastCleaning.houseMan.name}</small><strong>Alasan: {room.lastCleaning.alasan}</strong></div>}
+            {!room.activeCleaning && room.cleanliness === 'SUDAH' && room.lastCleaning?.finishedAt && <div className={styles.completedCleaning}><small>Terakhir dibersihkan oleh {room.lastCleaning.houseMan.name}</small><strong>{completedDuration(room.lastCleaning.durationSec)}</strong><small>Durasi pembersihan</small></div>}
+            <div className={styles.roomButtons}>
+              <button className={room.activeCleaning ? styles.finishButton : ''} onClick={() => act(room)}>{room.activeCleaning ? 'Selesai Bersihkan' : 'Mulai Bersihkan'}</button>
+              {!room.activeCleaning && <button className={styles.skipButton} onClick={() => openSkip(room)}>Tidak Dibersihkan</button>}
+            </div>
+          </article>
+  );
+
+  const resetFilters = () => { setQuery(''); setFilterBuilding('ALL'); setFilterStatus('ALL'); setActiveBuilding(null); };
 
   return <>
     <header className={styles.heading}>
@@ -113,35 +141,35 @@ export default function Operations() {
       <button className={styles.filterReset} onClick={resetFilters} disabled={!query && filterBuilding === 'ALL' && filterStatus === 'ALL'}>Reset</button>
     </section>
     <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
-    <section className={styles.buildingGroups}>
+    {!searching && !folderBuilding && <section className={styles.driveGrid} aria-label="Daftar gedung">
+      {folderTiles.map((tile) => <button type="button" key={tile.building} className={styles.driveFolder} onClick={() => { setActiveBuilding(tile.building); setFilterBuilding('ALL'); }}>
+        <span className={styles.driveFolderIcon}><Folder size={46} strokeWidth={1.6} /></span>
+        <b>{buildingLabel(tile.building)}</b>
+        <small>{tile.total} kamar</small>
+        <span className={styles.folderStats}>
+          <em className={styles.folderStatDone}>{tile.done} sudah</em>
+          <em className={styles.folderStatSkip}>{tile.skipped} tidak</em>
+          <em className={styles.folderStatPending}>{tile.pending} belum</em>
+        </span>
+      </button>)}
+    </section>}
+    {!searching && folderBuilding && <section className={styles.buildingGroup}>
+      <nav className={styles.driveCrumbs} aria-label="Lokasi folder">
+        <button type="button" onClick={() => { setActiveBuilding(null); setFilterBuilding('ALL'); }}><ArrowLeft size={16} /> Semua Gedung</button>
+        <span>/</span>
+        <strong><FolderOpen size={17} /> {buildingLabel(folderBuilding)}</strong>
+        <em>{(groupedRows.find((group) => group.building === folderBuilding)?.rooms.length ?? 0)} kamar</em>
+      </nav>
+      <div className={styles.opsGrid}>
+        {(groupedRows.find((group) => group.building === folderBuilding)?.rooms ?? []).map(renderRoom)}
+      </div>
+    </section>}
+    {searching && <section className={styles.buildingGroups}>
       {groupedRows.map((group) => <section className={styles.buildingGroup} key={group.building}>
-        <button type="button" className={styles.folderHeader} aria-expanded={isBuildingOpen(group.building)} onClick={() => toggleBuilding(group.building)}>
-          <span className={styles.folderIcon}>{isBuildingOpen(group.building) ? <FolderOpen size={22} /> : <Folder size={22} />}</span>
-          <span className={styles.folderTitle}><small>GEDUNG</small><b>{buildingLabel(group.building)}</b></span>
-          <span className={styles.folderStats}>
-            <em className={styles.folderStatDone}>{group.rooms.filter((room) => room.cleanliness === 'SUDAH').length} sudah</em>
-            <em className={styles.folderStatSkip}>{group.rooms.filter((room) => room.cleanliness === 'TIDAK_DIBERSIHKAN').length} tidak</em>
-            <em className={styles.folderStatPending}>{group.rooms.filter((room) => room.cleanliness === 'BELUM').length} belum</em>
-          </span>
-          <strong className={styles.folderCount}>{group.rooms.length} kamar</strong>
-          <ChevronDown size={20} className={isBuildingOpen(group.building) ? styles.folderChevronOpen : styles.folderChevron} />
-        </button>
-        {isBuildingOpen(group.building) && <div className={styles.opsGrid}>
-          {group.rooms.map((room) => <article className={styles.roomCard} key={room.id}>
-            <div><small>KAMAR</small><h2>{room.number}</h2></div>
-            <span className={room.activeCleaning ? styles.inProgress : room.cleanliness === 'SUDAH' ? styles.done : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? styles.skipped : styles.pending}>{room.activeCleaning ? 'Sedang' : room.cleanliness === 'SUDAH' ? 'Sudah' : room.cleanliness === 'TIDAK_DIBERSIHKAN' ? 'Tidak Dibersihkan' : 'Belum'}</span>
-            <p>{room.occupants.length} penghuni</p>
-            {room.activeCleaning && <div className={styles.timer}><small>Sedang dibersihkan oleh {room.activeCleaning.houseMan.name}</small><strong>{duration(room.activeCleaning.startedAt, now)}</strong></div>}
-            {!room.activeCleaning && room.cleanliness === 'TIDAK_DIBERSIHKAN' && room.lastCleaning && <div className={styles.skipNote}><small>Tidak dibersihkan - dicatat oleh {room.lastCleaning.houseMan.name}</small><strong>Alasan: {room.lastCleaning.alasan}</strong></div>}
-            {!room.activeCleaning && room.cleanliness === 'SUDAH' && room.lastCleaning?.finishedAt && <div className={styles.completedCleaning}><small>Terakhir dibersihkan oleh {room.lastCleaning.houseMan.name}</small><strong>{completedDuration(room.lastCleaning.durationSec)}</strong><small>Durasi pembersihan</small></div>}
-            <div className={styles.roomButtons}>
-              <button className={room.activeCleaning ? styles.finishButton : ''} onClick={() => act(room)}>{room.activeCleaning ? 'Selesai Bersihkan' : 'Mulai Bersihkan'}</button>
-              {!room.activeCleaning && <button className={styles.skipButton} onClick={() => openSkip(room)}>Tidak Dibersihkan</button>}
-            </div>
-          </article>)}
-        </div>}
+        <header className={styles.buildingGroupHeader}><div><span>GEDUNG</span><h2>{buildingLabel(group.building)}</h2></div><strong>{group.rooms.length} kamar</strong></header>
+        <div className={styles.opsGrid}>{group.rooms.map(renderRoom)}</div>
       </section>)}
-    </section>
+    </section>}
     {skipRoom && <div className={styles.modalBackdrop}><form className={`${styles.modal} ${styles.skipForm}`} style={{ width: 'min(520px, 100%)' }} onSubmit={submitSkip}>
       <div className={styles.modalHead}><h2 style={{ margin: 0 }}>Tidak Dibersihkan - {buildingLabel(skipRoom.building)} Kamar {skipRoom.number}</h2><button type="button" onClick={() => setSkipRoom(null)}>×</button></div>
       <label>Catatan alasan <span className={styles.skipHint}>(wajib, tampil di tabel Monitoring Kamar)</span>
