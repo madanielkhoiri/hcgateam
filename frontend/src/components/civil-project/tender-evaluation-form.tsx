@@ -162,7 +162,6 @@ export function TenderEvaluationForm({
 }) {
   const [report, setReport] = useState<TenderEvaluationReport | null>(null),
     [selected, setSelected] = useState<number | null>(null),
-    [data, setData] = useState<TenderEvaluationData>(empty),
     [drafts, setDrafts] = useState<Record<number, TenderEvaluationData>>({}),
     [config, setConfig] = useState<Record<string, any>>({}),
     [adminDrafts, setAdminDrafts] = useState<Record<number, File[]>>({}),
@@ -184,12 +183,7 @@ export function TenderEvaluationForm({
           });
           return next;
         });
-        setSelected(id);
-        setData(
-          id !== null && drafts[id]
-            ? drafts[id]
-            : normalizeEvaluation(r.vendors.find((v) => v.vendorId === id)?.data),
-        );
+        setSelected((current) => current ?? id);
       })
       .catch((e) => setError(e.message));
   useEffect(() => {
@@ -207,19 +201,21 @@ export function TenderEvaluationForm({
     if (selected === null) return;
     setHseDrafts((all) => ({ ...all, [selected]: typeof updater === "function" ? updater(all[selected] || []) : updater }));
   };
-  const updateData = (updater: (current: TenderEvaluationData) => TenderEvaluationData) =>
-    setData((current) => {
-      const next = updater(current);
-      if (selected !== null) setDrafts((all) => ({ ...all, [selected]: next }));
-      return next;
-    });
+  // Sumber tunggal isian = drafts per vendor. Berpindah vendor tidak menyentuh
+  // isian vendor lain, sehingga ketikan/pilihan tidak hilang.
+  const data: TenderEvaluationData =
+    selected === null
+      ? empty
+      : drafts[selected] ?? normalizeEvaluation(vendor?.data);
+  const updateData = (updater: (current: TenderEvaluationData) => TenderEvaluationData) => {
+    if (selected === null) return;
+    const id = selected;
+    const dasar = normalizeEvaluation(report?.vendors.find((x) => x.vendorId === id)?.data);
+    setDrafts((all) => ({ ...all, [id]: updater(all[id] ?? dasar) }));
+  };
   const set = (k: keyof TenderEvaluationData, v: any) =>
     updateData((d) => ({ ...d, [k]: v }));
-  const choose = (id: number) => {
-    const v = report?.vendors.find((x) => x.vendorId === id);
-    setSelected(id);
-    setData(drafts[id] || normalizeEvaluation(v?.data));
-  };
+  const choose = (id: number) => setSelected(id);
   const results = useMemo(() => {
     if (!report) return [];
     const participants = report.vendors.filter((v) => {
@@ -295,7 +291,10 @@ export function TenderEvaluationForm({
   }, [report, selected, data, config, drafts]);
   const qualified = results.filter((r) => r.score !== null),
     provisional = results.filter((r) => r.score === null && r.provisionalEligible),
-    leader = qualified[0],
+    // Peringkat 1..N untuk semua vendor yang ikut dan sudah punya nilai
+    // (lengkap maupun sementara), urut dari nilai tertinggi.
+    ranked = results.filter((r) => r.score !== null || r.provisionalEligible),
+    leader = ranked[0],
     current = results.find((r) => r.vendorId === selected);
   const save = async () => {
     if (!selected) return;
@@ -315,7 +314,6 @@ export function TenderEvaluationForm({
       const saved = normalizeEvaluation(
         r.vendors.find((v) => v.vendorId === selected)?.data || adjusted,
       );
-      setData(saved);
       setDrafts((all) => ({ ...all, [selected]: saved }));
       setAdminDrafts((all) => ({ ...all, [selected]: [] }));
       setHseDrafts((all) => ({ ...all, [selected]: [] }));
@@ -335,7 +333,6 @@ export function TenderEvaluationForm({
       const refreshed = await epromApi.tender.evaluasiVendor.finalisasi(tenderId, selected);
       setReport(refreshed);
       const mine = normalizeEvaluation(refreshed.vendors.find((v) => v.vendorId === selected)?.data);
-      setData(mine);
       setDrafts((all) => ({ ...all, [selected]: mine }));
       setAdminDrafts((all) => ({ ...all, [selected]: [] }));
       setHseDrafts((all) => ({ ...all, [selected]: [] }));
@@ -347,14 +344,14 @@ export function TenderEvaluationForm({
   };
   const finalizeTender = async () => {
     if (!selected || !report) return;
-    const decision = config.decision || { mode: "fair", vendorId: leader?.vendorId ? String(leader.vendorId) : "", approver: "", reference: "", reason: "" };
-    const chosen = results.find((r) => String(r.vendorId) === String(decision.vendorId));
+    const dasar = config.decision || { vendorId: leader?.vendorId ? String(leader.vendorId) : "", approver: "", reference: "", reason: "" };
+    const chosen = results.find((r) => String(r.vendorId) === String(dasar.vendorId || leader?.vendorId));
+    // Pemenang bebas dipilih; jalur dicatat otomatis (sesuai ranking 1 atau keputusan khusus).
+    const decision = { ...dasar, vendorId: chosen ? String(chosen.vendorId) : "", mode: chosen && chosen.vendorId === leader?.vendorId ? "fair" : "management" };
     if (!chosen) return setError("Pilih vendor yang ditetapkan.");
     if (chosen.data.response === "tidak") return setError("Vendor yang tidak mengikuti tender tidak dapat ditetapkan sebagai pemenang.");
     if (finalPrice(chosen.data) === null || Number(chosen.data.durationDays) <= 0) return setError("Vendor terpilih wajib memiliki SPH sah dan durasi pekerjaan.");
     if (!String(decision.approver || "").trim()) return setError("Nama penetap / pemberi persetujuan wajib diisi.");
-    if (decision.mode === "fair" && chosen.vendorId !== leader?.vendorId) return setError("Jalur mengikuti evaluasi harus memilih vendor ranking 1.");
-    if (decision.mode === "management" && !String(decision.reason || "").trim()) return setError("Alasan keputusan khusus manajemen wajib diisi.");
     const nextConfig = { ...config, decision, finalDecision: { ...decision, vendorName: chosen.namaVendor, score: chosen.score, timestamp: new Date().toISOString() } };
     setSaving(true); setError("");
     try {
@@ -500,6 +497,24 @@ export function TenderEvaluationForm({
         <main style={{ minWidth: 0 }}>
           <section id="eval-dashboard" style={box}>
             <h2>Dashboard Perbandingan Vendor • Ranking Otomatis</h2>
+            <div style={{ display: "grid", gap: 8, margin: "4px 0 14px" }}>
+              {ranked.length === 0 && <div style={{ ...metric, color: "#62748c" }}>Ranking muncul setelah ada penilai yang mengisi nilai vendor.</div>}
+              {ranked.map((r, i) => (
+                <div key={r.vendorId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: `1px solid ${i === 0 ? "#f3b27a" : "#d9e3f0"}`, background: i === 0 ? "#fff6ec" : "#fff", borderRadius: 10 }}>
+                  <span style={{ width: 34, height: 34, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, color: "#fff", background: i === 0 ? "#f36b00" : i === 1 ? "#4b6a94" : i === 2 ? "#7a8da8" : "#a9b6c8" }}>{i + 1}</span>
+                  <b style={{ flex: 1, minWidth: 0 }}>{r.namaVendor}</b>
+                  <span style={{ fontWeight: 800 }}>{(r.score ?? r.provisionalScore ?? 0).toFixed(2)}<small style={{ color: "#62748c", fontWeight: 500 }}> /100{r.score === null ? " (sementara)" : ""}</small></span>
+                  {report.pemenang?.id === r.vendorId && pill("Pemenang", "good")}
+                </div>
+              ))}
+              {results.filter((r) => !ranked.includes(r)).map((r) => (
+                <div key={r.vendorId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: "1px dashed #d9e3f0", borderRadius: 10, color: "#62748c" }}>
+                  <span style={{ width: 34, textAlign: "center" }}>—</span>
+                  <b style={{ flex: 1 }}>{r.namaVendor}</b>
+                  <span>{r.data.response === "tidak" ? "Tidak ikut" : "Nilai belum lengkap"}</span>
+                </div>
+              ))}
+            </div>
             <div
               style={{
                 ...grid,
@@ -570,13 +585,9 @@ export function TenderEvaluationForm({
                   {results.map((r) => (
                     <tr key={r.vendorId}>
                       <td style={{ padding: 9 }}>
-                        {r.score !== null
-                          ? qualified.findIndex(
-                              (q) => q.vendorId === r.vendorId,
-                            ) + 1
-                          : r.provisionalEligible
-                            ? `S${provisional.findIndex((q) => q.vendorId === r.vendorId) + 1}`
-                            : "—"}
+                        {r.score !== null || r.provisionalEligible
+                          ? <b style={{ fontSize: 15 }}>{ranked.findIndex((q) => q.vendorId === r.vendorId) + 1}{r.score === null ? "*" : ""}</b>
+                          : "—"}
                       </td>
                       <td style={{ padding: 9 }}>
                         <b>{r.namaVendor}</b>
@@ -1198,15 +1209,14 @@ export function TenderEvaluationForm({
           </section>
           {canSetWinner && <section id="eval-finalisasi" style={box}>
             <h2>Finalisasi Tender & Keputusan Manajemen</h2>
-            <p style={{color:"#62748c",fontSize:12}}>Ranking objektif tidak diubah. Vendor berstatus hijau maupun kuning dapat ditetapkan. Gunakan keputusan khusus manajemen jika memilih selain ranking 1.</p>
+            <p style={{color:"#62748c",fontSize:12}}>Ranking objektif tidak diubah. Pemenang bebas dipilih dari vendor peserta mana pun, tidak harus ranking 1. Jika yang dipilih bukan ranking 1, keputusan dicatat sebagai keputusan manajemen.</p>
             <div style={grid}>
-              <label>Jalur keputusan<select style={input} value={config.decision?.mode || "fair"} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:e.target.value,vendorId:e.target.value === "fair" && leader ? String(leader.vendorId) : c.decision?.vendorId || ""}}))}><option value="fair">Mengikuti hasil evaluasi (ranking 1)</option><option value="management">Keputusan khusus manajemen</option></select></label>
-              <label>Vendor yang ditetapkan<select style={input} value={config.decision?.vendorId || (config.decision?.mode !== "management" && leader ? String(leader.vendorId) : "")} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",vendorId:e.target.value}}))}><option value="">Pilih vendor</option>{results.map((r)=><option key={r.vendorId} value={r.vendorId}>{r.namaVendor}{r.score !== null ? ` — ${r.score.toFixed(2)}/100` : " — belum lengkap"}</option>)}</select></label>
+              <label>Vendor yang ditetapkan<select style={input} value={config.decision?.vendorId || (leader ? String(leader.vendorId) : "")} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),vendorId:e.target.value}}))}><option value="">Pilih vendor</option>{results.map((r)=>{ const pos = ranked.findIndex((q)=>q.vendorId===r.vendorId); return <option key={r.vendorId} value={r.vendorId}>{pos >= 0 ? `#${pos + 1} — ` : ""}{r.namaVendor}{r.score !== null ? ` — ${r.score.toFixed(2)}/100` : r.provisionalEligible ? ` — ${r.provisionalScore!.toFixed(2)}/100 (sementara)` : " — belum lengkap"}</option>; })}</select></label>
               <label>Nama penetap / pemberi persetujuan<input style={input} value={config.decision?.approver || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",approver:e.target.value}}))} placeholder="Nama dan jabatan pejabat berwenang" /></label>
               <label>Referensi keputusan (opsional)<input style={input} value={config.decision?.reference || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reference:e.target.value}}))} placeholder="Nomor notulen / memo / persetujuan" /></label>
             </div>
-            <label style={{display:"block",marginTop:12}}>Alasan dan dasar keputusan {config.decision?.mode === "management" ? "(wajib)" : ""}<textarea style={{...input,minHeight:65}} value={config.decision?.reason || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reason:e.target.value}}))} placeholder="Wajib diisi jika memilih vendor di luar hasil ranking objektif" /></label>
-            <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${leader.score?.toFixed(2)}/100` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
+            <label style={{display:"block",marginTop:12}}>Alasan dan dasar keputusan (opsional)<textarea style={{...input,minHeight:65}} value={config.decision?.reason || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reason:e.target.value}}))} placeholder="Disarankan diisi jika memilih vendor selain ranking 1" /></label>
+            <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${(leader.score ?? leader.provisionalScore ?? 0).toFixed(2)}/100${leader.score === null ? " (sementara)" : ""}` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
             <button style={primary} onClick={finalizeTender} disabled={saving}>{saving ? "Memfinalkan..." : "Finalkan & Tetapkan Pemenang"}</button>
             {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
           </section>}

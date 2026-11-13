@@ -164,6 +164,7 @@ export function clearSession(): void {
 const JABATAN_EVALUATOR_TENDER = new Set([
   'SECTION HEAD FAW-SCM',
   'GROUP LEADER FAW-SCM',
+  'GROUP LEADER GA',
 ]);
 
 export function normalizeJabatan(jabatan?: string | null): string {
