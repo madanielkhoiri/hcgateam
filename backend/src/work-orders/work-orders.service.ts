@@ -421,28 +421,64 @@ export class WorkOrdersService {
     };
     const param = paramHalaman(filter.halaman, filter.ukuranHalaman);
 
-    const [data, total] = await Promise.all([
-      this.prisma.workOrder.findMany({
+    // Urutan: WO urgent (P1 yang BELUM Close) selalu di atas; sisanya (P2 atau yang
+    // sudah Close) menyusul berdasarkan tanggal terbaru. Dipaginate lintas dua kelompok.
+    const urutan = [{ requestedAt: 'desc' as const }, { id: 'desc' as const }];
+    const whereUrgent = {
+      AND: [
         where,
-        include: PENYETUJU_INCLUDE,
-        orderBy: [
-          {
-            priority: 'asc',
-          },
-          {
-            requestedAt: 'desc',
-          },
-          {
-            id: 'desc',
-          },
-        ],
-        skip: param.skip,
-        take: param.take,
-      }),
-      this.prisma.workOrder.count({ where }),
+        {
+          priority: WorkOrderPriority.P1,
+          status: { not: WorkOrderStatus.CLOSE },
+        },
+      ],
+    };
+    const whereLain = {
+      AND: [
+        where,
+        {
+          OR: [
+            { priority: WorkOrderPriority.P2 },
+            { status: WorkOrderStatus.CLOSE },
+          ],
+        },
+      ],
+    };
+
+    const [totalUrgent, totalLain] = await Promise.all([
+      this.prisma.workOrder.count({ where: whereUrgent }),
+      this.prisma.workOrder.count({ where: whereLain }),
     ]);
 
-    return hasilHalaman(data, total, param);
+    const ambilUrgent = Math.max(0, Math.min(param.take, totalUrgent - param.skip));
+    const dataUrgent =
+      ambilUrgent > 0
+        ? await this.prisma.workOrder.findMany({
+            where: whereUrgent,
+            include: PENYETUJU_INCLUDE,
+            orderBy: urutan,
+            skip: param.skip,
+            take: ambilUrgent,
+          })
+        : [];
+
+    const sisaSlot = param.take - dataUrgent.length;
+    const dataLain =
+      sisaSlot > 0
+        ? await this.prisma.workOrder.findMany({
+            where: whereLain,
+            include: PENYETUJU_INCLUDE,
+            orderBy: urutan,
+            skip: Math.max(0, param.skip - totalUrgent),
+            take: sisaSlot,
+          })
+        : [];
+
+    return hasilHalaman(
+      [...dataUrgent, ...dataLain],
+      totalUrgent + totalLain,
+      param,
+    );
   }
 
   async findAvailableForHandover() {

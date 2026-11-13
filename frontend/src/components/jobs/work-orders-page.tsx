@@ -83,6 +83,11 @@ type WorkOrderForm = {
   workDurationDays: string;
 };
 
+/** Urgent = prioritas P1 dan belum Close: baris merah dan selalu di atas. */
+function bisaUrgent(row: { priority: WorkOrderPriority; status: WorkOrderStatus }): boolean {
+  return row.priority === "P1" && row.status !== "CLOSE";
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -395,12 +400,14 @@ export default function WorkOrdersPage() {
       const fieldLabel =
         field === "pic" ? "PIC" : field === "status" ? "Status" : "Prioritas";
 
-      // Prioritas P1 (urgent) naik ke baris teratas (urutan stabil).
-      if (field === "priority") {
+      // WO urgent (P1 yang belum Close) naik ke baris teratas (urutan stabil).
+      if (field === "priority" || field === "status") {
         setRows((currentRows) =>
-          [...currentRows].sort((a, b) =>
-            a.priority === b.priority ? 0 : a.priority === "P1" ? -1 : 1,
-          ),
+          [...currentRows].sort((a, b) => {
+            const urgentA = bisaUrgent(a);
+            const urgentB = bisaUrgent(b);
+            return urgentA === urgentB ? 0 : urgentA ? -1 : 1;
+          }),
         );
       }
 
@@ -904,7 +911,7 @@ export default function WorkOrdersPage() {
                 rows.map((row, index) => (
                   <tr
                     key={row.id}
-                    className={row.priority === "P1" ? styles.rowUrgent : undefined}
+                    className={bisaUrgent(row) ? styles.rowUrgent : undefined}
                   >
                     <td>{index + 1}</td>
 

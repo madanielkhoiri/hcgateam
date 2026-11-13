@@ -277,3 +277,51 @@ describe('WorkOrdersService.remove — pembatasan hapus', () => {
     },
   );
 });
+
+describe('WorkOrdersService.findAll - urutan urgent (P1 belum Close) di atas', () => {
+  function buatServiceDaftar(totalUrgent: number, totalLain: number) {
+    const count = jest
+      .fn()
+      .mockImplementation(({ where }: { where: { AND: unknown[] } }) => {
+        const bagianKedua = JSON.stringify(where.AND[1]);
+        return Promise.resolve(bagianKedua.includes('"not"') ? totalUrgent : totalLain);
+      });
+    // Meniru database: mengembalikan sebanyak baris yang tersedia (maks. take).
+    const findMany = jest.fn().mockImplementation(({ where, skip, take }: { where: { AND: unknown[] }; skip: number; take: number }) => {
+      const urgent = JSON.stringify(where.AND[1]).includes('"not"');
+      const total = urgent ? totalUrgent : totalLain;
+      const tersedia = Math.max(0, Math.min(take, total - skip));
+      return Promise.resolve(Array.from({ length: tersedia }, () => ({})));
+    });
+    const prisma = { workOrder: { count, findMany } } as unknown as PrismaService;
+    const service = new WorkOrdersService(prisma, {} as unknown as DocumentNumberService);
+    return { service, findMany };
+  }
+
+  it('halaman 1: seluruh slot terisi urgent bila urgent cukup banyak', async () => {
+    const { service, findMany } = buatServiceDaftar(5, 20);
+    await service.findAll({ halaman: '1', ukuranHalaman: '3' });
+
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany.mock.calls[0][0]).toMatchObject({ skip: 0, take: 3 });
+  });
+
+  it('halaman yang melintasi batas: sisa slot diisi WO biasa mulai dari awal', async () => {
+    const { service, findMany } = buatServiceDaftar(3, 20);
+    await service.findAll({ halaman: '2', ukuranHalaman: '2' });
+
+    // skip 2, take 2: urgent tinggal 1 (indeks 2), lalu 1 WO biasa dari indeks 0
+    expect(findMany).toHaveBeenCalledTimes(2);
+    expect(findMany.mock.calls[0][0]).toMatchObject({ skip: 2, take: 1 });
+    expect(findMany.mock.calls[1][0]).toMatchObject({ skip: 0, take: 1 });
+  });
+
+  it('halaman setelah urgent habis: hanya WO biasa dengan offset yang benar', async () => {
+    const { service, findMany } = buatServiceDaftar(3, 20);
+    await service.findAll({ halaman: '3', ukuranHalaman: '2' });
+
+    // skip 4 > 3 urgent -> semua dari WO biasa, offset 4 - 3 = 1
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany.mock.calls[0][0]).toMatchObject({ skip: 1, take: 2 });
+  });
+});
