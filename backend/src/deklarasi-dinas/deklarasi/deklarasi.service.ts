@@ -200,7 +200,9 @@ export class DeklarasiService {
     }
 
     const adminAtauFa = this.apakahAdminAtauFa(aktor);
-    if (!adminAtauFa && aktor.role !== UserRole.KARYAWAN) {
+    // Elektrik juga karyawan: boleh mengedit deklarasinya sendiri.
+    const karyawan: UserRole[] = [UserRole.KARYAWAN, UserRole.ELEKTRIK];
+    if (!adminAtauFa && !karyawan.includes(aktor.role)) {
       throw new ForbiddenException('Anda tidak berhak mengedit deklarasi ini.');
     }
     if (

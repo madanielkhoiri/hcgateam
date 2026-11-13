@@ -484,6 +484,16 @@ export const GA_MEP_ACCESS_KEYS: string[] = [
   'CIVIL_INVENTORY_ELECTRIC',
 ];
 
+/**
+ * Elektrik juga karyawan: akses MCU & Deklarasi Dinas sebagai karyawan tetap ada.
+ */
+export const ELEKTRIK_ACCESS_KEYS: string[] = [
+  ...GA_MEP_ACCESS_KEYS,
+  'HC',
+  'HC_MCU',
+  'HC_DEKLARASI',
+];
+
 export function aksesOtomatisRole(role: string | undefined | null): string[] {
-  return role === 'ELEKTRIK' ? GA_MEP_ACCESS_KEYS : [];
+  return role === 'ELEKTRIK' ? ELEKTRIK_ACCESS_KEYS : [];
 }

@@ -133,8 +133,8 @@ export class UsersService {
       ).concat(aksesKaryawan);
     }
 
-    // Elektrik: seluruh menu GA MEP sejak akun dibuat / role diubah.
-    if (role === UserRole.ELEKTRIK) return [...GA_MEP_ACCESS_KEYS];
+    // Elektrik: seluruh menu GA MEP + MCU & Deklarasi Dinas sebagai karyawan.
+    if (role === UserRole.ELEKTRIK) return [...GA_MEP_ACCESS_KEYS, 'HC_MCU', 'HC_DEKLARASI'];
 
     return [];
   }

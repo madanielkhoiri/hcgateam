@@ -32,6 +32,10 @@ export const Aktor = createParamDecorator(
     if (user.role === UserRole.GRUP_LEADER_COMBEN) {
       return { ...user, role: UserRole.HC };
     }
+    // Elektrik juga karyawan: memakai alur MCU karyawan.
+    if (user.role === UserRole.ELEKTRIK) {
+      return { ...user, role: UserRole.KARYAWAN };
+    }
     return user;
   },
 );

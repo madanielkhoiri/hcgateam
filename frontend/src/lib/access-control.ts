@@ -234,6 +234,10 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
           ACCESS_KEYS.CIVIL_ELECTRIC_KWH,
           ACCESS_KEYS.CIVIL_AIR,
           ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC,
+          // Elektrik juga karyawan: MCU & Deklarasi Dinas tetap ada.
+          ACCESS_KEYS.HC,
+          ACCESS_KEYS.HC_MCU,
+          ACCESS_KEYS.HC_DEKLARASI,
         ]
       : [];
   const keys = [...(user.accessKeys ?? []), ...aksesOtomatis];

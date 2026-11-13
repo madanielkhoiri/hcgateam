@@ -60,7 +60,8 @@ export class McuAksesService {
       aktor.role === UserRole.GRUP_LEADER ||
       aktor.role === UserRole.GRUP_LEADER_IR ||
       aktor.role === UserRole.GRUP_LEADER_GA ||
-      aktor.role === UserRole.GRUP_LEADER_RND
+      aktor.role === UserRole.GRUP_LEADER_RND ||
+      aktor.role === UserRole.ELEKTRIK
     ) {
       return [UserRole.KARYAWAN];
     }
