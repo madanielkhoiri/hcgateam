@@ -173,6 +173,8 @@ function createBatchRow(): BatchRow {
   };
 }
 
+const PHOTO_FOLDERS = ["inventory-electric", "gudang-checkout"] as const;
+
 type ElectricPhotoThumbnailProps = {
   filename: string;
   onZoom: (url: string) => void;
@@ -184,10 +186,12 @@ function ElectricPhotoThumbnail({
 }: ElectricPhotoThumbnailProps) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [folderIndex, setFolderIndex] = useState(0);
 
-  // Foto disajikan lewat jalur file statis /api/uploads (sama seperti modul lain),
-  // token dikirim lewat query supaya <img> langsung bisa memuatnya.
-  const baseUrl = urlUploads(`inventory-electric/${encodeURIComponent(filename)}`);
+  // Foto Barang Keluar bisa berasal dari dua alur: form Barang Keluar Electric
+  // (uploads/inventory-electric) dan alur Gudang "Ambil Barang" (uploads/gudang-checkout).
+  // Coba folder pertama; bila tidak ada, otomatis coba folder berikutnya.
+  const baseUrl = urlUploads(`${PHOTO_FOLDERS[folderIndex]}/${encodeURIComponent(filename)}`);
   const src = attempt > 0 ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}r=${attempt}` : baseUrl;
 
   if (failed) {
@@ -197,6 +201,7 @@ function ElectricPhotoThumbnail({
         className={styles.photoUnavailable}
         onClick={() => {
           setFailed(false);
+          setFolderIndex(0);
           setAttempt((current) => current + 1);
         }}
         title="Klik untuk coba muat ulang"
@@ -217,7 +222,13 @@ function ElectricPhotoThumbnail({
         src={src}
         alt="Dokumentasi barang keluar Electric"
         className={styles.photoThumbnail}
-        onError={() => setFailed(true)}
+        onError={() => {
+          if (folderIndex < PHOTO_FOLDERS.length - 1) {
+            setFolderIndex((current) => current + 1);
+          } else {
+            setFailed(true);
+          }
+        }}
       />
     </button>
   );
