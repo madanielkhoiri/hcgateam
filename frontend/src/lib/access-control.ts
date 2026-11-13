@@ -222,24 +222,25 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return true;
   }
 
-  // Akses otomatis per role: Elektrik membuka seluruh menu GA MEP (cermin
-  // dari aksesOtomatisRole di backend) tanpa menunggu accessKeys diatur manual.
-  const aksesOtomatis: string[] =
-    user.role === 'ELEKTRIK'
-      ? [
-          ACCESS_KEYS.CIVIL,
-          ACCESS_KEYS.CIVIL_GA_MEP,
-          ACCESS_KEYS.CIVIL_ELECTRIC,
-          ACCESS_KEYS.CIVIL_ELECTRIC_KIP,
-          ACCESS_KEYS.CIVIL_ELECTRIC_KWH,
-          ACCESS_KEYS.CIVIL_AIR,
-          ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC,
-          // Elektrik juga karyawan: MCU & Deklarasi Dinas tetap ada.
-          ACCESS_KEYS.HC,
-          ACCESS_KEYS.HC_MCU,
-          ACCESS_KEYS.HC_DEKLARASI,
-        ]
-      : [];
+  // Akses otomatis per role (cermin aksesOtomatisRole di backend):
+  // - Portal IR umum: semua role internal boleh membuka & mengisi (kelola tetap dibatasi backend).
+  // - Elektrik: seluruh GA MEP + MCU & Deklarasi Dinas sebagai karyawan.
+  const roleTanpaIrOtomatis = ['VENDOR', 'TAMU', 'KLINIK', 'DOKTER'];
+  const aksesOtomatis: string[] = roleTanpaIrOtomatis.includes(user.role) ? [] : [ACCESS_KEYS.HC_IR];
+  if (user.role === 'ELEKTRIK') {
+    aksesOtomatis.push(
+      ACCESS_KEYS.CIVIL,
+      ACCESS_KEYS.CIVIL_GA_MEP,
+      ACCESS_KEYS.CIVIL_ELECTRIC,
+      ACCESS_KEYS.CIVIL_ELECTRIC_KIP,
+      ACCESS_KEYS.CIVIL_ELECTRIC_KWH,
+      ACCESS_KEYS.CIVIL_AIR,
+      ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC,
+      ACCESS_KEYS.HC,
+      ACCESS_KEYS.HC_MCU,
+      ACCESS_KEYS.HC_DEKLARASI,
+    );
+  }
   const keys = [...(user.accessKeys ?? []), ...aksesOtomatis];
 
   // Beberapa fitur secara organisasi berada di panel Administrasi, tetapi

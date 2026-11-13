@@ -494,6 +494,15 @@ export const ELEKTRIK_ACCESS_KEYS: string[] = [
   'HC_DEKLARASI',
 ];
 
+/**
+ * Portal IR bersifat umum: semua role internal boleh membuka dan mengisi jawaban
+ * (membuat soal/dokumen tetap hanya Admin/Section Head/Group Leader IR, dijaga
+ * di IrAksesService). Role eksternal tidak otomatis.
+ */
+export const ROLE_TANPA_AKSES_IR_OTOMATIS = new Set(['VENDOR', 'TAMU', 'KLINIK', 'DOKTER']);
+
 export function aksesOtomatisRole(role: string | undefined | null): string[] {
-  return role === 'ELEKTRIK' ? ELEKTRIK_ACCESS_KEYS : [];
+  if (!role) return [];
+  const umum = ROLE_TANPA_AKSES_IR_OTOMATIS.has(role) ? [] : ['HC_IR'];
+  return role === 'ELEKTRIK' ? [...umum, ...ELEKTRIK_ACCESS_KEYS] : umum;
 }
