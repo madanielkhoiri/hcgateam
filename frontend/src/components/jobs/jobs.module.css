@@ -1737,3 +1737,106 @@
 }
 
 /* === MODAL CLOSE CLEAN END === */
+
+/* === WO TABEL REVISI (13 Nov) START === */
+/* Kolom: 1 No, 2 Tanggal, 3 No WO, 4 Nama, 5 Dept, 6 Keterangan, 7 Gambar, 8 Durasi,
+   9 Durasi Pekerjaan, 10 Status, 11 Prioritas, 12 PIC, 13 Aksi */
+.workOrderTable {
+  min-width: 1780px;
+}
+
+.workOrderTable th:nth-child(8),
+.workOrderTable td:nth-child(8) {
+  width: 82px !important;
+  min-width: 82px !important;
+}
+
+.workOrderTable th:nth-child(9),
+.workOrderTable td:nth-child(9) {
+  width: 118px !important;
+  min-width: 118px !important;
+}
+
+.workOrderTable th:nth-child(10),
+.workOrderTable td:nth-child(10) {
+  width: 150px !important;
+  min-width: 150px !important;
+}
+
+.workOrderTable th:nth-child(11),
+.workOrderTable td:nth-child(11) {
+  width: 175px !important;
+  min-width: 175px !important;
+}
+
+.workOrderTable th:nth-child(12),
+.workOrderTable td:nth-child(12) {
+  width: 150px !important;
+  min-width: 150px !important;
+}
+
+.workOrderTable th:nth-child(13),
+.workOrderTable td:nth-child(13) {
+  min-width: 190px !important;
+}
+
+/* Dropdown mengikuti lebar kolom, teks tidak terpotong */
+.workOrderTable .tableSelect {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 32px !important;
+  padding: 0 26px 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 32px !important;
+  text-overflow: clip !important;
+  text-align: center !important;
+  text-align-last: center !important;
+}
+
+.workOrderTable .tableSelect option {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  font-weight: 400 !important;
+}
+
+/* Warna status: Open merah terang, On Progress kuning, Close hijau */
+.workOrderTable .selectOpen {
+  color: #ffffff !important;
+  background-color: #ef4444 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+.workOrderTable .selectProgress {
+  color: #422006 !important;
+  background-color: #facc15 !important;
+  border: 1px solid #eab308 !important;
+}
+
+.workOrderTable .selectClose {
+  color: #ffffff !important;
+  background-color: #22c55e !important;
+  border: 1px solid #16a34a !important;
+}
+
+/* Prioritas P1 (urgent): seluruh baris merah, nomor merah pekat */
+.workOrderTable tr.rowUrgent td {
+  color: #7f1d1d !important;
+  background-color: #fee2e2 !important;
+  border-top: 1px solid #fca5a5 !important;
+  border-bottom: 1px solid #fca5a5 !important;
+}
+
+.workOrderTable tr.rowUrgent td:first-child {
+  color: #ffffff !important;
+  background-color: #dc2626 !important;
+  font-weight: 800 !important;
+}
+
+.workOrderTable .approvalHint {
+  margin-top: 4px;
+  font-size: 10px;
+  white-space: normal;
+}
+/* === WO TABEL REVISI (13 Nov) END === */

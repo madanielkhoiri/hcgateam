@@ -57,6 +57,7 @@ type WorkOrder = {
   priority: WorkOrderPriority;
   closedAt: string | null;
   closedDurationDays: number | null;
+  workDurationDays?: number | null;
   imagePaths: string[];
   statusApproval: StatusApprovalWorkOrder;
   disetujuiGlOleh?: Penyetuju;
@@ -79,6 +80,7 @@ type WorkOrderForm = {
   status: WorkOrderStatus;
   priority: WorkOrderPriority;
   pic: WorkOrderPic;
+  workDurationDays: string;
 };
 
 function today(): string {
@@ -96,6 +98,7 @@ function initialForm(): WorkOrderForm {
     status: "OPEN",
     priority: "P2",
     pic: "GA_INFRAS",
+    workDurationDays: "",
   };
 }
 
@@ -392,6 +395,15 @@ export default function WorkOrdersPage() {
       const fieldLabel =
         field === "pic" ? "PIC" : field === "status" ? "Status" : "Prioritas";
 
+      // Prioritas P1 (urgent) naik ke baris teratas (urutan stabil).
+      if (field === "priority") {
+        setRows((currentRows) =>
+          [...currentRows].sort((a, b) =>
+            a.priority === b.priority ? 0 : a.priority === "P1" ? -1 : 1,
+          ),
+        );
+      }
+
       setSuccess(`${fieldLabel} berhasil diperbarui`);
     } catch (updateError) {
       setRows((currentRows) =>
@@ -427,6 +439,10 @@ export default function WorkOrdersPage() {
       status: row.status,
       priority: row.priority,
       pic: row.pic,
+      workDurationDays:
+        row.workDurationDays === null || row.workDurationDays === undefined
+          ? ""
+          : String(row.workDurationDays),
     });
 
     setExistingImages(row.imagePaths ?? []);
@@ -561,6 +577,13 @@ export default function WorkOrdersPage() {
         requestedAt: form.requestedAt,
         status: form.status,
         priority: form.priority,
+        // Durasi pekerjaan (hari) diinput manual; kosong saat edit = hapus nilai.
+        workDurationDays:
+          form.workDurationDays.trim() === ""
+            ? editingId === null
+              ? undefined
+              : null
+            : Number(form.workDurationDays),
       };
 
       const result = await request(
@@ -854,8 +877,8 @@ export default function WorkOrdersPage() {
                 <th>Keterangan</th>
                 <th>Gambar</th>
                 <th>Durasi</th>
+                <th>Durasi Pekerjaan</th>
                 <th>Status</th>
-                <th>Persetujuan</th>
                 <th>Prioritas</th>
                 <th>PIC</th>
                 <th>Aksi</th>
@@ -879,7 +902,10 @@ export default function WorkOrdersPage() {
                 </tr>
               ) : (
                 rows.map((row, index) => (
-                  <tr key={row.id}>
+                  <tr
+                    key={row.id}
+                    className={row.priority === "P1" ? styles.rowUrgent : undefined}
+                  >
                     <td>{index + 1}</td>
 
                     <td>{formatDate(row.requestedAt)}</td>
@@ -922,6 +948,12 @@ export default function WorkOrdersPage() {
                     <td>{row.closedDurationDays ?? 0} hari</td>
 
                     <td className={styles.centerCell}>
+                      {row.workDurationDays === null || row.workDurationDays === undefined
+                        ? "-"
+                        : `${row.workDurationDays} hari`}
+                    </td>
+
+                    <td className={styles.centerCell}>
                       <select
                         className={`${styles.tableSelect} ${
                           row.status === "CLOSE"
@@ -955,46 +987,17 @@ export default function WorkOrdersPage() {
                         </option>
                       </select>
                       {row.statusApproval !== "DISETUJUI" && (
-                        <div className={styles.approvalHint}>
-                          Menunggu approval GL/SH/PJO
-                        </div>
-                      )}
-                    </td>
-
-                    <td className={styles.centerCell}>
-                      <span
-                        className={`${styles.approvalBadge} ${
-                          row.statusApproval === "DISETUJUI"
-                            ? styles.approvalDisetujui
-                            : row.statusApproval === "DITOLAK"
-                              ? styles.approvalDitolak
-                              : styles.approvalMenunggu
-                        }`}
-                        title={
-                          row.statusApproval === "DITOLAK" && row.alasanTolakApproval
-                            ? `Alasan: ${row.alasanTolakApproval}`
-                            : undefined
-                        }
-                      >
-                        {approvalLabel(row.statusApproval)}
-                      </span>
-
-                      {bisaMenyetujuiTahap(row, user) && (
-                        <div className={styles.approvalActions}>
-                          <button
-                            type="button"
-                            className={styles.approveButton}
-                            onClick={() => void setujuiWorkOrder(row)}
-                          >
-                            Setujui
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.rejectButton}
-                            onClick={() => void tolakWorkOrder(row)}
-                          >
-                            Tolak
-                          </button>
+                        <div
+                          className={styles.approvalHint}
+                          title={
+                            row.statusApproval === "DITOLAK" && row.alasanTolakApproval
+                              ? `Alasan: ${row.alasanTolakApproval}`
+                              : undefined
+                          }
+                        >
+                          {row.statusApproval === "DITOLAK"
+                            ? "Ditolak"
+                            : "Menunggu approval GL/SH/PJO"}
                         </div>
                       )}
                     </td>
@@ -1037,6 +1040,25 @@ export default function WorkOrdersPage() {
 
                     <td>
                       <div className={styles.actionButtons}>
+                        {bisaMenyetujuiTahap(row, user) && (
+                          <div className={styles.approvalActions}>
+                            <button
+                              type="button"
+                              className={styles.approveButton}
+                              onClick={() => void setujuiWorkOrder(row)}
+                            >
+                              Setujui
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.rejectButton}
+                              onClick={() => void tolakWorkOrder(row)}
+                            >
+                              Tolak
+                            </button>
+                          </div>
+                        )}
+
                         <button
                           type="button"
                           className={styles.pdfButton}
@@ -1263,6 +1285,26 @@ export default function WorkOrdersPage() {
 
                     <option value="GA_ELECTRIC">GA Electric</option>
                   </select>
+                </label>
+
+                <label>
+                  <span>Durasi Pekerjaan (hari)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={3650}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder="Contoh: 1"
+                    value={form.workDurationDays}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        workDurationDays: event.target.value.replace(/[^0-9]/g, ""),
+                      }))
+                    }
+                  />
+                  <small>Isi angka saja, satuan "hari" otomatis.</small>
                 </label>
 
                 <div className={`${styles.fullField} ${styles.photoField}`}>

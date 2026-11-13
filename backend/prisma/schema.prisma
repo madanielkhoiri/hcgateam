@@ -571,6 +571,8 @@ model WorkOrder {
   priority           WorkOrderPriority @default(P2)
   closedAt           DateTime?         @map("closed_at")
   closedDurationDays Int?              @map("closed_duration_days")
+  /// Durasi pekerjaan (hari) - diinput manual oleh admin, terpisah dari durasi WO.
+  workDurationDays   Int?              @map("work_duration_days")
   imagePaths         String[]          @default([]) @map("image_paths")
   createdBy          Int               @map("created_by")
   createdAt          DateTime          @default(now()) @map("created_at")

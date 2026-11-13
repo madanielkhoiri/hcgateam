@@ -2,11 +2,15 @@
   IsArray,
   IsDateString,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   WorkOrderPic,
   WorkOrderPriority,
@@ -65,4 +69,12 @@ export class CreateWorkOrderDto {
   @IsArray()
   @IsString({ each: true })
   imagePaths?: string[];
+
+  /** Durasi pekerjaan dalam hari (angka saja), diinput manual. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(3650)
+  workDurationDays?: number;
 }

@@ -518,6 +518,7 @@ export class WorkOrdersService {
               ? this.calculateDuration(requestedAt, closedAt)
               : null,
           imagePaths: dto.imagePaths ?? [],
+          workDurationDays: dto.workDurationDays ?? null,
           createdBy,
         },
         include: PENYETUJU_INCLUDE,
@@ -618,6 +619,11 @@ export class WorkOrdersService {
           ...(dto.imagePaths !== undefined
             ? {
                 imagePaths: dto.imagePaths,
+              }
+            : {}),
+          ...(dto.workDurationDays !== undefined
+            ? {
+                workDurationDays: dto.workDurationDays,
               }
             : {}),
           ...(becomesClosed
