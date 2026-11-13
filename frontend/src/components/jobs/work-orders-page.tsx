@@ -1037,9 +1037,7 @@ export default function WorkOrdersPage() {
                               : undefined
                           }
                         >
-                          {row.statusApproval === "DITOLAK"
-                            ? "Ditolak"
-                            : "Menunggu approval GL/SH/PJO"}
+                          {approvalLabel(row.statusApproval)}
                         </div>
                       )}
                       {bisaMenyetujuiTahap(row, user) && (
@@ -1289,7 +1287,7 @@ export default function WorkOrdersPage() {
                   </select>
                   {editingApprovalStatus !== "DISETUJUI" && (
                     <span className={styles.approvalHint}>
-                      Menunggu approval GL/SH/PJO
+                      {approvalLabel(editingApprovalStatus)}
                     </span>
                   )}
                 </label>
