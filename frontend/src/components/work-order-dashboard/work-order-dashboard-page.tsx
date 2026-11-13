@@ -61,12 +61,17 @@ const MONTHS = [
   "Desember",
 ];
 
-const CHART_WIDTH = 1200;
-const CHART_HEIGHT = 390;
-const LEFT = 70;
-const RIGHT = 35;
-const TOP = 38;
-const BOTTOM = 68;
+const CHART_WIDTH = 760;
+const CHART_HEIGHT = 340;
+const LEFT = 46;
+const RIGHT = 22;
+const TOP = 26;
+const BOTTOM = 50;
+
+// Warna status mengikuti tabel Work Order: Open merah, On Progress kuning, Close hijau.
+const COLOR_OPEN = "#ef4444";
+const COLOR_PROGRESS = "#eab308";
+const COLOR_CLOSE = "#16a34a";
 
 function getToken() {
   if (typeof window === "undefined") {
@@ -84,36 +89,59 @@ function createLinePath(
   points: Point[],
   field: "openY" | "progressY" | "closeY",
 ) {
-  if (points.length === 0) {
+  const n = points.length;
+
+  if (n === 0) {
     return "";
   }
 
-  if (points.length < 3) {
-    return points
-      .map((point, index) => {
-        const command = index === 0 ? "M" : "L";
-
-        return `${command} ${point.x.toFixed(2)} ${point[field].toFixed(2)}`;
-      })
-      .join(" ");
+  if (n === 1) {
+    return `M ${points[0].x.toFixed(2)} ${points[0][field].toFixed(2)}`;
   }
 
-  // Catmull-Rom -> Bezier: kurva halus antar titik bulanan supaya grafik
-  // tidak zig-zag tajam saat nilainya kecil (0-4), lebih enak dibaca saat presentasi.
-  let path = `M ${points[0].x.toFixed(2)} ${points[0][field].toFixed(2)}`;
+  // Interpolasi kubik monoton (Fritsch-Carlson): kurva halus tetapi tidak pernah
+  // "melompat" melewati nilai titik (mis. turun di bawah 0), jadi angka tetap jujur.
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point[field]);
+  const slopes: number[] = [];
 
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const p0 = points[i === 0 ? i : i - 1];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+  for (let i = 0; i < n - 1; i += 1) {
+    slopes.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+  }
 
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1[field] + (p2[field] - p0[field]) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2[field] - (p3[field] - p1[field]) / 6;
+  const tangents: number[] = new Array(n).fill(0);
+  tangents[0] = slopes[0];
+  tangents[n - 1] = slopes[n - 2];
 
-    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2[field].toFixed(2)}`;
+  for (let i = 1; i < n - 1; i += 1) {
+    tangents[i] =
+      slopes[i - 1] * slopes[i] <= 0 ? 0 : (slopes[i - 1] + slopes[i]) / 2;
+  }
+
+  for (let i = 0; i < n - 1; i += 1) {
+    if (slopes[i] === 0) {
+      tangents[i] = 0;
+      tangents[i + 1] = 0;
+      continue;
+    }
+
+    const a = tangents[i] / slopes[i];
+    const b = tangents[i + 1] / slopes[i];
+    const sum = a * a + b * b;
+
+    if (sum > 9) {
+      const scale = 3 / Math.sqrt(sum);
+      tangents[i] = scale * a * slopes[i];
+      tangents[i + 1] = scale * b * slopes[i];
+    }
+  }
+
+  let path = `M ${xs[0].toFixed(2)} ${ys[0].toFixed(2)}`;
+
+  for (let i = 0; i < n - 1; i += 1) {
+    const dx = (xs[i + 1] - xs[i]) / 3;
+
+    path += ` C ${(xs[i] + dx).toFixed(2)} ${(ys[i] + tangents[i] * dx).toFixed(2)}, ${(xs[i + 1] - dx).toFixed(2)} ${(ys[i + 1] - tangents[i + 1] * dx).toFixed(2)}, ${xs[i + 1].toFixed(2)} ${ys[i + 1].toFixed(2)}`;
   }
 
   return path;
@@ -215,14 +243,22 @@ export default function WorkOrderDashboardPage() {
 
   const chart = data?.chart ?? [];
 
-  const maximum = useMemo(
+  // Sumbu Y: 5 tingkat bilangan bulat (0, s, 2s, 3s, 4s) supaya tidak ada angka ganda.
+  const yStep = useMemo(
     () =>
       Math.max(
         1,
-        ...chart.flatMap((row) => [row.open, row.onProgress, row.close]),
+        Math.ceil(
+          Math.max(
+            1,
+            ...chart.flatMap((row) => [row.open, row.onProgress, row.close]),
+          ) / 4,
+        ),
       ),
     [chart],
   );
+
+  const maximum = yStep * 4;
 
   const points = useMemo<Point[]>(() => {
     const drawableWidth = CHART_WIDTH - LEFT - RIGHT;
@@ -275,24 +311,60 @@ export default function WorkOrderDashboardPage() {
       label: "Open",
       value: data?.summary.open ?? 0,
       icon: CircleDot,
-      color: "#f97316",
-      background: "#fff2e5",
+      color: COLOR_OPEN,
+      background: "#fee2e2",
     },
     {
       label: "On Progress",
       value: data?.summary.onProgress ?? 0,
       icon: LoaderCircle,
-      color: "#7048e8",
-      background: "#f1ebff",
+      color: COLOR_PROGRESS,
+      background: "#fef9c3",
     },
     {
       label: "Close",
       value: data?.summary.close ?? 0,
       icon: CheckCircle2,
-      color: "#079669",
-      background: "#e8faf2",
+      color: COLOR_CLOSE,
+      background: "#dcfce7",
     },
   ];
+
+  const totalStatus =
+    (data?.summary.open ?? 0) +
+    (data?.summary.onProgress ?? 0) +
+    (data?.summary.close ?? 0);
+
+  const donutRadius = 74;
+  const donutCircumference = 2 * Math.PI * donutRadius;
+
+  const statusSlices = (() => {
+    const items = [
+      { label: "Open", value: data?.summary.open ?? 0, color: COLOR_OPEN },
+      {
+        label: "On Progress",
+        value: data?.summary.onProgress ?? 0,
+        color: COLOR_PROGRESS,
+      },
+      { label: "Close", value: data?.summary.close ?? 0, color: COLOR_CLOSE },
+    ];
+
+    let cumulative = 0;
+
+    return items.map((item) => {
+      const fraction = totalStatus > 0 ? item.value / totalStatus : 0;
+      const slice = {
+        ...item,
+        percent: Math.round(fraction * 1000) / 10,
+        dash: fraction * donutCircumference,
+        offset: -cumulative * donutCircumference,
+      };
+
+      cumulative += fraction;
+
+      return slice;
+    });
+  })();
 
   return (
     <main className="work-order-dashboard">
@@ -445,150 +517,217 @@ export default function WorkOrderDashboardPage() {
         </div>
       </section>
 
-      <section className="chart-card">
-        <header className="chart-header">
-          <div>
-            <h2>Grafik Status Work Order</h2>
-            <p>Grafik diperbarui otomatis setiap 10 detik.</p>
-          </div>
+      <section className="chart-row">
+        <article className="chart-card chart-line-card">
+          <header className="chart-header">
+            <div>
+              <h2>Tren Status Work Order</h2>
+              <p>{periodDescription} - diperbarui otomatis tiap 10 detik.</p>
+            </div>
 
-          <div className="legend">
-            <span>
-              <i className="legend-open" />
-              Open
-            </span>
+            <div className="legend">
+              <span>
+                <i className="legend-open" />
+                Open
+              </span>
 
-            <span>
-              <i className="legend-progress" />
-              On Progress
-            </span>
+              <span>
+                <i className="legend-progress" />
+                On Progress
+              </span>
 
-            <span>
-              <i className="legend-close" />
-              Close
-            </span>
-          </div>
-        </header>
+              <span>
+                <i className="legend-close" />
+                Close
+              </span>
+            </div>
+          </header>
 
-        {loading ? (
-          <div className="empty-chart">
-            <RefreshCw className="spin" size={29} />
-            <span>Memuat grafik...</span>
-          </div>
-        ) : points.length === 0 ? (
-          <div className="empty-chart">
-            <TrendingUp size={35} />
-            <strong>Belum ada Work Order pada periode ini.</strong>
-          </div>
-        ) : (
-          <div className="chart-scroll">
-            <svg
-              key={animationKey}
-              viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-              role="img"
-              aria-label="Grafik status Work Order"
-              className="chart-svg"
-            >
-              {Array.from({ length: 6 }, (_, index) => {
-                const value = Math.round(maximum - (maximum / 5) * index);
+          {loading ? (
+            <div className="empty-chart">
+              <RefreshCw className="spin" size={29} />
+              <span>Memuat grafik...</span>
+            </div>
+          ) : points.length === 0 ? (
+            <div className="empty-chart">
+              <TrendingUp size={35} />
+              <strong>Belum ada Work Order pada periode ini.</strong>
+            </div>
+          ) : (
+            <div className="chart-scroll">
+              <svg
+                key={animationKey}
+                viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+                role="img"
+                aria-label="Grafik tren status Work Order"
+                className="chart-svg"
+              >
+                {Array.from({ length: 5 }, (_, index) => {
+                  const value = yStep * (4 - index);
+                  const drawableHeight = CHART_HEIGHT - TOP - BOTTOM;
+                  const y = TOP + (index / 4) * drawableHeight;
 
-                const drawableHeight = CHART_HEIGHT - TOP - BOTTOM;
+                  return (
+                    <g key={`${value}-${index}`}>
+                      <line
+                        x1={LEFT}
+                        y1={y}
+                        x2={CHART_WIDTH - RIGHT}
+                        y2={y}
+                        className="grid-line"
+                      />
 
-                const y = TOP + (index / 5) * drawableHeight;
+                      <text
+                        x={LEFT - 12}
+                        y={y + 4}
+                        textAnchor="end"
+                        className="axis-text"
+                      >
+                        {value}
+                      </text>
+                    </g>
+                  );
+                })}
 
-                return (
-                  <g key={`${value}-${index}`}>
-                    <line
-                      x1={LEFT}
-                      y1={y}
-                      x2={CHART_WIDTH - RIGHT}
-                      y2={y}
-                      className="grid-line"
-                    />
+                <line
+                  x1={LEFT}
+                  y1={CHART_HEIGHT - BOTTOM}
+                  x2={CHART_WIDTH - RIGHT}
+                  y2={CHART_HEIGHT - BOTTOM}
+                  className="axis-line"
+                />
+
+                <path d={openPath} className="animated-line line-open" />
+
+                <path d={progressPath} className="animated-line line-progress" />
+
+                <path d={closePath} className="animated-line line-close" />
+
+                {points.map((point, index) => (
+                  <g key={`${point.label}-${index}`}>
+                    <circle
+                      cx={point.x}
+                      cy={point.openY}
+                      r="4.5"
+                      className="chart-point point-open"
+                    >
+                      <title>
+                        {point.label} - Open: {point.open}
+                      </title>
+                    </circle>
+
+                    <circle
+                      cx={point.x}
+                      cy={point.progressY}
+                      r="4.5"
+                      className="chart-point point-progress"
+                    >
+                      <title>
+                        {point.label} - On Progress: {point.onProgress}
+                      </title>
+                    </circle>
+
+                    <circle
+                      cx={point.x}
+                      cy={point.closeY}
+                      r="4.5"
+                      className="chart-point point-close"
+                    >
+                      <title>
+                        {point.label} - Close: {point.close}
+                      </title>
+                    </circle>
 
                     <text
-                      x={LEFT - 15}
-                      y={y + 5}
-                      textAnchor="end"
-                      className="axis-text"
+                      x={point.x}
+                      y={CHART_HEIGHT - BOTTOM + 24}
+                      textAnchor="middle"
+                      className="date-text"
                     >
-                      {value}
+                      {point.label}
                     </text>
                   </g>
-                );
-              })}
+                ))}
+              </svg>
+            </div>
+          )}
 
-              <line
-                x1={LEFT}
-                y1={CHART_HEIGHT - BOTTOM}
-                x2={CHART_WIDTH - RIGHT}
-                y2={CHART_HEIGHT - BOTTOM}
-                className="axis-line"
-              />
+          <footer className="chart-footer">
+            <span>
+              Pembaruan terakhir:{" "}
+              {lastUpdated ? lastUpdated.toLocaleTimeString("id-ID") : "-"}
+            </span>
+          </footer>
+        </article>
 
-              <path d={openPath} className="animated-line line-open" />
+        <article className="chart-card chart-donut-card">
+          <header className="chart-header">
+            <div>
+              <h2>Komposisi Status</h2>
+              <p>{periodDescription}</p>
+            </div>
+          </header>
 
-              <path d={progressPath} className="animated-line line-progress" />
+          <div className="donut-body">
+            <div className="donut-wrap">
+              <svg
+                viewBox="0 0 200 200"
+                className="donut-svg"
+                role="img"
+                aria-label="Grafik lingkaran komposisi status Work Order"
+              >
+                <circle
+                  cx="100"
+                  cy="100"
+                  r={donutRadius}
+                  className="donut-track"
+                />
 
-              <path d={closePath} className="animated-line line-close" />
+                {totalStatus > 0 &&
+                  statusSlices.map((slice) =>
+                    slice.value > 0 ? (
+                      <circle
+                        key={slice.label}
+                        cx="100"
+                        cy="100"
+                        r={donutRadius}
+                        fill="none"
+                        stroke={slice.color}
+                        strokeWidth="26"
+                        strokeDasharray={`${slice.dash} ${donutCircumference - slice.dash}`}
+                        strokeDashoffset={slice.offset}
+                        transform="rotate(-90 100 100)"
+                      >
+                        <title>
+                          {slice.label}: {slice.value} ({slice.percent}%)
+                        </title>
+                      </circle>
+                    ) : null,
+                  )}
+              </svg>
 
-              {points.map((point, index) => (
-                <g key={`${point.label}-${index}`}>
-                  <circle
-                    cx={point.x}
-                    cy={point.openY}
-                    r="6"
-                    className="chart-point point-open"
-                  >
-                    <title>
-                      {point.label} — Open: {point.open}
-                    </title>
-                  </circle>
+              <div className="donut-center">
+                <strong>{totalStatus}</strong>
+                <span>Work Order</span>
+              </div>
+            </div>
 
-                  <circle
-                    cx={point.x}
-                    cy={point.progressY}
-                    r="6"
-                    className="chart-point point-progress"
-                  >
-                    <title>
-                      {point.label} — On Progress: {point.onProgress}
-                    </title>
-                  </circle>
-
-                  <circle
-                    cx={point.x}
-                    cy={point.closeY}
-                    r="6"
-                    className="chart-point point-close"
-                  >
-                    <title>
-                      {point.label} — Close: {point.close}
-                    </title>
-                  </circle>
-
-                  <text
-                    x={point.x}
-                    y={CHART_HEIGHT - BOTTOM + 29}
-                    textAnchor="middle"
-                    className="date-text"
-                  >
-                    {point.label}
-                  </text>
-                </g>
+            <ul className="donut-legend">
+              {statusSlices.map((slice) => (
+                <li key={slice.label}>
+                  <i style={{ background: slice.color }} />
+                  <span>{slice.label}</span>
+                  <strong>{slice.value}</strong>
+                  <em>{slice.percent.toLocaleString("id-ID")}%</em>
+                </li>
               ))}
-            </svg>
+            </ul>
           </div>
-        )}
 
-        <footer className="chart-footer">
-          <span>
-            Pembaruan terakhir:{" "}
-            {lastUpdated ? lastUpdated.toLocaleTimeString("id-ID") : "-"}
-          </span>
-
-          <span>Closing Rate = Close ÷ Total WO × 100%</span>
-        </footer>
+          <footer className="chart-footer">
+            <span>Closing Rate = Close / Total WO x 100%</span>
+          </footer>
+        </article>
       </section>
 
       <style jsx>{`
@@ -797,7 +936,8 @@ export default function WorkOrderDashboardPage() {
           border-bottom: 1px solid #e0e9f3;
           display: flex;
           align-items: center;
-          gap: 15px;
+          flex-wrap: wrap;
+          gap: 10px 15px;
         }
 
         .chart-header h2 {
@@ -829,15 +969,15 @@ export default function WorkOrderDashboardPage() {
         }
 
         .legend-open {
-          background: #f97316;
+          background: #ef4444;
         }
 
         .legend-progress {
-          background: #7048e8;
+          background: #eab308;
         }
 
         .legend-close {
-          background: #079669;
+          background: #16a34a;
         }
 
         .chart-scroll {
@@ -849,7 +989,7 @@ export default function WorkOrderDashboardPage() {
         .chart-svg {
           display: block;
           width: 100%;
-          min-width: 760px;
+          min-width: 520px;
           height: auto;
         }
 
@@ -883,16 +1023,16 @@ export default function WorkOrderDashboardPage() {
         }
 
         .line-open {
-          stroke: #f97316;
+          stroke: #ef4444;
         }
 
         .line-progress {
-          stroke: #7048e8;
+          stroke: #eab308;
           animation-delay: 0.12s;
         }
 
         .line-close {
-          stroke: #079669;
+          stroke: #16a34a;
           animation-delay: 0.24s;
         }
 
@@ -904,15 +1044,127 @@ export default function WorkOrderDashboardPage() {
         }
 
         .point-open {
-          fill: #f97316;
+          fill: #ef4444;
         }
 
         .point-progress {
-          fill: #7048e8;
+          fill: #eab308;
         }
 
         .point-close {
-          fill: #079669;
+          fill: #16a34a;
+        }
+
+        .chart-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+          gap: 14px;
+          align-items: stretch;
+        }
+
+        .chart-line-card,
+        .chart-donut-card {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .chart-line-card .chart-scroll {
+          flex: 1;
+        }
+
+        .donut-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 18px;
+          padding: 18px 20px;
+        }
+
+        .donut-wrap {
+          position: relative;
+          width: min(100%, 230px);
+        }
+
+        .donut-svg {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
+        .donut-track {
+          fill: none;
+          stroke: #edf2f8;
+          stroke-width: 26;
+        }
+
+        .donut-center {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-content: center;
+          text-align: center;
+          pointer-events: none;
+        }
+
+        .donut-center strong {
+          color: #0d315c;
+          font-size: 34px;
+          line-height: 1;
+        }
+
+        .donut-center span {
+          margin-top: 4px;
+          color: #71849b;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .donut-legend {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: grid;
+          gap: 8px;
+        }
+
+        .donut-legend li {
+          display: grid;
+          grid-template-columns: 12px 1fr auto 52px;
+          align-items: center;
+          gap: 10px;
+          padding: 9px 12px;
+          border: 1px solid #e3ebf5;
+          border-radius: 10px;
+          color: #34506f;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .donut-legend i {
+          width: 12px;
+          height: 12px;
+          border-radius: 4px;
+        }
+
+        .donut-legend strong {
+          color: #0d315c;
+          font-size: 15px;
+        }
+
+        .donut-legend em {
+          color: #71849b;
+          font-size: 12px;
+          font-style: normal;
+          text-align: right;
+        }
+
+        @media (max-width: 1100px) {
+          .chart-row {
+            grid-template-columns: 1fr;
+          }
         }
 
         .chart-footer {
