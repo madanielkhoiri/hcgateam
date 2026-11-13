@@ -1042,6 +1042,24 @@ export default function WorkOrdersPage() {
                             : "Menunggu approval GL/SH/PJO"}
                         </div>
                       )}
+                      {bisaMenyetujuiTahap(row, user) && (
+                        <div className={styles.approvalActions}>
+                          <button
+                            type="button"
+                            className={styles.approveButton}
+                            onClick={() => void setujuiWorkOrder(row)}
+                          >
+                            Setujui
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.rejectButton}
+                            onClick={() => void tolakWorkOrder(row)}
+                          >
+                            Tolak
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td className={styles.centerCell}>
@@ -1082,25 +1100,6 @@ export default function WorkOrdersPage() {
 
                     <td>
                       <div className={styles.actionButtons}>
-                        {bisaMenyetujuiTahap(row, user) && (
-                          <div className={styles.approvalActions}>
-                            <button
-                              type="button"
-                              className={styles.approveButton}
-                              onClick={() => void setujuiWorkOrder(row)}
-                            >
-                              Setujui
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.rejectButton}
-                              onClick={() => void tolakWorkOrder(row)}
-                            >
-                              Tolak
-                            </button>
-                          </div>
-                        )}
-
                         <button
                           type="button"
                           className={styles.pdfButton}

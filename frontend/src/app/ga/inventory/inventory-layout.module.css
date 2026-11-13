@@ -814,3 +814,19 @@
     height: 70px !important;
   }
 }
+
+/* Sidebar diperkecil: tampilkan hanya lambang bulat logo (logo penuh meluber keluar sidebar) */
+.sidebarCollapsed .brandLogo {
+  width: 48px !important;
+  height: 54px !important;
+  overflow: hidden;
+  justify-items: start;
+}
+
+.sidebarCollapsed .brandLogo img {
+  width: 137px !important;
+  height: 59px !important;
+  max-width: none !important;
+  margin-left: -6px;
+  object-fit: fill !important;
+}

@@ -1862,3 +1862,15 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* Opsi yang masih terkunci (WO belum disetujui) tampil abu-abu */
+.workOrderTable .tableSelect option:disabled {
+  color: #9ca3af !important;
+}
+
+.workOrderTable .approvalActions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
