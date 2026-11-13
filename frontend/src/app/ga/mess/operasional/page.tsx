@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Folder, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Building2, Hotel } from 'lucide-react';
 import { messApi, type MessRoom } from '@/lib/mess-monitoring-api';
 import styles from '../mess.module.css';
 
@@ -143,7 +143,7 @@ export default function Operations() {
     <div className={styles.filterSummary}>Menampilkan {filteredRows.length} dari {rows.length} kamar</div>
     {!searching && !folderBuilding && <section className={styles.driveGrid} aria-label="Daftar gedung">
       {folderTiles.map((tile) => <button type="button" key={tile.building} className={styles.driveFolder} onClick={() => { setActiveBuilding(tile.building); setFilterBuilding('ALL'); }}>
-        <span className={styles.driveFolderIcon}><Folder size={46} strokeWidth={1.6} /></span>
+        <span className={styles.driveFolderIcon}>{/^[123]$/.test(tile.building) ? <Building2 size={46} strokeWidth={1.6} /> : <Hotel size={46} strokeWidth={1.6} />}</span>
         <b>{buildingLabel(tile.building)}</b>
         <small>{tile.total} kamar</small>
         <span className={styles.folderStats}>
@@ -157,7 +157,7 @@ export default function Operations() {
       <nav className={styles.driveCrumbs} aria-label="Lokasi folder">
         <button type="button" onClick={() => { setActiveBuilding(null); setFilterBuilding('ALL'); }}><ArrowLeft size={16} /> Semua Gedung</button>
         <span>/</span>
-        <strong><FolderOpen size={17} /> {buildingLabel(folderBuilding)}</strong>
+        <strong>{/^[123]$/.test(folderBuilding) ? <Building2 size={17} /> : <Hotel size={17} />} {buildingLabel(folderBuilding)}</strong>
         <em>{(groupedRows.find((group) => group.building === folderBuilding)?.rooms.length ?? 0)} kamar</em>
       </nav>
       <div className={styles.opsGrid}>
