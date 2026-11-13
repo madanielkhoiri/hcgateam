@@ -468,3 +468,22 @@ export function sanitizeAccessKeys(values: string[] | undefined): string[] {
 
   return ALL_ACCESS_KEYS.filter((key) => requested.has(key));
 }
+
+/**
+ * Akses OTOMATIS per role - berlaku walau accessKeys akun belum diatur lewat
+ * Manajemen Akun (akun lama tidak perlu disinkronkan satu per satu).
+ * Role Elektrik: seluruh menu GA MEP (Electric: Inventory, KIP, Perhitungan KWH,
+ * Peminjaman Alat; Air; Daily Activity GA MEP).
+ */
+export const GA_MEP_ACCESS_KEYS: string[] = [
+  'CIVIL',
+  ...ACCESS_CATALOG.filter(
+    (item) => item.key === 'CIVIL_GA_MEP' || ancestorsOf(item.key).includes('CIVIL_GA_MEP'),
+  ).map((item) => item.key),
+  // Key lama yang dipakai route Inventory Electric (tidak ada di katalog).
+  'CIVIL_INVENTORY_ELECTRIC',
+];
+
+export function aksesOtomatisRole(role: string | undefined | null): string[] {
+  return role === 'ELEKTRIK' ? GA_MEP_ACCESS_KEYS : [];
+}

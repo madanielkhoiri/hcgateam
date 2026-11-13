@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { UserRole } from '@prisma/client';
 import { firstValueFrom, isObservable } from 'rxjs';
 import { REQUIRE_ACCESS_KEY } from './require-access-key.decorator';
+import { aksesOtomatisRole } from '../access/access.constants';
 import {
   bolehAksesRouteEvaluatorTender,
   isJabatanEvaluatorTender,
@@ -138,7 +139,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    const ownedAccessKeys = user.accessKeys ?? [];
+    // Akses otomatis per role (mis. Elektrik -> seluruh GA MEP) digabung dengan
+    // accessKeys akun, jadi akun lama tidak perlu disinkronkan manual.
+    const ownedAccessKeys = [
+      ...(user.accessKeys ?? []),
+      ...aksesOtomatisRole(user.role),
+    ];
     const memilikiAksesLangsung = requiredAccessKeys.some((key) =>
       ownedAccessKeys.includes(key),
     );

@@ -14,6 +14,7 @@ import * as bcrypt from 'bcrypt';
 import {
   ACCESS_CATALOG,
   ALL_ACCESS_KEYS,
+  GA_MEP_ACCESS_KEYS,
   DEFAULT_GUEST_ACCESS_KEYS,
   sanitizeAccessKeys,
 } from '../access/access.constants';
@@ -131,6 +132,9 @@ export class UsersService {
         (key) => key === 'GA' || key.startsWith('GA_') || key === 'CIVIL' || key.startsWith('CIVIL_'),
       ).concat(aksesKaryawan);
     }
+
+    // Elektrik: seluruh menu GA MEP sejak akun dibuat / role diubah.
+    if (role === UserRole.ELEKTRIK) return [...GA_MEP_ACCESS_KEYS];
 
     return [];
   }

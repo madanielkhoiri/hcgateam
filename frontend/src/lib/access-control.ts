@@ -222,7 +222,21 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return true;
   }
 
-  const keys = user.accessKeys ?? [];
+  // Akses otomatis per role: Elektrik membuka seluruh menu GA MEP (cermin
+  // dari aksesOtomatisRole di backend) tanpa menunggu accessKeys diatur manual.
+  const aksesOtomatis: string[] =
+    user.role === 'ELEKTRIK'
+      ? [
+          ACCESS_KEYS.CIVIL,
+          ACCESS_KEYS.CIVIL_GA_MEP,
+          ACCESS_KEYS.CIVIL_ELECTRIC,
+          ACCESS_KEYS.CIVIL_ELECTRIC_KIP,
+          ACCESS_KEYS.CIVIL_ELECTRIC_KWH,
+          ACCESS_KEYS.CIVIL_AIR,
+          ACCESS_KEYS.CIVIL_INVENTORY_ELECTRIC,
+        ]
+      : [];
+  const keys = [...(user.accessKeys ?? []), ...aksesOtomatis];
 
   // Beberapa fitur secara organisasi berada di panel Administrasi, tetapi
   // access key-nya memakai nama domain asal. Izin salah satu fitur tersebut
