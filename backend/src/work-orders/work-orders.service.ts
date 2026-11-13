@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
@@ -695,26 +696,27 @@ export class WorkOrdersService {
     return hasilUpdate;
   }
 
-  async remove(id: number) {
+  /**
+   * Hapus Work Order - hanya Admin / Admin HC (Super Admin). Admin boleh menghapus WO
+   * apa pun, termasuk yang sudah disetujui atau sudah punya Serah Terima (Serah Terima
+   * otomatis ikut terhapus). Penghapusan dicatat di log server.
+   */
+  async remove(id: number, actor: { id: number; role: UserRole }) {
+    if (actor.role !== UserRole.ADMIN && actor.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Hanya Admin yang dapat menghapus Work Order');
+    }
+
     const workOrder = await this.findOne(id);
-
-    if (workOrder.statusApproval === StatusApprovalWorkOrder.DISETUJUI) {
-      throw new BadRequestException(
-        'Work Order yang sudah disetujui tidak dapat dihapus',
-      );
-    }
-
-    if (workOrder.handover) {
-      throw new BadRequestException(
-        'Work Order yang sudah memiliki Serah Terima tidak dapat dihapus',
-      );
-    }
 
     await this.prisma.workOrder.delete({
       where: {
         id,
       },
     });
+
+    new Logger(WorkOrdersService.name).warn(
+      `Work Order ${workOrder.workOrderNumber} (id ${id}) dihapus oleh user ${actor.id} (${actor.role}); status approval: ${workOrder.statusApproval}; serah terima: ${workOrder.handover ? 'ada' : 'tidak ada'}`,
+    );
 
     return {
       message: 'Work Order berhasil dihapus',

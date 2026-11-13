@@ -246,36 +246,33 @@ describe('WorkOrdersService.update — ON_PROGRESS/CLOSE butuh statusApproval DI
   });
 });
 
-describe('WorkOrdersService.remove — pembatasan hapus', () => {
-  it('menolak hapus WO yang sudah DISETUJUI', async () => {
-    const { service, hapus } = buatService(
-      buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.DISETUJUI }),
-    );
+describe('WorkOrdersService.remove — hanya Admin yang boleh menghapus', () => {
+  it.each([UserRole.GRUP_LEADER, UserRole.SECTION_HEAD, UserRole.PJO, UserRole.KARYAWAN, UserRole.ELEKTRIK])(
+    'menolak hapus oleh role %s',
+    async (role) => {
+      const { service, hapus } = buatService(buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.MENUNGGU_GL }));
 
-    await expect(service.remove(1)).rejects.toThrow(BadRequestException);
-    await expect(service.remove(1)).rejects.toThrow('sudah disetujui');
-    expect(hapus).not.toHaveBeenCalled();
-  });
-
-  it('menolak hapus WO yang sudah punya Serah Terima', async () => {
-    const { service, hapus } = buatService(
-      buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.MENUNGGU_GL, handover: { id: 5 } }),
-    );
-
-    await expect(service.remove(1)).rejects.toThrow(BadRequestException);
-    await expect(service.remove(1)).rejects.toThrow('Serah Terima');
-    expect(hapus).not.toHaveBeenCalled();
-  });
-
-  it.each([StatusApprovalWorkOrder.MENUNGGU_GL, StatusApprovalWorkOrder.DITOLAK])(
-    'mengizinkan hapus WO berstatus %s tanpa Serah Terima',
-    async (statusApproval) => {
-      const { service, hapus } = buatService(buatWorkOrder({ statusApproval }));
-
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Work Order berhasil dihapus' });
-      expect(hapus).toHaveBeenCalledWith({ where: { id: 1 } });
+      await expect(service.remove(1, { id: 99, role })).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, { id: 99, role })).rejects.toThrow('Hanya Admin');
+      expect(hapus).not.toHaveBeenCalled();
     },
   );
+
+  it.each([UserRole.ADMIN, UserRole.SUPER_ADMIN])('mengizinkan %s menghapus WO yang belum disetujui', async (role) => {
+    const { service, hapus } = buatService(buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.MENUNGGU_GL }));
+
+    await expect(service.remove(1, { id: 1, role })).resolves.toEqual({ message: 'Work Order berhasil dihapus' });
+    expect(hapus).toHaveBeenCalledWith({ where: { id: 1 } });
+  });
+
+  it('mengizinkan Admin menghapus WO yang sudah DISETUJUI dan punya Serah Terima', async () => {
+    const { service, hapus } = buatService(
+      buatWorkOrder({ statusApproval: StatusApprovalWorkOrder.DISETUJUI, handover: { id: 5 } }),
+    );
+
+    await expect(service.remove(1, ADMIN)).resolves.toEqual({ message: 'Work Order berhasil dihapus' });
+    expect(hapus).toHaveBeenCalledWith({ where: { id: 1 } });
+  });
 });
 
 describe('WorkOrdersService.findAll - urutan urgent (P1 belum Close) di atas', () => {

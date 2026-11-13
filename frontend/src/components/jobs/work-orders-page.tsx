@@ -762,22 +762,26 @@ export default function WorkOrdersPage() {
     }
   }
 
-  // Selaras dengan backend: WO yang sudah DISETUJUI atau sudah punya Serah
-  // Terima tidak boleh dihapus.
-  function bolehDihapus(row: WorkOrder) {
-    return row.statusApproval !== "DISETUJUI" && !row.handover;
+  // Hanya Admin / Admin HC yang boleh menghapus Work Order (selaras dengan backend).
+  function bolehDihapus() {
+    return user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   }
 
   async function remove(row: WorkOrder) {
-    if (!bolehDihapus(row)) {
-      setError(
-        "Work Order yang sudah disetujui atau sudah memiliki Serah Terima tidak dapat dihapus",
-      );
+    if (!bolehDihapus()) {
+      setError("Hanya Admin yang dapat menghapus Work Order");
       return;
     }
 
+    const peringatanTambahan =
+      row.statusApproval === "DISETUJUI" || row.handover
+        ? "\n\nPERHATIAN: WO ini sudah disetujui" +
+          (row.handover ? " dan sudah memiliki Serah Terima (ikut terhapus)" : "") +
+          "."
+        : "";
+
     const confirmed = window.confirm(
-      `Yakin ingin menghapus Work Order ${row.workOrderNumber}? Data yang dihapus tidak bisa dikembalikan.`,
+      `Yakin ingin menghapus Work Order ${row.workOrderNumber}? Data yang dihapus tidak bisa dikembalikan.${peringatanTambahan}`,
     );
 
     if (!confirmed) {
@@ -1114,7 +1118,7 @@ export default function WorkOrdersPage() {
                           Edit
                         </button>
 
-                        {bolehDihapus(row) ? (
+                        {bolehDihapus() ? (
                           <button
                             type="button"
                             className={styles.deleteButton}
