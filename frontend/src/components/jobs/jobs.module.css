@@ -1999,3 +1999,60 @@
 .workOrderTable .selectClose {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }
+
+/* === WO PRIORITAS & PIC: warna pekat seperti Status; kolom lebih ramping (13 Nov) === */
+.workOrderTable {
+  min-width: 1740px;
+}
+
+.workOrderTable th:nth-child(10),
+.workOrderTable td:nth-child(10),
+.workOrderTable th:nth-child(12),
+.workOrderTable td:nth-child(12) {
+  width: 114px !important;
+  min-width: 114px !important;
+}
+
+.workOrderTable th:nth-child(11),
+.workOrderTable td:nth-child(11) {
+  width: 140px !important;
+  min-width: 140px !important;
+}
+
+.workOrderTable .tableSelect {
+  padding: 0 16px !important;
+  background-position: right 6px center !important;
+}
+
+/* Prioritas */
+.workOrderTable .selectPriorityUrgent {
+  color: #ffffff !important;
+  background-color: #ef4444 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+.workOrderTable .selectPriorityNormal {
+  color: #ffffff !important;
+  background-color: #64748b !important;
+  border: 1px solid #475569 !important;
+}
+
+/* PIC: Infras hijau, Electric biru */
+.workOrderTable .selectPicInfras {
+  color: #ffffff !important;
+  background-color: #22c55e !important;
+  border: 1px solid #16a34a !important;
+}
+
+.workOrderTable .selectPicElectric {
+  color: #ffffff !important;
+  background-color: #3b82f6 !important;
+  border: 1px solid #2563eb !important;
+}
+
+.workOrderTable .selectPriorityUrgent,
+.workOrderTable .selectPriorityNormal,
+.workOrderTable .selectPicInfras,
+.workOrderTable .selectPicElectric {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+}

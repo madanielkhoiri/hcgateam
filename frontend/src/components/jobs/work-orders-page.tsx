@@ -1088,7 +1088,7 @@ export default function WorkOrdersPage() {
 
                     <td className={styles.centerCell}>
                       <select
-                        className={`${styles.tableSelect} ${styles.selectPic}`}
+                        className={`${styles.tableSelect} ${row.pic === "GA_ELECTRIC" ? styles.selectPicElectric : styles.selectPicInfras}`}
                         value={row.pic}
                         onChange={(event) =>
                           void updateQuickField(row, "pic", event.target.value)
