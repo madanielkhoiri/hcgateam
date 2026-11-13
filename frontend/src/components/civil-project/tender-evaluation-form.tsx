@@ -125,6 +125,38 @@ const scaleStyle = (value: number | null, n: number): React.CSSProperties => {
   return { ...base, border: `1.5px solid ${c}55`, background: "#fff", color: c };
 };
 const scoreColor100 = (v: number) => (v <= 30 ? "#dc2626" : v <= 60 ? "#ca8a04" : v <= 80 ? "#65a30d" : "#16a34a");
+const inputBare: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  height: "100%",
+  border: 0,
+  outline: 0,
+  background: "transparent",
+  padding: "0 14px",
+  fontWeight: 700,
+  fontSize: 14,
+  color: "#2a1a0e",
+};
+const satuanStyle: React.CSSProperties = {
+  flex: "none",
+  height: "100%",
+  display: "grid",
+  placeItems: "center",
+  padding: "0 14px",
+  fontSize: 13,
+  fontWeight: 800,
+  color: "#c2410c",
+  background: "#ffedd5",
+};
+function FieldUnit({ prefix, suffix, children }: { prefix?: string; suffix?: string; children: React.ReactNode }) {
+  return (
+    <span style={{ display: "flex", alignItems: "center", height: 48, border: "1.5px solid #f0cfae", borderRadius: 14, background: "#fffaf5", overflow: "hidden" }}>
+      {prefix && <span style={{ ...satuanStyle, borderRight: "1.5px solid #f6d7b8" }}>{prefix}</span>}
+      {children}
+      {suffix && <span style={{ ...satuanStyle, borderLeft: "1.5px solid #f6d7b8" }}>{suffix}</span>}
+    </span>
+  );
+}
 const n = (x: any) =>
   x === "" || x === null || x === undefined ? null : Number(x);
 const ontime = (r: any) =>
@@ -798,7 +830,7 @@ export function TenderEvaluationForm({
             <div
               style={{
                 padding: 12,
-                background: "#edf5ff",
+                background: "#fff7ed", border: "1px solid #fed7aa",
                 borderRadius: 10,
                 fontSize: 12,
                 marginTop: 12,
@@ -938,9 +970,9 @@ export function TenderEvaluationForm({
                 </strong>
               </div>
               <label>
-                Harga Internal / HPS Perusahaan (Rp)
-                <input
-                  style={input}
+                Harga Internal / HPS Perusahaan
+                <FieldUnit prefix="Rp"><input
+                  style={inputBare}
                   type="number"
                   min="0"
                   placeholder="Harga acuan internal paket tender"
@@ -951,18 +983,18 @@ export function TenderEvaluationForm({
                       internalPrice: Number(e.target.value),
                     }))
                   }
-                />
+                /></FieldUnit>
               </label>
               <label>
-                Durasi Pekerjaan Ditawarkan (hari)
-                <input
-                  style={input}
+                Durasi Pekerjaan Ditawarkan
+                <FieldUnit suffix="hari"><input
+                  style={inputBare}
                   type="number"
                   min="1"
                   placeholder="Misal: 90"
                   value={data.durationDays ?? ""}
                   onChange={(e) => set("durationDays", Number(e.target.value))}
-                />
+                /></FieldUnit>
               </label>
               <div style={metric}>
                 <small>Deviasi Penawaran terhadap Harga Internal</small>
@@ -984,7 +1016,7 @@ export function TenderEvaluationForm({
             <div
               style={{
                 padding: 12,
-                background: "#edf5ff",
+                background: "#fff7ed", border: "1px solid #fed7aa",
                 borderRadius: 10,
                 fontSize: 12,
                 marginTop: 12,
@@ -1184,9 +1216,9 @@ export function TenderEvaluationForm({
             <h2>E. Manpower & Pemberdayaan Lokal</h2>
             <div style={grid}>
               <label>
-                Kebutuhan Minimum Manpower (orang)
-                <input
-                  style={input}
+                Kebutuhan Minimum Manpower
+                <FieldUnit suffix="orang"><input
+                  style={inputBare}
                   type="number"
                   min="0"
                   value={config.manpowerRequirement ?? ""}
@@ -1196,41 +1228,41 @@ export function TenderEvaluationForm({
                       manpowerRequirement: Number(e.target.value),
                     }))
                   }
-                />
+                /></FieldUnit>
               </label>
               <label>
-                Manpower Ditawarkan (orang)
-                <input
-                  style={input}
+                Manpower Ditawarkan
+                <FieldUnit suffix="orang"><input
+                  style={inputBare}
                   type="number"
                   min="0"
                   value={data.manpowerOffered ?? ""}
                   onChange={(e) =>
                     set("manpowerOffered", Number(e.target.value))
                   }
-                />
+                /></FieldUnit>
               </label>
               <label>
-                Tenaga Kerja Lokal (orang)
-                <input
-                  style={input}
+                Tenaga Kerja Lokal
+                <FieldUnit suffix="orang"><input
+                  style={inputBare}
                   type="number"
                   min="0"
                   value={data.localWorkers ?? ""}
                   onChange={(e) => set("localWorkers", Number(e.target.value))}
-                />
+                /></FieldUnit>
               </label>
               <label>
-                Tenaga Kerja Nonlokal (orang)
-                <input
-                  style={input}
+                Tenaga Kerja Nonlokal
+                <FieldUnit suffix="orang"><input
+                  style={inputBare}
                   type="number"
                   min="0"
                   value={data.nonLocalWorkers ?? ""}
                   onChange={(e) =>
                     set("nonLocalWorkers", Number(e.target.value))
                   }
-                />
+                /></FieldUnit>
               </label>
             </div>
             <div style={{ ...grid, marginTop: 13 }}>
@@ -1252,7 +1284,7 @@ export function TenderEvaluationForm({
             <div
               style={{
                 padding: 12,
-                background: "#edf5ff",
+                background: "#fff7ed", border: "1px solid #fed7aa",
                 borderRadius: 10,
                 fontSize: 12,
                 marginTop: 12,
@@ -1279,9 +1311,9 @@ export function TenderEvaluationForm({
               <label>Referensi keputusan (opsional)<input style={input} value={config.decision?.reference || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reference:e.target.value}}))} placeholder="Nomor notulen / memo / persetujuan" /></label>
             </div>
             <label style={{display:"block",marginTop:12}}>Alasan dan dasar keputusan (opsional)<textarea style={{...input,minHeight:65}} value={config.decision?.reason || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reason:e.target.value}}))} placeholder="Disarankan diisi jika memilih vendor selain ranking 1" /></label>
-            <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${(leader.score ?? leader.provisionalScore ?? 0).toFixed(2)}/100${leader.score === null ? " (sementara)" : ""}` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
+            <div style={{padding:12,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${(leader.score ?? leader.provisionalScore ?? 0).toFixed(2)}/100${leader.score === null ? " (sementara)" : ""}` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
             <button style={primary} onClick={finalizeTender} disabled={saving}>{saving ? "Memfinalkan..." : "Finalkan & Tetapkan Pemenang"}</button>
-            {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Ranking 1 saat finalisasi: {config.finalDecision.objectiveWinner ? `${config.finalDecision.objectiveWinner} — ${Number(config.finalDecision.objectiveScore).toFixed(2)}/100` : "—"}<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
+            {config.finalDecision && <div style={{padding:12,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Ranking 1 saat finalisasi: {config.finalDecision.objectiveWinner ? `${config.finalDecision.objectiveWinner} — ${Number(config.finalDecision.objectiveScore).toFixed(2)}/100` : "—"}<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
           </section>}
         </main>
         </fieldset>
@@ -1333,6 +1365,11 @@ export function TenderEvaluationForm({
         </aside>
       </div>
       <style jsx>{`
+        label { display: flex; flex-direction: column; justify-content: flex-end; gap: 7px; font-size: 12px; font-weight: 700; color: #5b4636; }
+        h2 { font-size: 18px; font-weight: 800; margin: 0 0 6px; color: #2a1a0e; }
+        h3 { font-size: 15px; font-weight: 800; margin: 16px 0 8px; color: #2a1a0e; }
+        small { font-weight: 500; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #ea580c !important; box-shadow: 0 0 0 4px rgba(234,88,12,.16); }
         .presentation-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
         .presentation-value { font-weight:800; color:#f36b00; white-space:nowrap; }
         .rating-buttons { display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px; }
