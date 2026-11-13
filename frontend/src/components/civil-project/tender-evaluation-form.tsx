@@ -216,29 +216,40 @@ export function TenderEvaluationForm({
   const set = (k: keyof TenderEvaluationData, v: any) =>
     updateData((d) => ({ ...d, [k]: v }));
   const choose = (id: number) => setSelected(id);
+  // Data objektif (SPH, durasi, respons, manpower) memakai isian terbaru di
+  // draf, sehingga ranking/sidebar tidak "kosong" sebelum disimpan.
+  const mergeDraft = (v: { aggregateData?: any; data: any; vendorId: number }) => {
+    const base = v.aggregateData || v.data;
+    const draf = drafts[v.vendorId] as any;
+    if (!draf || !canSetWinner) return base;
+    const over: Record<string, unknown> = {};
+    for (const k of ["invitationDate", "responseDate", "response", "sphRounds", "finalSph", "durationDays", "manpowerOffered", "localWorkers", "nonLocalWorkers"])
+      if (draf[k] !== undefined) over[k] = draf[k];
+    return { ...base, ...over };
+  };
   const results = useMemo(() => {
     if (!report) return [];
     const participants = report.vendors.filter((v) => {
-      const draft = v.aggregateData || v.data;
+      const draft = mergeDraft(v);
       return draft.response !== "tidak";
     });
     const priceDurationReady = participants.length > 0 && participants.every((v) => {
-      const draft = v.aggregateData || v.data;
+      const draft = mergeDraft(v);
       return finalPrice(draft) !== null && Number(draft.durationDays) > 0;
     });
     const pool = participants.filter((v) => {
-      const draft = v.aggregateData || v.data;
+      const draft = mergeDraft(v);
       return finalPrice(draft) !== null && Number(draft.durationDays) > 0;
     });
     const minP = priceDurationReady && pool.length
-        ? Math.min(...pool.map((v) => finalPrice(v.aggregateData || v.data)!))
+        ? Math.min(...pool.map((v) => finalPrice(mergeDraft(v))!))
         : null,
       minD = priceDurationReady && pool.length
-        ? Math.min(...pool.map((v) => Number((v.aggregateData || v.data).durationDays)))
+        ? Math.min(...pool.map((v) => Number((mergeDraft(v)).durationDays)))
         : null;
     return report.vendors
       .map((v) => {
-        const d = v.aggregateData || v.data,
+        const d = mergeDraft(v),
           price = finalPrice(d),
           rounds = d.sphRounds || [],
           pres = questions.map(([k]) => {
@@ -484,12 +495,15 @@ export function TenderEvaluationForm({
               <small
                 style={{ display: "block", color: "#62748c", marginTop: 3 }}
               >
-                {finalPrice(v.vendorId === selected ? data : v.data) === null
+                {finalPrice(drafts[v.vendorId] ?? v.data) === null
                   ? "SPH belum sah"
                   : formatRupiah(
-                      finalPrice(v.vendorId === selected ? data : v.data)!,
+                      finalPrice(drafts[v.vendorId] ?? v.data)!,
                     )}
               </small>
+              {drafts[v.vendorId] && JSON.stringify(drafts[v.vendorId]) !== JSON.stringify(normalizeEvaluation(v.data)) && (
+                <small style={{ display: "block", color: "#a64b00", marginTop: 2, fontWeight: 700 }}>● Belum disimpan</small>
+              )}
             </button>
           ))}
         </aside>
