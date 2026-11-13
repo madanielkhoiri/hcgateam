@@ -363,7 +363,12 @@ export function TenderEvaluationForm({
     if (chosen.data.response === "tidak") return setError("Vendor yang tidak mengikuti tender tidak dapat ditetapkan sebagai pemenang.");
     if (finalPrice(chosen.data) === null || Number(chosen.data.durationDays) <= 0) return setError("Vendor terpilih wajib memiliki SPH sah dan durasi pekerjaan.");
     if (!String(decision.approver || "").trim()) return setError("Nama penetap / pemberi persetujuan wajib diisi.");
-    const nextConfig = { ...config, decision, finalDecision: { ...decision, vendorName: chosen.namaVendor, score: chosen.score, timestamp: new Date().toISOString() } };
+    const peserta = results.filter((r) => r.data.response !== "tidak");
+    if (!peserta.length || !peserta.every((r) => r.score !== null))
+      return setError("Finalisasi menunggu seluruh peserta yang ikut tender memiliki nilai lengkap C, D, Harga, dan Durasi. Dokumen upload tidak wajib.");
+    const top = results.find((r) => r.score !== null);
+    if (!confirm(`Finalkan ${chosen.namaVendor} melalui jalur ${decision.mode === "fair" ? "hasil evaluasi objektif" : "keputusan khusus manajemen"}?\nRanking objektif akan tetap disimpan.`)) return;
+    const nextConfig = { ...config, decision, finalDecision: { ...decision, vendorName: chosen.namaVendor, score: chosen.score, objectiveWinner: top?.namaVendor ?? null, objectiveScore: top?.score ?? null, timestamp: new Date().toISOString() } };
     setSaving(true); setError("");
     try {
       for (const row of report.vendors) {
@@ -555,6 +560,10 @@ export function TenderEvaluationForm({
                 </div>
               ))}
             </div>
+            <h3>Ranking Otomatis Vendor</h3>
+            <p style={{ color: "#62748c", fontSize: 12 }}>
+              Deviasi / Margin dibandingkan terhadap Harga Internal: (SPH sah − Harga Internal) / Harga Internal × 100%. Angka positif berarti di atas harga internal, angka negatif berarti di bawah harga internal. Nilai sementara dihitung dari aspek yang sudah lengkap, dengan bobot tersedia dinormalisasi ke 100. Nilai Harga dan Durasi baru masuk ketika seluruh peserta memiliki SPH final sah dan durasi. Ranking sementara dapat berubah.
+            </p>
             <div style={{ overflowX: "auto", marginTop: 12 }}>
               <table
                 style={{
@@ -609,7 +618,7 @@ export function TenderEvaluationForm({
                       <td>{r.price === null ? "—" : formatRupiah(r.price)}</td>
                       <td>
                         {r.price && Number(config.internalPrice) > 0
-                          ? <><b>{`${r.price > Number(config.internalPrice) ? "+" : ""}${(((r.price - Number(config.internalPrice)) / Number(config.internalPrice)) * 100).toFixed(2)}%`}</b><small style={{display:"block",color:"#62748c"}}>{`${r.price > Number(config.internalPrice) ? "+" : r.price < Number(config.internalPrice) ? "−" : ""}${formatRupiah(Math.abs(r.price - Number(config.internalPrice)))}`}</small></>
+                          ? <><b style={{ color: r.price > Number(config.internalPrice) ? "#a72c3b" : r.price < Number(config.internalPrice) ? "#166e43" : "#162b48" }}>{`${r.price > Number(config.internalPrice) ? "+" : ""}${(((r.price - Number(config.internalPrice)) / Number(config.internalPrice)) * 100).toFixed(2)}%`}</b><small style={{display:"block",color:"#62748c"}}>{`${r.price > Number(config.internalPrice) ? "+" : r.price < Number(config.internalPrice) ? "−" : ""}${formatRupiah(Math.abs(r.price - Number(config.internalPrice)))}`}</small></>
                           : "—"}
                       </td>
                       <td>{r.data.durationDays ? `${r.data.durationDays} hari` : "—"}</td>
@@ -633,6 +642,9 @@ export function TenderEvaluationForm({
                 </tbody>
               </table>
             </div>
+            <p style={{ color: "#62748c", fontSize: 12 }}>
+              Angka dengan tanda * = peringkat sementara (bukan ranking final). Nilai sementara belum mencakup seluruh bobot evaluasi.
+            </p>
             <div
               style={{
                 padding: 12,
@@ -643,7 +655,7 @@ export function TenderEvaluationForm({
                 marginTop: 12,
               }}
             >
-              Nilai C (dokumen) dan D (presentasi) menggunakan rata-rata angka 1–10; upload bukti dokumen C opsional untuk perhitungan skor. Harga dan durasi baru dinilai setelah seluruh vendor peserta mengisi SPH final sah dan durasi. Ranking sementara ditampilkan dari nilai yang sudah tersedia; ranking lengkap muncul setelah seluruh aspek C, D, Harga, dan Durasi lengkap. Upload bukti C tidak menghalangi ranking. Ranking tidak menetapkan pemenang secara otomatis.
+              Nilai C (dokumen) dan D (presentasi) menggunakan rata-rata angka 1–10; upload bukti dokumen C opsional untuk perhitungan skor. Harga dan durasi baru dinilai setelah seluruh vendor peserta mengisi SPH final sah dan durasi. Ranking sementara ditampilkan dari nilai yang sudah tersedia; ranking lengkap muncul setelah seluruh aspek C, D, Harga, dan Durasi lengkap. Upload bukti C tidak menghalangi ranking. Ranking tidak menetapkan pemenang secara otomatis. Bobot usulan harus disetujui sebelum evaluasi.
             </div>
             <h3>Rincian nilai vendor terpilih</h3>
             <div style={{ overflowX: "auto" }}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr><th>Aspek</th><th>Bobot</th><th>Skor / 100</th><th>Kontribusi</th></tr></thead><tbody>{weights.map(([key, weight]) => { const value=current?.parts[key]; return <tr key={key}><td>{key}</td><td>{weight}%</td><td>{value == null ? "Menunggu" : (value*100).toFixed(2)}</td><td>{value == null ? "—" : `${(value*weight).toFixed(2)} poin`}</td></tr> })}</tbody></table></div>
@@ -962,6 +974,11 @@ export function TenderEvaluationForm({
                     ? `${(((validPrice - Number(config.internalPrice)) / Number(config.internalPrice)) * 100).toFixed(2)}%`
                     : "—"}
                 </strong>
+                <small style={{ display: "block" }}>
+                  {validPrice !== null && Number(config.internalPrice) > 0
+                    ? `Selisih harga: ${validPrice - Number(config.internalPrice) > 0 ? "+" : validPrice - Number(config.internalPrice) < 0 ? "−" : ""}${formatRupiah(Math.abs(validPrice - Number(config.internalPrice)))}`
+                    : "Selisih harga: —"}
+                </small>
                 <small>
                   (SPH final − Harga internal) / Harga internal × 100%
                 </small>
@@ -1102,7 +1119,20 @@ export function TenderEvaluationForm({
                 </div>
               );
             })}
-            <div style={metric}><small>Rata-rata Bagian C</small><strong style={{display:"block",fontSize:18}}>{gateNames.every(([id]) => Number((data as any)[`${id}Score`]) >= 1 && Number((data as any)[`${id}Score`]) <= 10) ? (gateNames.reduce((sum,[id])=>sum+Number((data as any)[`${id}Score`]),0)/gateNames.length).toFixed(2) : "Belum lengkap"}</strong></div>
+            {(() => {
+              const nilai = gateNames.map(([id]) => Number((data as any)[`${id}Score`])).filter((x) => Number.isInteger(x) && x >= 1 && x <= 10);
+              const avg = nilai.length ? nilai.reduce((a, b) => a + b, 0) / nilai.length : null;
+              const unggah = gateNames.filter(([id]) => (id === "admin" ? vendor?.evaluasi?.dokumenAdminFiles : vendor?.evaluasi?.dokumenHseFiles)?.length).length;
+              return (
+                <div style={{ ...metric, margin: "12px 0" }}>
+                  <small>Rata-rata nilai Bagian C</small>
+                  <strong style={{ display: "block", fontSize: 24 }}>{avg === null ? "—" : avg.toFixed(2)} / 10</strong>
+                  <div style={{ fontSize: 12, color: "#62748c" }}>
+                    {nilai.length} dari {gateNames.length} indikator dinilai • {unggah} dokumen pendukung telah diunggah • {nilai.length === gateNames.length && avg !== null ? `Setara ${(avg * 10).toFixed(1)}/100` : "Nilai sementara; lengkapi kedua indikator."} Upload bukti tidak memengaruhi perhitungan ranking. Nilai di bawah 7/10 ditandai untuk ditinjau.
+                  </div>
+                </div>
+              );
+            })()}
           </section>
           <section id="eval-D" style={box}>
             <h2>D. Presentasi & Pemahaman Vendor</h2>
@@ -1123,7 +1153,19 @@ export function TenderEvaluationForm({
                 <div className="rating-buttons">{Array.from({length:10},(_,i)=>i+1).map((score)=><button key={score} type="button" className={`rating-btn ${Number((data.presentation as any)?.[id]) === score ? "rating-active" : ""}`} onClick={()=>set("presentation",{...data.presentation,[id]:score})}>{score}</button>)}</div>
               </div>
             ))}
-            <div style={metric}><small>Rata-rata Bagian D</small><strong style={{display:"block",fontSize:18}}>{questions.every(([id]) => Number((data.presentation as any)?.[id]) >= 1 && Number((data.presentation as any)?.[id]) <= 10) ? (questions.reduce((sum,[id])=>sum+Number((data.presentation as any)?.[id]),0)/questions.length).toFixed(2) : "Belum lengkap"}</strong></div>
+            {(() => {
+              const nilai = questions.map(([id]) => Number((data.presentation as any)?.[id])).filter((x) => Number.isInteger(x) && x >= 1 && x <= 10);
+              const avg = nilai.length ? nilai.reduce((a, b) => a + b, 0) / nilai.length : null;
+              return (
+                <div style={{ ...metric, margin: "12px 0" }}>
+                  <small>Rata-rata nilai Bagian D</small>
+                  <strong style={{ display: "block", fontSize: 24 }}>{avg === null ? "—" : avg.toFixed(2)} / 10</strong>
+                  <div style={{ fontSize: 12, color: "#62748c" }}>
+                    {nilai.length} dari {questions.length} indikator dinilai • {nilai.length === questions.length && avg !== null ? `Skor Presentasi: ${(avg * 10).toFixed(1)}/100` : "Nilai rata-rata sementara; skor ranking menunggu semua indikator diisi."}
+                  </div>
+                </div>
+              );
+            })()}
             <label>
               Catatan Evaluasi Presentasi
               <textarea
@@ -1220,6 +1262,9 @@ export function TenderEvaluationForm({
                     : `Manpower ditawarkan ${off} orang, kurang dari kebutuhan ${config.manpowerRequirement} orang.`
                   : "Lengkapi kebutuhan dan penawaran manpower."}
             </div>
+            <p style={{ color: "#62748c", fontSize: 12 }}>
+              Persentase lokal ditampilkan sebagai informasi terukur. Jika ingin diberi bobot dalam ranking, kebijakan definisi dan target lokal harus ditetapkan sejak awal tender dan sesuai ketentuan yang berlaku.
+            </p>
           </section>
           {canSetWinner && <section id="eval-finalisasi" style={box}>
             <h2>Finalisasi Tender & Keputusan Manajemen</h2>
@@ -1232,7 +1277,7 @@ export function TenderEvaluationForm({
             <label style={{display:"block",marginTop:12}}>Alasan dan dasar keputusan (opsional)<textarea style={{...input,minHeight:65}} value={config.decision?.reason || ""} onChange={(e)=>setConfig((c)=>({...c,decision:{...(c.decision||{}),mode:c.decision?.mode||"fair",reason:e.target.value}}))} placeholder="Disarankan diisi jika memilih vendor selain ranking 1" /></label>
             <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,margin:"12px 0"}}><b>Ranking objektif:</b> {leader ? `${leader.namaVendor} — ${(leader.score ?? leader.provisionalScore ?? 0).toFixed(2)}/100${leader.score === null ? " (sementara)" : ""}` : "Belum lengkap"}<br/><b>Kelengkapan:</b> {results.filter((r)=>r.data.response!=="tidak").every((r)=>r.score!==null) ? "Seluruh peserta telah dinilai lengkap." : "Belum semua peserta memiliki nilai final."}</div>
             <button style={primary} onClick={finalizeTender} disabled={saving}>{saving ? "Memfinalkan..." : "Finalkan & Tetapkan Pemenang"}</button>
-            {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
+            {config.finalDecision && <div style={{padding:12,background:"#edf5ff",borderRadius:10,fontSize:12,marginTop:14}}><b>Keputusan telah difinalkan dan pemenang telah ditetapkan pada tender</b><br/>Status: {config.finalDecision.mode === "fair" ? "Final – Sesuai Evaluasi" : "Final – Keputusan Manajemen"}<br/>Vendor: <b>{config.finalDecision.vendorName}</b><br/>Skor objektif: {config.finalDecision.score?.toFixed?.(2) ?? config.finalDecision.score ?? "Belum lengkap"}/100<br/>Ranking 1 saat finalisasi: {config.finalDecision.objectiveWinner ? `${config.finalDecision.objectiveWinner} — ${Number(config.finalDecision.objectiveScore).toFixed(2)}/100` : "—"}<br/>Disetujui oleh: {config.finalDecision.approver}<br/>Waktu: {new Date(config.finalDecision.timestamp).toLocaleString("id-ID")}<br/>Alasan: {config.finalDecision.reason || "Mengikuti hasil evaluasi objektif"}<br/>Referensi: {config.finalDecision.reference || "—"}</div>}
           </section>}
         </main>
         </fieldset>
