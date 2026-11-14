@@ -183,6 +183,18 @@
   cursor: move;
   border: 1px dashed #ef7100;
   user-select: none;
+  /* Tanpa ini browser mobile menganggap geseran sebagai scroll halaman dan
+     membatalkan pointer, sehingga tanda tangan tidak bisa digeser. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+@media (pointer: coarse) {
+  .signatureOverlay button {
+    right: -17px;
+    bottom: -17px;
+    width: 34px;
+    height: 34px;
+  }
 }
 .signatureOverlayActive {
   z-index: 3;

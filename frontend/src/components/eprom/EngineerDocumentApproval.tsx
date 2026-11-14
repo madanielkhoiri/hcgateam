@@ -445,6 +445,9 @@ export function EngineerDocumentApproval({
     );
     if (!placement || !surfaceRef.current) return;
     if (event.button !== 0) return;
+    // Di layar sentuh, menyentuh PDF (untuk scroll/zoom) tidak boleh memindahkan
+    // tanda tangan. Di HP tanda tangan dipindah dengan menggesernya langsung.
+    if (event.pointerType !== "mouse") return;
 
     const rect = surfaceRef.current.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
