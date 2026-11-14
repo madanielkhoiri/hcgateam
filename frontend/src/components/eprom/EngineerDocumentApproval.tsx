@@ -321,6 +321,41 @@ export function EngineerDocumentApproval({
     setSelectedPlacementId(tambahan[page - 1]?.id ?? null);
   }
 
+  // Menyamakan posisi dan ukuran tanda tangan terpilih ke seluruh halaman:
+  // halaman yang sudah punya tanda tangan yang sama dipindah ke posisi acuan,
+  // halaman yang belum punya ditambahkan. Berguna untuk berkas yang tanda
+  // tangannya selalu di tempat yang sama pada setiap halaman.
+  function samakanPosisiSemuaHalaman() {
+    const acuan = placements.find((item) => item.id === selectedPlacementId);
+    if (!acuan || pageCount < 1) return;
+
+    setPlacements((current) => {
+      const hasil = current.map((item) =>
+        item.signatureFile === acuan.signatureFile
+          ? { ...item, x: acuan.x, y: acuan.y, width: acuan.width, height: acuan.height }
+          : item,
+      );
+      const halamanAda = new Set(
+        hasil
+          .filter((item) => item.signatureFile === acuan.signatureFile)
+          .map((item) => item.page),
+      );
+      for (let halaman = 1; halaman <= pageCount; halaman += 1) {
+        if (halamanAda.has(halaman)) continue;
+        hasil.push({
+          id: idPlacement(),
+          signatureFile: acuan.signatureFile,
+          page: halaman,
+          x: acuan.x,
+          y: acuan.y,
+          width: acuan.width,
+          height: acuan.height,
+        });
+      }
+      return hasil;
+    });
+  }
+
   function bukaHalaman(target: number) {
     const halaman = Math.max(1, Math.min(pageCount || 1, target));
     setPage(halaman);
@@ -918,6 +953,15 @@ export function EngineerDocumentApproval({
               disabled={!selectedPlacement || placements.length < 2}
             >
               Samakan Ukuran Semua
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={samakanPosisiSemuaHalaman}
+              disabled={!selectedPlacement || !pageCount}
+              title="Salin posisi dan ukuran tanda tangan terpilih ke semua halaman (menambah di halaman yang belum ada)"
+            >
+              Samakan Posisi Semua Halaman
             </button>
             <button
               type="button"
