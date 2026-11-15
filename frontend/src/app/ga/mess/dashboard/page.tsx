@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CalendarRange } from 'lucide-react';
 import { getStoredUser } from '@/lib/access-control';
 import { messApi, type MessTrend } from '@/lib/mess-monitoring-api';
 import MultiLineChart from '@/components/dashboard-charts/multi-line-chart';
@@ -18,13 +19,13 @@ type DashboardData = {
   shifts: { PAGI: number; MALAM: number; CUTI: number };
 };
 
-type Periode = '7' | '14' | '30' | 'BULAN';
+type Periode = '7' | '14' | '30' | 'BULAN' | 'CUSTOM';
 const PERIODE: Array<[Periode, string]> = [['7', '7 hari'], ['14', '14 hari'], ['30', '30 hari'], ['BULAN', 'Bulan ini']];
 
 function dayWita(offsetDays = 0) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + offsetDays * 86_400_000));
 }
-function rentang(periode: Periode): [string, string] {
+function rentang(periode: Exclude<Periode, 'CUSTOM'>): [string, string] {
   const to = dayWita();
   if (periode === 'BULAN') return [`${to.slice(0, 8)}01`, to];
   return [dayWita(-(Number(periode) - 1)), to];
@@ -45,12 +46,28 @@ export default function Dashboard() {
   const [trendError, setTrendError] = useState('');
   const [trendLoading, setTrendLoading] = useState(false);
 
-  const loadTrend = useCallback(async (p: Periode) => {
+  const [dari, setDari] = useState(dayWita(-6));
+  const [sampai, setSampai] = useState(dayWita());
+
+  const loadTrend = useCallback(async (from: string, to: string) => {
     setTrendLoading(true); setTrendError('');
-    try { const [from, to] = rentang(p); setTrend(await messApi.trend(from, to)); }
+    try { setTrend(await messApi.trend(from, to)); }
     catch (caught) { setTrendError(caught instanceof Error ? caught.message : 'Gagal memuat grafik'); }
     finally { setTrendLoading(false); }
   }, []);
+
+  function pilihPeriode(p: Exclude<Periode, 'CUSTOM'>) {
+    const [from, to] = rentang(p);
+    setPeriode(p); setDari(from); setSampai(to);
+    void loadTrend(from, to);
+  }
+
+  function terapkanTanggal() {
+    if (!dari || !sampai) { setTrendError('Isi tanggal Dari dan Sampai.'); return; }
+    if (sampai < dari) { setTrendError('Tanggal Sampai tidak boleh sebelum tanggal Dari.'); return; }
+    setPeriode('CUSTOM');
+    void loadTrend(dari, sampai);
+  }
 
   useEffect(() => {
     if (getStoredUser()?.role === 'HOUSE_MAN') {
@@ -58,7 +75,7 @@ export default function Dashboard() {
       return;
     }
     messApi.dashboard().then(setData).catch((caught) => setError(caught.message));
-    void loadTrend('7');
+    void loadTrend(dayWita(-6), dayWita());
   }, [router, loadTrend]);
 
   const ringkas = useMemo(() => {
@@ -103,9 +120,17 @@ export default function Dashboard() {
     <div className={ds.sectionHead}>
       <div><h2 className={ds.sectionTitle}>Rekap Kebersihan</h2><p>{trend ? `${labelTanggal(trend.from)} – ${labelTanggal(trend.to)} (${trend.days} hari) · status akhir kamar per hari` : 'Memuat...'}</p></div>
       <div className={ds.periode}>
-        {PERIODE.map(([value, label]) => <button key={value} className={periode === value ? ds.periodeOn : ''} disabled={trendLoading} onClick={() => { setPeriode(value); void loadTrend(value); }}>{label}</button>)}
+        {PERIODE.map(([value, label]) => <button key={value} className={periode === value ? ds.periodeOn : ''} disabled={trendLoading} onClick={() => pilihPeriode(value as Exclude<Periode, 'CUSTOM'>)}>{label}</button>)}
       </div>
     </div>
+    <form className={`${ds.dateFilter} ${periode === 'CUSTOM' ? ds.dateFilterOn : ''}`} onSubmit={(e) => { e.preventDefault(); terapkanTanggal(); }}>
+      <div className={ds.dateLabel}><CalendarRange size={18} aria-hidden /><span>Pilih Tanggal</span></div>
+      <label><span>Dari</span><input type="date" value={dari} max={sampai || undefined} onChange={(e) => setDari(e.target.value)} required /></label>
+      <span className={ds.dateArrow} aria-hidden>→</span>
+      <label><span>Sampai</span><input type="date" value={sampai} min={dari || undefined} max={dayWita()} onChange={(e) => setSampai(e.target.value)} required /></label>
+      <button type="submit" disabled={trendLoading}>{trendLoading ? 'Memuat...' : 'Tampilkan'}</button>
+      <small>Maksimal 93 hari</small>
+    </form>
     {trendError && <div className={styles.error}>{trendError}</div>}
 
     <section className={ds.periodCards}>

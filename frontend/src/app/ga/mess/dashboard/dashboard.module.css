@@ -6,6 +6,19 @@
 .periode button{border:1px solid #cfdae7;background:#fff;color:#405675;border-radius:99px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .periode button:disabled{opacity:.6;cursor:wait}
 .periode .periodeOn{background:#0f766e;border-color:#0f766e;color:#fff}
+.dateFilter{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:14px 16px;background:#fff;border:1px solid #d9e4ef;border-radius:14px;box-shadow:0 8px 25px rgba(16,36,74,.04);transition:border-color .15s,box-shadow .15s}
+.dateFilterOn{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.1)}
+.dateLabel{display:flex;align-items:center;gap:8px;align-self:center;padding-right:16px;margin-right:2px;border-right:1px solid #e2eaf3;color:#0f766e;font-weight:800;font-size:13px}
+.dateFilter label{display:grid;gap:5px}
+.dateFilter label span{color:#536880;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.dateFilter input{height:42px;min-width:160px;border:1.5px solid #d3dfeb;border-radius:10px;background:#f7fafc;padding:0 12px;color:#10244a;font:inherit;font-size:13px;font-weight:700;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
+.dateFilter input:focus{border-color:#0f766e;background:#fff;box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+.dateArrow{align-self:center;margin-top:18px;color:#94a3b8;font-weight:800}
+.dateFilter button{height:42px;border:0;border-radius:10px;background:linear-gradient(135deg,#0f766e,#14a093);color:#fff;padding:0 20px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(15,118,110,.22)}
+.dateFilter button:hover{filter:brightness(1.05)}
+.dateFilter button:disabled{opacity:.6;cursor:wait}
+.dateFilter small{align-self:center;margin-top:18px;color:#8597ad;font-size:11px}
+@media(max-width:640px){.dateLabel{width:100%;border-right:0;padding:0}.dateFilter label{flex:1 1 140px}.dateFilter input{min-width:0;width:100%}.dateArrow{display:none}.dateFilter button{width:100%}.dateFilter small{margin-top:0}}
 .periodCards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 .periodCards article{background:#fff;border:1px solid #d9e4ef;border-left:5px solid var(--c);border-radius:16px;padding:18px 20px;box-shadow:0 8px 25px rgba(16,36,74,.04)}
 .periodCards small{display:block;color:#71839b;font-weight:700;text-transform:uppercase;font-size:12px}
