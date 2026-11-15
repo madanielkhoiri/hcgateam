@@ -56,6 +56,33 @@ export class MessMonitoringService {
     return { totalRooms: rooms.length, done, skipped, pending: rooms.length - done - skipped, totalOccupants: Object.values(shifts).reduce((a, b) => a + b, 0), shifts };
   }
 
+  /** Rekap kebersihan per rentang tanggal (WITA, inklusif). Maksimal 93 hari per permintaan. */
+  async recap(actor: AktorPostingan, from?: string, to?: string) {
+    this.require(actor, VIEWERS);
+    const today = this.dayKey(new Date());
+    const valid = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    const toKey = valid(to) ?? today;
+    const fromKey = valid(from) ?? toKey;
+    const start = new Date(`${fromKey}T00:00:00+08:00`);
+    const end = new Date(`${toKey}T00:00:00+08:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) throw new BadRequestException('Format tanggal tidak valid');
+    if (end < start) throw new BadRequestException('Tanggal akhir tidak boleh sebelum tanggal awal');
+    const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+    if (days > 93) throw new BadRequestException('Rentang rekap maksimal 93 hari');
+    const endExclusive = new Date(end.getTime() + 86_400_000);
+    const [perBuilding, sessions] = await Promise.all([
+      this.prisma.messRoom.groupBy({ by: ['building'], _count: { _all: true } }),
+      this.prisma.messCleaningSession.findMany({
+        where: { startedAt: { gte: start, lt: endExclusive } },
+        include: { room: { select: { id: true, building: true, number: true } }, houseMan: { select: { id: true, name: true, nrp: true } } },
+        orderBy: { startedAt: 'desc' },
+      }),
+    ]);
+    const roomsByBuilding = Object.fromEntries(perBuilding.map((row) => [row.building, row._count._all]));
+    const totalRooms = perBuilding.reduce((sum, row) => sum + row._count._all, 0);
+    return { from: fromKey, to: toKey, days, totalRooms, roomsByBuilding, sessions: sessions.map((s) => ({ ...s, day: this.dayKey(s.startedAt) })) };
+  }
+
   async createRoom(actor: AktorPostingan, dto: CreateMessRoomDto) {
     this.require(actor, ADMINS);
     const number = dto.number.trim();

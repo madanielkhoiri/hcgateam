@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Aktor, type AktorPostingan } from '../postingan/postingan-aktor';
 import { CreateMessRoomDto, MessOccupantDto, MessSkipCleaningDto, UpdateMessOccupantDto, UpdateMessRoomDto } from './dto/mess-monitoring.dto';
@@ -10,6 +10,7 @@ export class MessMonitoringController {
   constructor(private readonly service: MessMonitoringService) {}
   @Get('catalog') catalog() { return this.service.catalog(); }
   @Get('dashboard') dashboard(@Aktor() a: AktorPostingan) { return this.service.dashboard(a); }
+  @Get('recap') recap(@Aktor() a: AktorPostingan, @Query('from') from?: string, @Query('to') to?: string) { return this.service.recap(a, from, to); }
   @Get('rooms') rooms(@Aktor() a: AktorPostingan) { return this.service.list(a); }
   @Get('operations') operations(@Aktor() a: AktorPostingan) { return this.service.operations(a); }
   @Post('rooms') create(@Aktor() a: AktorPostingan, @Body() d: CreateMessRoomDto) { return this.service.createRoom(a, d); }

@@ -1,0 +1,16 @@
+.headActions{display:flex;gap:10px;flex-wrap:wrap}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.quick button{border:1px solid #cfdae7;background:#fff;color:#405675;border-radius:99px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.quick button:hover{border-color:#0f766e;color:#0f766e}
+.filters{grid-template-columns:repeat(2,minmax(140px,170px)) minmax(160px,1fr) minmax(160px,1fr) minmax(150px,1fr) minmax(200px,1.4fr) auto !important}
+.tabs{display:flex;gap:6px;margin:0 0 12px;border-bottom:1px solid #d9e4ef;overflow-x:auto}
+.tabs button{border:0;background:transparent;color:#536880;padding:10px 16px;font-weight:800;font-size:13px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button.active{color:#0f766e;border-bottom-color:#0f766e}
+.sub{display:block;color:#71839b;font-size:11px;margin-top:3px}
+.bar{display:flex;height:10px;min-width:140px;border-radius:99px;overflow:hidden;background:#fee2e2}
+.bar i{display:block;height:100%}
+.reason{color:#92400e;font-weight:700;max-width:260px;margin:0 auto}
+.export{border:1px solid #0f766e !important;background:#fff !important;color:#0f766e !important}
+.note{margin:-4px 3px 12px;color:#71839b;font-size:12px}
+@media(max-width:1100px){.filters{grid-template-columns:repeat(2,minmax(0,1fr)) !important}}
+@media(max-width:600px){.filters{grid-template-columns:1fr !important}}
