@@ -12,5 +12,29 @@
 .reason{color:#92400e;font-weight:700;max-width:260px;margin:0 auto}
 .export{border:1px solid #0f766e !important;background:#fff !important;color:#0f766e !important}
 .note{margin:-4px 3px 12px;color:#71839b;font-size:12px}
+.countBtn{border:0;cursor:pointer;min-width:42px;justify-content:center;font-family:inherit}
+.countBtn:hover{filter:brightness(.95);text-decoration:underline}
+.detailBtn{border:0;border-radius:9px;background:#0f766e;color:#fff;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer}
+.detailBtn:hover{background:#0b5e58}
+.detailModal{width:min(920px,100%);max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:18px;padding:22px;gap:12px;overflow:hidden}
+.detailHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.detailHead h2{margin:0;font-size:20px;color:#10244a}
+.detailHead p{margin:4px 0 0;color:#74869d;font-size:13px}
+.closeBtn{border:0;background:#eef3f8;color:#10244a;font-size:20px;line-height:1;padding:7px 12px;border-radius:10px;cursor:pointer}
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.choice button{display:flex;align-items:center;justify-content:space-between;gap:8px;border:2px solid transparent;border-radius:12px;padding:12px 14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;opacity:.7}
+.choice button b{font-size:18px}
+.choiceSudah{background:#dcfce7;color:#15803d}
+.choiceTidak{background:#fef3c7;color:#b45309}
+.choiceBelum{background:#fee2e2;color:#b91c1c}
+.choice .choiceOn{opacity:1;border-color:currentColor;box-shadow:0 4px 14px rgba(16,36,74,.08)}
+.detailSearch{height:40px;border:1px solid #cfdae7;border-radius:9px;padding:0 12px;font:inherit;font-size:13px;outline:none}
+.detailSearch:focus{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.1)}
+.detailTable{overflow:auto;border:1px solid #d9e4ef;border-radius:12px;min-height:120px;overscroll-behavior-y:contain}
+.detailTable table{border-collapse:collapse;width:100%}
+.detailTable th{position:sticky;top:0;padding:11px 12px;background:#eaf3f6;font-size:12px;color:#536880;text-align:center}
+.detailTable td{padding:11px 12px;border-top:1px solid #e5edf5;text-align:center;font-size:13px}
+.detailFoot{color:#71839b;font-size:12px;text-align:right}
+@media(max-width:600px){.choice{grid-template-columns:1fr}.detailModal{padding:16px}}
 @media(max-width:1100px){.filters{grid-template-columns:repeat(2,minmax(0,1fr)) !important}}
 @media(max-width:600px){.filters{grid-template-columns:1fr !important}}

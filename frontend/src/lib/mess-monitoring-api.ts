@@ -6,7 +6,7 @@ export type MessCleaning = { id:number; startedAt:string; finishedAt?:string|nul
 export type MessRoom = { id:number; building:string; number:string; occupants:MessOccupant[]; cleanliness:'BELUM'|'SUDAH'|'TIDAK_DIBERSIHKAN'; activeCleaning:MessCleaning|null; lastCleaning:MessCleaning|null };
 export type MessRoomCatalogBuilding = { value:string; label:string; floors:Array<{value:string;label:string;rooms:string[]}> };
 export type MessRecapSession = MessCleaning & { day:string; room:{id:number;building:string;number:string} };
-export type MessRecap = { from:string; to:string; days:number; totalRooms:number; roomsByBuilding:Record<string,number>; sessions:MessRecapSession[] };
+export type MessRecap = { from:string; to:string; days:number; totalRooms:number; roomsByBuilding:Record<string,number>; rooms:Array<{id:number;building:string;number:string}>; sessions:MessRecapSession[] };
 async function call<T>(path:string, init?:RequestInit):Promise<T>{ const res=await fetch(`${BASE}${path}`,{...init,headers:{'Content-Type':'application/json',Authorization:`Bearer ${getAccessToken()}`,...init?.headers},cache:'no-store'}); if(!res.ok){const x=await res.json().catch(()=>null);throw new Error(x?.message??'Permintaan gagal');} return res.json(); }
 export const messApi={
  dashboard:()=>call<any>('/dashboard'), recap:(from:string,to:string)=>call<MessRecap>(`/recap?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`), catalog:()=>call<MessRoomCatalogBuilding[]>('/catalog'), rooms:()=>call<MessRoom[]>('/rooms'), operations:()=>call<MessRoom[]>('/operations'),

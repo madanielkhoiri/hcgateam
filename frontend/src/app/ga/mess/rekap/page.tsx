@@ -30,10 +30,14 @@ function formatDuration(seconds?: number | null) {
   const h = Math.floor(seconds / 3600); const m = Math.floor((seconds % 3600) / 60); const s = Math.floor(seconds % 60);
   return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':');
 }
-function statusOf(session: MessRecapSession) {
+function statusOf(session: MessRecapSession): 'SUDAH' | 'TIDAK' | 'PROSES' {
   if (!session.finishedAt) return 'PROSES';
   return session.status === 'TIDAK_DIBERSIHKAN' ? 'TIDAK' : 'SUDAH';
 }
+type RoomRef = MessRecap['rooms'][number];
+type DayLists = { SUDAH: MessRecapSession[]; TIDAK: MessRecapSession[]; PROSES: MessRecapSession[]; BELUM: RoomRef[] };
+type DetailTab = 'SUDAH' | 'TIDAK' | 'BELUM';
+const roomSort = (a: RoomRef, b: RoomRef) => a.building.localeCompare(b.building) || a.number.localeCompare(b.number, 'id', { numeric: true });
 const STATUS_LABEL: Record<string, string> = { SUDAH: 'Dibersihkan', TIDAK: 'Tidak Dibersihkan', PROSES: 'Sedang Dibersihkan' };
 
 function daysBetween(from: string, to: string) {
@@ -59,6 +63,8 @@ export default function RekapKebersihan() {
   const [petugas, setPetugas] = useState('ALL');
   const [status, setStatus] = useState('ALL');
   const [query, setQuery] = useState('');
+  const [detail, setDetail] = useState<{ day: string; tab: DetailTab } | null>(null);
+  const [detailQuery, setDetailQuery] = useState('');
 
   const load = useCallback(async (f: string, t: string) => {
     setLoading(true); setError('');
@@ -97,14 +103,16 @@ export default function RekapKebersihan() {
     return daysBetween(data.from, data.to).map((day) => {
       const latest = new Map<number, MessRecapSession>();
       scoped.filter((s) => s.day === day).forEach((s) => { if (!latest.has(s.room.id)) latest.set(s.room.id, s); }); // sudah urut terbaru dulu
-      let sudah = 0; let tidak = 0; let proses = 0; let totalDur = 0; let countDur = 0;
+      const lists: DayLists = { SUDAH: [], TIDAK: [], PROSES: [], BELUM: [] };
+      let totalDur = 0; let countDur = 0;
       latest.forEach((s) => {
         const st = statusOf(s);
-        if (st === 'SUDAH') { sudah++; if (s.durationSec != null) { totalDur += s.durationSec; countDur++; } }
-        else if (st === 'TIDAK') tidak++; else proses++;
+        lists[st].push(s);
+        if (st === 'SUDAH' && s.durationSec != null) { totalDur += s.durationSec; countDur++; }
       });
+      lists.BELUM = data.rooms.filter((room) => (building === 'ALL' || room.building === building) && !latest.has(room.id));
       const petugasHari = new Set(scoped.filter((s) => s.day === day).map((s) => s.houseMan.id)).size;
-      return { day, sudah, tidak, proses, belum: Math.max(0, (building === 'ALL' ? data.totalRooms : data.roomsByBuilding[building] ?? 0) - latest.size), rataRata: countDur ? Math.round(totalDur / countDur) : null, petugas: petugasHari };
+      return { day, lists, sudah: lists.SUDAH.length, tidak: lists.TIDAK.length, proses: lists.PROSES.length, belum: lists.BELUM.length, rataRata: countDur ? Math.round(totalDur / countDur) : null, petugas: petugasHari };
     });
   }, [data, sessions, building]);
 
@@ -121,22 +129,23 @@ export default function RekapKebersihan() {
     return [...map.values()].sort((a, b) => b.sudah - a.sudah);
   }, [filtered]);
 
+  // Kartu Dibersihkan / Tidak Dibersihkan = jumlah dari tabel Per Hari (status akhir kamar per hari), supaya angkanya sama dengan tabel.
   const totals = useMemo(() => {
     const sudah = filtered.filter((s) => statusOf(s) === 'SUDAH');
     const durs = sudah.map((s) => s.durationSec).filter((v): v is number => v != null);
     return {
-      sudah: sudah.length,
-      tidak: filtered.filter((s) => statusOf(s) === 'TIDAK').length,
+      sudah: harian.reduce((sum, h) => sum + h.sudah, 0),
+      tidak: harian.reduce((sum, h) => sum + h.tidak, 0),
       rata: durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length) : null,
       petugas: new Set(filtered.map((s) => s.houseMan.id)).size,
     };
-  }, [filtered]);
+  }, [filtered, harian]);
 
   function exportExcel() {
     if (!data) return;
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(harian.map((h) => ({
-      Tanggal: formatDay(h.day), 'Dibersihkan': h.sudah, 'Tidak Dibersihkan': h.tidak, 'Belum Disentuh': h.belum, 'Sedang Proses': h.proses, 'Rata-rata Durasi': formatDuration(h.rataRata), 'Jumlah Petugas': h.petugas,
+      Tanggal: formatDay(h.day), 'Dibersihkan': h.sudah, 'Tidak Dibersihkan': h.tidak, 'Belum Dibersihkan': h.belum, 'Sedang Proses': h.proses, 'Rata-rata Durasi': formatDuration(h.rataRata), 'Jumlah Petugas': h.petugas,
     }))), 'Per Hari');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map((s, i) => ({
       No: i + 1, Tanggal: formatDay(s.day), Gedung: buildingLabel(s.room.building), Kamar: s.room.number, Petugas: s.houseMan.name, Status: STATUS_LABEL[statusOf(s)],
@@ -197,17 +206,19 @@ export default function RekapKebersihan() {
 
     {tab === 'harian' && <section className={styles.tableWrap}>
       <table>
-        <thead><tr><th>Tanggal</th><th>Dibersihkan</th><th>Tidak Dibersihkan</th><th>Belum Disentuh</th><th>Progres</th><th>Rata-rata Durasi</th><th>Petugas</th></tr></thead>
+        <thead><tr><th>Tanggal</th><th>Dibersihkan</th><th>Tidak Dibersihkan</th><th>Belum Dibersihkan</th><th>Progres</th><th>Rata-rata Durasi</th><th>Petugas</th><th>Aksi</th></tr></thead>
         <tbody>{harian.map((h) => {
           const total = Math.max(1, h.sudah + h.tidak + h.belum + h.proses);
+          const buka = (t: DetailTab) => { setDetailQuery(''); setDetail({ day: h.day, tab: t }); };
           return <tr key={h.day}>
             <td><b>{formatDay(h.day)}</b></td>
-            <td><span className={styles.done}>{h.sudah}</span></td>
-            <td><span className={styles.skipped}>{h.tidak}</span></td>
-            <td><span className={styles.pending}>{h.belum}</span>{h.proses > 0 && <small className={rk.sub}>{h.proses} sedang proses</small>}</td>
+            <td><button className={`${styles.done} ${rk.countBtn}`} onClick={() => buka('SUDAH')} title="Lihat kamar yang dibersihkan">{h.sudah}</button></td>
+            <td><button className={`${styles.skipped} ${rk.countBtn}`} onClick={() => buka('TIDAK')} title="Lihat kamar yang tidak dibersihkan">{h.tidak}</button></td>
+            <td><button className={`${styles.pending} ${rk.countBtn}`} onClick={() => buka('BELUM')} title="Lihat kamar yang belum dibersihkan">{h.belum + h.proses}</button>{h.proses > 0 && <small className={rk.sub}>termasuk {h.proses} sedang proses</small>}</td>
             <td><div className={rk.bar} title={`${Math.round(h.sudah / total * 100)}% dibersihkan`}><i style={{ width: `${h.sudah / total * 100}%`, background: '#16a34a' }} /><i style={{ width: `${h.tidak / total * 100}%`, background: '#f59e0b' }} /><i style={{ width: `${h.proses / total * 100}%`, background: '#3b82f6' }} /></div><small className={rk.sub}>{Math.round(h.sudah / total * 100)}% dibersihkan</small></td>
             <td>{formatDuration(h.rataRata)}</td>
             <td>{h.petugas}</td>
+            <td><button className={rk.detailBtn} onClick={() => buka('SUDAH')}>Detail</button></td>
           </tr>;
         })}</tbody>
       </table>
@@ -251,6 +262,58 @@ export default function RekapKebersihan() {
       </table>
       {!perPetugas.length && <div className={styles.empty}>{loading ? 'Memuat rekap...' : 'Belum ada data petugas pada periode ini.'}</div>}
     </section>}
+
+    {detail && (() => {
+      const h = harian.find((item) => item.day === detail.day);
+      if (!h) return null;
+      const q = detailQuery.trim().toLowerCase();
+      const cocok = (room: RoomRef, extra = '') => !q || `${buildingLabel(room.building)} ${room.number} ${extra}`.toLowerCase().includes(q);
+      const sesi = (detail.tab === 'SUDAH' ? h.lists.SUDAH : h.lists.TIDAK)
+        .filter((s) => cocok(s.room, `${s.houseMan.name} ${s.alasan ?? ''}`))
+        .sort((a, b) => roomSort(a.room, b.room));
+      const belum = [
+        ...h.lists.PROSES.map((s): { room: RoomRef; proses?: MessRecapSession } => ({ room: s.room, proses: s })),
+        ...h.lists.BELUM.map((room): { room: RoomRef; proses?: MessRecapSession } => ({ room })),
+      ].filter((item) => cocok(item.room, item.proses?.houseMan.name)).sort((a, b) => roomSort(a.room, b.room));
+      const jumlah = detail.tab === 'BELUM' ? belum.length : sesi.length;
+      return <div className={styles.modalBackdrop} onClick={() => setDetail(null)}>
+        <div className={rk.detailModal} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Detail kamar">
+          <div className={rk.detailHead}>
+            <div><h2>Detail Kamar</h2><p>{formatDay(h.day)}{building !== 'ALL' && ` · ${buildingLabel(building)}`}</p></div>
+            <button className={rk.closeBtn} onClick={() => setDetail(null)} aria-label="Tutup">×</button>
+          </div>
+          <div className={rk.choice}>
+            <button className={`${rk.choiceSudah} ${detail.tab === 'SUDAH' ? rk.choiceOn : ''}`} onClick={() => setDetail({ ...detail, tab: 'SUDAH' })}>Dibersihkan <b>{h.sudah}</b></button>
+            <button className={`${rk.choiceTidak} ${detail.tab === 'TIDAK' ? rk.choiceOn : ''}`} onClick={() => setDetail({ ...detail, tab: 'TIDAK' })}>Tidak Dibersihkan <b>{h.tidak}</b></button>
+            <button className={`${rk.choiceBelum} ${detail.tab === 'BELUM' ? rk.choiceOn : ''}`} onClick={() => setDetail({ ...detail, tab: 'BELUM' })}>Belum Dibersihkan <b>{h.belum + h.proses}</b></button>
+          </div>
+          <input className={rk.detailSearch} value={detailQuery} onChange={(e) => setDetailQuery(e.target.value)} placeholder="Cari kamar, gedung, atau petugas..." />
+          <div className={rk.detailTable}>
+            <table>
+              {detail.tab === 'BELUM'
+                ? <>
+                  <thead><tr><th>No</th><th>Gedung</th><th>Kamar</th><th>Keterangan</th></tr></thead>
+                  <tbody>{belum.map((item, i) => <tr key={item.room.id}>
+                    <td>{i + 1}</td><td><b>{buildingLabel(item.room.building)}</b></td><td><b>Kamar {item.room.number}</b></td>
+                    <td>{item.proses ? <span className={styles.inProgress}>Sedang dibersihkan · {item.proses.houseMan.name} (mulai {formatTime(item.proses.startedAt)})</span> : <span className={styles.pending}>Belum dibersihkan</span>}</td>
+                  </tr>)}</tbody>
+                </>
+                : <>
+                  <thead><tr><th>No</th><th>Gedung</th><th>Kamar</th><th>Petugas</th>{detail.tab === 'SUDAH' ? <><th>Mulai</th><th>Selesai</th><th>Durasi</th></> : <><th>Dicatat</th><th>Alasan</th></>}</tr></thead>
+                  <tbody>{sesi.map((s, i) => <tr key={s.id}>
+                    <td>{i + 1}</td><td><b>{buildingLabel(s.room.building)}</b></td><td><b>Kamar {s.room.number}</b></td><td>{s.houseMan.name}</td>
+                    {detail.tab === 'SUDAH'
+                      ? <><td>{formatTime(s.startedAt)}</td><td>{formatTime(s.finishedAt)}</td><td>{formatDuration(s.durationSec)}</td></>
+                      : <><td>{formatTime(s.startedAt)}</td><td><div className={rk.reason}>{s.alasan || '-'}</div></td></>}
+                  </tr>)}</tbody>
+                </>}
+            </table>
+            {!jumlah && <div className={styles.empty}>Tidak ada kamar pada kategori ini.</div>}
+          </div>
+          <div className={rk.detailFoot}>{jumlah} kamar ditampilkan</div>
+        </div>
+      </div>;
+    })()}
   </>;
 }
 

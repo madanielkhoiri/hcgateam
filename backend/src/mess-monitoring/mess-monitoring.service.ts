@@ -70,17 +70,17 @@ export class MessMonitoringService {
     const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
     if (days > 93) throw new BadRequestException('Rentang rekap maksimal 93 hari');
     const endExclusive = new Date(end.getTime() + 86_400_000);
-    const [perBuilding, sessions] = await Promise.all([
-      this.prisma.messRoom.groupBy({ by: ['building'], _count: { _all: true } }),
+    const [rooms, sessions] = await Promise.all([
+      this.prisma.messRoom.findMany({ select: { id: true, building: true, number: true }, orderBy: [{ building: 'asc' }, { number: 'asc' }] }),
       this.prisma.messCleaningSession.findMany({
         where: { startedAt: { gte: start, lt: endExclusive } },
         include: { room: { select: { id: true, building: true, number: true } }, houseMan: { select: { id: true, name: true, nrp: true } } },
         orderBy: { startedAt: 'desc' },
       }),
     ]);
-    const roomsByBuilding = Object.fromEntries(perBuilding.map((row) => [row.building, row._count._all]));
-    const totalRooms = perBuilding.reduce((sum, row) => sum + row._count._all, 0);
-    return { from: fromKey, to: toKey, days, totalRooms, roomsByBuilding, sessions: sessions.map((s) => ({ ...s, day: this.dayKey(s.startedAt) })) };
+    const roomsByBuilding: Record<string, number> = {};
+    rooms.forEach((room) => { roomsByBuilding[room.building] = (roomsByBuilding[room.building] ?? 0) + 1; });
+    return { from: fromKey, to: toKey, days, totalRooms: rooms.length, roomsByBuilding, rooms, sessions: sessions.map((s) => ({ ...s, day: this.dayKey(s.startedAt) })) };
   }
 
   async createRoom(actor: AktorPostingan, dto: CreateMessRoomDto) {
