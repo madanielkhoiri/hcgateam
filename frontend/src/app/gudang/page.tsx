@@ -470,7 +470,7 @@ function GudangPageInner() {
           ))}
           <button
             type="button"
-            onClick={() => router.push('/gudang/peminjaman-alat')}
+            onClick={() => router.push('/ga/peminjaman-alat/monitoring')}
             className={styles.lineCard}
             style={{ cursor: 'pointer', textAlign: 'left', border: 'none', width: '100%' }}
           >
