@@ -314,9 +314,17 @@ html {
 /* Area yang bisa discroll sendiri (sidebar/modal/tabel): momentum iOS + tidak "bocor" ke halaman */
 [class*="sidebar"],
 [class*="modal"],
-[class*="drawer"],
+[class*="drawer"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Tabel: boleh digeser ke samping, tetapi scroll ke atas/bawah harus tetap
+   diteruskan ke halaman. "contain" di sumbu Y membuat halaman macet saat
+   kursor atau jari berada di atas tabel. */
 [class*="tableWrap"],
 [class*="tableWrapper"] {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
 }
