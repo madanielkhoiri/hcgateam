@@ -16,7 +16,14 @@
 .countBtn:hover{filter:brightness(.95);text-decoration:underline}
 .detailBtn{border:0;border-radius:9px;background:#0f766e;color:#fff;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer}
 .detailBtn:hover{background:#0b5e58}
-.detailModal{width:min(920px,100%);max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:18px;padding:22px;gap:12px;overflow:hidden}
+.detailBackdrop{position:fixed;inset:0;z-index:2000;background:rgba(15,35,65,.55);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.searchBox{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border:1.5px solid #d3dfeb;border-radius:12px;background:#f7fafc;color:#7b8ea6;transition:border-color .15s,box-shadow .15s,background .15s;cursor:text}
+.searchBox:focus-within{border-color:#0f766e;background:#fff;box-shadow:0 0 0 4px rgba(15,118,110,.12);color:#0f766e}
+.searchBox input{flex:1;min-width:0;height:100%;border:0;outline:none;background:transparent;font:inherit;font-size:14px;color:#10244a}
+.searchBox input::placeholder{color:#94a3b8}
+.searchBox button{display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:99px;background:#e2e8f0;color:#475569;cursor:pointer;flex-shrink:0}
+.searchBox button:hover{background:#cbd5e1}
+.detailModal{width:min(920px,100%);max-height:calc(100vh - 48px);box-shadow:0 24px 60px rgba(15,35,65,.3);display:flex;flex-direction:column;background:#fff;border-radius:18px;padding:22px;gap:12px;overflow:hidden}
 .detailHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .detailHead h2{margin:0;font-size:20px;color:#10244a}
 .detailHead p{margin:4px 0 0;color:#74869d;font-size:13px}
@@ -30,7 +37,8 @@
 .choice .choiceOn{opacity:1;border-color:currentColor;box-shadow:0 4px 14px rgba(16,36,74,.08)}
 .detailSearch{height:40px;border:1px solid #cfdae7;border-radius:9px;padding:0 12px;font:inherit;font-size:13px;outline:none}
 .detailSearch:focus{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.1)}
-.detailTable{overflow:auto;border:1px solid #d9e4ef;border-radius:12px;min-height:120px;overscroll-behavior-y:contain}
+.detailHead,.choice,.searchBox,.detailFoot{flex-shrink:0}
+.detailTable{flex:1 1 auto;overflow:auto;border:1px solid #d9e4ef;border-radius:12px;min-height:120px;overscroll-behavior-y:contain}
 .detailTable table{border-collapse:collapse;width:100%}
 .detailTable th{position:sticky;top:0;padding:11px 12px;background:#eaf3f6;font-size:12px;color:#536880;text-align:center}
 .detailTable td{padding:11px 12px;border-top:1px solid #e5edf5;text-align:center;font-size:13px}

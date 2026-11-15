@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { Search, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getStoredUser } from '@/lib/access-control';
 import { messApi, type MessRecap, type MessRecapSession } from '@/lib/mess-monitoring-api';
@@ -79,6 +81,16 @@ export default function RekapKebersihan() {
     void load(todayWita(-6), todayWita());
   }, [router, load]);
 
+  // Pop-up detail: tutup dengan Esc dan kunci scroll halaman di belakangnya.
+  useEffect(() => {
+    if (!detail) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDetail(null); };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [detail]);
+
   function pilihRentang(f: string, t: string) { setFrom(f); setTo(t); void load(f, t); }
 
   const sessions = useMemo(() => data?.sessions ?? [], [data]);
@@ -132,18 +144,72 @@ export default function RekapKebersihan() {
 
   function exportExcel() {
     if (!data) return;
+    const periode = `Periode: ${formatDay(data.from)} s/d ${formatDay(data.to)} (${data.days} hari)`;
+    const filterInfo = [
+      `Gedung: ${building === 'ALL' ? 'Semua' : buildingLabel(building)}`,
+      `Petugas: ${petugas === 'ALL' ? 'Semua' : daftarPetugas.find(([id]) => String(id) === petugas)?.[1] ?? '-'}`,
+      `Status: ${status === 'ALL' ? 'Semua' : STATUS_LABEL[status]}`,
+      query ? `Cari: "${query}"` : '',
+    ].filter(Boolean).join('   |   ');
+    const dicetak = `Diekspor: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Makassar', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WITA`;
+
+    /** Sheet rapi: judul, periode, filter, header dengan AutoFilter, lebar kolom, dan baris total (opsional). */
+    const buatSheet = (judul: string, headers: string[], rows: (string | number)[][], widths: number[], total?: (string | number)[]) => {
+      const aoa: (string | number)[][] = [
+        [`REKAP KEBERSIHAN KAMAR MESS — ${judul.toUpperCase()}`],
+        [periode],
+        [filterInfo],
+        [dicetak],
+        [],
+        headers,
+        ...rows,
+        ...(total ? [[], total] : []),
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const lastCol = headers.length - 1;
+      ws['!merges'] = [0, 1, 2, 3].map((r) => ({ s: { r, c: 0 }, e: { r, c: lastCol } }));
+      ws['!cols'] = widths.map((wch) => ({ wch }));
+      ws['!rows'] = [{ hpt: 24 }, { hpt: 16 }, { hpt: 16 }, { hpt: 16 }, { hpt: 8 }, { hpt: 22 }];
+      const headerRow = 5;
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: headerRow, c: 0 }, e: { r: headerRow + Math.max(rows.length, 1), c: lastCol } }) };
+      return ws;
+    };
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(harian.map((h) => ({
-      Tanggal: formatDay(h.day), 'Dibersihkan': h.sudah, 'Tidak Dibersihkan': h.tidak, 'Belum Dibersihkan': h.belum, 'Sedang Proses': h.proses, 'Rata-rata Durasi': formatDuration(h.rataRata), 'Jumlah Petugas': h.petugas,
-    }))), 'Per Hari');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.map((s, i) => ({
-      No: i + 1, Tanggal: formatDay(s.day), Gedung: buildingLabel(s.room.building), Kamar: s.room.number, Petugas: s.houseMan.name, Status: STATUS_LABEL[statusOf(s)],
-      Mulai: s.status === 'TIDAK_DIBERSIHKAN' ? '-' : formatTime(s.startedAt), Selesai: s.status === 'TIDAK_DIBERSIHKAN' ? '-' : formatTime(s.finishedAt),
-      Durasi: formatDuration(s.durationSec), Alasan: s.alasan ?? '',
-    }))), 'Detail');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(perPetugas.map((p, i) => ({
-      No: i + 1, Petugas: p.name, NRP: p.nrp ?? '', 'Hari Kerja': p.hari.size, 'Kamar Dibersihkan': p.sudah, 'Tidak Dibersihkan': p.tidak, 'Rata-rata Durasi': formatDuration(p.countDur ? Math.round(p.totalDur / p.countDur) : null),
-    }))), 'Per Petugas');
+    wb.Props = { Title: 'Rekap Kebersihan Kamar Mess', Subject: periode, Author: 'HCGA CONNECT' };
+
+    const sum = (key: 'sudah' | 'tidak' | 'belum' | 'proses') => harian.reduce((t, h) => t + h[key], 0);
+    XLSX.utils.book_append_sheet(wb, buatSheet('Per Hari',
+      ['No', 'Tanggal', 'Dibersihkan', 'Tidak Dibersihkan', 'Belum Dibersihkan', 'Sedang Proses', '% Dibersihkan', 'Rata-rata Durasi', 'Jumlah Petugas'],
+      harian.map((h, i) => {
+        const total = h.sudah + h.tidak + h.belum + h.proses;
+        return [i + 1, formatDay(h.day), h.sudah, h.tidak, h.belum, h.proses, total ? `${Math.round(h.sudah / total * 100)}%` : '0%', formatDuration(h.rataRata), h.petugas];
+      }),
+      [6, 22, 14, 18, 18, 15, 15, 17, 16],
+      ['', 'TOTAL', sum('sudah'), sum('tidak'), sum('belum'), sum('proses'), '', '', ''],
+    ), 'Per Hari');
+
+    XLSX.utils.book_append_sheet(wb, buatSheet('Detail Kamar',
+      ['No', 'Tanggal', 'Gedung', 'Kamar', 'Petugas', 'Status', 'Mulai', 'Selesai', 'Durasi', 'Alasan'],
+      filtered.map((s, i) => [
+        i + 1, formatDay(s.day), buildingLabel(s.room.building), `Kamar ${s.room.number}`, s.houseMan.name, STATUS_LABEL[statusOf(s)],
+        s.status === 'TIDAK_DIBERSIHKAN' ? '-' : formatTime(s.startedAt), s.status === 'TIDAK_DIBERSIHKAN' ? '-' : formatTime(s.finishedAt),
+        formatDuration(s.durationSec), s.alasan ?? '-',
+      ]),
+      [6, 22, 12, 14, 26, 20, 9, 9, 11, 40],
+      ['', 'TOTAL', '', `${filtered.length} catatan`, '', '', '', '', '', ''],
+    ), 'Detail Kamar');
+
+    XLSX.utils.book_append_sheet(wb, buatSheet('Per Petugas',
+      ['No', 'Petugas', 'NRP', 'Hari Kerja', 'Kamar Dibersihkan', 'Tidak Dibersihkan', 'Rata-rata / Hari', 'Rata-rata Durasi'],
+      perPetugas.map((p, i) => [
+        i + 1, p.name, p.nrp ?? '-', p.hari.size, p.sudah, p.tidak,
+        p.hari.size ? Number((p.sudah / p.hari.size).toFixed(1)) : 0, formatDuration(p.countDur ? Math.round(p.totalDur / p.countDur) : null),
+      ]),
+      [6, 28, 14, 12, 19, 19, 17, 17],
+      ['', 'TOTAL', '', '', perPetugas.reduce((t, p) => t + p.sudah, 0), perPetugas.reduce((t, p) => t + p.tidak, 0), '', ''],
+    ), 'Per Petugas');
+
     XLSX.writeFile(wb, `Rekap-Kebersihan-Mess_${data.from}_sd_${data.to}.xlsx`);
   }
 
@@ -257,7 +323,7 @@ export default function RekapKebersihan() {
         ...h.lists.BELUM.map((room): { room: RoomRef; proses?: MessRecapSession } => ({ room })),
       ].filter((item) => cocok(item.room, item.proses?.houseMan.name)).sort((a, b) => roomSort(a.room, b.room));
       const jumlah = detail.tab === 'BELUM' ? belum.length : sesi.length;
-      return <div className={styles.modalBackdrop} onClick={() => setDetail(null)}>
+      return createPortal(<div className={rk.detailBackdrop} onClick={() => setDetail(null)}>
         <div className={rk.detailModal} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Detail kamar">
           <div className={rk.detailHead}>
             <div><h2>Detail Kamar</h2><p>{formatDay(h.day)}{building !== 'ALL' && ` · ${buildingLabel(building)}`}</p></div>
@@ -268,7 +334,11 @@ export default function RekapKebersihan() {
             <button className={`${rk.choiceTidak} ${detail.tab === 'TIDAK' ? rk.choiceOn : ''}`} onClick={() => setDetail({ ...detail, tab: 'TIDAK' })}>Tidak Dibersihkan <b>{h.tidak}</b></button>
             <button className={`${rk.choiceBelum} ${detail.tab === 'BELUM' ? rk.choiceOn : ''}`} onClick={() => setDetail({ ...detail, tab: 'BELUM' })}>Belum Dibersihkan <b>{h.belum + h.proses}</b></button>
           </div>
-          <input className={rk.detailSearch} value={detailQuery} onChange={(e) => setDetailQuery(e.target.value)} placeholder="Cari kamar, gedung, atau petugas..." />
+          <label className={rk.searchBox}>
+            <Search size={18} aria-hidden />
+            <input value={detailQuery} onChange={(e) => setDetailQuery(e.target.value)} placeholder={detail.tab === 'TIDAK' ? 'Cari kamar, gedung, petugas, atau alasan...' : 'Cari kamar, gedung, atau petugas...'} aria-label="Cari kamar" autoFocus />
+            {detailQuery && <button type="button" onClick={() => setDetailQuery('')} aria-label="Hapus pencarian"><X size={14} /></button>}
+          </label>
           <div className={rk.detailTable}>
             <table>
               {detail.tab === 'BELUM'
@@ -293,7 +363,7 @@ export default function RekapKebersihan() {
           </div>
           <div className={rk.detailFoot}>{jumlah} kamar ditampilkan</div>
         </div>
-      </div>;
+      </div>, document.body);
     })()}
   </>;
 }
