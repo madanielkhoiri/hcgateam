@@ -7,11 +7,13 @@ export default function MultiLineChart({
   subtitle,
   labels,
   series,
+  satuan = 'kg',
 }: {
   title: string;
   subtitle?: string;
   labels: string[];
   series: Series[];
+  satuan?: string;
 }) {
   const width = 900;
   const height = 280;
@@ -43,7 +45,7 @@ export default function MultiLineChart({
             const points = titik(item.values, offsetX);
             return <g key={item.label}>
               <path d={points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ')} fill="none" stroke={item.color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-              {points.map((point, index) => <g key={index}><circle cx={point.x} cy={point.y} r="5" fill={item.color} stroke="#fff" strokeWidth="2"><title>{item.label} {labels[index]}: {point.value} kg</title></circle><text x={point.x} y={point.y-9} textAnchor="middle" fontSize="9" fontWeight="700" fill={item.color}>{point.value}</text></g>)}
+              {points.map((point, index) => <g key={index}><circle cx={point.x} cy={point.y} r="5" fill={item.color} stroke="#fff" strokeWidth="2"><title>{item.label} {labels[index]}: {point.value} {satuan}</title></circle><text x={point.x} y={point.y-9} textAnchor="middle" fontSize="9" fontWeight="700" fill={item.color}>{point.value}</text></g>)}
             </g>;
           })}
           {labels.map((label, index) => <text key={label} x={left + (index / Math.max(1, labels.length - 1)) * graphWidth} y="244" textAnchor="middle" fontSize="12" fill="#607a99">{label}</text>)}

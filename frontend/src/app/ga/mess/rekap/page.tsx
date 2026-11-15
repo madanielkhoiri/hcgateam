@@ -74,7 +74,8 @@ export default function RekapKebersihan() {
   }, []);
 
   useEffect(() => {
-    if (getStoredUser()?.role === 'HOUSE_MAN') { router.replace('/ga/mess/operasional'); return; }
+    const role = getStoredUser()?.role ?? '';
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) { router.replace(role === 'HOUSE_MAN' ? '/ga/mess/operasional' : '/ga/mess/dashboard'); return; }
     void load(todayWita(-6), todayWita());
   }, [router, load]);
 
@@ -129,18 +130,6 @@ export default function RekapKebersihan() {
     return [...map.values()].sort((a, b) => b.sudah - a.sudah);
   }, [filtered]);
 
-  // Kartu Dibersihkan / Tidak Dibersihkan = jumlah dari tabel Per Hari (status akhir kamar per hari), supaya angkanya sama dengan tabel.
-  const totals = useMemo(() => {
-    const sudah = filtered.filter((s) => statusOf(s) === 'SUDAH');
-    const durs = sudah.map((s) => s.durationSec).filter((v): v is number => v != null);
-    return {
-      sudah: harian.reduce((sum, h) => sum + h.sudah, 0),
-      tidak: harian.reduce((sum, h) => sum + h.tidak, 0),
-      rata: durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length) : null,
-      petugas: new Set(filtered.map((s) => s.houseMan.id)).size,
-    };
-  }, [filtered, harian]);
-
   function exportExcel() {
     if (!data) return;
     const wb = XLSX.utils.book_new();
@@ -162,7 +151,7 @@ export default function RekapKebersihan() {
 
   return <>
     <header className={styles.heading}>
-      <div><span>GENERAL AFFAIRS</span><h1>Rekap Kebersihan Kamar</h1><p>Riwayat pembersihan kamar per hari, per kamar, dan per petugas houseman.</p></div>
+      <div><span>GENERAL AFFAIRS</span><h1>Rekap Kebersihan Kamar</h1><p>Tabel riwayat pembersihan kamar per hari, per kamar, dan per petugas houseman. Grafik ringkasan ada di Dashboard.</p></div>
       <div className={rk.headActions}><button className={rk.export} onClick={exportExcel} disabled={!data || loading}>Export Excel</button></div>
     </header>
 
@@ -189,14 +178,6 @@ export default function RekapKebersihan() {
       Periode {data ? `${formatDay(data.from)} – ${formatDay(data.to)} (${data.days} hari)` : '-'} · Maksimal 93 hari per tampilan.
       {(building !== 'ALL' || petugas !== 'ALL' || status !== 'ALL' || query) && <> · <a href="#" onClick={(e) => { e.preventDefault(); resetFilter(); }}>Reset filter</a></>}
     </div>
-
-    <section className={styles.cards}>
-      <article><small>Kamar Dibersihkan</small><strong>{totals.sudah}</strong></article>
-      <article><small>Tidak Dibersihkan</small><strong>{totals.tidak}</strong></article>
-      <article><small>Rata-rata Durasi</small><strong>{formatDuration(totals.rata)}</strong></article>
-      <article><small>Petugas Aktif</small><strong>{totals.petugas}</strong></article>
-      <article><small>Total Kamar</small><strong>{data ? (building === 'ALL' ? data.totalRooms : data.roomsByBuilding[building] ?? 0) : '-'}</strong></article>
-    </section>
 
     <div className={rk.tabs}>
       <button className={tab === 'harian' ? rk.active : ''} onClick={() => setTab('harian')}>Per Hari</button>

@@ -56,9 +56,46 @@ export class MessMonitoringService {
     return { totalRooms: rooms.length, done, skipped, pending: rooms.length - done - skipped, totalOccupants: Object.values(shifts).reduce((a, b) => a + b, 0), shifts };
   }
 
-  /** Rekap kebersihan per rentang tanggal (WITA, inklusif). Maksimal 93 hari per permintaan. */
+  /** Rekap kebersihan detail per rentang tanggal (WITA, inklusif). Hanya Admin. */
   async recap(actor: AktorPostingan, from?: string, to?: string) {
+    this.require(actor, ADMINS);
+    return this.recapData(from, to);
+  }
+
+  /**
+   * Tren harian untuk grafik dashboard (boleh dilihat semua viewer): hanya angka agregat,
+   * tanpa daftar kamar/petugas. Status kamar per hari = sesi terakhir kamar itu pada hari tsb.
+   */
+  async trend(actor: AktorPostingan, from?: string, to?: string) {
     this.require(actor, VIEWERS);
+    const data = await this.recapData(from, to);
+    const byDay = new Map<string, Map<number, (typeof data.sessions)[number]>>();
+    for (const s of data.sessions) { // urut terbaru dulu → sesi pertama per kamar = status akhir hari itu
+      const map = byDay.get(s.day) ?? new Map();
+      if (!map.has(s.roomId)) map.set(s.roomId, s);
+      byDay.set(s.day, map);
+    }
+    const daily: Array<{ day: string; sudah: number; tidak: number; proses: number; belum: number; rataRataDetik: number | null; petugas: number }> = [];
+    const startMs = new Date(`${data.from}T00:00:00+08:00`).getTime();
+    for (let i = 0; i < data.days; i++) {
+      const day = this.dayKey(new Date(startMs + i * 86_400_000));
+      const latest = [...(byDay.get(day)?.values() ?? [])];
+      const sudah = latest.filter((s) => s.finishedAt && s.status !== MessCleaningStatus.TIDAK_DIBERSIHKAN);
+      const durasi = sudah.map((s) => s.durationSec).filter((v): v is number => v != null);
+      daily.push({
+        day,
+        sudah: sudah.length,
+        tidak: latest.filter((s) => s.finishedAt && s.status === MessCleaningStatus.TIDAK_DIBERSIHKAN).length,
+        proses: latest.filter((s) => !s.finishedAt).length,
+        belum: Math.max(0, data.totalRooms - latest.length),
+        rataRataDetik: durasi.length ? Math.round(durasi.reduce((a, b) => a + b, 0) / durasi.length) : null,
+        petugas: new Set(data.sessions.filter((s) => s.day === day).map((s) => s.houseManId)).size,
+      });
+    }
+    return { from: data.from, to: data.to, days: data.days, totalRooms: data.totalRooms, daily };
+  }
+
+  private async recapData(from?: string, to?: string) {
     const today = this.dayKey(new Date());
     const valid = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
     const toKey = valid(to) ?? today;
