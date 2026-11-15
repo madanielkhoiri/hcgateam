@@ -155,7 +155,7 @@ export class WorkOrdersController {
     @Body() dto: CreateWorkOrderDto,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.service.create(dto, request.user.id);
+    return this.service.create(dto, request.user.id, request.user.role);
   }
 
   @Post(':id/images')
@@ -181,7 +181,7 @@ export class WorkOrdersController {
     @Body() dto: UpdateWorkOrderDto,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.service.update(id, dto, request.user.id);
+    return this.service.update(id, dto, request.user.id, request.user.role);
   }
 
   @Patch(':id/setujui')

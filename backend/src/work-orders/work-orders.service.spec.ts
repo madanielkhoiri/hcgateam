@@ -246,6 +246,38 @@ describe('WorkOrdersService.update — ON_PROGRESS/CLOSE butuh statusApproval DI
   });
 });
 
+describe('WorkOrdersService.update — Admin tidak terhalang approval', () => {
+  it('Admin boleh langsung ON_PROGRESS walau masih MENUNGGU_GL, approval otomatis DISETUJUI', async () => {
+    const { service, update } = buatService(
+      buatWorkOrder({ status: WorkOrderStatus.OPEN, statusApproval: StatusApprovalWorkOrder.MENUNGGU_GL }),
+    );
+
+    await service.update(1, { status: WorkOrderStatus.ON_PROGRESS } as any, 1, UserRole.ADMIN);
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: WorkOrderStatus.ON_PROGRESS,
+          statusApproval: StatusApprovalWorkOrder.DISETUJUI,
+          disetujuiGlOlehId: 1,
+          disetujuiShOlehId: 1,
+          disetujuiPjoOlehId: 1,
+        }),
+      }),
+    );
+  });
+
+  it('non-Admin tetap ditolak bila approval belum selesai', async () => {
+    const { service } = buatService(
+      buatWorkOrder({ status: WorkOrderStatus.OPEN, statusApproval: StatusApprovalWorkOrder.MENUNGGU_PJO }),
+    );
+
+    await expect(
+      service.update(1, { status: WorkOrderStatus.ON_PROGRESS } as any, 5, UserRole.SECTION_HEAD),
+    ).rejects.toThrow('belum disetujui GL/SH/PJO');
+  });
+});
+
 describe('WorkOrdersService.remove — hanya Admin yang boleh menghapus', () => {
   it.each([UserRole.GRUP_LEADER, UserRole.SECTION_HEAD, UserRole.PJO, UserRole.KARYAWAN, UserRole.ELEKTRIK])(
     'menolak hapus oleh role %s',

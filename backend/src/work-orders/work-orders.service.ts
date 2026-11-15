@@ -110,6 +110,28 @@ export class WorkOrdersService {
     }
   }
 
+  /**
+   * Admin tidak perlu menunggu rantai GL -> SH -> PJO. Tahap yang belum
+   * disetujui diisi atas nama Admin supaya jejak persetujuan tetap lengkap.
+   */
+  private dataApprovalAdmin(
+    adminId: number,
+    current?: {
+      disetujuiGlOlehId?: number | null;
+      disetujuiShOlehId?: number | null;
+      disetujuiPjoOlehId?: number | null;
+    },
+  ) {
+    const now = new Date();
+    return {
+      statusApproval: StatusApprovalWorkOrder.DISETUJUI,
+      alasanTolakApproval: null,
+      ...(current?.disetujuiGlOlehId ? {} : { disetujuiGlOlehId: adminId, disetujuiGlPada: now }),
+      ...(current?.disetujuiShOlehId ? {} : { disetujuiShOlehId: adminId, disetujuiShPada: now }),
+      ...(current?.disetujuiPjoOlehId ? {} : { disetujuiPjoOlehId: adminId, disetujuiPjoPada: now }),
+    };
+  }
+
   private parseDate(value: string): Date {
     return new Date(`${value}T00:00:00.000Z`);
   }
@@ -516,10 +538,12 @@ export class WorkOrdersService {
     return workOrder;
   }
 
-  async create(dto: CreateWorkOrderDto, createdBy: number) {
+  async create(dto: CreateWorkOrderDto, createdBy: number, role?: UserRole) {
+    // WO yang diinput Admin otomatis disetujui penuh (tanpa menunggu GL/SH/PJO).
+    const olehAdmin = role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
     this.wajibStatusApprovalUntukStatus(
       dto.status,
-      StatusApprovalWorkOrder.MENUNGGU_GL,
+      olehAdmin ? StatusApprovalWorkOrder.DISETUJUI : StatusApprovalWorkOrder.MENUNGGU_GL,
     );
 
     const requestedAt = this.parseDate(dto.requestedAt);
@@ -557,6 +581,7 @@ export class WorkOrdersService {
           imagePaths: dto.imagePaths ?? [],
           workDurationDays: dto.workDurationDays ?? null,
           createdBy,
+          ...(olehAdmin ? this.dataApprovalAdmin(createdBy) : {}),
         },
         include: PENYETUJU_INCLUDE,
       });
@@ -575,12 +600,22 @@ export class WorkOrdersService {
     return hasil;
   }
 
-  async update(id: number, dto: UpdateWorkOrderDto, updatedBy: number) {
+  async update(id: number, dto: UpdateWorkOrderDto, updatedBy: number, role?: UserRole) {
     const existing = await this.findOne(id);
 
     const nextStatus = dto.status ?? existing.status;
 
-    this.wajibStatusApprovalUntukStatus(nextStatus, existing.statusApproval);
+    // Admin boleh langsung ON PROGRESS / CLOSE walau approval belum selesai;
+    // approval yang tertunda ikut dianggap disetujui oleh Admin.
+    const olehAdmin = role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
+    const butuhApproval =
+      nextStatus === WorkOrderStatus.ON_PROGRESS || nextStatus === WorkOrderStatus.CLOSE;
+    const adminLewatiApproval =
+      olehAdmin && butuhApproval && existing.statusApproval !== StatusApprovalWorkOrder.DISETUJUI;
+
+    if (!adminLewatiApproval) {
+      this.wajibStatusApprovalUntukStatus(nextStatus, existing.statusApproval);
+    }
 
     const hasilUpdate = await this.prisma.$transaction(async (tx) => {
       const becomesClosed =
@@ -663,6 +698,7 @@ export class WorkOrdersService {
                 workDurationDays: dto.workDurationDays,
               }
             : {}),
+          ...(adminLewatiApproval ? this.dataApprovalAdmin(updatedBy, existing) : {}),
           ...(becomesClosed
             ? {
                 closedAt,

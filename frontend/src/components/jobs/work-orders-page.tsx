@@ -1021,13 +1021,13 @@ export default function WorkOrdersPage() {
                         <option value="OPEN">Open</option>
                         <option
                           value="ON_PROGRESS"
-                          disabled={row.statusApproval !== "DISETUJUI"}
+                          disabled={row.statusApproval !== "DISETUJUI" && !bolehDihapus()}
                         >
                           On Progress
                         </option>
                         <option
                           value="CLOSE"
-                          disabled={row.statusApproval !== "DISETUJUI"}
+                          disabled={row.statusApproval !== "DISETUJUI" && !bolehDihapus()}
                         >
                           Close
                         </option>
@@ -1277,14 +1277,14 @@ export default function WorkOrdersPage() {
 
                     <option
                       value="ON_PROGRESS"
-                      disabled={editingApprovalStatus !== "DISETUJUI"}
+                      disabled={editingApprovalStatus !== "DISETUJUI" && !bolehDihapus()}
                     >
                       On Progress
                     </option>
 
                     <option
                       value="CLOSE"
-                      disabled={editingApprovalStatus !== "DISETUJUI"}
+                      disabled={editingApprovalStatus !== "DISETUJUI" && !bolehDihapus()}
                     >
                       Close
                     </option>
