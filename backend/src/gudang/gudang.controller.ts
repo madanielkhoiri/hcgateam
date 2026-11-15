@@ -130,7 +130,7 @@ export class GudangController {
   borrowTool(
     @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { qrData?: string; nrp?: string; inspection?: { items?: Array<{ condition?: string; hazardCode?: string; note?: string }>; notes?: string } },
+    @Body() body: { qrData?: string; nrp?: string; inspection?: { location?: string; items?: Array<{ condition?: string; hazardCode?: string; note?: string }>; notes?: string } },
   ) {
     return this.tools.borrow(req.user, id, body);
   }

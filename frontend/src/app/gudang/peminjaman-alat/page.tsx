@@ -50,7 +50,7 @@ export default function ToolBorrowingPage() {
     setLoading(true); setError('');
     try {
       const user = getStoredUser();
-      const manager = Boolean(user && user.role !== 'GUDANG');
+      const manager = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
       const [employeeRows, toolRows, historyRows, templateRows] = await Promise.all([
         manager ? toolBorrowingApi.employees() : Promise.resolve([]),
         toolBorrowingApi.tools(),
@@ -65,7 +65,8 @@ export default function ToolBorrowingPage() {
   useEffect(() => {
     const user = getStoredUser();
     if (!getAccessToken() || !user || !ALLOWED.includes(user.role)) { router.replace('/dashboard'); return; }
-    setCanManage(user.role !== 'GUDANG');
+    // Database Karyawan & QR, Master Alat, dan Riwayat inspeksi hanya untuk Admin.
+    setCanManage(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
     void load();
   }, [router]);
 
@@ -195,6 +196,7 @@ function LoanModal({ tool, mode, template, templateTitle, onClose, onDone }: {
   const [inspection, setInspection] = useState<ToolInspectionInput>(() => ({
     items: (template?.items ?? []).map(() => ({ condition: '', hazardCode: '', note: '' })),
     notes: '',
+    location: '',
   }));
   const [condition, setCondition] = useState('GOOD');
   const [returnNote, setReturnNote] = useState('');
@@ -316,6 +318,7 @@ function LoanModal({ tool, mode, template, templateTitle, onClose, onDone }: {
           <div><small>Terisi</small><strong>{terisi} / {inspection.items.length}</strong></div>
           <button type="button" className={styles.allGood} onClick={semuaBaik}>Tandai semua Baik</button>
         </div>
+        {template.withLocation && <div className={styles.manualGrid}><label>Lokasi<input placeholder="Lokasi pemakaian alat" value={inspection.location} onChange={(e) => setInspection((current) => ({ ...current, location: e.target.value }))}/></label></div>}
         <div className={styles.checklist}>
           {template.items.map((row, index) => {
             const value = inspection.items[index];
@@ -345,22 +348,80 @@ function LoanModal({ tool, mode, template, templateTitle, onClose, onDone }: {
   </div>;
 }
 
+const BAHAYA = [
+  ['Kematian atau Kerugian Barang Besar >US$ 10000', 'Bahaya Resiko KRITIKAL', 'Stop & Perbaiki (Segera)', 'H'],
+  ['Cidera Serius / Kerugian Barang US$ 5000 to 10000', 'Bahaya Resiko Tinggi', 'Perbaiki Dalam12 Jam', 'S'],
+  ['Perlu tindakan Medis / Kerugian Barang US$ 1000 to 5000', 'Bahaya Resiko Sedang', 'Perbaiki Dalam 3 Hari', 'M'],
+] as const;
+
+function tanggalForm(value: string) {
+  return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/** Lembar ceklist dengan format sama seperti form PDF PPA-ADRO-F-HCGA-94. */
 function InspectionView({ loan, result, onClose }: { loan: ToolLoan; result: ToolInspectionResult; onClose: () => void }) {
+  const tanggal = tanggalForm(result.inspectedAt);
+  const lokasi = result.templateKey === 'JACK_HAMMER';
   return <div className={styles.modalBackdrop}>
-    <section className={`${styles.modal} ${styles.modalWide}`}>
-      <button className={styles.close} onClick={onClose} aria-label="Tutup">×</button>
-      <div className={styles.modalHead}>
-        <span className={styles.modalIcon}><ClipboardCheck size={24}/></span>
-        <div><h2>Ceklist Inspeksi Peralatan Kerja — {result.title}</h2><p>{loan.tool.code} — {loan.tool.name} · {result.form}</p></div>
+    <section className={`${styles.modal} ${styles.modalSheet}`}>
+      <div className={styles.sheetToolbar}>
+        <span>{loan.tool.code} — {loan.tool.name} · {loan.borrowMethod ? METODE[loan.borrowMethod] : '-'}</span>
+        <div>
+          <button type="button" className={styles.secondaryButton} onClick={() => window.print()}>Cetak / Simpan PDF</button>
+          <button type="button" className={styles.secondaryButton} onClick={onClose}>Tutup</button>
+        </div>
       </div>
-      <div className={styles.inspectionMeta}>
-        <div><small>Tanggal inspeksi</small><strong>{new Date(result.inspectedAt).toLocaleString('id-ID')}</strong></div>
-        <div><small>Diinspeksi oleh</small><strong>{result.inspectedBy.name} ({result.inspectedBy.nrp})</strong></div>
-        <div><small>Diperiksa oleh</small><strong>{result.checkedBy.name ?? '-'}</strong></div>
-        <div><small>Metode identitas</small><strong>{loan.borrowMethod ? METODE[loan.borrowMethod] : '-'}</strong></div>
+      <div className={styles.sheetScroll}>
+        <div className={styles.sheet} id="lembar-inspeksi">
+          <table className={styles.sheetHead}>
+            <colgroup><col style={{ width: '18%' }}/><col style={{ width: '56%' }}/><col style={{ width: '12%' }}/><col style={{ width: '14%' }}/></colgroup>
+            <tbody>
+              <tr>
+                <td rowSpan={4} className={styles.sheetLogo}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logos/ppa.png" alt="PPA"/></td>
+                <td rowSpan={4} className={styles.sheetTitle}>CEKLIST INSPEKSI<br/>PERALATAN KERJA<br/>{result.title.toUpperCase()}</td>
+                <td className={styles.sheetMeta}>No.Dokumen:</td><td className={styles.sheetMeta}>{result.form}</td>
+              </tr>
+              <tr><td className={styles.sheetMeta}>Revisi:</td><td className={styles.sheetMeta}>0</td></tr>
+              <tr><td className={styles.sheetMeta}>Tgl Efektif:</td><td className={styles.sheetMeta}>7-Jun-22</td></tr>
+              <tr><td className={styles.sheetMeta}>Halaman:</td><td className={styles.sheetMeta}>1 dari 1</td></tr>
+            </tbody>
+          </table>
+          <table className={styles.sheetInfo}>
+            <colgroup><col style={{ width: '18%' }}/><col/></colgroup>
+            <tbody>
+              <tr><th>DEPARTEMEN :</th><td>HCGA</td></tr>
+              {lokasi
+                ? <><tr><th>DATE :</th><td>{tanggal}</td></tr><tr><th>LOKASI :</th><td>{result.location ?? ''}</td></tr></>
+                : <tr><th>TANGGAL INSPEKSI :</th><td>{tanggal}</td></tr>}
+            </tbody>
+          </table>
+          <table className={styles.sheetTable}>
+            <colgroup><col style={{ width: '5%' }}/><col style={{ width: '27%' }}/><col style={{ width: '34%' }}/><col style={{ width: '8%' }}/><col style={{ width: '8%' }}/><col style={{ width: '18%' }}/></colgroup>
+            <thead>
+              <tr><th rowSpan={2}>NO</th><th rowSpan={2}>HAL YANG DIPERIKSA</th><th rowSpan={2}>STANDAR</th><th colSpan={2}>Kondisi</th><th rowSpan={2}>KETERANGAN</th></tr>
+              <tr><th className={styles.sheetSub}>Baik</th><th className={styles.sheetSub}>Tidak Baik</th></tr>
+            </thead>
+            <tbody>
+              {result.items.map((item) => <tr key={item.no}>
+                <td className={styles.sheetCenter}>{item.no}</td>
+                <td>{item.item}</td>
+                <td>{item.standard}</td>
+                <td className={styles.sheetCheck}>{item.condition === 'BAIK' ? '✓' : ''}</td>
+                <td className={styles.sheetCheck}>{item.condition === 'TIDAK_BAIK' ? '✓' : ''}</td>
+                <td>{item.condition === 'TIDAK_BAIK' ? [item.hazardCode ? `Kode ${item.hazardCode}` : '', item.note ?? ''].filter(Boolean).join(' — ') : ''}</td>
+              </tr>)}
+              <tr className={styles.sheetBlank}><td/><td/><td/><td/><td/><td/></tr>
+              <tr className={styles.sheetLegendHead}><td/><th>KEMUNGKINAN AKIBAT</th><th>TIPE BAHAYA</th><th colSpan={1}>TINDAKAN DIPERLUKAN</th><th colSpan={2}>KODE BAHAYA</th></tr>
+              {BAHAYA.map(([akibat, tipe, tindakan, kode]) => <tr key={kode} className={styles.sheetLegend}>
+                <td/><td className={styles.sheetCenter}>{akibat}</td><td className={styles.sheetCenter}><b>{tipe}</b></td><td className={styles.sheetCenter}><b>{tindakan}</b></td><td colSpan={2} className={styles.sheetCenter}><b>{kode}</b></td>
+              </tr>)}
+              <tr><td colSpan={6} className={styles.sheetNotes}>Catatan : {result.notes ?? ''}</td></tr>
+              <tr className={styles.sheetSign}><td/><td>Diinspeksi Oleh : <b>{result.inspectedBy.name}</b><br/><small>NRP {result.inspectedBy.nrp}</small></td><td>Tanda Tangan:</td><td colSpan={3}>Tanggal : {tanggal}</td></tr>
+              <tr className={styles.sheetSign}><td/><td>Diperiksa Oleh : <b>{result.checkedBy.name ?? ''}</b></td><td>Tanda Tangan:</td><td colSpan={3}>Tanggal : {tanggal}</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div className={styles.tableWrap}><table className={styles.inspectionTable}><thead><tr><th>No</th><th>Hal yang Diperiksa</th><th>Standar</th><th>Kondisi</th><th>Kode Bahaya</th><th>Keterangan</th></tr></thead><tbody>{result.items.map((item) => <tr key={item.no}><td>{item.no}</td><td>{item.item}</td><td>{item.standard}</td><td><span className={`${styles.badge} ${item.condition === 'BAIK' ? styles.available : styles.damaged}`}>{item.condition === 'BAIK' ? 'Baik' : 'Tidak Baik'}</span></td><td>{item.hazardCode ?? '-'}</td><td>{item.note ?? '-'}</td></tr>)}</tbody></table></div>
-      {result.notes && <div className={styles.identity}><strong>Catatan:</strong> {result.notes}</div>}
     </section>
   </div>;
 }

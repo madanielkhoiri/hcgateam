@@ -5,6 +5,8 @@ export type ToolInspectionItem = { item: string; standard: string };
 export type ToolInspectionTemplate = {
   key: string;
   title: string;
+  /** Form Jack Hammer memakai baris DATE dan LOKASI, bukan TANGGAL INSPEKSI. */
+  withLocation?: boolean;
   items: ToolInspectionItem[];
 };
 
@@ -14,6 +16,7 @@ export const TOOL_INSPECTION_TEMPLATES: ToolInspectionTemplate[] = [
   {
     key: 'JACK_HAMMER',
     title: 'Jack Hammer',
+    withLocation: true,
     items: [
       { item: 'Kondisi Bodi Mesin', standard: 'Kondisi utuh dan bebas dari kontaminasi lumpur dll' },
       { item: 'Mata Drill', standard: 'Dalam kondisi baik' },

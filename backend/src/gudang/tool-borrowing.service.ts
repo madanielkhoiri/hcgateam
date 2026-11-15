@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -32,6 +33,7 @@ type EmployeeQr = {
 type IdentityInput = { qrData?: string; nrp?: string };
 
 type InspectionInput = {
+  location?: string;
   items?: Array<{ condition?: string; hazardCode?: string; note?: string }>;
   notes?: string;
 };
@@ -49,17 +51,11 @@ export class ToolBorrowingService {
     this.access.wajibGudang(actor.role);
   }
 
+  /** Database Karyawan & QR, Master Alat, dan Riwayat/hasil inspeksi hanya untuk Admin. */
   private authorizeManager(actor: Actor) {
     this.authorize(actor);
-    const managers: UserRole[] = [
-      UserRole.ADMIN,
-      UserRole.SUPER_ADMIN,
-      UserRole.SECTION_HEAD,
-      UserRole.ELEKTRIK,
-      UserRole.GRUP_LEADER_GA,
-    ];
-    if (!managers.includes(actor.role)) {
-      throw new BadRequestException('Menu ini hanya dapat dikelola Admin, Section Head, GA, atau Electric');
+    if (actor.role !== UserRole.ADMIN && actor.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Menu ini hanya dapat dikelola Admin');
     }
   }
 
@@ -283,6 +279,7 @@ export class ToolBorrowingService {
       title: template.title,
       items,
       notes: String(input?.notes || '').trim() || null,
+      location: template.withLocation ? String(input?.location || '').trim() || null : null,
       inspectedBy: { nrp: employee.nrp, name: employee.name },
       checkedBy: { userId: actor.id, name: actor.nama ?? null },
       inspectedAt: new Date().toISOString(),

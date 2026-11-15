@@ -14,12 +14,13 @@ export type ToolAsset = {
   loans: Array<{ id: number; borrowedAt: string; borrower: ToolEmployee }>;
 };
 export type ToolInspectionTemplate = {
-  key: string; title: string; items: Array<{ item: string; standard: string }>;
+  key: string; title: string; withLocation?: boolean; items: Array<{ item: string; standard: string }>;
 };
 export type ToolInspectionResult = {
   form: string; templateKey: string; title: string;
   items: Array<{ no: number; item: string; standard: string; condition: 'BAIK' | 'TIDAK_BAIK'; hazardCode: 'H' | 'S' | 'M' | null; note: string | null }>;
   notes: string | null;
+  location: string | null;
   inspectedBy: { nrp: string; name: string };
   checkedBy: { userId: number; name: string | null };
   inspectedAt: string;
@@ -35,6 +36,7 @@ export type ToolIdentity = { qrData?: string; nrp?: string };
 export type ToolInspectionInput = {
   items: Array<{ condition: 'BAIK' | 'TIDAK_BAIK' | ''; hazardCode: string; note: string }>;
   notes: string;
+  location: string;
 };
 
 function auth(json = false): HeadersInit {
