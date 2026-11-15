@@ -244,17 +244,17 @@ model MessOccupant {
 }
 
 model MessCleaningSession {
-  id          Int       @id @default(autoincrement())
-  roomId      Int       @map("room_id")
-  houseManId  Int       @map("house_man_id")
-  startedAt   DateTime  @default(now()) @map("started_at")
-  finishedAt  DateTime? @map("finished_at")
-  durationSec Int?      @map("duration_sec")
+  id          Int                @id @default(autoincrement())
+  roomId      Int                @map("room_id")
+  houseManId  Int                @map("house_man_id")
+  startedAt   DateTime           @default(now()) @map("started_at")
+  finishedAt  DateTime?          @map("finished_at")
+  durationSec Int?               @map("duration_sec")
   /// DIBERSIHKAN = dikerjakan dengan timer; TIDAK_DIBERSIHKAN = dilewati houseman dan wajib ada alasan.
   status      MessCleaningStatus @default(DIBERSIHKAN)
   alasan      String?
-  room        MessRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  houseMan    User      @relation("MessCleaningHouseMan", fields: [houseManId], references: [id], onDelete: Restrict)
+  room        MessRoom           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  houseMan    User               @relation("MessCleaningHouseMan", fields: [houseManId], references: [id], onDelete: Restrict)
 
   @@index([roomId, startedAt])
   @@index([houseManId, startedAt])
@@ -489,14 +489,15 @@ model ToolBorrowEmployee {
 }
 
 model ToolAsset {
-  id        Int             @id @default(autoincrement())
-  owner     ToolOwner
-  code      String
-  name      String
-  status    ToolAssetStatus @default(AVAILABLE)
-  isActive  Boolean         @default(true) @map("is_active")
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  id             Int             @id @default(autoincrement())
+  owner          ToolOwner
+  code           String
+  name           String
+  status         ToolAssetStatus @default(AVAILABLE)
+  inspectionType String?         @map("inspection_type")
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   loans ToolLoan[]
 
@@ -517,6 +518,9 @@ model ToolLoan {
   returnNote       String?              @map("return_note") @db.Text
   borrowedByUserId Int                  @map("borrowed_by_user_id")
   returnedByUserId Int?                 @map("returned_by_user_id")
+  borrowMethod     String?              @map("borrow_method")
+  returnMethod     String?              @map("return_method")
+  borrowInspection Json?                @map("borrow_inspection")
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
 
@@ -2164,17 +2168,17 @@ model EvaluasiVendor {
 /// Nilai subjektif C dan D milik masing-masing evaluator. Data objektif tender
 /// (SPH, durasi, respons, manpower, serta dokumen) tetap di EvaluasiVendor.
 model EvaluasiVendorPenilai {
-  id               Int       @id @default(autoincrement())
-  tenderId         Int       @map("tender_id")
-  vendorId         Int       @map("vendor_id")
-  userId           Int       @map("user_id")
-  data             Json      @default("{}")
-  status           String    @default("DRAFT")
-  namaSnapshot     String    @map("nama_snapshot")
-  jabatanSnapshot  String?   @map("jabatan_snapshot")
-  finalizedAt      DateTime? @map("finalized_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  id              Int       @id @default(autoincrement())
+  tenderId        Int       @map("tender_id")
+  vendorId        Int       @map("vendor_id")
+  userId          Int       @map("user_id")
+  data            Json      @default("{}")
+  status          String    @default("DRAFT")
+  namaSnapshot    String    @map("nama_snapshot")
+  jabatanSnapshot String?   @map("jabatan_snapshot")
+  finalizedAt     DateTime? @map("finalized_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   tender TenderProcess @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
@@ -3171,8 +3175,8 @@ model KwhPencatatan {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  meter   KwhMeter @relation(fields: [meterId], references: [id], onDelete: Cascade)
-  pencatat User    @relation(fields: [dicatatOleh], references: [id], onDelete: Restrict)
+  meter    KwhMeter @relation(fields: [meterId], references: [id], onDelete: Cascade)
+  pencatat User     @relation(fields: [dicatatOleh], references: [id], onDelete: Restrict)
 
   @@unique([meterId, tahun, bulan])
   @@index([tahun, bulan])

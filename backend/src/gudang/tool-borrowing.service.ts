@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Prisma,
   ToolAssetStatus,
   ToolOwner,
   ToolReturnCondition,
@@ -13,14 +14,29 @@ import {
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { GudangAksesService } from './gudang-akses.service';
+import {
+  TOOL_INSPECTION_TEMPLATES,
+  resolveInspectionKey,
+  templateByKey,
+} from './tool-inspection-templates';
 
-type Actor = { id: number; role: UserRole };
+type Actor = { id: number; role: UserRole; nama?: string };
 
 type EmployeeQr = {
   type: 'HCGA_TOOL_EMPLOYEE';
   nrp: string;
   name: string;
 };
+
+/** Identitas peminjam/pengembali: scan QR atau isi NRP manual. */
+type IdentityInput = { qrData?: string; nrp?: string };
+
+type InspectionInput = {
+  items?: Array<{ condition?: string; hazardCode?: string; note?: string }>;
+  notes?: string;
+};
+
+const KODE_BAHAYA = ['H', 'S', 'M'] as const;
 
 @Injectable()
 export class ToolBorrowingService {
@@ -53,6 +69,13 @@ export class ToolBorrowingService {
       throw new BadRequestException('Pemilik alat harus GA atau ELECTRIC');
     }
     return normalized as ToolOwner;
+  }
+
+  private inspectionType(value?: string | null): string | null {
+    const key = String(value || '').trim().toUpperCase();
+    if (!key) return null;
+    if (!templateByKey(key)) throw new BadRequestException('Jenis inspeksi alat tidak dikenal');
+    return key;
   }
 
   private qrPayload(nrp: string, name: string): string {
@@ -93,6 +116,27 @@ export class ToolBorrowingService {
     return employee;
   }
 
+  private async employeeFromNrp(raw: string) {
+    const nrp = String(raw || '').trim();
+    if (!nrp) throw new BadRequestException('NRP wajib diisi');
+    const employee = await this.prisma.toolBorrowEmployee.findUnique({ where: { nrp } });
+    if (!employee || !employee.isActive) {
+      throw new BadRequestException(`NRP ${nrp} tidak terdaftar di Database Karyawan & QR atau sudah tidak aktif`);
+    }
+    return employee;
+  }
+
+  /** Scan QR diutamakan; bila tidak ada QR dipakai NRP manual. */
+  private async identity(input: IdentityInput) {
+    if (String(input.qrData || '').trim()) {
+      return { employee: await this.employeeFromQr(String(input.qrData)), method: 'SCAN' as const };
+    }
+    if (String(input.nrp || '').trim()) {
+      return { employee: await this.employeeFromNrp(String(input.nrp)), method: 'MANUAL' as const };
+    }
+    throw new BadRequestException('Scan QR atau isi NRP terlebih dahulu');
+  }
+
   async listEmployees(actor: Actor) {
     this.authorizeManager(actor);
     const rows = await this.prisma.toolBorrowEmployee.findMany({
@@ -102,6 +146,13 @@ export class ToolBorrowingService {
       ...row,
       qrPayload: this.qrPayload(row.nrp, row.name),
     }));
+  }
+
+  /** Cari nama dari NRP (untuk input manual). Boleh dipakai petugas Gudang. */
+  async lookupEmployee(actor: Actor, nrp: string) {
+    this.authorize(actor);
+    const employee = await this.employeeFromNrp(nrp);
+    return { nrp: employee.nrp, name: employee.name };
   }
 
   async createEmployee(actor: Actor, body: { nrp?: string; name?: string }) {
@@ -127,9 +178,14 @@ export class ToolBorrowingService {
     });
   }
 
+  inspectionTemplates(actor: Actor) {
+    this.authorize(actor);
+    return TOOL_INSPECTION_TEMPLATES;
+  }
+
   async listTools(actor: Actor, owner?: string) {
     this.authorize(actor);
-    return this.prisma.toolAsset.findMany({
+    const rows = await this.prisma.toolAsset.findMany({
       where: owner ? { owner: this.owner(owner), isActive: true } : { isActive: true },
       include: {
         loans: {
@@ -141,11 +197,15 @@ export class ToolBorrowingService {
       },
       orderBy: [{ owner: 'asc' }, { code: 'asc' }],
     });
+    return rows.map((row) => ({
+      ...row,
+      inspectionKey: resolveInspectionKey(row.inspectionType, row.name),
+    }));
   }
 
   async createTool(
     actor: Actor,
-    body: { owner?: string; code?: string; name?: string },
+    body: { owner?: string; code?: string; name?: string; inspectionType?: string },
   ) {
     this.authorizeManager(actor);
     const owner = this.owner(body.owner || '');
@@ -156,12 +216,89 @@ export class ToolBorrowingService {
       where: { owner_code: { owner, code } },
     });
     if (exists) throw new ConflictException('Kode alat sudah terdaftar pada tim tersebut');
-    return this.prisma.toolAsset.create({ data: { owner, code, name } });
+    return this.prisma.toolAsset.create({
+      data: { owner, code, name, inspectionType: this.inspectionType(body.inspectionType) },
+    });
   }
 
-  async borrow(actor: Actor, toolId: number, qrData: string) {
+  async updateToolInspectionType(actor: Actor, id: number, inspectionType?: string) {
+    this.authorizeManager(actor);
+    const tool = await this.prisma.toolAsset.findUnique({ where: { id } });
+    if (!tool) throw new NotFoundException('Alat tidak ditemukan');
+    const row = await this.prisma.toolAsset.update({
+      where: { id },
+      data: { inspectionType: this.inspectionType(inspectionType) },
+    });
+    return { ...row, inspectionKey: resolveInspectionKey(row.inspectionType, row.name) };
+  }
+
+  /**
+   * Hasil inspeksi disusun dari checklist resmi di server, jadi butir dan
+   * standar tidak bisa diubah dari browser. Butir "Tidak Baik" wajib diberi
+   * kode bahaya; kode H (Stop & Perbaiki Segera) membuat alat tidak boleh dipinjam.
+   */
+  private buildInspection(
+    tool: { name: string; inspectionType: string | null },
+    input: InspectionInput | undefined,
+    employee: { nrp: string; name: string },
+    actor: Actor,
+  ) {
+    const key = resolveInspectionKey(tool.inspectionType, tool.name);
+    const template = templateByKey(key)!;
+    const answers = Array.isArray(input?.items) ? input!.items : [];
+    if (answers.length !== template.items.length) {
+      throw new BadRequestException('Inspeksi alat wajib diisi lengkap sebelum meminjam');
+    }
+
+    const items = template.items.map((row, index) => {
+      const answer = answers[index] || {};
+      const condition = String(answer.condition || '').toUpperCase();
+      if (condition !== 'BAIK' && condition !== 'TIDAK_BAIK') {
+        throw new BadRequestException(`Butir ${index + 1} (${row.item}) belum dipilih Baik / Tidak Baik`);
+      }
+      const hazardCode = condition === 'TIDAK_BAIK' ? String(answer.hazardCode || '').toUpperCase() : null;
+      if (condition === 'TIDAK_BAIK' && !KODE_BAHAYA.includes(hazardCode as (typeof KODE_BAHAYA)[number])) {
+        throw new BadRequestException(`Butir ${index + 1} (${row.item}) Tidak Baik: pilih kode bahaya H, S, atau M`);
+      }
+      return {
+        no: index + 1,
+        item: row.item,
+        standard: row.standard,
+        condition,
+        hazardCode,
+        note: String(answer.note || '').trim() || null,
+      };
+    });
+
+    const kritis = items.filter((item) => item.hazardCode === 'H');
+    if (kritis.length) {
+      throw new BadRequestException(
+        `Alat tidak boleh dipinjam: ${kritis.map((item) => item.item).join(', ')} berkode bahaya H (Stop & Perbaiki Segera)`,
+      );
+    }
+
+    return {
+      form: 'PPA-ADRO-F-HCGA-94',
+      templateKey: template.key,
+      title: template.title,
+      items,
+      notes: String(input?.notes || '').trim() || null,
+      inspectedBy: { nrp: employee.nrp, name: employee.name },
+      checkedBy: { userId: actor.id, name: actor.nama ?? null },
+      inspectedAt: new Date().toISOString(),
+    };
+  }
+
+  async borrow(
+    actor: Actor,
+    toolId: number,
+    body: IdentityInput & { inspection?: InspectionInput },
+  ) {
     this.authorize(actor);
-    const employee = await this.employeeFromQr(qrData);
+    const { employee, method } = await this.identity(body);
+    const tool = await this.prisma.toolAsset.findUnique({ where: { id: toolId } });
+    if (!tool || !tool.isActive) throw new NotFoundException('Alat tidak ditemukan');
+    const inspection = this.buildInspection(tool, body.inspection, employee, actor);
 
     return this.prisma.$transaction(async (tx) => {
       const locked = await tx.toolAsset.updateMany({
@@ -176,6 +313,8 @@ export class ToolBorrowingService {
           toolId,
           borrowerId: employee.id,
           borrowedByUserId: actor.id,
+          borrowMethod: method,
+          borrowInspection: inspection as Prisma.InputJsonValue,
         },
         include: { tool: true, borrower: true },
       });
@@ -186,10 +325,10 @@ export class ToolBorrowingService {
   async returnTool(
     actor: Actor,
     toolId: number,
-    body: { qrData?: string; condition?: string; note?: string },
+    body: IdentityInput & { condition?: string; note?: string },
   ) {
     this.authorize(actor);
-    const employee = await this.employeeFromQr(String(body.qrData || ''));
+    const { employee, method } = await this.identity(body);
     const condition = String(body.condition || '').toUpperCase();
     if (!Object.values(ToolReturnCondition).includes(condition as ToolReturnCondition)) {
       throw new BadRequestException('Kondisi harus GOOD, DAMAGED, atau LOST');
@@ -224,6 +363,7 @@ export class ToolBorrowingService {
           returnCondition: condition as ToolReturnCondition,
           returnNote: String(body.note || '').trim() || null,
           returnedByUserId: actor.id,
+          returnMethod: method,
         },
         include: { tool: true, borrower: true, returner: true },
       });

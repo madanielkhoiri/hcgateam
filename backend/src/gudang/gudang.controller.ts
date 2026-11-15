@@ -15,6 +15,7 @@ import {
   Header,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -80,6 +81,18 @@ export class GudangController {
     return this.tools.createEmployee(req.user, body);
   }
 
+  @Get('tool-borrowing/employees/lookup')
+  @UseGuards(JwtAuthGuard)
+  lookupToolEmployee(@Req() req: any, @Query('nrp') nrp: string) {
+    return this.tools.lookupEmployee(req.user, nrp);
+  }
+
+  @Get('tool-borrowing/inspection-templates')
+  @UseGuards(JwtAuthGuard)
+  toolInspectionTemplates(@Req() req: any) {
+    return this.tools.inspectionTemplates(req.user);
+  }
+
   @Get('tool-borrowing/employees/:id/qr')
   @UseGuards(JwtAuthGuard)
   @Header('Content-Type', 'image/svg+xml')
@@ -97,9 +110,19 @@ export class GudangController {
   @UseGuards(JwtAuthGuard)
   createTool(
     @Req() req: any,
-    @Body() body: { owner?: string; code?: string; name?: string },
+    @Body() body: { owner?: string; code?: string; name?: string; inspectionType?: string },
   ) {
     return this.tools.createTool(req.user, body);
+  }
+
+  @Patch('tool-borrowing/tools/:id')
+  @UseGuards(JwtAuthGuard)
+  updateToolInspection(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('inspectionType') inspectionType?: string,
+  ) {
+    return this.tools.updateToolInspectionType(req.user, id, inspectionType);
   }
 
   @Post('tool-borrowing/tools/:id/borrow')
@@ -107,9 +130,9 @@ export class GudangController {
   borrowTool(
     @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
-    @Body('qrData') qrData: string,
+    @Body() body: { qrData?: string; nrp?: string; inspection?: { items?: Array<{ condition?: string; hazardCode?: string; note?: string }>; notes?: string } },
   ) {
-    return this.tools.borrow(req.user, id, qrData);
+    return this.tools.borrow(req.user, id, body);
   }
 
   @Post('tool-borrowing/tools/:id/return')
@@ -117,7 +140,7 @@ export class GudangController {
   returnTool(
     @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { qrData?: string; condition?: string; note?: string },
+    @Body() body: { qrData?: string; nrp?: string; condition?: string; note?: string },
   ) {
     return this.tools.returnTool(req.user, id, body);
   }
