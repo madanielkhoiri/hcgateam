@@ -128,9 +128,7 @@ export default function Dashboard() {
       <label><span>Dari</span><input type="date" value={dari} max={sampai || undefined} onChange={(e) => setDari(e.target.value)} required /></label>
       <span className={ds.dateArrow} aria-hidden>→</span>
       <label><span>Sampai</span><input type="date" value={sampai} min={dari || undefined} max={dayWita()} onChange={(e) => setSampai(e.target.value)} required /></label>
-      <button type="submit" disabled={trendLoading}>{trendLoading ? 'Memuat...' : 'Tampilkan'}</button>
-      <small>Maksimal 93 hari</small>
-    </form>
+      <button type="submit" disabled={trendLoading}>{trendLoading ? 'Memuat...' : 'Tampilkan'}</button>    </form>
     {trendError && <div className={styles.error}>{trendError}</div>}
 
     <section className={ds.periodCards}>

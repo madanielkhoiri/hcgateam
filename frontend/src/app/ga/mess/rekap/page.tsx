@@ -241,7 +241,7 @@ export default function RekapKebersihan() {
       <button className={styles.filterReset} onClick={() => from && to && void load(from, to)} disabled={loading}>{loading ? 'Memuat...' : 'Tampilkan'}</button>
     </section>
     <div className={rk.note}>
-      Periode {data ? `${formatDay(data.from)} – ${formatDay(data.to)} (${data.days} hari)` : '-'} · Maksimal 93 hari per tampilan.
+      Periode {data ? `${formatDay(data.from)} – ${formatDay(data.to)} (${data.days} hari)` : '-'}
       {(building !== 'ALL' || petugas !== 'ALL' || status !== 'ALL' || query) && <> · <a href="#" onClick={(e) => { e.preventDefault(); resetFilter(); }}>Reset filter</a></>}
     </div>
 
