@@ -541,6 +541,25 @@ export default function InventoryCrud({
     setModalOpen(true);
   }
 
+  async function ubahLokasiItem(item: Item, lokasi: LokasiGudang) {
+    if (item.lokasiGudang === lokasi) return;
+    const lama = item.lokasiGudang ?? null;
+    setError("");
+    setMessage("");
+    setItems((current) => current.map((row) => (row.id === item.id ? { ...row, lokasiGudang: lokasi } : row)));
+
+    try {
+      await request(`items/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ lokasiGudang: lokasi }),
+      });
+      setMessage(`Lokasi ${item.code} dipindah ke ${LOKASI_GUDANG[lokasi].label}`);
+    } catch (caught) {
+      setItems((current) => current.map((row) => (row.id === item.id ? { ...row, lokasiGudang: lama } : row)));
+      setError(caught instanceof Error ? caught.message : "Gagal mengubah lokasi gudang");
+    }
+  }
+
   function openEditStock(stock: Stock) {
     resetForm();
     setEditingId(stock.id);
@@ -1265,7 +1284,38 @@ export default function InventoryCrud({
                             <strong>{item.code}</strong>
                           </td>
                           <td>{item.name}</td>
-                          {pakaiLokasi && <td><LokasiBadge lokasi={item.lokasiGudang} /></td>}
+                          {pakaiLokasi && (
+                            <td>
+                              {(() => {
+                                const info = item.lokasiGudang ? LOKASI_GUDANG[item.lokasiGudang] : null;
+                                return (
+                                  <select
+                                    value={item.lokasiGudang ?? ""}
+                                    onChange={(event) => void ubahLokasiItem(item, event.target.value as LokasiGudang)}
+                                    aria-label={`Lokasi gudang ${item.code}`}
+                                    title="Pilih lokasi gudang"
+                                    style={{
+                                      height: 34,
+                                      minWidth: 160,
+                                      padding: "0 30px 0 12px",
+                                      borderRadius: 999,
+                                      border: `1.5px solid ${info ? info.warna : "#cbd5e1"}`,
+                                      background: info ? info.latar : "#fff",
+                                      color: info ? info.warna : "#64748b",
+                                      fontFamily: "inherit",
+                                      fontSize: 12,
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {!item.lokasiGudang && <option value="" disabled>Pilih lokasi</option>}
+                                    <option value="GUDANG_GA">● Gudang GA</option>
+                                    <option value="GUDANG_ELEKTRIK">● Gudang Elektrik</option>
+                                  </select>
+                                );
+                              })()}
+                            </td>
+                          )}
                           <td>
                             {categoryLabel(
                               item.category,
