@@ -54,7 +54,7 @@ const DAFTAR_DEPARTEMEN = [
 ];
 
 const LABEL_SCOPE: Record<InventoryScopeGudang, string> = {
-  GENERAL: 'General',
+  GENERAL: 'Infras',
   MESS: 'Mess',
   ELECTRIC: 'Electric',
 };
@@ -460,7 +460,7 @@ function GudangPageInner() {
         </div>
 
         <div className={styles.listArea}>
-          {(['INFRAS', 'MESS', 'ELECTRIC'] as InventoryScopeGudang[]).map((nilai) => (
+          {(['GENERAL', 'MESS', 'ELECTRIC'] as InventoryScopeGudang[]).map((nilai) => (
             <button
               key={nilai}
               type="button"
