@@ -1012,7 +1012,6 @@ export default function WorkOrdersPage() {
                         const durasi = durasiWo(row);
                         return <>
                           {durasi.hari} hari
-                          {durasi.berjalan && <span style={{ display: "block", fontSize: 10, color: "#64748b", marginTop: 2 }}>berjalan</span>}
                         </>;
                       })()}
                     </td>
