@@ -354,3 +354,40 @@ describe('WorkOrdersService.findAll - urutan urgent (P1 belum Close) di atas', (
     expect(findMany.mock.calls[0][0]).toMatchObject({ skip: 1, take: 2 });
   });
 });
+
+describe('WorkOrdersService — Admin Dept dibatasi per departemen', () => {
+  function buatServiceDept(wo: unknown, departemen: string | null) {
+    const prisma = {
+      workOrder: { findUnique: jest.fn().mockResolvedValue(wo) },
+      user: { findUnique: jest.fn().mockResolvedValue({ departemen }) },
+    } as unknown as PrismaService;
+    return new WorkOrdersService(prisma, {} as unknown as DocumentNumberService);
+  }
+  const ADMIN_DEPT = { id: 30, role: UserRole.ADMIN_DEPT };
+
+  it('boleh membuka WO departemennya sendiri (huruf besar/kecil tidak masalah)', async () => {
+    const service = buatServiceDept({ department: 'plant ', createdBy: 99 }, 'PLANT');
+    await expect(service.pastikanAksesDepartemen(1, ADMIN_DEPT)).resolves.toBeUndefined();
+  });
+
+  it('boleh membuka WO yang ia buat sendiri walau departemen lain', async () => {
+    const service = buatServiceDept({ department: 'HCGA', createdBy: 30 }, 'PLANT');
+    await expect(service.pastikanAksesDepartemen(1, ADMIN_DEPT)).resolves.toBeUndefined();
+  });
+
+  it('menolak WO departemen lain', async () => {
+    const service = buatServiceDept({ department: 'HCGA', createdBy: 99 }, 'PLANT');
+    await expect(service.pastikanAksesDepartemen(1, ADMIN_DEPT)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('tidak membatasi role lain (Admin)', async () => {
+    const service = buatServiceDept({ department: 'HCGA', createdBy: 99 }, 'PLANT');
+    await expect(service.pastikanAksesDepartemen(1, ADMIN)).resolves.toBeUndefined();
+  });
+
+  it('departemenAdminDept hanya untuk role ADMIN_DEPT', async () => {
+    const service = buatServiceDept(null, 'SCM - FAW');
+    await expect(service.departemenAdminDept(ADMIN_DEPT)).resolves.toBe('SCM - FAW');
+    await expect(service.departemenAdminDept(ADMIN)).resolves.toBeNull();
+  });
+});

@@ -99,8 +99,14 @@ export class WorkOrdersController {
 
     return this.service.getDashboard(month, year);
   }
+  /** Info lingkup untuk frontend: departemen terkunci bagi Admin Dept. */
+  @Get('lingkup')
+  async lingkup(@Req() request: AuthenticatedRequest) {
+    return { departemen: await this.service.departemenAdminDept(request.user) };
+  }
+
   @Get()
-  findAll(
+  async findAll(
     @Req() request: AuthenticatedRequest,
     @Query('cari') cari?: string,
     @Query('status') status?: WorkOrderStatus,
@@ -111,8 +117,15 @@ export class WorkOrdersController {
     @Query('ukuranHalaman') ukuranHalaman?: string,
   ) {
     const bolehLihatSemua = ([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.KORLAP, UserRole.ELEKTRIK] as UserRole[]).includes(request.user.role);
+    // Admin Dept melihat semua WO departemennya (plus yang ia buat sendiri).
+    const departemen = await this.service.departemenAdminDept(request.user);
+    const lingkup = bolehLihatSemua
+      ? {}
+      : departemen
+        ? { lingkupDepartemen: { departemen, userId: request.user.id } }
+        : { createdBy: request.user.id };
     return this.service.findAll({
-      ...(bolehLihatSemua ? {} : { createdBy: request.user.id }),
+      ...lingkup,
       cari,
       status,
       priority,
@@ -138,33 +151,41 @@ export class WorkOrdersController {
   }
 
   @Get(':id/pdf')
-  downloadPdf(
+  async downloadPdf(
     @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
     @Res() response: Response,
   ) {
+    await this.service.pastikanAksesDepartemen(id, request.user);
     return this.pdfService.streamPdf(id, response);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() request: AuthenticatedRequest) {
+    await this.service.pastikanAksesDepartemen(id, request.user);
     return this.service.findOne(id);
   }
 
   @Post()
-  create(
+  async create(
     @Body() dto: CreateWorkOrderDto,
     @Req() request: AuthenticatedRequest,
   ) {
+    // Admin Dept: departemen WO otomatis = departemen akunnya.
+    const departemen = await this.service.departemenAdminDept(request.user);
+    if (departemen) dto.department = departemen;
     return this.service.create(dto, request.user.id, request.user.role);
   }
 
   @Post(':id/images')
   @UseInterceptors(workOrderImagesInterceptor)
-  uploadImages(
+  async uploadImages(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles()
     files: Express.Multer.File[],
+    @Req() request: AuthenticatedRequest,
   ) {
+    await this.service.pastikanAksesDepartemen(id, request.user);
     if (!files || files.length === 0) {
       throw new BadRequestException('Pilih minimal satu foto');
     }
@@ -176,11 +197,14 @@ export class WorkOrdersController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWorkOrderDto,
     @Req() request: AuthenticatedRequest,
   ) {
+    await this.service.pastikanAksesDepartemen(id, request.user);
+    const departemen = await this.service.departemenAdminDept(request.user);
+    if (departemen && dto.department !== undefined) dto.department = departemen;
     return this.service.update(id, dto, request.user.id, request.user.role);
   }
 
@@ -205,7 +229,9 @@ export class WorkOrdersController {
   async removeImage(
     @Param('id', ParseIntPipe) id: number,
     @Param('filename') filename: string,
+    @Req() request: AuthenticatedRequest,
   ) {
+    await this.service.pastikanAksesDepartemen(id, request.user);
     const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '');
 
     const result = await this.service.removeImage(id, safeFilename);

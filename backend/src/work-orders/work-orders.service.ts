@@ -398,6 +398,8 @@ export class WorkOrdersService {
   }
   async findAll(filter: {
     createdBy?: number;
+    /** Admin Dept: WO milik departemennya ATAU yang ia buat sendiri. */
+    lingkupDepartemen?: { departemen: string; userId: number };
     cari?: string;
     status?: WorkOrderStatus;
     priority?: WorkOrderPriority;
@@ -431,6 +433,18 @@ export class WorkOrdersService {
 
     const where = {
       ...(filter.createdBy ? { createdBy: filter.createdBy } : {}),
+      ...(filter.lingkupDepartemen
+        ? {
+            AND: [
+              {
+                OR: [
+                  { department: { equals: filter.lingkupDepartemen.departemen, mode: 'insensitive' as const } },
+                  { createdBy: filter.lingkupDepartemen.userId },
+                ],
+              },
+            ],
+          }
+        : {}),
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.priority ? { priority: filter.priority } : {}),
       ...(rentangTanggal ? { requestedAt: rentangTanggal } : {}),
@@ -521,6 +535,24 @@ export class WorkOrdersService {
         },
       ],
     });
+  }
+
+  /** Departemen akun Admin Dept (null bila bukan Admin Dept / belum diisi). */
+  async departemenAdminDept(user: { id: number; role: UserRole }): Promise<string | null> {
+    if (user.role !== UserRole.ADMIN_DEPT) return null;
+    const akun = await this.prisma.user.findUnique({ where: { id: user.id }, select: { departemen: true } });
+    return akun?.departemen?.trim() || null;
+  }
+
+  /** Admin Dept hanya boleh membuka/mengubah WO departemennya sendiri atau yang ia buat. */
+  async pastikanAksesDepartemen(id: number, user: { id: number; role: UserRole }) {
+    if (user.role !== UserRole.ADMIN_DEPT) return;
+    const wo = await this.prisma.workOrder.findUnique({ where: { id }, select: { department: true, createdBy: true } });
+    if (!wo) throw new NotFoundException('Work Order tidak ditemukan');
+    if (wo.createdBy === user.id) return;
+    const departemen = await this.departemenAdminDept(user);
+    if (departemen && wo.department.trim().toLowerCase() === departemen.toLowerCase()) return;
+    throw new ForbiddenException('Work Order ini bukan milik departemen Anda');
   }
 
   async findOne(id: number) {

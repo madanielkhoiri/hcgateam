@@ -110,6 +110,19 @@ function hariTerlambat(row: {
   return berjalan >= row.workDurationDays ? berjalan - row.workDurationDays : null;
 }
 
+/**
+ * Durasi WO dalam hari. Sudah Close: pakai durasi tersimpan (tanggal WO -> tanggal Close).
+ * Belum Close: dihitung berjalan dari tanggal WO masuk sampai hari ini (WITA).
+ */
+function durasiWo(row: { status: WorkOrderStatus; requestedAt: string; closedDurationDays: number | null }): { hari: number; berjalan: boolean } {
+  if (row.status === "CLOSE") return { hari: row.closedDurationDays ?? 0, berjalan: false };
+  const mulai = new Date(row.requestedAt.slice(0, 10) + "T00:00:00Z").getTime();
+  if (Number.isNaN(mulai)) return { hari: row.closedDurationDays ?? 0, berjalan: false };
+  const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const hariIni = Date.UTC(wita.getUTCFullYear(), wita.getUTCMonth(), wita.getUTCDate());
+  return { hari: Math.max(0, Math.floor((hariIni - mulai) / 86400000)), berjalan: true };
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -236,6 +249,8 @@ export default function WorkOrdersPage() {
   const [success, setSuccess] = useState("");
   const [message, setMessage] = useState("");
   const [user, setUser] = useState<LoginUser | null>(null);
+  // Admin Dept: departemen akun (WO otomatis ke departemen ini, tidak bisa diganti).
+  const [departemenTerkunci, setDepartemenTerkunci] = useState<string | null>(null);
 
   const request = useCallback(
     async (endpoint: string, options: RequestInit = {}) => {
@@ -318,6 +333,13 @@ export default function WorkOrdersPage() {
     setUser(getCurrentUser());
   }, []);
 
+  useEffect(() => {
+    if (user?.role !== "ADMIN_DEPT") return;
+    request("work-orders/lingkup")
+      .then((hasil: { departemen?: string | null }) => setDepartemenTerkunci(hasil?.departemen ?? null))
+      .catch(() => setDepartemenTerkunci(null));
+  }, [user, request]);
+
   // Debounce pencarian teks supaya tidak fetch tiap ketikan huruf.
   useEffect(() => {
     const timer = setTimeout(() => setSearchDebounced(search.trim()), 300);
@@ -373,6 +395,7 @@ export default function WorkOrdersPage() {
 
   function openCreate() {
     resetModalState();
+    if (departemenTerkunci) setForm((current) => ({ ...current, department: departemenTerkunci }));
     setMessage("");
     setModalOpen(true);
   }
@@ -984,7 +1007,15 @@ export default function WorkOrdersPage() {
                       )}
                     </td>
 
-                    <td>{row.closedDurationDays ?? 0} hari</td>
+                    <td>
+                      {(() => {
+                        const durasi = durasiWo(row);
+                        return <>
+                          {durasi.hari} hari
+                          {durasi.berjalan && <span style={{ display: "block", fontSize: 10, color: "#64748b", marginTop: 2 }}>berjalan</span>}
+                        </>;
+                      })()}
+                    </td>
 
                     <td className={styles.centerCell}>
                       {row.workDurationDays === null || row.workDurationDays === undefined
@@ -1189,7 +1220,7 @@ export default function WorkOrdersPage() {
                 <label>
                   <span>Departemen</span>
                   <input
-                    value={form.department}
+                    value={departemenTerkunci ?? form.department}
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
@@ -1197,6 +1228,9 @@ export default function WorkOrdersPage() {
                       }))
                     }
                     placeholder="Contoh: PRODUKSI"
+                    readOnly={Boolean(departemenTerkunci)}
+                    title={departemenTerkunci ? "Otomatis sesuai departemen akun Anda" : undefined}
+                    style={departemenTerkunci ? { background: "#f1f5f9", cursor: "not-allowed" } : undefined}
                     required
                   />
                 </label>
