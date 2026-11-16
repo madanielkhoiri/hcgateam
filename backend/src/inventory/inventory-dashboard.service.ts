@@ -15,9 +15,11 @@ export class InventoryDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   private parseScope(value: string): InventoryScope {
-    const scope = String(value ?? '')
+    const mentah = String(value ?? '')
       .trim()
       .toUpperCase();
+    // "INFRAS" = nama tampilan untuk lingkup GENERAL (Inventory Infras).
+    const scope = mentah === 'INFRAS' ? InventoryScope.GENERAL : mentah;
 
     if (
       scope !== InventoryScope.GENERAL &&

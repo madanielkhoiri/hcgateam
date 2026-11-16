@@ -77,7 +77,17 @@ describe('InventoryAreaService — parseScope', () => {
   it('menolak scope selain GENERAL/MESS/ELECTRIC', async () => {
     const { service } = buatService();
 
-    await expect(service.getItems('KANTIN')).rejects.toThrow('hanya GENERAL, MESS, atau ELECTRIC');
+    await expect(service.getItems('KANTIN')).rejects.toThrow('hanya Infras, Mess, atau Electric');
+  });
+
+  it('INFRAS diterima sebagai nama lain lingkup GENERAL', async () => {
+    const { service, prisma } = buatService();
+
+    await service.getItems('infras');
+
+    expect(prisma.item.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ inventoryScope: InventoryScope.GENERAL }) }),
+    );
   });
 
   it('menerima scope lowercase dan mengubahnya ke uppercase', async () => {

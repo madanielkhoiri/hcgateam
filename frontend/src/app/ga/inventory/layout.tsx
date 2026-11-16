@@ -104,7 +104,7 @@ const menuGroups: MenuGroup[] = [
       },
       {
         label: "Ambil Barang (Self-Order)",
-        href: "/gudang?scope=GENERAL",
+        href: "/gudang?scope=INFRAS",
         icon: ShoppingBag,
       },
     ],

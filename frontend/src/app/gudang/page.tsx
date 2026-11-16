@@ -157,7 +157,9 @@ function GudangPageInner() {
     setTaker('');
     setSiapDicek(true);
 
-    const scopeAwal = searchParams.get('scope');
+    // ?scope=INFRAS (nama tampilan) = lingkup GENERAL.
+    const scopeParam = searchParams.get('scope')?.toUpperCase();
+    const scopeAwal = scopeParam === 'INFRAS' ? 'GENERAL' : scopeParam;
     if (scopeAwal === 'GENERAL' || scopeAwal === 'MESS' || scopeAwal === 'ELECTRIC') {
       setScope(scopeAwal);
       setLangkah('menu');

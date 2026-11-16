@@ -25,7 +25,9 @@ export class InventoryAreaService {
   ) {}
 
   private parseScope(value: string): InventoryScope {
-    const scope = value.toUpperCase();
+    // "INFRAS" = nama tampilan untuk lingkup GENERAL (Inventory Infras).
+    const mentah = String(value ?? '').trim().toUpperCase();
+    const scope = mentah === 'INFRAS' ? InventoryScope.GENERAL : mentah;
 
     if (
       scope !== InventoryScope.GENERAL &&
@@ -33,7 +35,7 @@ export class InventoryAreaService {
       scope !== InventoryScope.ELECTRIC
     ) {
       throw new BadRequestException(
-        'Tipe inventory hanya GENERAL, MESS, atau ELECTRIC',
+        'Tipe inventory hanya Infras, Mess, atau Electric',
       );
     }
 
