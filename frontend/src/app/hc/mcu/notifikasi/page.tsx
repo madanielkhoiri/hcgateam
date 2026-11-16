@@ -45,7 +45,6 @@ export default function NotifikasiMcuPage() {
 
   const [dialogDept, setDialogDept] = useState(false);
   const [namaDept, setNamaDept] = useState('');
-  const [adminDeptId, setAdminDeptId] = useState('');
 
   const [cari, setCari] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -117,13 +116,11 @@ export default function NotifikasiMcuPage() {
     try {
       await mcuApi.kirim('/departemen', {
         namaDepartemen: namaDept.trim(),
-        adminAkunId: adminDeptId ? Number(adminDeptId) : undefined,
       });
 
       setSukses('Departemen baru berhasil ditambahkan.');
       setDialogDept(false);
       setNamaDept('');
-      setAdminDeptId('');
       await muat();
     } catch (error) {
       setGalat((error as Error).message);
@@ -181,7 +178,7 @@ export default function NotifikasiMcuPage() {
 
       <Panel
         judul="Master Departemen"
-        keterangan={`${departemen.length} departemen terdaftar.`}
+        keterangan={`${departemen.length} departemen terdaftar. Admin Dept diambil dari kolom Departemen pada akun (Manajemen Akun).`}
         aksi={
           adalahHc ? (
             <button
@@ -220,7 +217,7 @@ export default function NotifikasiMcuPage() {
                     <td>
                       <strong>{item.namaDepartemen}</strong>
                     </td>
-                    <td>{item.adminAkun?.name ?? '-'}</td>
+                    <td>{item.adminDept?.length ? item.adminDept.map((akun) => akun.name).join(', ') : '-'}</td>
                     <td>{item._count?.karyawan ?? 0}</td>
 
                     <td>
@@ -378,15 +375,6 @@ export default function NotifikasiMcuPage() {
               />
             </Field>
 
-            <Field label="ID Akun Admin Dept (opsional)" lebar>
-              <input
-                className={styles.input}
-                inputMode="numeric"
-                value={adminDeptId}
-                onChange={(event) => setAdminDeptId(event.target.value)}
-                placeholder="Contoh: 5"
-              />
-            </Field>
           </div>
         </Dialog>
       ) : null}

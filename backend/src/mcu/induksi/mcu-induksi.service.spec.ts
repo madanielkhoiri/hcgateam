@@ -69,6 +69,7 @@ function buatService(overrides: {
       findUnique: jest.fn().mockResolvedValue('karyawan' in overrides ? overrides.karyawan : { id: 7, statusKerja: StatusKerja.DIRUMAHKAN }),
       update: karyawanUpdate,
     },
+    user: { findUnique: jest.fn().mockResolvedValue({ departemen: "GA" }) },
     departemen: { findMany: overrides.departemenFindMany ?? jest.fn().mockResolvedValue([{ id: 3 }]) },
     $transaction: jest.fn((callback: (tx: unknown) => unknown) =>
       callback({
@@ -83,6 +84,7 @@ function buatService(overrides: {
   const notifikasi = {
     untukPeran: jest.fn().mockResolvedValue([]),
     penerimaPeran: jest.fn().mockResolvedValue([]),
+    penerimaAdminDept: jest.fn().mockResolvedValue([]),
     kirimBanyak: jest.fn().mockResolvedValue(undefined),
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;

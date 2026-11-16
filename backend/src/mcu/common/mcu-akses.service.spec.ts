@@ -117,6 +117,7 @@ describe('McuAksesService.wajibDepartemenSendiri', () => {
 
   it('Admin Dept ditolak kalau departemenId bukan yang dia pegang', async () => {
     const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ departemen: "GA" }) },
       departemen: { findMany: jest.fn().mockResolvedValue([{ id: 1, namaDepartemen: 'GA' }]) },
     };
     const akses = new McuAksesService(prisma as any);
@@ -128,10 +129,38 @@ describe('McuAksesService.wajibDepartemenSendiri', () => {
 
   it('Admin Dept diizinkan untuk departemen yang memang dia pegang', async () => {
     const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ departemen: "GA" }) },
       departemen: { findMany: jest.fn().mockResolvedValue([{ id: 5, namaDepartemen: 'GA' }]) },
     };
     const akses = new McuAksesService(prisma as any);
 
     await expect(akses.wajibDepartemenSendiri(aktor(UserRole.ADMIN_DEPT), 5)).resolves.toBeUndefined();
+  });
+});
+
+describe('McuAksesService.departemenDariAkun — dari kolom Departemen di akun', () => {
+  const aktorAdminDept = { id: 30, role: UserRole.ADMIN_DEPT, username: 'admin' };
+
+  it('mencocokkan departemen akun ke master Departemen (tanpa beda huruf besar/kecil)', async () => {
+    const findMany = jest.fn().mockResolvedValue([{ id: 5, namaDepartemen: 'PLANT' }]);
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ departemen: ' plant ' }) },
+      departemen: { findMany },
+    };
+    const akses = new McuAksesService(prisma as any);
+
+    await expect(akses.departemenDariAkun(aktorAdminDept as any)).resolves.toEqual([{ id: 5, namaDepartemen: 'PLANT' }]);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ namaDepartemen: { equals: 'plant', mode: 'insensitive' } }) }),
+    );
+  });
+
+  it('akun tanpa departemen tidak memegang departemen apa pun', async () => {
+    const findMany = jest.fn();
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ departemen: null }) }, departemen: { findMany } };
+    const akses = new McuAksesService(prisma as any);
+
+    await expect(akses.departemenDariAkun(aktorAdminDept as any)).resolves.toEqual([]);
+    expect(findMany).not.toHaveBeenCalled();
   });
 });

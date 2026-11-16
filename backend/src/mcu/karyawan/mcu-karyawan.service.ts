@@ -153,14 +153,29 @@ export class McuKaryawanService {
   // DEPARTEMEN
   // ==================================================
 
+  /**
+   * Master departemen + daftar akun Admin Dept-nya. Admin Dept ditentukan
+   * dari kolom Departemen pada akun (Manajemen Akun), bukan dari master ini.
+   */
   async daftarDepartemen() {
-    return this.prisma.departemen.findMany({
-      include: {
-        adminAkun: { select: { id: true, name: true, email: true } },
-        _count: { select: { karyawan: true } },
-      },
-      orderBy: { namaDepartemen: 'asc' },
-    });
+    const [daftar, adminDept] = await Promise.all([
+      this.prisma.departemen.findMany({
+        include: { _count: { select: { karyawan: true } } },
+        orderBy: { namaDepartemen: 'asc' },
+      }),
+      this.prisma.user.findMany({
+        where: { role: UserRole.ADMIN_DEPT, isActive: true, departemen: { not: null } },
+        select: { id: true, name: true, email: true, departemen: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    return daftar.map((item) => ({
+      ...item,
+      adminDept: adminDept
+        .filter((akun) => akun.departemen?.trim().toLowerCase() === item.namaDepartemen.trim().toLowerCase())
+        .map(({ id, name, email }) => ({ id, name, email })),
+    }));
   }
 
   async buatDepartemen(dto: BuatDepartemenDto) {
@@ -627,11 +642,26 @@ export class McuKaryawanService {
         `akan expired pada ${formatTanggalIndonesia(karyawan.tanggalMcuExpired)}. ` +
         'Mohon Admin Dept menentukan tanggal pelaksanaan MCU dan klinik tujuan.';
 
-      const target = [
-        {
-          penerimaId: karyawan.departemen.adminAkunId,
-          penerimaEmail: karyawan.departemen.adminAkun?.email ?? null,
+      // Reminder WA cukup sekali per 7 hari per karyawan (hemat kuota Fonnte).
+      const sudahDiingatkan = await this.prisma.logNotifikasiMcu.findFirst({
+        where: {
+          tipe: TipeNotifikasiMcu.REMINDER_H3_BULAN,
+          refTabel: 'karyawan',
+          refId: karyawan.id,
+          createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
+        select: { id: true },
+      });
+
+      if (sudahDiingatkan) {
+        continue;
+      }
+
+      // In-app: karyawan bersangkutan + Admin Dept + tembusan HC.
+      // WA hanya ke karyawan (dikirim di bawah), bukan ke Admin Dept/HC.
+      const target = [
+        ...(karyawan.akunId ? [{ penerimaId: karyawan.akunId, penerimaEmail: null }] : []),
+        ...(await this.notifikasi.penerimaAdminDept(karyawan.departemen.namaDepartemen)),
         ...tembusanHc,
       ].filter((item) => item.penerimaId);
 

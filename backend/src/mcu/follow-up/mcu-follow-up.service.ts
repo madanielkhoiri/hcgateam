@@ -362,10 +362,7 @@ export class McuFollowUpService {
 
     const target = [
       ...(await this.notifikasi.penerimaPeran(UserRole.HC)),
-      {
-        penerimaId: diperbarui.karyawan.departemen.adminAkunId,
-        penerimaEmail: diperbarui.karyawan.departemen.adminAkun?.email ?? null,
-      },
+      ...(await this.notifikasi.penerimaAdminDept(diperbarui.karyawan.departemen.namaDepartemen)),
     ].filter((item) => item.penerimaId);
 
     await this.notifikasi.kirimBanyak(
@@ -535,10 +532,7 @@ export class McuFollowUpService {
     });
 
     const target = [
-      {
-        penerimaId: diperbarui.karyawan.departemen.adminAkunId,
-        penerimaEmail: diperbarui.karyawan.departemen.adminAkun?.email ?? null,
-      },
+      ...(await this.notifikasi.penerimaAdminDept(diperbarui.karyawan.departemen.namaDepartemen)),
       {
         penerimaId: diperbarui.karyawan.akunId,
         penerimaEmail: diperbarui.karyawan.email,

@@ -59,6 +59,7 @@ function buatService(overrides: {
       findMany: rekomendasiFindMany,
       count: rekomendasiCount,
     },
+    user: { findUnique: jest.fn().mockResolvedValue({ departemen: "GA" }) },
     departemen: { findMany: overrides.departemenFindMany ?? jest.fn().mockResolvedValue([]) },
     $transaction: jest.fn((callback: (tx: unknown) => unknown) =>
       callback({
@@ -74,6 +75,7 @@ function buatService(overrides: {
   const berkas = {} as unknown as McuFileService;
   const notifikasi = {
     penerimaPeran: jest.fn().mockResolvedValue([]),
+    penerimaAdminDept: jest.fn().mockResolvedValue([]),
     kirimBanyak: jest.fn().mockResolvedValue(undefined),
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;
@@ -386,5 +388,37 @@ describe('McuRekomendasiService.daftar — pencarian nama/NIK karyawan', () => {
         }),
       }),
     );
+  });
+});
+
+describe('McuRekomendasiService.submit — langsung ke karyawan', () => {
+  const pdf = { filePdfRekomendasi: 'mcu/rekomendasi/hasil.pdf' };
+
+  it('rekomendasi otomatis tercatat diteruskan ke karyawan saat Dokter submit', async () => {
+    const { service, create } = buatService({ hasilMcu: hasilMcuFixture() });
+
+    await service.submit(100, { status: StatusRekomendasi.FIT, ...pdf } as any, aktor(UserRole.DOKTER, 9));
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          diteruskanKeKaryawanAt: expect.any(Date),
+          diteruskanKeDeptAt: expect.any(Date),
+          diteruskanOlehId: 9,
+        }),
+      }),
+    );
+  });
+
+  it('karyawan bersangkutan langsung dikirimi notifikasi hasil (in-app + WA)', async () => {
+    const { service } = buatService({ hasilMcu: hasilMcuFixture() });
+    const notifikasi = (service as any).notifikasi;
+
+    await service.submit(100, { status: StatusRekomendasi.FIT, ...pdf } as any, aktor(UserRole.DOKTER));
+
+    expect(notifikasi.duaKanal).toHaveBeenCalledWith(
+      expect.objectContaining({ penerimaId: 70, judul: 'Hasil MCU Anda: FIT' }),
+    );
+    expect(notifikasi.penerimaAdminDept).toHaveBeenCalledWith('GA');
   });
 });

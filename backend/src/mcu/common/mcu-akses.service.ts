@@ -102,10 +102,23 @@ export class McuAksesService {
     });
   }
 
-  /** Departemen yang di-handle satu akun Admin Dept. */
+  /**
+   * Departemen yang di-handle akun Admin Dept: diambil dari kolom
+   * Departemen pada akun (Manajemen Akun), dicocokkan ke master Departemen.
+   */
   async departemenDariAkun(aktor: AktorMcu) {
+    const akun = await this.prisma.user.findUnique({
+      where: { id: aktor.id },
+      select: { departemen: true },
+    });
+    const nama = akun?.departemen?.trim();
+
+    if (!nama) {
+      return [];
+    }
+
     return this.prisma.departemen.findMany({
-      where: { adminAkunId: aktor.id, aktif: true },
+      where: { namaDepartemen: { equals: nama, mode: 'insensitive' }, aktif: true },
       select: { id: true, namaDepartemen: true },
     });
   }

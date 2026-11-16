@@ -84,12 +84,14 @@ function buatService(overrides: {
     klinik: {
       findUnique: jest.fn().mockResolvedValue('klinik' in overrides ? overrides.klinik : { id: 1, statusAktif: true }),
     },
+    user: { findUnique: jest.fn().mockResolvedValue({ departemen: "GA" }) },
     departemen: { findMany: overrides.departemenFindMany ?? jest.fn().mockResolvedValue([{ id: 3 }]) },
   } as unknown as PrismaService;
 
   const akses = new McuAksesService(prisma);
   const notifikasi = {
     penerimaPeran: jest.fn().mockResolvedValue([]),
+    penerimaAdminDept: jest.fn().mockResolvedValue([]),
     kirimBanyak: jest.fn().mockResolvedValue(undefined),
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;
@@ -250,11 +252,13 @@ describe('McuJadwalService.buatBatch', () => {
         create: jest.fn(({ data }) => Promise.resolve({ id: 2, ...data, karyawan: karyawanFixture(), klinik: null })),
       },
       klinik: { findUnique: jest.fn() },
+      user: { findUnique: jest.fn().mockResolvedValue({ departemen: "GA" }) },
       departemen: { findMany: jest.fn().mockResolvedValue([{ id: 3 }]) },
     } as unknown as PrismaService;
     const akses = new McuAksesService(prisma);
     const notifikasi = {
       penerimaPeran: jest.fn().mockResolvedValue([]),
+      penerimaAdminDept: jest.fn().mockResolvedValue([]),
       kirimBanyak: jest.fn().mockResolvedValue(undefined),
       duaKanal: jest.fn().mockReturnValue([]),
     } as unknown as McuNotifikasiService;

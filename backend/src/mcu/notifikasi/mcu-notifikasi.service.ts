@@ -113,6 +113,29 @@ export class McuNotifikasiService {
     }));
   }
 
+  /**
+   * Akun Admin Dept untuk satu departemen: role ADMIN_DEPT yang kolom
+   * Departemen di akunnya sama dengan nama departemen tersebut.
+   */
+  async penerimaAdminDept(namaDepartemen: string | null | undefined): Promise<TargetNotifikasi[]> {
+    const nama = namaDepartemen?.trim();
+
+    if (!nama) {
+      return [];
+    }
+
+    const akun = await this.prisma.user.findMany({
+      where: {
+        role: UserRole.ADMIN_DEPT,
+        isActive: true,
+        departemen: { equals: nama, mode: 'insensitive' },
+      },
+      select: { id: true, email: true },
+    });
+
+    return akun.map((item) => ({ penerimaId: item.id, penerimaEmail: item.email }));
+  }
+
   /** Bangun payload notifikasi untuk semua pemegang satu role. */
   async untukPeran(
     peran: UserRole,

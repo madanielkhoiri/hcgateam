@@ -235,7 +235,10 @@ export class McuSuratService {
       return dibuat;
     });
 
-    return this.cetakUlang(surat.id);
+    await this.cetakUlang(surat.id);
+
+    // Terbit = otomatis terkirim ke klinik tujuan (dan notifikasi ke karyawan).
+    return this.kirim(surat.id, aktor);
   }
 
   /** Cetak ulang PDF surat pengantar dari data yang sudah tersimpan. */

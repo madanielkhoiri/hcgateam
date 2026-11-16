@@ -240,10 +240,7 @@ export class McuInduksiService {
         penerimaId: diperbarui.karyawan.akunId,
         penerimaEmail: diperbarui.karyawan.email,
       },
-      {
-        penerimaId: diperbarui.departemen.adminAkunId,
-        penerimaEmail: diperbarui.departemen.adminAkun?.email ?? null,
-      },
+      ...(await this.notifikasi.penerimaAdminDept(diperbarui.departemen.namaDepartemen)),
     ].filter((item) => item.penerimaId);
 
     await this.notifikasi.kirimBanyak(

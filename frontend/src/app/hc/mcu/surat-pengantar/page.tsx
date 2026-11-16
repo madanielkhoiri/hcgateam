@@ -188,7 +188,7 @@ export default function SuratPengantarPage() {
       });
 
       setSukses(
-        `Surat pengantar ${hasil.nomorSurat} berhasil diterbitkan untuk ${hasil.jadwalMcu.length} karyawan.`,
+        `Surat pengantar ${hasil.nomorSurat} diterbitkan dan langsung terkirim ke klinik untuk ${hasil.jadwalMcu.length} karyawan.`,
       );
       setDialogTerbuka(false);
       await muat();
@@ -539,7 +539,7 @@ export default function SuratPengantarPage() {
               >
                 {proses
                   ? 'Menerbitkan...'
-                  : `Terbitkan & Generate PDF (${jumlahDipilih})`}
+                  : `Terbitkan & Kirim ke Klinik (${jumlahDipilih})`}
               </button>
             </>
           }

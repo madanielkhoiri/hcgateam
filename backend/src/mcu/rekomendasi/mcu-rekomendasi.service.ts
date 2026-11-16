@@ -311,6 +311,10 @@ export class McuRekomendasiService {
           siklusKe,
           tanggalSubmit: sekarang,
           retensiHapusAt: tambahBulan(sekarang, BULAN_RETENSI_DOKUMEN),
+          // Rekomendasi langsung diteruskan ke karyawan bersangkutan (tanpa menunggu Admin Dept).
+          diteruskanKeDeptAt: sekarang,
+          diteruskanKeKaryawanAt: sekarang,
+          diteruskanOlehId: aktor.id,
         },
         include: REKOMENDASI_INCLUDE,
       });
@@ -369,15 +373,31 @@ export class McuRekomendasiService {
 
     const target = [
       ...(await this.notifikasi.penerimaPeran(UserRole.HC)),
-      {
-        penerimaId: hasil.jadwalMcu.departemen.adminAkunId,
-        penerimaEmail: null,
-      },
+      ...(await this.notifikasi.penerimaAdminDept(hasil.jadwalMcu.departemen.namaDepartemen)),
     ].filter((item) => item.penerimaId);
 
     await this.notifikasi.kirimBanyak(
       target.flatMap((item) => this.notifikasi.duaKanal({ ...isi, ...item })),
     );
+
+    // Karyawan bersangkutan langsung menerima hasilnya (in-app + WA Fonnte).
+    const fit = dto.status === StatusRekomendasi.FIT;
+    if (hasil.jadwalMcu.karyawan.akunId) {
+      await this.notifikasi.kirimBanyak(
+        this.notifikasi.duaKanal({
+          tipe: TipeNotifikasiMcu.REKOMENDASI_FIT_FU,
+          refTabel: 'rekomendasi_mcu',
+          refId: rekomendasi.id,
+          judul: `Hasil MCU Anda: ${fit ? 'FIT' : 'Follow Up'}`,
+          pesan: fit
+            ? 'Anda dinyatakan FIT. Proses dilanjutkan ke pendaftaran induksi ulang K3.'
+            : 'Anda perlu menjalani Follow Up. Surat rujukan dari Dokter sudah tersedia, ' +
+              'silakan pilih tanggal FU pada menu Follow Up sesuai batas waktu dari HC.',
+          penerimaId: hasil.jadwalMcu.karyawan.akunId,
+          penerimaEmail: null,
+        }),
+      );
+    }
 
     return rekomendasi;
   }

@@ -74,6 +74,7 @@ function buatService(overrides: {
   const berkas = { simpan: jest.fn().mockReturnValue('mcu/hasil-follow-up/x.pdf') } as unknown as McuFileService;
   const notifikasi = {
     penerimaPeran: jest.fn().mockResolvedValue([]),
+    penerimaAdminDept: jest.fn().mockResolvedValue([]),
     kirimBanyak: jest.fn().mockResolvedValue(undefined),
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;

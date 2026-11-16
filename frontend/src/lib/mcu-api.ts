@@ -65,6 +65,8 @@ export type Departemen = {
   adminAkunId: number | null;
   aktif: boolean;
   adminAkun?: { id: number; name: string; email: string | null } | null;
+  /** Akun Admin Dept yang kolom Departemen-nya sama dengan departemen ini. */
+  adminDept?: Array<{ id: number; name: string; email: string | null }>;
   _count?: { karyawan: number };
 };
 

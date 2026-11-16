@@ -44,6 +44,7 @@ function buatService(overrides: {
   const update = overrides.update ?? jest.fn(({ data }) => Promise.resolve({ ...(karyawanFixture() as object), ...data }));
 
   const prisma = {
+    logNotifikasiMcu: { findFirst: jest.fn().mockResolvedValue(null) },
     departemen: {
       findUnique: jest.fn().mockResolvedValue('departemenDuplikat' in overrides ? overrides.departemenDuplikat : ('departemen' in overrides ? overrides.departemen : { id: 3 })),
       create,
@@ -65,6 +66,7 @@ function buatService(overrides: {
 
   const notifikasi = {
     penerimaPeran: jest.fn().mockResolvedValue([]),
+    penerimaAdminDept: jest.fn().mockResolvedValue([]),
     kirimBanyak: jest.fn().mockResolvedValue(undefined),
     duaKanal: jest.fn().mockReturnValue([]),
   } as unknown as McuNotifikasiService;
