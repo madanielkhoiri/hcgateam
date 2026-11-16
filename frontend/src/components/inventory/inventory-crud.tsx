@@ -1267,7 +1267,7 @@ export default function InventoryCrud({
                       <th>No</th>
                       <th>Kode Barang</th>
                       <th>Nama Barang</th>
-                      {pakaiLokasi && <th>Lokasi</th>}
+                      {pakaiLokasi && <th style={{ width: 190, textAlign: "center" }}>Lokasi</th>}
                       <th>Jenis</th>
                       <th>Satuan</th>
                       <th>Status</th>
@@ -1295,17 +1295,31 @@ export default function InventoryCrud({
                                     aria-label={`Lokasi gudang ${item.code}`}
                                     title="Pilih lokasi gudang"
                                     style={{
-                                      height: 34,
-                                      minWidth: 160,
-                                      padding: "0 30px 0 12px",
+                                      display: "block",
+                                      width: "100%",
+                                      maxWidth: 162,
+                                      height: 32,
+                                      margin: "0 auto",
+                                      boxSizing: "border-box",
+                                      padding: "0 28px 0 12px",
                                       borderRadius: 999,
                                       border: `1.5px solid ${info ? info.warna : "#cbd5e1"}`,
-                                      background: info ? info.latar : "#fff",
+                                      backgroundColor: info ? info.latar : "#fff",
+                                      // Panah kustom berwarna sama dengan teks (appearance bawaan disembunyikan).
+                                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(info ? info.warna : "#64748b")}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                                      backgroundRepeat: "no-repeat",
+                                      backgroundPosition: "right 10px center",
+                                      appearance: "none",
+                                      WebkitAppearance: "none",
                                       color: info ? info.warna : "#64748b",
                                       fontFamily: "inherit",
-                                      fontSize: 12,
+                                      fontSize: 11.5,
                                       fontWeight: 800,
+                                      textAlign: "left",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
                                       cursor: "pointer",
+                                      outline: "none",
                                     }}
                                   >
                                     {!item.lokasiGudang && <option value="" disabled>Pilih lokasi</option>}
@@ -1373,7 +1387,7 @@ export default function InventoryCrud({
                       <th>No</th>
                       <th>Kode Barang</th>
                       <th>Nama Barang</th>
-                      {pakaiLokasi && <th>Lokasi</th>}
+                      {pakaiLokasi && <th style={{ width: 190, textAlign: "center" }}>Lokasi</th>}
                       <th>Jenis</th>
                       <th>Jumlah Stok</th>
                       <th>Satuan</th>
