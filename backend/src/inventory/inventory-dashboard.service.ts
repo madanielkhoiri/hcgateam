@@ -92,6 +92,7 @@ export class InventoryDashboardService {
         },
         select: {
           quantity: true,
+          item: { select: { lokasiGudang: true } },
         },
       }),
 
@@ -259,6 +260,15 @@ export class InventoryDashboardService {
       summary: {
         totalItems,
         currentStock,
+        // Inventory Electric: jumlah barang & stok per lokasi gudang.
+        perLokasi: (['GUDANG_GA', 'GUDANG_ELEKTRIK'] as const).map((lokasi) => {
+          const baris = stocks.filter((stock) => stock.item?.lokasiGudang === lokasi);
+          return {
+            lokasi,
+            jumlahBarang: baris.length,
+            stok: baris.reduce((total, stock) => total + stock.quantity, 0),
+          };
+        }),
         totalStockIn,
         totalStockOut,
         transactionDays: chart.length,

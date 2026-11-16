@@ -825,3 +825,69 @@
   margin-top: 8px;
   line-height: 1.5;
 }
+
+/* ==================================================
+   Kartu Ambil Barang seragam untuk semua lingkup (General, Mess, Electric):
+   foto selalu kotak, nama 2 baris, tombol jumlah selalu di dasar kartu.
+   ================================================== */
+.grid {
+  align-items: stretch;
+}
+
+.card {
+  height: 100%;
+}
+
+.tile {
+  overflow: hidden;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
+.tile > img {
+  position: absolute;
+  inset: 0;
+}
+
+.cardBody {
+  flex: 1;
+}
+
+.itemName {
+  -webkit-line-clamp: 2;
+  min-height: calc(1.25em * 2);
+}
+
+.stepper,
+.unavailable {
+  margin-top: auto;
+  height: 48px;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+/* Lokasi gudang (Electric): label di pojok foto + titik warna di chip filter */
+.lokasiBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+}
+
+.lokasiDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+}

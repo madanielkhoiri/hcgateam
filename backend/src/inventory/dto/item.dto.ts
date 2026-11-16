@@ -1,4 +1,4 @@
-﻿import { ItemCategory, ItemUnit } from '@prisma/client';
+﻿import { ItemCategory, ItemUnit, LokasiGudang } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -17,6 +17,11 @@ export class CreateItemDto {
 
   @IsEnum(ItemUnit)
   unit!: ItemUnit;
+
+  /** Wajib untuk Inventory Electric (divalidasi di service). */
+  @IsOptional()
+  @IsEnum(LokasiGudang, { message: 'Lokasi gudang tidak valid' })
+  lokasiGudang?: LokasiGudang;
 }
 
 export class UpdateItemDto {
@@ -36,4 +41,8 @@ export class UpdateItemDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsEnum(LokasiGudang, { message: 'Lokasi gudang tidak valid' })
+  lokasiGudang?: LokasiGudang;
 }

@@ -17,6 +17,12 @@ const ROLE_BOLEH_GUDANG = ['GUDANG', 'SECTION_HEAD', 'ADMIN', 'SUPER_ADMIN', 'EL
 
 type Langkah = 'scope' | 'menu' | 'keranjang' | 'konfirmasi' | 'sukses';
 
+/** Warna lokasi gudang (Electric): hijau = Gudang GA, ungu = Gudang Elektrik. */
+const LOKASI_META = {
+  GUDANG_GA: { label: 'Gudang GA', fg: '#047857', bg: '#dcfce7' },
+  GUDANG_ELEKTRIK: { label: 'Gudang Elektrik', fg: '#7e22ce', bg: '#f3e8ff' },
+} as const;
+
 const KATEGORI_META: Record<
   string,
   { bg: string; fg: string; label: string }
@@ -114,6 +120,7 @@ function GudangPageInner() {
   const [errorItems, setErrorItems] = useState('');
 
   const [activeCategory, setActiveCategory] = useState('SEMUA');
+  const [activeLokasi, setActiveLokasi] = useState<'SEMUA' | keyof typeof LOKASI_META>('SEMUA');
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<Record<number, number>>({});
 
@@ -237,13 +244,17 @@ function GudangPageInner() {
         return false;
       }
 
+      if (scope === 'ELECTRIC' && activeLokasi !== 'SEMUA' && item.lokasiGudang !== activeLokasi) {
+        return false;
+      }
+
       if (kata && !item.name.toLowerCase().includes(kata)) {
         return false;
       }
 
       return true;
     });
-  }, [items, activeCategory, search]);
+  }, [items, activeCategory, activeLokasi, scope, search]);
 
   const itemById = useMemo(() => {
     const map = new Map<number, BarangGudang>();
@@ -449,7 +460,7 @@ function GudangPageInner() {
         </div>
 
         <div className={styles.listArea}>
-          {(['GENERAL', 'MESS', 'ELECTRIC'] as InventoryScopeGudang[]).map((nilai) => (
+          {(['INFRAS', 'MESS', 'ELECTRIC'] as InventoryScopeGudang[]).map((nilai) => (
             <button
               key={nilai}
               type="button"
@@ -532,6 +543,36 @@ function GudangPageInner() {
           ))}
         </div>
 
+        {scope === 'ELECTRIC' && (
+          <div className={styles.tabs} aria-label="Filter lokasi gudang">
+            <button
+              type="button"
+              onClick={() => setActiveLokasi('SEMUA')}
+              className={`${styles.tabChip} ${activeLokasi === 'SEMUA' ? styles.tabChipActive : ''}`}
+            >
+              Semua Lokasi
+            </button>
+            {(Object.keys(LOKASI_META) as Array<keyof typeof LOKASI_META>).map((kunci) => {
+              const info = LOKASI_META[kunci];
+              const aktif = activeLokasi === kunci;
+              return (
+                <button
+                  key={kunci}
+                  type="button"
+                  onClick={() => setActiveLokasi(kunci)}
+                  className={styles.tabChip}
+                  style={aktif
+                    ? { background: info.fg, borderColor: info.fg, color: '#fff' }
+                    : { background: info.bg, borderColor: info.bg, color: info.fg }}
+                >
+                  <span className={styles.lokasiDot} style={{ background: aktif ? '#fff' : info.fg }} />
+                  {info.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className={styles.itemCount}>
           {loadingItems ? 'Memuat barang...' : `${itemTampil.length} barang`}
         </div>
@@ -546,20 +587,31 @@ function GudangPageInner() {
             const rendah = !habis && item.stock <= 8;
             const stockColor = habis ? '#d64545' : rendah ? '#b7791f' : '#1f9d55';
             const stockLabel = habis ? 'Stok habis' : `Stok: ${item.stock} ${item.unit}`;
+            const lokasi = item.lokasiGudang ? LOKASI_META[item.lokasiGudang] : null;
 
             return (
               <div
                 key={item.id}
                 className={`${styles.card} ${qty > 0 ? styles.cardSelected : ''} ${habis ? styles.cardDisabled : ''}`}
+                style={lokasi ? { borderTop: `4px solid ${lokasi.fg}` } : undefined}
               >
                 <div className={styles.tile} style={{ background: item.photoPath ? '#eef2f8' : meta.bg }}>
                   <TileFoto item={item} size={56} />
                   {!item.photoPath && <span className={styles.tileCaption}>Foto belum ada</span>}
                   {habis && <div className={styles.tileOverlay} />}
+                  {lokasi && (
+                    <span className={styles.lokasiBadge} style={{ background: lokasi.fg }}>
+                      <span className={styles.lokasiDot} style={{ background: '#fff' }} />
+                      {lokasi.label}
+                    </span>
+                  )}
                 </div>
 
                 <div className={styles.cardBody}>
-                  <span className={styles.categoryBadge} style={{ background: meta.bg, color: meta.fg }}>
+                  <span
+                    className={styles.categoryBadge}
+                    style={scope === 'ELECTRIC' ? { background: '#f1f5f9', color: '#64748b' } : { background: meta.bg, color: meta.fg }}
+                  >
                     {meta.label}
                   </span>
                   <div className={styles.itemName}>{item.name}</div>

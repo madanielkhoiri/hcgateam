@@ -72,10 +72,43 @@ const categories = [
   "FURNITURE",
 ];
 
+type LokasiGudang = "GUDANG_GA" | "GUDANG_ELEKTRIK";
+
+const LOKASI_GUDANG: Record<LokasiGudang, { label: string; warna: string; latar: string }> = {
+  GUDANG_GA: { label: "Gudang GA", warna: "#047857", latar: "#dcfce7" },
+  GUDANG_ELEKTRIK: { label: "Gudang Elektrik", warna: "#7e22ce", latar: "#f3e8ff" },
+};
+
+/** Label lokasi gudang berwarna: hijau = Gudang GA, ungu = Gudang Elektrik. */
+function LokasiBadge({ lokasi }: { lokasi?: LokasiGudang | null }) {
+  if (!lokasi) return <span style={{ color: "#94a3b8" }}>-</span>;
+  const info = LOKASI_GUDANG[lokasi];
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "4px 10px",
+        borderRadius: 999,
+        background: info.latar,
+        color: info.warna,
+        fontSize: 11,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <i style={{ width: 7, height: 7, borderRadius: 99, background: info.warna }} />
+      {info.label}
+    </span>
+  );
+}
+
 type Item = {
   id: number;
   code: string;
   name: string;
+  lokasiGudang?: LokasiGudang | null;
   category: "ATK" | "HOUSEKEEPING" | "BAJU" | "ELEKTRONIK" | "FURNITURE";
   unit: string;
   isActive: boolean;
@@ -272,6 +305,10 @@ export default function InventoryCrud({
   const [category, setCategory] = useState("ATK");
   const [unit, setUnit] = useState("PC");
   const [isActive, setIsActive] = useState(true);
+  const [lokasiGudang, setLokasiGudang] = useState<LokasiGudang | "">("");
+  const [lokasiFilter, setLokasiFilter] = useState("");
+  // Lokasi gudang hanya dipakai Inventory Electric (GA MEP).
+  const pakaiLokasi = scope === "ELECTRIC";
 
   const [date, setDate] = useState(today());
   const [itemId, setItemId] = useState("");
@@ -470,6 +507,7 @@ export default function InventoryCrud({
     setCategory("ATK");
     setUnit("PC");
     setIsActive(true);
+    setLokasiGudang("");
     setDate(today());
     setItemId("");
     setItemSearch("");
@@ -497,6 +535,7 @@ export default function InventoryCrud({
     setCategory(item.category);
     setUnit(item.unit);
     setIsActive(item.isActive);
+    setLokasiGudang(item.lokasiGudang ?? "");
     setExistingPhotoPath(item.photoPath ?? "");
     setPhotoInputKey((current) => current + 1);
     setModalOpen(true);
@@ -855,10 +894,15 @@ export default function InventoryCrud({
         let payload: Record<string, unknown>;
 
         if (mode === "items") {
+          if (pakaiLokasi && !lokasiGudang) {
+            throw new Error("Pilih lokasi gudang: Gudang GA atau Gudang Elektrik");
+          }
+
           payload = {
             name,
             category,
             unit,
+            ...(pakaiLokasi ? { lokasiGudang } : {}),
             ...(editingId !== null
               ? { isActive }
               : {}),
@@ -1008,6 +1052,7 @@ export default function InventoryCrud({
         .includes(keyword),
     )
     .filter((item) => !categoryFilter || item.category === categoryFilter)
+    .filter((item) => !lokasiFilter || item.lokasiGudang === lokasiFilter)
     .filter((item) => {
       if (!statusFilter) {
         return true;
@@ -1027,11 +1072,13 @@ export default function InventoryCrud({
     .filter(
       (stock) =>
         !categoryFilter || stock.item.category === categoryFilter,
-    );
+    )
+    .filter((stock) => !lokasiFilter || stock.item.lokasiGudang === lokasiFilter);
 
   const filteredTransactions = transactions;
 
   function resetFilters() {
+    setLokasiFilter("");
     setSearch("");
     setMonth("");
     setYear("");
@@ -1140,6 +1187,19 @@ export default function InventoryCrud({
               </select>
             )}
 
+            {pakaiLokasi && (mode === "items" || mode === "stocks") && (
+              <select
+                className={styles.filterSelect}
+                value={lokasiFilter}
+                onChange={(event) => setLokasiFilter(event.target.value)}
+                aria-label="Filter lokasi gudang"
+              >
+                <option value="">Semua Lokasi</option>
+                <option value="GUDANG_GA">Gudang GA</option>
+                <option value="GUDANG_ELEKTRIK">Gudang Elektrik</option>
+              </select>
+            )}
+
             {mode === "items" && (
               <select
                 className={styles.filterSelect}
@@ -1188,6 +1248,7 @@ export default function InventoryCrud({
                       <th>No</th>
                       <th>Kode Barang</th>
                       <th>Nama Barang</th>
+                      {pakaiLokasi && <th>Lokasi</th>}
                       <th>Jenis</th>
                       <th>Satuan</th>
                       <th>Status</th>
@@ -1204,6 +1265,7 @@ export default function InventoryCrud({
                             <strong>{item.code}</strong>
                           </td>
                           <td>{item.name}</td>
+                          {pakaiLokasi && <td><LokasiBadge lokasi={item.lokasiGudang} /></td>}
                           <td>
                             {categoryLabel(
                               item.category,
@@ -1261,6 +1323,7 @@ export default function InventoryCrud({
                       <th>No</th>
                       <th>Kode Barang</th>
                       <th>Nama Barang</th>
+                      {pakaiLokasi && <th>Lokasi</th>}
                       <th>Jenis</th>
                       <th>Jumlah Stok</th>
                       <th>Satuan</th>
@@ -1280,6 +1343,7 @@ export default function InventoryCrud({
                             </strong>
                           </td>
                           <td>{stock.item.name}</td>
+                          {pakaiLokasi && <td><LokasiBadge lokasi={stock.item.lokasiGudang} /></td>}
                           <td>
                             {categoryLabel(
                               stock.item.category,
@@ -1364,7 +1428,12 @@ export default function InventoryCrud({
                               {row.item.code}
                             </strong>
                           </td>
-                          <td>{row.item.name}</td>
+                          <td>
+                            {row.item.name}
+                            {pakaiLokasi && row.item.lokasiGudang && (
+                              <div style={{ marginTop: 4 }}><LokasiBadge lokasi={row.item.lokasiGudang} /></div>
+                            )}
+                          </td>
                           <td>{row.quantity}</td>
                           <td>{row.unit}</td>
 
@@ -1516,6 +1585,44 @@ export default function InventoryCrud({
                       required
                     />
                   </label>
+
+                  {pakaiLokasi && (
+                    <div className={styles.fullField}>
+                      <span style={{ color: "#526a86", fontSize: 10, fontWeight: 700 }}>Lokasi Gudang <b style={{ color: "#dc2626" }}>*</b></span>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                        {(Object.keys(LOKASI_GUDANG) as LokasiGudang[]).map((kunci) => {
+                          const info = LOKASI_GUDANG[kunci];
+                          const aktif = lokasiGudang === kunci;
+                          return (
+                            <button
+                              key={kunci}
+                              type="button"
+                              onClick={() => setLokasiGudang(kunci)}
+                              aria-pressed={aktif}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "12px 14px",
+                                borderRadius: 12,
+                                border: `2px solid ${aktif ? info.warna : "#d9e2ec"}`,
+                                background: aktif ? info.latar : "#fff",
+                                color: aktif ? info.warna : "#475569",
+                                fontWeight: 800,
+                                fontSize: 13,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                boxShadow: aktif ? "0 6px 16px rgba(15,23,42,.08)" : "none",
+                              }}
+                            >
+                              <i style={{ width: 12, height: 12, borderRadius: 99, background: info.warna, flexShrink: 0 }} />
+                              {info.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <label>
                     <span>Jenis Barang</span>

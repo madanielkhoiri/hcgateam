@@ -22,6 +22,8 @@ export type BarangGudang = {
   unit: string;
   stock: number;
   photoPath: string | null;
+  /** Hanya barang Electric: lokasi fisik barang. */
+  lokasiGudang?: 'GUDANG_GA' | 'GUDANG_ELEKTRIK' | null;
 };
 
 export type ItemKeranjang = {

@@ -31,6 +31,7 @@ type DashboardResponse = {
     totalStockIn: number;
     totalStockOut: number;
     currentStock: number;
+    perLokasi?: Array<{ lokasi: "GUDANG_GA" | "GUDANG_ELEKTRIK"; jumlahBarang: number; stok: number }>;
   };
   chart: ChartRow[];
 };
@@ -415,6 +416,40 @@ export default function InventoryDashboardPage({
           </div>
         </div>
       </section>
+
+      {scope === "electric" && data?.summary.perLokasi && (
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: 12,
+          }}
+        >
+          {data.summary.perLokasi.map((baris) => {
+            const ga = baris.lokasi === "GUDANG_GA";
+            const warna = ga ? "#047857" : "#7e22ce";
+            return (
+              <div
+                key={baris.lokasi}
+                style={{
+                  ...cardStyle,
+                  borderLeft: `6px solid ${warna}`,
+                  background: ga ? "#f0fdf4" : "#faf5ff",
+                }}
+              >
+                <span style={{ width: 14, height: 14, borderRadius: 99, background: warna, flexShrink: 0 }} />
+                <div>
+                  <span style={{ color: warna, fontWeight: 800 }}>{ga ? "Gudang GA" : "Gudang Elektrik"}</span>
+                  <strong style={{ display: "block", color: "#0d315c", fontSize: 24 }}>
+                    {baris.stok} <small style={{ fontSize: 13, color: "#7185a0", fontWeight: 600 }}>stok</small>
+                  </strong>
+                  <span style={{ color: "#7185a0", fontSize: 12 }}>{baris.jumlahBarang} jenis barang</span>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       <section className="dashboard-card-grid"
         style={{

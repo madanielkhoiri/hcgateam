@@ -159,11 +159,17 @@ export class InventoryAreaService {
 
       const code = await this.generateCode(tx, scope, dto.category);
 
+      // Inventory Electric wajib punya lokasi gudang; scope lain tidak memakai lokasi.
+      if (scope === InventoryScope.ELECTRIC && !dto.lokasiGudang) {
+        throw new BadRequestException('Lokasi gudang wajib dipilih (Gudang GA / Gudang Elektrik)');
+      }
+
       return tx.item.create({
         data: {
           code,
           name: cleanName,
           inventoryScope: scope,
+          lokasiGudang: scope === InventoryScope.ELECTRIC ? dto.lokasiGudang : null,
           category: dto.category,
           unit: dto.unit,
           isActive: true,
@@ -203,6 +209,7 @@ export class InventoryAreaService {
         category: dto.category,
         unit: dto.unit,
         isActive: dto.isActive,
+        ...(scope === InventoryScope.ELECTRIC && dto.lokasiGudang ? { lokasiGudang: dto.lokasiGudang } : {}),
       },
       include: {
         stock: true,

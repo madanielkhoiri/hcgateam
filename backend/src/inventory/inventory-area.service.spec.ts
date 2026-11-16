@@ -104,13 +104,33 @@ describe('InventoryAreaService.createItem', () => {
     const { service, prisma, itemCreate } = buatService({ duplicateItem: null });
     (prisma.item.findMany as jest.Mock).mockResolvedValue([{ code: 'ATK-01' }]);
 
-    await service.createItem('ELECTRIC', { name: 'Kabel', category: ItemCategory.ATK, unit: 'PCS' } as any);
+    await service.createItem('ELECTRIC', { name: 'Kabel', category: ItemCategory.ATK, unit: 'PCS', lokasiGudang: 'GUDANG_GA' } as any);
 
     expect(prisma.item.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ inventoryScope: InventoryScope.ELECTRIC }) }),
     );
     expect(itemCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ code: 'ATK-02', inventoryScope: InventoryScope.ELECTRIC }) }),
+      expect.objectContaining({ data: expect.objectContaining({ code: 'ATK-02', inventoryScope: InventoryScope.ELECTRIC, lokasiGudang: 'GUDANG_GA' }) }),
+    );
+  });
+
+  it('Inventory Electric wajib memilih lokasi gudang', async () => {
+    const { service, prisma } = buatService({ duplicateItem: null });
+    (prisma.item.findMany as jest.Mock).mockResolvedValue([]);
+
+    await expect(
+      service.createItem('ELECTRIC', { name: 'Kabel', category: ItemCategory.ATK, unit: 'PCS' } as any),
+    ).rejects.toThrow('Lokasi gudang wajib dipilih');
+  });
+
+  it('scope selain Electric tidak menyimpan lokasi gudang', async () => {
+    const { service, prisma, itemCreate } = buatService({ duplicateItem: null });
+    (prisma.item.findMany as jest.Mock).mockResolvedValue([]);
+
+    await service.createItem('MESS', { name: 'Sapu', category: ItemCategory.ATK, unit: 'PCS', lokasiGudang: 'GUDANG_GA' } as any);
+
+    expect(itemCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ lokasiGudang: null }) }),
     );
   });
 });

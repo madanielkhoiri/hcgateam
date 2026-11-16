@@ -55,6 +55,7 @@ export class GudangService {
         unit: item.unit,
         stock: item.stock?.quantity ?? 0,
         photoPath: item.photoPath,
+        lokasiGudang: item.lokasiGudang,
       }));
   }
 
