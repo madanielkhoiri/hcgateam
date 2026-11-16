@@ -740,6 +740,10 @@ export class WorkOrdersService {
                 ),
               }
             : {}),
+          // Tanggal WO diubah pada WO yang sudah Close: durasi dihitung ulang dari tanggal Close yang tersimpan (tetap beku, tidak ikut hari ini).
+          ...(!becomesClosed && existing.status === WorkOrderStatus.CLOSE && nextStatus === WorkOrderStatus.CLOSE && dto.requestedAt && existing.closedAt
+            ? { closedDurationDays: this.calculateDuration(requestedAt, existing.closedAt) }
+            : {}),
         },
       });
 
