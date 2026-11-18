@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Power, Settings2, Trash2, X } from "lucide-react";
 import { AksesSubmenuDialog } from "@/components/eprom/akses-submenu-dialog";
-import { getStoredUser } from "@/lib/access-control";
+import { getStoredUser, isEpromAksesPenuh } from "@/lib/access-control";
 import {
   epromApi,
   formatTanggal,
@@ -30,7 +30,7 @@ export default function TenderListPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [aksesTender, setAksesTender] = useState<TenderProcess | null>(null);
-  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(getStoredUser()?.role ?? '');
+  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(getStoredUser()?.role ?? '') || isEpromAksesPenuh(getStoredUser());
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNama, setEditNama] = useState("");

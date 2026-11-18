@@ -11,6 +11,7 @@ import { REQUIRE_ACCESS_KEY } from './require-access-key.decorator';
 import { aksesOtomatisRole } from '../access/access.constants';
 import {
   bolehAksesRouteEvaluatorTender,
+  isAksesPenuhEprom,
   isJabatanEvaluatorTender,
 } from './tender-evaluator-access';
 
@@ -128,9 +129,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    // Akun karyawan tidak boleh membuka e-ProM maupun Inventory.
+    // Akun karyawan tidak boleh membuka e-ProM maupun Inventory — kecuali
+    // SH/GL FAW-SCM yang diberi akses CIVIL_PROJECT (akses penuh e-ProM).
+    const aksesPenuhEprom = isAksesPenuhEprom(user?.jabatan, user?.accessKeys);
     if (user?.role === UserRole.KARYAWAN && requiredAccessKeys?.some((key) =>
-      key === 'GA_INVENTORY' || key.startsWith('CIVIL_INVENTORY') || key.startsWith('CIVIL_PROJECT'),
+      key === 'GA_INVENTORY' || key.startsWith('CIVIL_INVENTORY') || (key.startsWith('CIVIL_PROJECT') && !aksesPenuhEprom),
     )) {
       throw new ForbiddenException('Karyawan tidak memiliki akses ke modul ini');
     }

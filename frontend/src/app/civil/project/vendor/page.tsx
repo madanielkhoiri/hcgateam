@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState } from "react";
 import { Pencil, Plus, Settings2, Trash2, X } from "lucide-react";
-import { getStoredUser } from "@/lib/access-control";
+import { getStoredUser, isEpromAksesPenuh } from "@/lib/access-control";
 import { epromApi, isEpromOwner, type Vendor } from "@/lib/eprom-api";
 import { AksesSubmenuDialog } from "@/components/eprom/akses-submenu-dialog";
 import styles from "../kontrak/kontrak.module.css";
@@ -10,7 +10,7 @@ import styles from "../kontrak/kontrak.module.css";
 export default function MasterVendorPage() {
   const user = getStoredUser();
   const boleh = isEpromOwner(user);
-  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(user?.role ?? '');
+  const bolehAturAkses = ['OWNER', 'ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(user?.role ?? '') || isEpromAksesPenuh(user);
 
   const [vendorList, setVendorList] = useState<Vendor[]>([]);
   const [error, setError] = useState<string | null>(null);

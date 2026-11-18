@@ -12,6 +12,7 @@ export type AktorEprom = {
   role: UserRole;
   vendorId?: number | null;
   accessKeys?: string[];
+  jabatan?: string | null;
 };
 
 export const Aktor = createParamDecorator(

@@ -15,6 +15,8 @@ import {
 } from '@nestjs/websockets';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
+import { PrismaService } from '../../prisma/prisma.service';
+import { isAksesPenuhEprom } from '../../auth/tender-evaluator-access';
 
 /** Sama seperti ROLE_SETARA_OWNER di EpromAksesService — chat cuma untuk staff Owner, vendor balas lewat email. */
 const ROLE_OWNER_SETARA = [
@@ -33,16 +35,36 @@ export class EpromTenderChatGateway implements OnGatewayConnection, OnGatewayDis
   @WebSocketServer()
   server?: Server;
 
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /** Tolak koneksi tanpa token JWT Owner yang valid — room chat berisi percakapan vendor-tender. */
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const token = this.ambilToken(client);
 
     try {
-      const payload = token ? this.jwt.verify<{ role?: string }>(token) : null;
+      const payload = token ? this.jwt.verify<{ role?: string; sub?: number }>(token) : null;
 
-      if (!payload || !ROLE_OWNER_SETARA.includes(payload.role ?? '')) {
+      if (!payload) {
+        client.disconnect(true);
+        return;
+      }
+
+      if (ROLE_OWNER_SETARA.includes(payload.role ?? '')) {
+        return;
+      }
+
+      // SH/GL FAW-SCM dengan akses CIVIL_PROJECT setara Owner (dicek dari data akun terkini).
+      const akun = payload.sub
+        ? await this.prisma.user.findUnique({
+            where: { id: payload.sub },
+            select: { isActive: true, jabatan: true, accessKeys: true },
+          })
+        : null;
+
+      if (!akun?.isActive || !isAksesPenuhEprom(akun.jabatan, akun.accessKeys)) {
         client.disconnect(true);
       }
     } catch {

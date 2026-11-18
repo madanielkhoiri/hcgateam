@@ -8,6 +8,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AktorEprom } from './eprom-aktor';
+import { isAksesPenuhEprom } from '../../auth/tender-evaluator-access';
 
 /**
  * Admin portal, Section Head, & Group Leader diperlakukan setara Owner di
@@ -30,7 +31,7 @@ export class EpromAksesService {
   constructor(private readonly prisma: PrismaService) {}
 
   isOwner(aktor: AktorEprom): boolean {
-    return ROLE_SETARA_OWNER.includes(aktor.role);
+    return ROLE_SETARA_OWNER.includes(aktor.role) || isAksesPenuhEprom(aktor.jabatan, aktor.accessKeys);
   }
 
   isVendor(aktor: AktorEprom): boolean {
@@ -105,6 +106,11 @@ export class EpromAksesService {
   }
 
   isOwnerAtauAdmin(aktor: AktorEprom): boolean {
+    // SH/GL FAW-SCM yang diberi akses CIVIL_PROJECT = akses penuh setara Owner.
+    if (isAksesPenuhEprom(aktor.jabatan, aktor.accessKeys)) {
+      return true;
+    }
+
     return ([
       UserRole.OWNER,
       UserRole.ADMIN,

@@ -3,7 +3,7 @@
 // FUNGSI: Klien API modul e-ProM (Tender, Kontrak, Vendor, Dokumen) + tipe data
 // ==================================================
 
-import { getAccessToken, type PortalUser } from './access-control';
+import { getAccessToken, isEpromAksesPenuh, type PortalUser } from './access-control';
 import { urlUploads } from './uploads-url';
 
 const API_URL =
@@ -1440,7 +1440,8 @@ export function isEpromOwner(user: PortalUser | null): boolean {
     user?.role === 'ADMIN' ||
     user?.role === 'SUPER_ADMIN' ||
     user?.role === 'SECTION_HEAD' ||
-    user?.role === 'GRUP_LEADER_GA'
+    user?.role === 'GRUP_LEADER_GA' ||
+    isEpromAksesPenuh(user)
   );
 }
 

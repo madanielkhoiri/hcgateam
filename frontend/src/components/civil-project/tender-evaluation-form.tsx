@@ -148,6 +148,66 @@ const satuanStyle: React.CSSProperties = {
   color: "#c2410c",
   background: "#ffedd5",
 };
+/** Tampilan angka Rupiah format Indonesia: titik pemisah ribuan, koma desimal (442.800.000,50). */
+function formatAngkaRupiah(nilai: number | null | undefined): string {
+  if (nilai === null || nilai === undefined || Number.isNaN(nilai)) return "";
+  return nilai.toLocaleString("id-ID", { maximumFractionDigits: 2 });
+}
+
+/**
+ * Input Rupiah: saat diketik otomatis diberi titik ribuan, koma untuk desimal
+ * (maks 2 angka). Nilai yang dikirim ke form tetap angka biasa.
+ */
+function RupiahInput({
+  value,
+  onChange,
+  style,
+  placeholder,
+  ariaLabel,
+}: {
+  value: number | null | undefined;
+  onChange: (nilai: number | undefined) => void;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  ariaLabel?: string;
+}) {
+  const [teks, setTeks] = useState(() => formatAngkaRupiah(value));
+  const [fokus, setFokus] = useState(false);
+
+  // Sinkron dari luar (mis. pindah vendor) selama tidak sedang diketik.
+  useEffect(() => {
+    if (!fokus) setTeks(formatAngkaRupiah(value));
+  }, [value, fokus]);
+
+  function ketik(mentah: string) {
+    const bersih = mentah.replace(/[^\d,]/g, "");
+    const posisiKoma = bersih.indexOf(",");
+    const bulat = (posisiKoma >= 0 ? bersih.slice(0, posisiKoma) : bersih).replace(/,/g, "").replace(/^0+(?=\d)/, "");
+    const desimal = posisiKoma >= 0 ? bersih.slice(posisiKoma + 1).replace(/,/g, "").slice(0, 2) : "";
+    const bulatTampil = bulat ? Number(bulat).toLocaleString("id-ID") : posisiKoma >= 0 ? "0" : "";
+
+    setTeks(bulatTampil + (posisiKoma >= 0 ? `,${desimal}` : ""));
+    onChange(bulat === "" && desimal === "" ? undefined : Number(`${bulat || "0"}.${desimal || "0"}`));
+  }
+
+  return (
+    <input
+      style={style}
+      type="text"
+      inputMode="decimal"
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      value={teks}
+      onFocus={() => setFokus(true)}
+      onBlur={() => {
+        setFokus(false);
+        setTeks(formatAngkaRupiah(value));
+      }}
+      onChange={(event) => ketik(event.target.value)}
+    />
+  );
+}
+
 function FieldUnit({ prefix, suffix, children }: { prefix?: string; suffix?: string; children: React.ReactNode }) {
   return (
     <span style={{ display: "flex", alignItems: "center", height: 48, border: "1.5px solid #f0cfae", borderRadius: 14, background: "#fffaf5", overflow: "hidden" }}>
@@ -913,12 +973,11 @@ export function TenderEvaluationForm({
                         Nilai SPH
                         <span style={{ display: "flex", alignItems: "center", height: 48, border: "1.5px solid #f0cfae", borderRadius: 14, background: "#fffaf5", overflow: "hidden" }}>
                           <span style={{ flex: "none", height: "100%", display: "grid", placeItems: "center", padding: "0 14px", fontSize: 13, fontWeight: 800, color: "#c2410c", background: "#ffedd5", borderRight: "1.5px solid #f6d7b8" }}>Rp</span>
-                          <input
+                          <RupiahInput
                             style={{ flex: 1, minWidth: 0, height: "100%", border: 0, outline: 0, background: "transparent", padding: "0 14px", fontWeight: 700, fontSize: 14, color: "#2a1a0e" }}
-                            type="number"
-                            min="0"
-                            value={r.value ?? ""}
-                            onChange={(e) => ubah({ value: e.target.value === "" ? undefined : Number(e.target.value) })}
+                            ariaLabel={`Nilai SPH ${i + 1}`}
+                            value={r.value}
+                            onChange={(nilai) => ubah({ value: nilai })}
                           />
                         </span>
                       </label>
@@ -971,16 +1030,15 @@ export function TenderEvaluationForm({
               </div>
               <label>
                 Harga Internal / HPS Perusahaan
-                <FieldUnit prefix="Rp"><input
+                <FieldUnit prefix="Rp"><RupiahInput
                   style={inputBare}
-                  type="number"
-                  min="0"
                   placeholder="Harga acuan internal paket tender"
-                  value={config.internalPrice ?? ""}
-                  onChange={(e) =>
+                  ariaLabel="Harga Internal / HPS Perusahaan"
+                  value={config.internalPrice}
+                  onChange={(nilai) =>
                     setConfig((c) => ({
                       ...c,
-                      internalPrice: Number(e.target.value),
+                      internalPrice: nilai ?? 0,
                     }))
                   }
                 /></FieldUnit>

@@ -176,6 +176,18 @@ export function normalizeJabatan(jabatan?: string | null): string {
     .replace(/\s+/g, ' ');
 }
 
+/**
+ * SH/GL FAW-SCM yang diberi akses CIVIL_PROJECT di Manajemen Akun mendapat
+ * akses PENUH e-ProM (setara Owner). Tanpa akses itu tetap hanya evaluator tender.
+ * Cermin isAksesPenuhEprom di backend.
+ */
+const JABATAN_EPROM_PENUH = new Set(['SECTION HEAD FAW-SCM', 'GROUP LEADER FAW-SCM']);
+
+export function isEpromAksesPenuh(user: PortalUser | null): boolean {
+  if (!user) return false;
+  return JABATAN_EPROM_PENUH.has(normalizeJabatan(user.jabatan)) && (user.accessKeys ?? []).includes('CIVIL_PROJECT');
+}
+
 export function isTenderEvaluator(user: PortalUser | null): boolean {
   if (!user) return false;
   if (['SECTION_HEAD', 'PJO', 'GRUP_LEADER_GA'].includes(user.role)) return true;
@@ -207,9 +219,14 @@ export function hasAccess(user: PortalUser | null, accessKey: string): boolean {
     return true;
   }
 
-  // Karyawan biasa tidak boleh masuk e-ProM/Civil Project maupun Inventory.
+  // Karyawan biasa tidak boleh masuk e-ProM/Civil Project maupun Inventory,
+  // kecuali SH/GL FAW-SCM yang diberi akses CIVIL_PROJECT (akses penuh e-ProM).
   if (user.role === 'KARYAWAN') {
-    if (accessKey === ACCESS_KEYS.GA_INVENTORY || accessKey.startsWith('CIVIL_INVENTORY') || accessKey.startsWith('CIVIL_PROJECT')) {
+    if (
+      accessKey === ACCESS_KEYS.GA_INVENTORY ||
+      accessKey.startsWith('CIVIL_INVENTORY') ||
+      (accessKey.startsWith('CIVIL_PROJECT') && !isEpromAksesPenuh(user))
+    ) {
       return false;
     }
   }
