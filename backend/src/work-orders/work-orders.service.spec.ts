@@ -391,3 +391,35 @@ describe('WorkOrdersService — Admin Dept dibatasi per departemen', () => {
     await expect(service.departemenAdminDept(ADMIN)).resolves.toBeNull();
   });
 });
+
+describe('WorkOrdersService.findAll — pencarian', () => {
+  function buatServiceCari() {
+    const count = jest.fn().mockResolvedValue(0);
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = { workOrder: { count, findMany } } as unknown as PrismaService;
+    return { service: new WorkOrdersService(prisma, {} as unknown as DocumentNumberService), count };
+  }
+
+  function kondisiCari(count: jest.Mock) {
+    const where = count.mock.calls[0][0].where;
+    return where.AND[0].OR as Array<Record<string, unknown>>;
+  }
+
+  it('tidak pernah memakai "contains" pada kolom PIC (enum) — penyebab Internal server error', async () => {
+    const { service, count } = buatServiceCari();
+
+    await service.findAll({ cari: 'sto' });
+
+    const kondisi = kondisiCari(count);
+    expect(kondisi.some((item) => 'pic' in item)).toBe(false);
+    expect(kondisi).toContainEqual({ workOrderName: { contains: 'sto', mode: 'insensitive' } });
+  });
+
+  it('kata "infras" / "electric" mencocokkan PIC lewat daftar enum', async () => {
+    const { service, count } = buatServiceCari();
+
+    await service.findAll({ cari: 'Infras' });
+
+    expect(kondisiCari(count)).toContainEqual({ pic: { in: ['GA_INFRAS'] } });
+  });
+});

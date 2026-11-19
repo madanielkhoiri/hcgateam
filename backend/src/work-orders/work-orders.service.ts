@@ -10,6 +10,7 @@ import {
   Prisma,
   StatusApprovalWorkOrder,
   UserRole,
+  WorkOrderPic,
   WorkOrderPriority,
   WorkOrderStatus,
 } from '@prisma/client';
@@ -422,14 +423,23 @@ export class WorkOrdersService {
       : undefined;
 
     const kata = filter.cari?.trim();
+    // Hanya kolom teks yang dicari dengan "contains". PIC bertipe enum
+    // (GA_INFRAS / GA_ELECTRIC) — mencarinya dengan contains membuat query
+    // ditolak database (Internal server error), jadi dicocokkan terpisah.
     const kolomCari = [
       'workOrderNumber',
       'workOrderName',
       'department',
       'description',
       'userDepartmentName',
-      'pic',
     ] as const;
+    const kataKecil = kata?.toLowerCase() ?? '';
+    const picCocok = kata
+      ? (Object.values(WorkOrderPic) as WorkOrderPic[]).filter((pic) => {
+          const label = pic.toLowerCase().replace(/_/g, ' ');
+          return label.includes(kataKecil) || pic.toLowerCase().includes(kataKecil);
+        })
+      : [];
 
     const where = {
       ...(filter.createdBy ? { createdBy: filter.createdBy } : {}),
@@ -450,9 +460,12 @@ export class WorkOrdersService {
       ...(rentangTanggal ? { requestedAt: rentangTanggal } : {}),
       ...(kata
         ? {
-            OR: kolomCari.map((kolom) => ({
-              [kolom]: { contains: kata, mode: 'insensitive' as const },
-            })),
+            OR: [
+              ...kolomCari.map((kolom) => ({
+                [kolom]: { contains: kata, mode: 'insensitive' as const },
+              })),
+              ...(picCocok.length ? [{ pic: { in: picCocok } }] : []),
+            ],
           }
         : {}),
     };
