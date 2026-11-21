@@ -103,6 +103,11 @@ const menuGroups: MenuGroup[] = [
         icon: Warehouse,
       },
       {
+        label: "Stock Opname",
+        href: "/ga/inventory/stock-opname",
+        icon: ClipboardCheck,
+      },
+      {
         label: "Ambil Barang (Self-Order)",
         href: "/gudang?scope=INFRAS",
         icon: ShoppingBag,
@@ -136,6 +141,11 @@ const menuGroups: MenuGroup[] = [
         icon: Warehouse,
       },
       {
+        label: "Stock Opname",
+        href: "/ga/inventory/mess/stock-opname",
+        icon: ClipboardCheck,
+      },
+      {
         label: "Ambil Barang (Self-Order)",
         href: "/gudang?scope=MESS",
         icon: ShoppingBag,
@@ -167,6 +177,11 @@ const menuGroups: MenuGroup[] = [
         label: "Stok Barang",
         href: "/ga/inventory/electric/stok-barang",
         icon: Warehouse,
+      },
+      {
+        label: "Stock Opname",
+        href: "/ga/inventory/electric/stock-opname",
+        icon: ClipboardCheck,
       },
       {
         label: "Ambil Barang (Self-Order)",
@@ -387,7 +402,18 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
       return group;
     });
 
-  const bottomNavItems = visibleMenuGroups
+  // Stock Opname mengubah stok -> hanya Admin/Section Head (+ Elektrik untuk Electric).
+  const bolehOpname =
+    ROLE_BOLEH_LIHAT_DEVIASI.includes(user?.role ?? "") ||
+    (user?.role === "ELEKTRIK" && (dalamCivilElectric || dalamInventoryElectric));
+  const menuTampil = bolehOpname
+    ? visibleMenuGroups
+    : visibleMenuGroups.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !item.href.endsWith("/stock-opname")),
+      }));
+
+  const bottomNavItems = menuTampil
     .flatMap((group) => group.items)
     .map((item) => ({ label: item.label, href: item.href, initial: buatInisial(item.label) }));
 
@@ -432,7 +458,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
   }, [activeSection, requiredAccessKey, pathname, router]);
 
   useEffect(() => {
-    const activeGroup = visibleMenuGroups.find((group) =>
+    const activeGroup = menuTampil.find((group) =>
       group.items.some((item) => pathname === item.href),
     );
 
@@ -506,7 +532,7 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             <div className={styles.navigationLabel}>MENU {sectionTitle.toUpperCase()}</div>
           )}
 
-          {visibleMenuGroups.map((group) => {
+          {menuTampil.map((group) => {
             const GroupIcon = group.icon;
             const isOpen = openGroups.includes(group.id);
 

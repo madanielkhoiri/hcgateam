@@ -355,6 +355,7 @@ model Item {
   stockIns    StockIn[]
   stockOuts   StockOut[]
   deviasiStok DeviasiStok[]
+  opnameItems StockOpnameItem[]
 
   @@unique([inventoryScope, code])
   @@index([inventoryScope])
@@ -398,6 +399,67 @@ model DeviasiStok {
   @@index([itemId])
   @@index([createdAt])
   @@map("deviasi_stok")
+}
+
+// ==================================================
+// STOCK OPNAME (CEK FISIK BARANG)
+// Admin membuat sesi, mengisi jumlah fisik + kondisi tiap barang, lalu
+// menyelesaikan: stok disesuaikan otomatis & selisih dicatat di Deviasi Stok.
+// Tidak ada tahap persetujuan (sudah dicek admin).
+// ==================================================
+
+enum StatusStockOpname {
+  BERJALAN
+  SELESAI
+}
+
+enum KondisiBarangOpname {
+  BAIK
+  RUSAK
+  KADALUARSA
+}
+
+model StockOpname {
+  id              Int               @id @default(autoincrement())
+  nomor           String            @unique
+  inventoryScope  InventoryScope    @map("inventory_scope")
+  /// Khusus Electric: null = semua lokasi.
+  lokasiGudang    LokasiGudang?     @map("lokasi_gudang")
+  status          StatusStockOpname @default(BERJALAN)
+  catatan         String?           @db.Text
+  dibuatOlehId    Int               @map("dibuat_oleh_id")
+  dibuatOlehNama  String            @map("dibuat_oleh_nama")
+  selesaiOlehId   Int?              @map("selesai_oleh_id")
+  selesaiOlehNama String?           @map("selesai_oleh_nama")
+  selesaiAt       DateTime?         @map("selesai_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  items StockOpnameItem[]
+
+  @@index([inventoryScope, status])
+  @@index([createdAt])
+  @@map("stock_opname")
+}
+
+model StockOpnameItem {
+  id            Int                  @id @default(autoincrement())
+  opnameId      Int                  @map("opname_id")
+  itemId        Int                  @map("item_id")
+  /// Stok sistem saat sesi dibuat (snapshot).
+  stokSistem    Int                  @map("stok_sistem")
+  stokFisik     Int?                 @map("stok_fisik")
+  kondisi       KondisiBarangOpname?
+  catatan       String?
+  dicekOlehNama String?              @map("dicek_oleh_nama")
+  dicekAt       DateTime?            @map("dicek_at")
+
+  opname StockOpname @relation(fields: [opnameId], references: [id], onDelete: Cascade)
+  item   Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([opnameId, itemId])
+  @@index([itemId])
+  @@map("stock_opname_items")
 }
 
 model InventoryStock {

@@ -9,6 +9,8 @@ import { InventoryDashboardController } from './inventory-dashboard.controller';
 import { InventoryDashboardService } from './inventory-dashboard.service';
 import { InventoryService } from './inventory.service';
 import { InventoryAksesService } from './inventory-akses.service';
+import { StockOpnameController } from './stock-opname.controller';
+import { StockOpnameService } from './stock-opname.service';
 import { DeviasiStokService } from './deviasi-stok.service';
 
 @Module({
@@ -17,6 +19,7 @@ import { DeviasiStokService } from './deviasi-stok.service';
     InventoryDashboardController,
     InventoryAreaController,
     ElectricStockOutController,
+    StockOpnameController,
   ],
   providers: [
     InventoryService,
@@ -25,6 +28,7 @@ import { DeviasiStokService } from './deviasi-stok.service';
     ElectricStockOutService,
     InventoryAksesService,
     DeviasiStokService,
+    StockOpnameService,
     PrismaService,
   ],
   exports: [InventoryAreaService],
