@@ -697,10 +697,41 @@ async function unduhBlob(path: string): Promise<{ blob: Blob; namaFile: string }
     throw new EpromApiError(await bacaError(response), response.status);
   }
 
-  const disposition = response.headers.get('Content-Disposition') ?? '';
-  const match = /filename="?([^"]+)"?/.exec(disposition);
+  const blob = await response.blob();
+  return { blob, namaFile: namaFileDariDisposition(response.headers.get('Content-Disposition'), blob.type) };
+}
 
-  return { blob: await response.blob(), namaFile: match?.[1] ?? 'unduhan' };
+/**
+ * Ambil nama file dari header Content-Disposition. Utamakan filename*= (UTF-8,
+ * dipakai Express untuk nama ber-spasi/non-ASCII), lalu filename="...".
+ * Bila tidak ada, beri ekstensi dari tipe file supaya tetap bisa dibuka.
+ */
+export function namaFileDariDisposition(disposition: string | null, tipe = ''): string {
+  const header = disposition ?? '';
+  const utf8 = /filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/.exec(header);
+  if (utf8) {
+    try {
+      return decodeURIComponent(utf8[1].trim().replace(/^"|"$/g, ''));
+    } catch {
+      /* lanjut ke filename biasa */
+    }
+  }
+  const biasa = /filename\s*=\s*"([^"]+)"|filename\s*=\s*([^;]+)/.exec(header);
+  const nama = (biasa?.[1] ?? biasa?.[2])?.trim();
+  if (nama) return nama;
+
+  const ekstensi: Record<string, string> = {
+    'application/pdf': '.pdf',
+    'application/zip': '.zip',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+    'application/msword': '.doc',
+    'application/vnd.ms-excel': '.xls',
+  };
+  return `unduhan${ekstensi[tipe.split(';')[0]] ?? ''}`;
 }
 
 export function picuUnduhan(blob: Blob, namaFile: string): void {
@@ -711,7 +742,9 @@ export function picuUnduhan(blob: Blob, namaFile: string): void {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  // Jangan langsung dicabut: sebagian browser (Safari, Chrome Android, Firefox)
+  // belum mulai mengunduh saat click() selesai, sehingga unduhan gagal/kosong.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /** URL file yang disimpan lewat EpromFileService (mis. fileKontrak) â€” wajib login, lihat uploads-url.ts. */

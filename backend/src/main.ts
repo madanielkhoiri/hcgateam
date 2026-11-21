@@ -136,6 +136,10 @@ async function bootstrap() {
       callback(new Error('Origin tidak diizinkan oleh CORS'));
     },
     credentials: true,
+    // Tanpa ini browser menyembunyikan Content-Disposition dari fetch lintas
+    // origin (frontend :3000 -> backend :3001), sehingga file terunduh dengan
+    // nama "unduhan" tanpa ekstensi dan tidak bisa dibuka.
+    exposedHeaders: ['Content-Disposition'],
   });
 
   // Wajibkan login untuk membuka file di uploads/ — dipasang SEBELUM

@@ -83,9 +83,16 @@ export function FolderExplorer({ scope, tenderId, vendorId }: FolderExplorerProp
   }
 
   async function unduhTerpilih() {
-    if (selectedFileIds.length === 0) return;
+    // Tanpa centang = unduh semua file di folder yang sedang dibuka.
+    const ids = selectedFileIds.length > 0 ? selectedFileIds : files.map((file) => file.id);
+    if (ids.length === 0) return;
+    setError(null);
     try {
-      await epromApi.documents.unduhSemua(selectedFileIds);
+      if (ids.length === 1) {
+        await epromApi.documents.unduhSatu(ids[0]);
+      } else {
+        await epromApi.documents.unduhSemua(ids);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengunduh file");
     }
@@ -178,7 +185,8 @@ export function FolderExplorer({ scope, tenderId, vendorId }: FolderExplorerProp
           type="button"
           className={styles.toolButton}
           onClick={unduhTerpilih}
-          disabled={selectedFileIds.length === 0}
+          disabled={selectedFileIds.length === 0 && files.length === 0}
+          title={selectedFileIds.length > 0 ? "Unduh file yang dicentang" : "Unduh semua file di folder ini"}
         >
           <Download size={15} /> Download {selectedFileIds.length > 0 ? `(${selectedFileIds.length})` : "All"}
         </button>
