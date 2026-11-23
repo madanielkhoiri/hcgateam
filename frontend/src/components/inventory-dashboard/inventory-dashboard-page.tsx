@@ -69,7 +69,14 @@ function getToken() {
   );
 }
 
+const BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
 function formatChartDate(value: string) {
+  // Data bulanan (mode Semua Bulan) dikirim sebagai "YYYY-MM".
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    return BULAN_SINGKAT[Number(value.slice(5, 7)) - 1] ?? value;
+  }
+
   const date = new Date(`${value.slice(0, 10)}T00:00:00`);
 
   return date.toLocaleDateString("id-ID", {

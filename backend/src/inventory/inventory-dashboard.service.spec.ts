@@ -126,3 +126,26 @@ describe('InventoryDashboardService.getDashboard — rekonstruksi saldo & grafik
     expect(hasil.summary.transactionDays).toBe(0);
   });
 });
+
+describe('InventoryDashboardService.getDashboard — Semua Bulan', () => {
+  it('mengelompokkan grafik per bulan (Jan-Des) untuk tahun lampau, bulan tanpa transaksi bernilai 0', async () => {
+    const { service } = buatService({
+      stocks: [{ quantity: 100 }],
+      stockInsSelectedMonth: [
+        { date: new Date('2025-02-03T00:00:00Z'), quantity: 10 },
+        { date: new Date('2025-02-20T00:00:00Z'), quantity: 5 },
+      ],
+      stockOutsSelectedMonth: [{ date: new Date('2025-05-10T00:00:00Z'), quantity: 4 }],
+    });
+
+    const hasil = await service.getDashboard('MESS', 'all', '2025');
+
+    expect(hasil.month).toBeNull();
+    expect(hasil.chart).toHaveLength(12);
+    expect(hasil.chart[0]).toMatchObject({ date: '2025-01', stockIn: 0, stockOut: 0, hasTransaction: false });
+    expect(hasil.chart[1]).toMatchObject({ date: '2025-02', stockIn: 15, stockOut: 0, hasTransaction: true });
+    expect(hasil.chart[4]).toMatchObject({ date: '2025-05', stockIn: 0, stockOut: 4, hasTransaction: true });
+    expect(hasil.chart[11].date).toBe('2025-12');
+    expect(hasil.summary.transactionDays).toBe(2);
+  });
+});

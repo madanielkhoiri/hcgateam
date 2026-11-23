@@ -207,8 +207,21 @@ export class InventoryDashboardService {
       }
     >();
 
+    // Semua Bulan: dikelompokkan per bulan (YYYY-MM) agar grafik tidak padat
+    // ratusan titik harian. Filter bulan tertentu tetap per hari.
+    const kunci = (value: Date) => (month ? this.dateKey(value) : this.dateKey(value).slice(0, 7));
+
+    if (!month) {
+      const sekarang = new Date();
+      const bulanTerakhir =
+        year < sekarang.getUTCFullYear() ? 12 : year === sekarang.getUTCFullYear() ? sekarang.getUTCMonth() + 1 : 0;
+      for (let m = 1; m <= bulanTerakhir; m += 1) {
+        movementMap.set(`${year}-${String(m).padStart(2, '0')}`, { stockIn: 0, stockOut: 0 });
+      }
+    }
+
     for (const row of stockInsSelectedMonth) {
-      const key = this.dateKey(row.date);
+      const key = kunci(row.date);
       const current = movementMap.get(key) ?? {
         stockIn: 0,
         stockOut: 0,
@@ -219,7 +232,7 @@ export class InventoryDashboardService {
     }
 
     for (const row of stockOutsSelectedMonth) {
-      const key = this.dateKey(row.date);
+      const key = kunci(row.date);
       const current = movementMap.get(key) ?? {
         stockIn: 0,
         stockOut: 0,
@@ -244,7 +257,7 @@ export class InventoryDashboardService {
         stockIn: movement.stockIn,
         stockOut: movement.stockOut,
         stock: Math.max(0, runningStock),
-        hasTransaction: true,
+        hasTransaction: movement.stockIn > 0 || movement.stockOut > 0,
       };
     });
 
@@ -276,7 +289,7 @@ export class InventoryDashboardService {
         }),
         totalStockIn,
         totalStockOut,
-        transactionDays: chart.length,
+        transactionDays: chart.filter((row) => row.hasTransaction).length,
       },
       chart,
     };
