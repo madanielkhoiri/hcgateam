@@ -13,7 +13,32 @@ import { urlUploads } from './uploads-url';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-export type LaporanTps3r = {
+/** Rincian timbulan (format Excel). null = belum dirinci (data lama). */
+export type RincianTimbulanTps3r = {
+  organikMakanan: number | null;
+  organikTaman: number | null;
+  reuseKertas: number | null;
+  reusePlastik: number | null;
+  reuseLainnya: number | null;
+  recycleKertas: number | null;
+  recyclePlastikKeras: number | null;
+  recyclePallet: number | null;
+  recycleKaca: number | null;
+  recycleLogam: number | null;
+};
+
+/** Rincian penanganan (format Excel). null = belum dirinci (data lama). */
+export type RincianPenangananTps3r = {
+  tanganiBiopori: number | null;
+  tanganiKompos: number | null;
+  tanganiMaggot: number | null;
+  tanganiTpsNavaraha: number | null;
+  tanganiTpsMenanti: number | null;
+  tanganiTpsMajuBersama: number | null;
+  tanganiBankSampah: number | null;
+};
+
+export type LaporanTps3r = RincianTimbulanTps3r & {
   id: number;
   tanggal: string;
   beratOrganik: number;
@@ -34,6 +59,8 @@ export type RingkasanTps3r = {
   terkelolaReuse: number;
   terkelolaRecycle: number;
   terkelolaResidu: number;
+  /** Penanganan anorganik (TPS 3R / bank sampah) = reuse + recycle. */
+  terkelolaAnorganik: number;
 };
 
 export type TrenBulananTps3r = {
@@ -90,15 +117,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
-export type LaporanTps3rInput = {
+/** Input: rincian yang tidak dikirim = tidak diubah; null = dikosongkan. */
+export type LaporanTps3rInput = { tanggal: string; [rincian: string]: string | number | null | undefined };
+
+export type SampahTerkelolaTps3r = RincianPenangananTps3r & {
+  id: number;
   tanggal: string;
   beratOrganik: number;
   beratReuse: number;
   beratRecycle: number;
   beratResidu: number;
+  createdBy?: { id: number; name: string; nrp: string | null };
+  createdAt: string;
 };
-
-export type SampahTerkelolaTps3r = LaporanTps3rInput & { id: number; createdAt: string };
 export type FotoPenyerahanTps3r = { id: number; tanggal: string; urlFoto: string; createdAt: string };
 
 export const tps3rApi = {
@@ -124,7 +155,13 @@ export const tps3rApi = {
   ubah: (id: number, data: Partial<LaporanTps3rInput>) =>
     request<LaporanTps3r>(`/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   hapus: (id: number) => request<{ message: string }>(`/${id}`, { method: 'DELETE' }),
-  daftarTerkelola: () => request<SampahTerkelolaTps3r[]>('/terkelola'),
+  daftarTerkelola: (bulan?: number, tahun?: number) => {
+    const params = new URLSearchParams();
+    if (bulan) params.set('bulan', String(bulan));
+    if (tahun) params.set('tahun', String(tahun));
+    const query = params.toString();
+    return request<SampahTerkelolaTps3r[]>(`/terkelola${query ? `?${query}` : ''}`);
+  },
   buatTerkelola: (data: LaporanTps3rInput) => request<SampahTerkelolaTps3r>('/terkelola', { method: 'POST', body: JSON.stringify(data) }),
   ubahTerkelola: (id: number, data: Partial<LaporanTps3rInput>) => request<SampahTerkelolaTps3r>(`/terkelola/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   hapusTerkelola: (id: number) => request<{ message: string }>(`/terkelola/${id}`, { method: 'DELETE' }),

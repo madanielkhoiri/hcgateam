@@ -20,6 +20,7 @@ import { urlUploads } from "@/lib/uploads-url";
 import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 import styles from "./inventory-crud.module.css";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const UKURAN_HALAMAN_TRANSAKSI = 20;
 
 const ROLE_BOLEH_EDIT_STOK = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
@@ -188,12 +189,7 @@ function today() {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
+  return formatTanggal(new Date(value), { timeZone: "UTC" });
 }
 
 function createBatchRow(): BatchRow {

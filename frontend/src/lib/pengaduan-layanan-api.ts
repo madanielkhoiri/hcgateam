@@ -78,7 +78,8 @@ export type TrenBulananPengaduan = {
 
 export type RekapPengaduan = {
   divisi: DivisiPengaduan;
-  bulan: number;
+  /** null = semua bulan pada tahun tersebut. */
+  bulan: number | null;
   tahun: number;
   rataRata: number;
   jumlahPengaduan: number;

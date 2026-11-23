@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import { Dialog } from '@/components/mcu/mcu-ui';
 import { urlFotoKip, type KipChecklistBulan } from '@/lib/kip-api';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
@@ -24,12 +25,7 @@ export function KipDetailBulan({
           ? (() => {
               const nama = baris.pemeriksa?.name ?? '-';
               const nrp = baris.pemeriksa?.nrp ? ` (${baris.pemeriksa.nrp})` : '';
-              const tanggalLengkap = new Date(baris.tanggalPeriksa).toLocaleDateString('id-ID', {
-                weekday: 'long',
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-              });
+              const tanggalLengkap = formatTanggal(new Date(baris.tanggalPeriksa), { hari: 'long' });
 
               return `Diperiksa oleh ${nama}${nrp} pada ${tanggalLengkap}`;
             })()

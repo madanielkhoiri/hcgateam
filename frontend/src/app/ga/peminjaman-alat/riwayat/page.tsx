@@ -10,7 +10,8 @@ import { toolBorrowingApi, type ToolLoan } from '@/lib/tool-borrowing-api';
 import tp from '@/components/transport/transport.module.css';
 import tb from '@/components/tool-borrowing/tool-borrowing.module.css';
 
-const waktu = (value: string) => new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+import { formatTanggal } from '@/lib/format-tanggal';
+const waktu = (value: string) => formatTanggal(new Date(value), { waktu: true });
 
 export default function RiwayatPeminjaman() {
   const router = useRouter();

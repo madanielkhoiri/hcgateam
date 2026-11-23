@@ -18,15 +18,12 @@ import {
 import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from '@/components/transport/transport.module.css';
 
+import { formatTanggal as formatTanggalStandar } from '@/lib/format-tanggal';
 const UKURAN_HALAMAN = 20;
 
 function formatTanggal(value: string | null): string {
   if (!value) return '-';
-  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatTanggalStandar(new Date(`${value.slice(0, 10)}T00:00:00`));
 }
 
 function formatLeg(tanggal: string | null, jam: string | null): string {

@@ -43,7 +43,8 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
   const router = useRouter();
   const sekarang = useMemo(() => new Date(), []);
   const [user, setUser] = useState<PortalUser | null>(null);
-  const [bulan, setBulan] = useState(sekarang.getMonth() + 1);
+  // 0 = semua bulan pada tahun terpilih.
+  const [bulan, setBulan] = useState(0);
   const [tahun, setTahun] = useState(sekarang.getFullYear());
   const [rekap, setRekap] = useState<RekapPengaduan | null>(null);
   const [error, setError] = useState('');
@@ -75,7 +76,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
     setError('');
 
     pengaduanLayananApi
-      .rekap(divisi, bulan, tahun)
+      .rekap(divisi, bulan || undefined, tahun)
       .then((hasil) => {
         if (aktif) setRekap(hasil);
       })
@@ -121,6 +122,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
 
         <div className={styles.filterRow}>
           <select value={bulan} onChange={(event) => setBulan(Number(event.target.value))}>
+            <option value={0}>Semua Bulan</option>
             {Array.from({ length: 12 }, (_, index) => index + 1).map((angka) => (
               <option key={angka} value={angka}>
                 {namaBulan(angka)}
@@ -154,7 +156,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
                 <span className={styles.statLabel}>Jumlah Pengaduan</span>
                 <strong className={styles.statAngka}>{rekap.jumlahPengaduan}</strong>
                 <span className={styles.statSub}>
-                  {namaBulan(rekap.bulan)} {rekap.tahun}
+                  {rekap.bulan ? namaBulan(rekap.bulan) : 'Semua bulan'} {rekap.tahun}
                 </span>
               </div>
 
@@ -197,7 +199,7 @@ export function RekapPerformaPage({ divisi }: { divisi: DivisiPengaduan }) {
               </div>
             </div>
 
-            <DaftarPengaduanTabel divisi={divisi} bulan={bulan} tahun={tahun} />
+            <DaftarPengaduanTabel divisi={divisi} bulan={bulan || undefined} tahun={tahun} />
           </>
         ) : null}
       </div>

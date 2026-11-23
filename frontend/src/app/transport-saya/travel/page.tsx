@@ -5,14 +5,9 @@ import Link from 'next/link';
 import { TransportApiError, TravelSaya, transportApi } from '@/lib/transport-api';
 import styles from '../transport-saya.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 function formatWaktu(value: string): string {
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggal(new Date(value), { waktu: true });
 }
 
 export default function TravelSayaPage() {

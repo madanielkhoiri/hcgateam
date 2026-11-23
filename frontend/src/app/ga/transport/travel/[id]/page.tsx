@@ -8,6 +8,7 @@ import { ACCESS_KEYS, getAccessToken, getStoredUser, hasAccess } from '@/lib/acc
 import { TransportApiError, TravelJadwal, transportApi, urlFileTransport } from '@/lib/transport-api';
 import styles from '@/components/transport/transport.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const LABEL_STATUS: Record<string, string> = {
   DIJADWALKAN: 'Dijadwalkan',
   BERJALAN: 'Berjalan',
@@ -17,13 +18,7 @@ const LABEL_STATUS: Record<string, string> = {
 
 function formatWaktu(value: string | null): string {
   if (!value) return '-';
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggal(new Date(value), { waktu: true });
 }
 
 function formatDurasi(menit: number | null): string {

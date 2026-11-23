@@ -13,6 +13,7 @@ import { compressImages } from "@/lib/compress-image";
 import { urlUploads } from "@/lib/uploads-url";
 import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 const UKURAN_HALAMAN = 10;
 
@@ -111,16 +112,29 @@ function hariTerlambat(row: {
 }
 
 /**
- * Durasi WO dalam hari. Sudah Close: pakai durasi tersimpan (tanggal WO -> tanggal Close).
- * Belum Close: dihitung berjalan dari tanggal WO masuk sampai hari ini (WITA).
+ * Durasi WO dalam hari (tanggal WO masuk -> hari ini WITA; bila Close pakai durasi
+ * tersimpan sampai tanggal Close, beku). `terlambat` = hari melewati target
+ * Durasi Pekerjaan yang diinput (null bila tanpa target / belum lewat).
+ * Contoh: target 3 hari, Close di hari ke-8 -> hari 8, terlambat 5.
  */
-function durasiWo(row: { status: WorkOrderStatus; requestedAt: string; closedDurationDays: number | null }): { hari: number; berjalan: boolean } {
-  if (row.status === "CLOSE") return { hari: row.closedDurationDays ?? 0, berjalan: false };
-  const mulai = new Date(row.requestedAt.slice(0, 10) + "T00:00:00Z").getTime();
-  if (Number.isNaN(mulai)) return { hari: row.closedDurationDays ?? 0, berjalan: false };
-  const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  const hariIni = Date.UTC(wita.getUTCFullYear(), wita.getUTCMonth(), wita.getUTCDate());
-  return { hari: Math.max(0, Math.floor((hariIni - mulai) / 86400000)), berjalan: true };
+function durasiWo(row: {
+  status: WorkOrderStatus;
+  requestedAt: string;
+  closedDurationDays: number | null;
+  workDurationDays?: number | null;
+}): { hari: number; terlambat: number | null } {
+  let hari: number;
+  if (row.status === "CLOSE") {
+    hari = row.closedDurationDays ?? 0;
+  } else {
+    const mulai = new Date(row.requestedAt.slice(0, 10) + "T00:00:00Z").getTime();
+    const wita = new Date(Date.now() + 8 * 60 * 60 * 1000);
+    const hariIni = Date.UTC(wita.getUTCFullYear(), wita.getUTCMonth(), wita.getUTCDate());
+    hari = Number.isNaN(mulai) ? row.closedDurationDays ?? 0 : Math.max(0, Math.floor((hariIni - mulai) / 86400000));
+  }
+  const target = row.workDurationDays;
+  const terlambat = target === null || target === undefined || hari <= target ? null : hari - target;
+  return { hari, terlambat };
 }
 
 function today(): string {
@@ -190,11 +204,7 @@ function formatDate(value: string | null): string {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return formatTanggal(new Date(value));
 }
 
 function statusLabel(status: WorkOrderStatus): string {
@@ -1012,6 +1022,9 @@ export default function WorkOrdersPage() {
                         const durasi = durasiWo(row);
                         return <>
                           {durasi.hari} hari
+                          {durasi.terlambat !== null && (
+                            <span className={styles.overdueNote}>Terlambat {durasi.terlambat} hari</span>
+                          )}
                         </>;
                       })()}
                     </td>
@@ -1020,12 +1033,9 @@ export default function WorkOrdersPage() {
                       {row.workDurationDays === null || row.workDurationDays === undefined
                         ? "-"
                         : `${row.workDurationDays} hari`}
-                      {hariTerlambat(row) !== null && (
-                        <span className={styles.overdueNote}>
-                          {hariTerlambat(row) === 0
-                            ? "Jatuh tempo hari ini"
-                            : `Lewat ${hariTerlambat(row)} hari`}
-                        </span>
+                      {/* Keterlambatan ditampilkan di kolom Durasi; di sini cukup penanda jatuh tempo. */}
+                      {hariTerlambat(row) === 0 && (
+                        <span className={styles.overdueNote}>Jatuh tempo hari ini</span>
                       )}
                     </td>
 

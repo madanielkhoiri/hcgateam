@@ -6,6 +6,7 @@ import { Float, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Kip } from '@/lib/kip-api';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const BULAN_LABEL = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGS', 'SEP', 'OKT', 'NOV', 'DES'];
 
 // Aset statis frontend (frontend/public/logos/) — ikut ter-commit ke repo,
@@ -54,7 +55,7 @@ export function warnaStatus(status: StatusTampil): string {
 
 function formatTanggalPendek(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  return formatTanggal(d);
 }
 
 function gambarLogoBulat(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, warna: string) {

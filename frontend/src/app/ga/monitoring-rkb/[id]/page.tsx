@@ -15,6 +15,7 @@ import {
 } from "@/lib/monitoring-rkb-api";
 import styles from "../monitoring-rkb.module.css";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const labels: Record<StatusRkb, string> = {
   WAITING_APPROVAL: "Waiting Approval",
   WAITING_SUPPLY: "Waiting Supply",
@@ -129,11 +130,7 @@ export default function DaftarRkbProject() {
               <span className={styles.eyebrow}>{project.namaProject}</span>
               <h2>{r.nomorRkb}</h2>
               <p>
-                {new Date(r.tanggal).toLocaleDateString("id-ID", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {formatTanggal(new Date(r.tanggal))}
               </p>
               <div className={styles.cardMetric}>
                 <strong>{r.barang.length}</strong>

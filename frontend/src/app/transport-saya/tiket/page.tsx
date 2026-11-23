@@ -11,13 +11,10 @@ import {
 } from '@/lib/transport-api';
 import styles from '../transport-saya.module.css';
 
+import { formatTanggal as formatTanggalStandar } from '@/lib/format-tanggal';
 function formatTanggal(value: string | null): string {
   if (!value) return '-';
-  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatTanggalStandar(new Date(`${value.slice(0, 10)}T00:00:00`));
 }
 
 function formatLeg(tanggal: string | null, jam: string | null): string {

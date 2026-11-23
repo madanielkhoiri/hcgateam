@@ -15,16 +15,12 @@ import {
   type SuratTugasKaryawanSaya,
 } from "@/lib/surat-tugas-dinas-karyawan-api";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 const formatRupiah = (nilai: number) =>
   `Rp ${new Intl.NumberFormat("id-ID").format(nilai)}`;
 
 const formatTanggal = (nilai: string) =>
-  new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(nilai));
+  formatTanggalStandar(new Date(nilai), { timeZone: "UTC" });
 
 export default function SuratTugasDinasSayaPage() {
   const [daftar, setDaftar] = useState<SuratTugasKaryawanSaya[]>([]);

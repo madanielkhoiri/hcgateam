@@ -14,6 +14,7 @@ import {
 } from '@/lib/civil-monitoring-project-api';
 import styles from './monitoring-project.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const LABEL: Record<TahapanProjectTambang, string> = {
   pengajuanProjectCharter: 'Pengajuan Project Charter',
   reviewApprovalAi: 'Review Approval AI',
@@ -26,7 +27,7 @@ const LABEL: Record<TahapanProjectTambang, string> = {
 };
 
 function formatWaktu(value: string) {
-  return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Makassar' }).format(new Date(value));
+  return formatTanggal(new Date(value), { waktu: true, timeZone: 'Asia/Makassar' });
 }
 
 export default function MonitoringProjectInfrastrukturTambangPage() {

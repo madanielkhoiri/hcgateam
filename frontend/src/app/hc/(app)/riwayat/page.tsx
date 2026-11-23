@@ -11,6 +11,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- fitur halaman riwayat deklarasi karyawan ---> */
 
 type DataPenggunaTersimpan = {
@@ -68,11 +69,7 @@ function KontenRiwayatDeklarasi() {
  const formatTanggal = (tanggal: string) => {
  if (!tanggal) return "-";
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "long",
- year: "numeric",
- }).format(new Date(tanggal));
+ return formatTanggalStandar(new Date(tanggal));
  };
 
  const formatRupiah = (nilai: string | number) => {

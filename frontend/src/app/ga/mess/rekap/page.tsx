@@ -10,6 +10,7 @@ import { messApi, type MessRecap, type MessRecapSession } from '@/lib/mess-monit
 import styles from '../mess.module.css';
 import rk from './rekap.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 type Tab = 'harian' | 'detail' | 'petugas';
 const BUILDINGS = ['A', 'B', 'C', 'D', 'E', 'F', '1', '2', '3'];
 const buildingLabel = (value: string) => /^[123]$/.test(value) ? `Staff ${value}` : `Mess ${value}`;
@@ -21,7 +22,7 @@ function todayWita(offsetDays = 0) {
 }
 function firstOfMonthWita() { return `${todayWita().slice(0, 8)}01`; }
 function formatDay(key: string) {
-  return new Date(`${key}T00:00:00+08:00`).toLocaleDateString('id-ID', { timeZone: 'Asia/Makassar', weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  return formatTanggal(new Date(`${key}T00:00:00+08:00`), { hari: 'short', timeZone: 'Asia/Makassar' });
 }
 function formatTime(value?: string | null) {
   if (!value) return '-';
@@ -151,7 +152,7 @@ export default function RekapKebersihan() {
       `Status: ${status === 'ALL' ? 'Semua' : STATUS_LABEL[status]}`,
       query ? `Cari: "${query}"` : '',
     ].filter(Boolean).join('   |   ');
-    const dicetak = `Diekspor: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Makassar', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WITA`;
+    const dicetak = `Diekspor: ${formatTanggal(new Date(), { waktu: true, timeZone: 'Asia/Makassar' })} WITA`;
 
     /** Sheet rapi: judul, periode, filter, header dengan AutoFilter, lebar kolom, dan baris total (opsional). */
     const buatSheet = (judul: string, headers: string[], rows: (string | number)[][], widths: number[], total?: (string | number)[]) => {

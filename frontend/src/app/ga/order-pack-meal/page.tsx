@@ -31,6 +31,7 @@ import { compressImage } from "@/lib/compress-image";
 import { urlUploads } from "@/lib/uploads-url";
 import styles from "./order-pack-meal.module.css";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:3001/api";
@@ -152,12 +153,7 @@ function createRow(item?: OrderItem): FormRow {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
+  return formatTanggal(new Date(value), { timeZone: "UTC" });
 }
 
 function formatRole(role: string) {

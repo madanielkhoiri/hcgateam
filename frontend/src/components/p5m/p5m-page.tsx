@@ -25,6 +25,7 @@ import {
 import { compressImages } from "@/lib/compress-image";
 import styles from "./p5m.module.css";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 type P5mRow = {
@@ -187,11 +188,7 @@ function normalizeSupervisors(value: unknown): string[] {
 function formatDate(value: string) {
   const date = new Date(value);
 
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
+  return formatTanggal(date);
 }
 
 function formatDuration(row: P5mRow, now: number) {

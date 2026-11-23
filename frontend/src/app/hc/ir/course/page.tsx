@@ -34,14 +34,9 @@ import {
 } from '@/lib/ir-api';
 import styles from '../ir.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 function formatTanggalJam(iso: string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(iso));
+  return formatTanggal(new Date(iso), { waktu: true });
 }
 
 export default function IrCoursePage() {

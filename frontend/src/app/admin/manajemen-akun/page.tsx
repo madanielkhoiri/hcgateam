@@ -24,6 +24,7 @@ import { karyawanApi, type Karyawan, type Departemen } from '@/lib/karyawan-api'
 import { epromApi, type Vendor } from '@/lib/eprom-api';
 import styles from './manajemen-akun.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
@@ -1093,7 +1094,7 @@ export default function AccountManagementPage() {
               <div><span>Jabatan</span><strong>{detailUser.jabatan || '-'}</strong></div>
               <div><span>Status</span><strong>{detailUser.isActive ? 'Aktif' : 'Nonaktif'}</strong></div>
               <div><span>Jumlah Akses</span><strong>{detailUser.role === 'ADMIN' ? 'Akses penuh' : `${detailUser.accessKeys.length} akses aktif`}</strong></div>
-              <div><span>Dibuat</span><strong>{new Date(detailUser.createdAt).toLocaleString('id-ID')}</strong></div>
+              <div><span>Dibuat</span><strong>{formatTanggal(new Date(detailUser.createdAt), { waktu: true })}</strong></div>
             </div>
           </section>
         </div>

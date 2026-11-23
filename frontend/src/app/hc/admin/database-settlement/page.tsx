@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Database, Printer, RefreshCw } from "lucide-react";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 type DataDatabaseSettlement = {
  id: number;
  id_deklarasi: number;
@@ -58,11 +59,7 @@ function formatTanggal(nilai: string | null | undefined) {
  return nilai;
  }
 
- return tanggal.toLocaleDateString("id-ID", {
- day: "2-digit",
- month: "2-digit",
- year: "numeric",
- });
+ return formatTanggalStandar(tanggal);
 }
 
 export default function DatabaseSettlementAdminPage() {

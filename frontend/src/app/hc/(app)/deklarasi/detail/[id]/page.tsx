@@ -20,6 +20,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { urlFileApi } from "@/lib/uploads-url";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- halaman detail deklarasi + koreksi OCR manual per baris nota ---> */
 
 type DataPenggunaTersimpan = {
@@ -577,11 +578,7 @@ export default function HalamanDetailDeklarasi() {
 
  if (Number.isNaN(hasilTanggal.getTime())) return "-";
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "long",
- year: "numeric",
- }).format(hasilTanggal);
+ return formatTanggalStandar(hasilTanggal);
  };
 
  const lamaPenyelesaianHari = () => {
@@ -601,11 +598,7 @@ export default function HalamanDetailDeklarasi() {
 
  if (Number.isNaN(hasilTanggal.getTime())) return "-";
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "short",
- year: "numeric",
- }).format(hasilTanggal);
+ return formatTanggalStandar(hasilTanggal);
  };
 
  const formatJam = (tanggal: string | null | undefined) => {
@@ -629,14 +622,7 @@ export default function HalamanDetailDeklarasi() {
 
  if (Number.isNaN(hasilTanggal.getTime())) return "-";
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "short",
- year: "numeric",
- hour: "2-digit",
- minute: "2-digit",
- hour12: false,
- }).format(hasilTanggal);
+ return formatTanggalStandar(hasilTanggal, { waktu: true });
  };
 
  const formatJenisDeklarasi = (jenis: string) => {

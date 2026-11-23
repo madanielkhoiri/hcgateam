@@ -6,17 +6,12 @@ import { Star, UserRound } from 'lucide-react';
 import { TransportApiError, TravelJadwal, TravelPenumpang, transportApi } from '@/lib/transport-api';
 import styles from '../../transport-saya.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const JENDELA_CHECKIN_MS = 2 * 60 * 60 * 1000;
 
 function formatWaktu(value: string | null): string {
   if (!value) return '-';
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggal(new Date(value), { waktu: true });
 }
 
 export default function TravelSayaDetailPage() {

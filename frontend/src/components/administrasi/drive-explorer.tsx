@@ -33,12 +33,9 @@ import { bolehKelolaPostingan } from '@/lib/postingan-api';
 import { compressImage } from '@/lib/compress-image';
 import styles from '@/app/hc/ir/ir.module.css';
 
+import { formatTanggal as formatTanggalStandar } from '@/lib/format-tanggal';
 function formatTanggal(iso: string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(iso));
+  return formatTanggalStandar(new Date(iso));
 }
 
 export function DriveExplorer({ scope }: { scope: ScopeDrive }) {

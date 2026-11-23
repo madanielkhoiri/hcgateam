@@ -15,6 +15,7 @@ import {
 } from '@/lib/tool-borrowing-api';
 import styles from './tool-borrowing.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 export const STATUS_ALAT: Record<ToolAsset['status'], string> = { AVAILABLE: 'Tersedia', BORROWED: 'Dipinjam', DAMAGED: 'Rusak', LOST: 'Hilang' };
 export const CONDITION = { GOOD: 'Baik', DAMAGED: 'Rusak', LOST: 'Hilang' } as const;
 export const METODE = { SCAN: 'Scan QR', MANUAL: 'Manual NRP' } as const;
@@ -209,7 +210,7 @@ const BAHAYA = [
 ] as const;
 
 function tanggalForm(value: string) {
-  return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatTanggal(new Date(value));
 }
 
 /** Lembar ceklist dengan format sama seperti form PDF PPA-ADRO-F-HCGA-94. */

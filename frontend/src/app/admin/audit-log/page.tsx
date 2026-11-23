@@ -9,19 +9,14 @@ import { auditLogApi, AuditLogApiError, type AuditLogEntry } from '@/lib/audit-l
 import { labelEntitas, terjemahkanAksi } from '@/lib/audit-log-labels';
 import styles from '@/components/transport/transport.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 function warnaAksi(aksi: string): string {
   if (aksi.includes('GAGAL') || aksi.includes('DIHAPUS')) return styles.breakdown;
   return styles.ready;
 }
 
 function formatWaktu(iso: string): string {
-  return new Date(iso).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggal(new Date(iso), { waktu: true });
 }
 
 export default function AuditLogPage() {

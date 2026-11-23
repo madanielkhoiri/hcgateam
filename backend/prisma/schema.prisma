@@ -3523,17 +3523,29 @@ model AlbumFoto {
 // ==================================================
 
 model LaporanTps3r {
-  id              Int      @id @default(autoincrement())
-  tanggal         DateTime @db.Date
-  beratOrganik    Float    @default(0) @map("berat_organik")
-  beratNonOrganik Float    @default(0) @map("berat_non_organik")
-  beratReuse      Float    @default(0) @map("berat_reuse")
-  beratRecycle    Float    @default(0) @map("berat_recycle")
-  beratResidu     Float    @default(0) @map("berat_residu")
-  sampahTerkelola Float    @default(0) @map("sampah_terkelola")
-  createdById     Int      @map("created_by_id")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                  Int      @id @default(autoincrement())
+  tanggal             DateTime @db.Date
+  beratOrganik        Float    @default(0) @map("berat_organik")
+  beratNonOrganik     Float    @default(0) @map("berat_non_organik")
+  beratReuse          Float    @default(0) @map("berat_reuse")
+  beratRecycle        Float    @default(0) @map("berat_recycle")
+  beratResidu         Float    @default(0) @map("berat_residu")
+  sampahTerkelola     Float    @default(0) @map("sampah_terkelola")
+  /// Rincian timbulan (kg), mengikuti format Excel TPS 3R. Null = belum dirinci (data lama).
+  /// Total beratOrganik/beratReuse/beratRecycle dihitung dari rincian ini.
+  organikMakanan      Float?   @map("organik_makanan")
+  organikTaman        Float?   @map("organik_taman")
+  reuseKertas         Float?   @map("reuse_kertas")
+  reusePlastik        Float?   @map("reuse_plastik")
+  reuseLainnya        Float?   @map("reuse_lainnya")
+  recycleKertas       Float?   @map("recycle_kertas")
+  recyclePlastikKeras Float?   @map("recycle_plastik_keras")
+  recyclePallet       Float?   @map("recycle_pallet")
+  recycleKaca         Float?   @map("recycle_kaca")
+  recycleLogam        Float?   @map("recycle_logam")
+  createdById         Int      @map("created_by_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   createdBy User @relation("LaporanTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
@@ -3542,16 +3554,26 @@ model LaporanTps3r {
 }
 
 model SampahTerkelolaTps3r {
-  id           Int      @id @default(autoincrement())
-  tanggal      DateTime @db.Date
-  beratOrganik Float    @default(0) @map("berat_organik")
-  beratReuse   Float    @default(0) @map("berat_reuse")
-  beratRecycle Float    @default(0) @map("berat_recycle")
-  beratResidu  Float    @default(0) @map("berat_residu")
-  createdById  Int      @map("created_by_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  createdBy    User     @relation("SampahTerkelolaTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  id                    Int      @id @default(autoincrement())
+  tanggal               DateTime @db.Date
+  beratOrganik          Float    @default(0) @map("berat_organik")
+  beratReuse            Float    @default(0) @map("berat_reuse")
+  beratRecycle          Float    @default(0) @map("berat_recycle")
+  beratResidu           Float    @default(0) @map("berat_residu")
+  /// Rincian penanganan (kg). Null = belum dirinci (data lama).
+  /// beratOrganik = biopori + kompos + maggot; beratRecycle = total penanganan anorganik (TPS 3R / bank sampah);
+  /// beratResidu = residu & lainnya ke TPA.
+  tanganiBiopori        Float?   @map("tangani_biopori")
+  tanganiKompos         Float?   @map("tangani_kompos")
+  tanganiMaggot         Float?   @map("tangani_maggot")
+  tanganiTpsNavaraha    Float?   @map("tangani_tps_navaraha")
+  tanganiTpsMenanti     Float?   @map("tangani_tps_menanti")
+  tanganiTpsMajuBersama Float?   @map("tangani_tps_maju_bersama")
+  tanganiBankSampah     Float?   @map("tangani_bank_sampah")
+  createdById           Int      @map("created_by_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  createdBy             User     @relation("SampahTerkelolaTps3rCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([tanggal])
   @@map("civil_sampah_terkelola_tps3r")

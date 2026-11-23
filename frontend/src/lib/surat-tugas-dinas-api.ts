@@ -6,6 +6,7 @@
 import { getAccessToken } from "./access-control";
 import { urlUploads } from "./uploads-url";
 
+import { formatTanggal as formatTanggalStandar } from "./format-tanggal";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 export type { HasilHalaman } from "./pagination";
@@ -197,12 +198,7 @@ export function formatTanggal(nilai: string | null | undefined): string {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(nilai));
+  return formatTanggalStandar(new Date(nilai), { timeZone: "UTC" });
 }
 
 export function formatTanggalWaktu(nilai: string | null | undefined): string {
@@ -210,13 +206,7 @@ export function formatTanggalWaktu(nilai: string | null | undefined): string {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(nilai));
+  return formatTanggalStandar(new Date(nilai), { waktu: true });
 }
 
 export const LABEL_STATUS_SURAT_TUGAS: Record<StatusSuratTugas, string> = {

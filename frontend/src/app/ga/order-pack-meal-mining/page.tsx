@@ -6,6 +6,7 @@ import { getAccessToken } from '@/lib/access-control';
 import { type MiningApiRow, rowsForDate, toEntryPayload } from './mining-template';
 import styles from './order-pack-meal-mining.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 function todayPontianak() {
@@ -19,9 +20,7 @@ function final(row: MiningApiRow, type: 'Lunch' | 'Dinner' | 'SpecialMeal' | 'Sp
 }
 
 function dateLabel(date: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC',
-  }).format(new Date(`${date}T00:00:00.000Z`)).replaceAll(' ', '-');
+  return formatTanggal(new Date(`${date}T00:00:00.000Z`), { timeZone: 'UTC' }).replaceAll(' ', '-');
 }
 
 export default function MiningOrderRecapPage() {

@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BuatLaporanTps3rDto, BuatSampahTerkelolaTps3rDto, UbahLaporanTps3rDto, UbahSampahTerkelolaTps3rDto } from './dto/tps3r.dto';
 import type { AktorPostingan } from '../postingan/postingan-aktor';
 import { hasilHalaman, paramHalaman } from '../common/pagination.util';
+import { GRUP_LAPORAN, GRUP_TERKELOLA, susunDataTps3r } from './tps3r-rincian';
 
 @Injectable()
 export class CivilTps3rService {
@@ -61,6 +62,7 @@ export class CivilTps3rService {
       terkelolaReuse: terkelola._sum.beratReuse ?? 0,
       terkelolaRecycle: terkelola._sum.beratRecycle ?? 0,
       terkelolaResidu: terkelola._sum.beratResidu ?? 0,
+      terkelolaAnorganik: (terkelola._sum.beratReuse ?? 0) + (terkelola._sum.beratRecycle ?? 0),
     };
   }
 
@@ -102,11 +104,8 @@ export class CivilTps3rService {
     return this.prisma.laporanTps3r.create({
       data: {
         tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`),
-        beratOrganik: dto.beratOrganik,
+        ...(susunDataTps3r({ ...dto }, GRUP_LAPORAN, ['beratResidu']) as Record<string, number>),
         beratNonOrganik: 0,
-        beratReuse: dto.beratReuse,
-        beratRecycle: dto.beratRecycle,
-        beratResidu: dto.beratResidu,
         sampahTerkelola: 0,
         createdById: aktor.id,
       },
@@ -115,7 +114,7 @@ export class CivilTps3rService {
   }
 
   async ubah(id: number, dto: UbahLaporanTps3rDto) {
-    await this.wajibAda(id);
+    const lama = await this.wajibAda(id);
 
     return this.prisma.laporanTps3r.update({
       where: { id },
@@ -123,10 +122,7 @@ export class CivilTps3rService {
         ...(dto.tanggal !== undefined
           ? { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`) }
           : {}),
-        ...(dto.beratOrganik !== undefined ? { beratOrganik: dto.beratOrganik } : {}),
-        ...(dto.beratReuse !== undefined ? { beratReuse: dto.beratReuse } : {}),
-        ...(dto.beratRecycle !== undefined ? { beratRecycle: dto.beratRecycle } : {}),
-        ...(dto.beratResidu !== undefined ? { beratResidu: dto.beratResidu } : {}),
+        ...susunDataTps3r({ ...dto }, GRUP_LAPORAN, ['beratResidu'], lama),
       },
       include: { createdBy: { select: { id: true, name: true, nrp: true } } },
     });
@@ -146,18 +142,31 @@ export class CivilTps3rService {
     return data;
   }
 
-  daftarTerkelola() {
-    return this.prisma.sampahTerkelolaTps3r.findMany({ include: { createdBy: { select: { id: true, name: true, nrp: true } } }, orderBy: [{ tanggal: 'desc' }, { id: 'desc' }] });
+  daftarTerkelola(bulan?: number, tahun?: number) {
+    const rentang = rentangTanggal(bulan, tahun);
+    return this.prisma.sampahTerkelolaTps3r.findMany({ where: rentang ? { tanggal: rentang } : undefined, include: { createdBy: { select: { id: true, name: true, nrp: true } } }, orderBy: [{ tanggal: 'desc' }, { id: 'desc' }] });
   }
 
   buatTerkelola(aktor: AktorPostingan, dto: BuatSampahTerkelolaTps3rDto) {
-    return this.prisma.sampahTerkelolaTps3r.create({ data: { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`), beratOrganik: dto.beratOrganik, beratReuse: dto.beratReuse, beratRecycle: dto.beratRecycle, beratResidu: dto.beratResidu, createdById: aktor.id } });
+    return this.prisma.sampahTerkelolaTps3r.create({
+      data: {
+        tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`),
+        ...(susunDataTps3r({ ...dto }, GRUP_TERKELOLA, ['beratReuse', 'beratResidu']) as Record<string, number>),
+        createdById: aktor.id,
+      },
+    });
   }
 
   async ubahTerkelola(id: number, dto: UbahSampahTerkelolaTps3rDto) {
     const lama = await this.prisma.sampahTerkelolaTps3r.findUnique({ where: { id } });
     if (!lama) throw new NotFoundException('Data sampah terkelola tidak ditemukan');
-    return this.prisma.sampahTerkelolaTps3r.update({ where: { id }, data: { ...(dto.tanggal ? { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`) } : {}), ...(dto.beratOrganik !== undefined ? { beratOrganik: dto.beratOrganik } : {}), ...(dto.beratReuse !== undefined ? { beratReuse: dto.beratReuse } : {}), ...(dto.beratRecycle !== undefined ? { beratRecycle: dto.beratRecycle } : {}), ...(dto.beratResidu !== undefined ? { beratResidu: dto.beratResidu } : {}) } });
+    return this.prisma.sampahTerkelolaTps3r.update({
+      where: { id },
+      data: {
+        ...(dto.tanggal ? { tanggal: new Date(`${dto.tanggal}T00:00:00.000Z`) } : {}),
+        ...susunDataTps3r({ ...dto }, GRUP_TERKELOLA, ['beratReuse', 'beratResidu'], lama),
+      },
+    });
   }
 
   async hapusTerkelola(id: number) {

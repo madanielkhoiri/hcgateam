@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- tipe data laporan admin dan FA ---> */
 
 type RolePengguna = "SUPER_ADMIN" | "ADMIN" | "SECTION_HEAD" | "FA" | "KARYAWAN";
@@ -217,11 +218,7 @@ function formatTanggal(tanggal: string) {
  return "-";
  }
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "long",
- year: "numeric",
- }).format(nilaiTanggal);
+ return formatTanggalStandar(nilaiTanggal);
 }
 
 function formatJenis(jenis: JenisDeklarasi) {

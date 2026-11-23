@@ -52,6 +52,8 @@ type MenuGroup = {
   label: string;
   icon: React.ElementType;
   items: MenuItem[];
+  /** true = item tampil langsung sebagai menu (tanpa dropdown). */
+  flat?: boolean;
 };
 
 const ROLE_BOLEH_LIHAT_DEVIASI = ["ADMIN", "SUPER_ADMIN", "SECTION_HEAD"];
@@ -63,6 +65,7 @@ const menuGroups: MenuGroup[] = [
     section: "inventory",
     label: "Dashboard",
     icon: BarChart3,
+    flat: true,
     items: [
       {
         label: "Dashboard Inventory",
@@ -539,6 +542,34 @@ export default function InventoryLayout({ children }: InventoryLayoutProps) {
             const isGroupActive = group.items.some(
               (item) => pathname === item.href,
             );
+
+            // Menu inventory tampil langsung (tanpa dropdown); grup input diberi pembatas.
+            if (group.flat || group.section === "inventory") {
+              return (
+                <div className={styles.menuGroup} key={group.id}>
+                  {!group.flat && (
+                    <div className={styles.groupDivider} role="separator">
+                      {!sidebarCollapsed && <span>{group.label}</span>}
+                    </div>
+                  )}
+                  {group.items.map((item) => {
+                    const ItemIcon = item.icon;
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`${styles.groupButton} ${styles.groupLink} ${isActive ? styles.groupButtonActive : ""}`}
+                        title={sidebarCollapsed ? item.label : undefined}
+                      >
+                        <ItemIcon size={20} />
+                        {!sidebarCollapsed && <span>{item.label}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            }
 
             return (
               <div className={styles.menuGroup} key={group.id}>

@@ -20,6 +20,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { compressImage } from "@/lib/compress-image";
 import { urlFileApi } from "@/lib/uploads-url";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- halaman admin pengajuan STD/RAB dan approval FA ---> */
 
 type RolePengguna =
@@ -317,11 +318,7 @@ export default function HalamanPengajuanAdmin() {
  return tanggal;
  }
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "long",
- year: "numeric",
- }).format(hasil);
+ return formatTanggalStandar(hasil);
  };
 
  const formatJenis = (jenis: string) => {

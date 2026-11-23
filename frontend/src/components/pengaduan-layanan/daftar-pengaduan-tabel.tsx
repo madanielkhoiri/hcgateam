@@ -22,6 +22,7 @@ import {
 } from '@/lib/pengaduan-layanan-api';
 import styles from './pengaduan-layanan.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const KELAS_STATUS: Record<StatusPengaduan, string> = {
   MENUNGGU: 'statusMenunggu',
   DISETUJUI: 'statusDisetujui',
@@ -178,11 +179,7 @@ export function DaftarPengaduanTabel({
             {rekap.daftar.map((item) => (
               <tr key={item.id}>
                 <td>
-                  {new Intl.DateTimeFormat('id-ID', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  }).format(new Date(item.createdAt))}
+                  {formatTanggal(new Date(item.createdAt))}
                 </td>
                 <td>{item.namaPelapor || item.pengirim}<br /><small>{item.nrpPelapor ? `NRP ${item.nrpPelapor}` : ''}</small></td>
                 <td>

@@ -116,6 +116,7 @@ describe('CivilTps3rService.ringkasan', () => {
       terkelolaReuse: 0,
       terkelolaRecycle: 0,
       terkelolaResidu: 0,
+      terkelolaAnorganik: 0,
     });
   });
 
@@ -144,6 +145,7 @@ describe('CivilTps3rService.ringkasan', () => {
       terkelolaReuse: 0,
       terkelolaRecycle: 0,
       terkelolaResidu: 0,
+      terkelolaAnorganik: 0,
     });
   });
 });

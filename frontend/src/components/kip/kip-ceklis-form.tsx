@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { compressImage } from '@/lib/compress-image';
 import { useStoredUser } from '@/lib/use-stored-user';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 export function KipCeklisForm({
   parameterChecklist,
   submitting,
@@ -29,12 +30,7 @@ export function KipCeklisForm({
   const warnaTeks = gelap ? '#ffffff' : '#12355f';
   const warnaSub = gelap ? 'rgba(255,255,255,.65)' : '#71839d';
 
-  const tanggalSekarang = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
+  const tanggalSekarang = formatTanggal(new Date(), { hari: 'long' });
 
   async function handleFotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];

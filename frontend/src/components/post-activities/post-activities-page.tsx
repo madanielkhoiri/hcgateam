@@ -23,6 +23,7 @@ import {
 import { compressImages } from "@/lib/compress-image";
 import styles from "./post-activities.module.css";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 const WEATHER_OPTIONS = ["CERAH", "HUJAN", "MENDUNG"];
@@ -113,11 +114,7 @@ function imageUrl(path: string) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return formatTanggal(new Date(value));
 }
 
 export default function PostActivitiesPage() {

@@ -12,6 +12,7 @@ import { compressImage, compressImages } from "@/utils/compress-image";
 import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 import styles from "./daily-activities.module.css";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 const UKURAN_HALAMAN = 20;
 
@@ -134,12 +135,7 @@ function formatDate(value: string | null): string {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
+  return formatTanggal(new Date(value), { timeZone: "UTC" });
 }
 
 function getToken(): string | null {

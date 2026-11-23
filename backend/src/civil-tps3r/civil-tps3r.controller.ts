@@ -33,7 +33,9 @@ export class CivilTps3rController {
   constructor(private readonly service: CivilTps3rService, private readonly files: CivilTps3rFileService) {}
 
   @Get('terkelola')
-  daftarTerkelola() { return this.service.daftarTerkelola(); }
+  daftarTerkelola(@Query("bulan") bulan?: string, @Query("tahun") tahun?: string) {
+    return this.service.daftarTerkelola(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined);
+  }
 
   @Post('terkelola')
   buatTerkelola(@Aktor() aktor: AktorPostingan, @Body() dto: BuatSampahTerkelolaTps3rDto) { return this.service.buatTerkelola(aktor, dto); }

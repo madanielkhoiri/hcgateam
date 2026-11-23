@@ -1,0 +1,155 @@
+/* ==================================================
+   Rincian TPS 3R — tabel bertingkat + form popup (format Excel)
+================================================== */
+
+/* ---------- Tabel ---------- */
+.tabelWrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: #fff;
+  border: 1px solid #dce6f1;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(32, 66, 105, 0.06);
+}
+.tabel { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.tabel th, .tabel td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #e8eef5;
+  border-right: 1px solid #eef3f8;
+  text-align: center;
+  white-space: nowrap;
+}
+.tabel thead th {
+  background: #f4f8fb;
+  color: #4a6380;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+.tabel thead th small { display: block; margin-top: 2px; font-size: 9.5px; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.8; }
+.thGrup { border-bottom: 2px solid !important; font-size: 11px !important; }
+.thGrup small { display: inline !important; }
+.thKolom { min-width: 92px; white-space: normal !important; line-height: 1.25; }
+.thTotal { background: #eef3f8 !important; }
+.tabel tbody td { color: #17375f; }
+.tabel tbody tr:hover td { background: #f8fbfe; }
+.kolomTanggal {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #fff;
+  text-align: left !important;
+  font-weight: 700;
+  box-shadow: 1px 0 0 #e3ebf3;
+}
+.tabel thead .kolomTanggal { background: #f4f8fb; z-index: 2; }
+.tabel tbody tr:hover .kolomTanggal { background: #f8fbfe; }
+.kosong { color: #b3c0cf; }
+.tdTotal { background: #f6f9fc; font-weight: 800; }
+.tandaLama {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: #fef3c7;
+  color: #a16207;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 800;
+  vertical-align: middle;
+}
+.pelapor small { display: block; color: #7b8ea6; font-size: 10.5px; }
+.tabel tfoot th {
+  background: #fffbe6;
+  color: #17375f;
+  font-size: 12px;
+  font-weight: 800;
+  border-top: 2px solid #f3e19b;
+}
+.tabel tfoot .kolomTanggal { background: #fffbe6; }
+.aksi { display: inline-flex; gap: 6px; }
+.tombolIkon {
+  display: grid; place-items: center; width: 30px; height: 30px;
+  border: 1px solid #d6e2ef; border-radius: 9px; background: #fff; color: #33557a; cursor: pointer;
+}
+.tombolIkon:hover { background: #f1f6fb; }
+.tombolHapus { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
+.tombolHapus:hover { background: #ffe4e6; }
+
+/* ---------- Popup form ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px;
+  background: rgba(15, 30, 54, 0.5); backdrop-filter: blur(3px);
+}
+.dialog {
+  display: flex; flex-direction: column; width: 100%; max-width: 760px; max-height: calc(100dvh - 32px);
+  border-radius: 18px; background: #fff; box-shadow: 0 30px 70px rgba(15, 30, 54, 0.3); overflow: hidden;
+}
+.dialogKepala {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid #edf2f7;
+}
+.dialogKepala h2 { margin: 0; color: #17375f; font-size: 17px; }
+.tutup {
+  display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 10px;
+  background: #f1f5f9; color: #475569; cursor: pointer;
+}
+.dialogIsi { display: grid; gap: 14px; padding: 18px 20px; overflow-y: auto; }
+
+.fieldTanggal { display: grid; gap: 6px; max-width: 240px; }
+.fieldTanggal span { color: #526a86; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.fieldTanggal input {
+  height: 40px; padding: 0 12px; border: 1.5px solid #d3dfeb; border-radius: 10px; background: #f8fafc;
+  font: inherit; font-size: 13px; color: #10244a; outline: 0;
+}
+.fieldTanggal input:focus { border-color: #ef7d00; background: #fff; box-shadow: 0 0 0 3px rgba(239, 125, 0, 0.12); }
+
+.grupForm { border: 1.5px solid; border-radius: 14px; overflow: hidden; }
+.grupForm header {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 14px;
+  font-size: 12.5px;
+}
+.grupForm header span { font-size: 11.5px; font-weight: 600; }
+.catatanLama {
+  margin: 10px 14px 0; padding: 8px 11px; border-radius: 9px; background: #fffbeb; border: 1px solid #fde68a;
+  color: #92400e; font-size: 11.5px; line-height: 1.45;
+}
+.gridInput { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 12px 14px 14px; }
+.isian { display: grid; gap: 6px; align-content: start; }
+.isian > span { color: #284866; font-size: 12px; font-weight: 700; line-height: 1.3; }
+.isian small { display: block; color: #8294aa; font-size: 10.5px; font-weight: 600; }
+.inputKg {
+  display: flex; align-items: center; height: 40px; padding-right: 12px;
+  border: 1.5px solid #d3dfeb; border-radius: 10px; background: #f8fafc; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.inputKg:focus-within { border-color: var(--warna); background: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--warna) 15%, transparent); }
+.inputKg input {
+  flex: 1; min-width: 0; height: 100%; padding: 0 12px; border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 14px; font-weight: 700; color: #10244a;
+}
+.inputKg input::placeholder { color: #c0cad6; font-weight: 500; }
+.inputKg em { color: #8294aa; font-size: 11.5px; font-style: normal; font-weight: 700; }
+.error { margin: 0; padding: 9px 12px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 12.5px; }
+
+.dialogKaki {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 13px 20px;
+  border-top: 1px solid #edf2f7; background: #fafcfe;
+}
+.totalSemua { margin-right: auto; color: #526a86; font-size: 12.5px; }
+.totalSemua b { color: #17375f; }
+.tombolNetral, .tombolUtama {
+  min-height: 40px; padding: 0 18px; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+}
+.tombolNetral { border: 1px solid #d3dfeb; background: #fff; color: #334155; }
+.tombolUtama { border: 0; background: linear-gradient(135deg, #f08a00, #e06a00); color: #fff; box-shadow: 0 8px 18px rgba(224, 106, 0, 0.22); }
+.tombolNetral:disabled, .tombolUtama:disabled { opacity: 0.55; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .gridInput { grid-template-columns: 1fr 1fr; }
+  .fieldTanggal { max-width: none; }
+  .dialogKaki { flex-wrap: wrap; }
+  .totalSemua { width: 100%; }
+  .dialogKaki button { flex: 1; }
+}

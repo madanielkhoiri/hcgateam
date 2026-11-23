@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { TransportApiError, TripDriver, transportApi } from '@/lib/transport-api';
 import styles from '../transport-saya.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const LABEL_STATUS: Record<string, string> = {
   DIJADWALKAN: 'Dijadwalkan',
   BERJALAN: 'Berjalan',
@@ -13,13 +14,7 @@ const LABEL_STATUS: Record<string, string> = {
 };
 
 function formatWaktu(value: string): string {
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggal(new Date(value), { waktu: true });
 }
 
 export default function DriverTripListPage() {

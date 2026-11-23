@@ -35,24 +35,15 @@ import {
 import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from '../housekeeping-indoor.module.css';
 
+import { formatTanggal as formatTanggalStandar } from '@/lib/format-tanggal';
 const UKURAN_HALAMAN = 20;
 
 function formatTanggal(value: string): string {
-  return new Date(value).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatTanggalStandar(new Date(value));
 }
 
 function formatWaktu(value: string): string {
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggalStandar(new Date(value), { waktu: true });
 }
 
 const blankForm = { lokasi: '' as LokasiHousekeepingIndoor | '', namaPetugas: '' };

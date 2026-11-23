@@ -14,6 +14,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { compressImage } from "@/lib/compress-image";
 import { urlFileApi } from "@/lib/uploads-url";
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- dashboard karyawan upload nota + revisi nota + bukti pengembalian saldo ---> */
 type DataPenggunaTersimpan = {
  id: number;
@@ -410,11 +411,7 @@ const [kategoriRevisiBatch, setKategoriRevisiBatch] = useState<
  if (Number.isNaN(hasil.getTime())) {
  return tanggal;
  }
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "short",
- year: "numeric",
- }).format(hasil);
+ return formatTanggalStandar(hasil);
  };
  const tanggalBatasDeklarasi = (tanggalMulai: string | null | undefined) => {
  if (!tanggalMulai) return null;

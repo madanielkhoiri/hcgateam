@@ -33,6 +33,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 import InlineSignatureCanvas from "../signatures/inline-signature-canvas";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 type Creator = {
   id: number;
   name: string;
@@ -314,11 +315,7 @@ function normalizePreActivityCheck(
   };
 }
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return formatTanggal(new Date(value));
 }
 
 function riskLabel(value: string): string {

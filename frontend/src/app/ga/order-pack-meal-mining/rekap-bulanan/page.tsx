@@ -6,6 +6,7 @@ import { getAccessToken } from '@/lib/access-control';
 import { type MiningApiRow } from '../mining-template';
 import styles from '../order-pack-meal-mining.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 function currentMonth() {
@@ -19,9 +20,7 @@ function final(row: MiningApiRow, type: 'Lunch' | 'Dinner' | 'SpecialMeal' | 'Sp
 }
 
 function labelDate(date: string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC',
-  }).format(new Date(`${date}T00:00:00.000Z`));
+  return formatTanggal(new Date(`${date}T00:00:00.000Z`), { hari: 'long', timeZone: 'UTC' });
 }
 
 export default function RekapBulananMiningPage() {

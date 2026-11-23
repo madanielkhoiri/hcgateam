@@ -2,46 +2,26 @@
 
 // ==================================================
 // FILE: frontend/src/app/civil/tps-3r/tabel/page.tsx
-// FUNGSI: Tabel Laporan TPS 3R - tambah/ubah/hapus laporan timbangan
+// FUNGSI: Tabel Laporan TPS 3R (timbulan sampah) - format kolom mengikuti Excel
 // ==================================================
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Modal } from '@/components/civil-project/modal';
-import {
-  tps3rApi,
-  type LaporanTps3r,
-  type LaporanTps3rInput,
-} from '@/lib/tps3r-api';
+import { tps3rApi, type LaporanTps3r } from '@/lib/tps3r-api';
 import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
+import { FormRincian, GRUP_TIMBULAN, TabelRincian, type BarisRincian } from '@/components/tps3r/rincian-tps3r';
+import { formatTanggal } from '@/lib/format-tanggal';
 import styles from '../../project/tender/tender.module.css';
 
-const UKURAN_HALAMAN = 20;
+// 31 = satu bulan penuh muat dalam satu halaman (seperti lembar Excel bulanan).
+const UKURAN_HALAMAN = 31;
 
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ];
 
-function formatTanggal(iso: string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(iso));
-}
-
-function formatKg(nilai: number) {
-  return `${nilai.toLocaleString('id-ID', { maximumFractionDigits: 2 })} kg`;
-}
-
-const FORM_KOSONG: LaporanTps3rInput = {
-  tanggal: new Date().toISOString().slice(0, 10),
-  beratOrganik: 0,
-  beratReuse: 0,
-  beratRecycle: 0,
-  beratResidu: 0,
-};
+const gayaSelect = { minWidth: 130, padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12 };
 
 export default function Tps3rTabelPage() {
   const sekarang = new Date();
@@ -54,10 +34,7 @@ export default function Tps3rTabelPage() {
   const [memuat, setMemuat] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<LaporanTps3rInput>(FORM_KOSONG);
-  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState<{ baris: BarisRincian | null } | null>(null);
 
   function muatUlang() {
     setMemuat(true);
@@ -74,7 +51,6 @@ export default function Tps3rTabelPage() {
 
   useEffect(() => {
     setHalaman(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bulan, tahun]);
 
   useEffect(() => {
@@ -82,89 +58,42 @@ export default function Tps3rTabelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bulan, tahun, halaman]);
 
-  function bukaTambah() {
-    setEditingId(null);
-    setForm(FORM_KOSONG);
-    setFormOpen(true);
-  }
-
-  function bukaEdit(item: LaporanTps3r) {
-    setEditingId(item.id);
-    setForm({
-      tanggal: item.tanggal.slice(0, 10),
-      beratOrganik: item.beratOrganik,
-      beratReuse: item.beratReuse,
-      beratRecycle: item.beratRecycle,
-      beratResidu: item.beratResidu,
-    });
-    setFormOpen(true);
-  }
-
-  async function simpan() {
-    if (!form.tanggal) {
-      setError('Tanggal wajib diisi');
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
+  async function hapus(baris: BarisRincian) {
+    if (!confirm(`Hapus laporan tanggal ${formatTanggal(baris.tanggal, { timeZone: 'UTC' })}?`)) return;
     try {
-      if (editingId) {
-        await tps3rApi.ubah(editingId, form);
-      } else {
-        await tps3rApi.buat(form);
-      }
-      setFormOpen(false);
-      muatUlang();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan laporan');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function hapus(item: LaporanTps3r) {
-    if (!confirm(`Hapus laporan tanggal ${formatTanggal(item.tanggal)}?`)) return;
-    try {
-      await tps3rApi.hapus(item.id);
+      await tps3rApi.hapus(baris.id);
       muatUlang();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus laporan');
     }
   }
 
+  const totalHalaman = hitungTotalHalaman(totalLaporan, UKURAN_HALAMAN);
+
   return (
     <div className={styles.page}>
       <div className={styles.headerRow}>
         <div>
           <h1>Tabel Laporan TPS 3R</h1>
-          <p>Daftar laporan timbangan sampah per periode.</p>
+          <p>Timbulan sampah harian per jenis (kg), mengikuti format laporan Excel TPS 3R.</p>
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select
-            value={bulan}
-            onChange={(e) => setBulan(e.target.value)}
-            style={{ minWidth: 130, padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12 }}
-          >
+          <select value={bulan} onChange={(e) => setBulan(e.target.value)} style={gayaSelect}>
             <option value="">Semua Bulan</option>
             {NAMA_BULAN.map((nama, index) => (
               <option key={nama} value={index + 1}>{nama}</option>
             ))}
           </select>
 
-          <select
-            value={tahun}
-            onChange={(e) => setTahun(e.target.value)}
-            style={{ minWidth: 100, padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12 }}
-          >
+          <select value={tahun} onChange={(e) => setTahun(e.target.value)} style={{ ...gayaSelect, minWidth: 100 }}>
             <option value="">Semua Tahun</option>
             {Array.from({ length: 7 }, (_, i) => sekarang.getFullYear() - 5 + i).map((th) => (
               <option key={th} value={th}>{th}</option>
             ))}
           </select>
 
-          <button type="button" className={styles.primaryButton} onClick={bukaTambah}>
+          <button type="button" className={styles.primaryButton} onClick={() => setForm({ baris: null })}>
             <Plus size={16} />
             Tambah Laporan
           </button>
@@ -173,104 +102,37 @@ export default function Tps3rTabelPage() {
 
       {error && <p className={styles.errorText}>{error}</p>}
 
-      <div className={styles.tableWrap}>
-        {memuat ? (
-          <p className={styles.emptyText} style={{ padding: 16 }}>Memuat...</p>
-        ) : laporanList.length === 0 ? (
-          <p className={styles.emptyText} style={{ padding: 16 }}>Belum ada laporan pada periode ini.</p>
-        ) : (
-          <table className={styles.table} style={{ textAlign: 'center' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'center' }}>Tanggal</th>
-                <th style={{ textAlign: 'center' }}>Organik</th>
-                <th style={{ textAlign: 'center' }}>Reuse</th>
-                <th style={{ textAlign: 'center' }}>Recycle</th>
-                <th style={{ textAlign: 'center' }}>Residu</th>
-                <th style={{ textAlign: 'center' }}>Dilaporkan Oleh</th>
-                <th style={{ textAlign: 'center' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {laporanList.map((item) => (
-                <tr key={item.id}>
-                  <td style={{ textAlign: 'center' }}>{formatTanggal(item.tanggal)}</td>
-                  <td style={{ textAlign: 'center' }}>{formatKg(item.beratOrganik)}</td>
-                  <td style={{ textAlign: 'center' }}>{formatKg(item.beratReuse)}</td>
-                  <td style={{ textAlign: 'center' }}>{formatKg(item.beratRecycle)}</td>
-                  <td style={{ textAlign: 'center' }}>{formatKg(item.beratResidu)}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    {item.createdBy.name}
-                    {item.createdBy.nrp ? <small>{item.createdBy.nrp}</small> : null}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                      <button type="button" className={styles.iconButton} onClick={() => bukaEdit(item)}>
-                        <Pencil size={13} />
-                      </button>
-                      <button type="button" className={styles.iconButtonDanger} onClick={() => hapus(item)}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {memuat ? (
+        <p className={styles.emptyText} style={{ padding: 16 }}>Memuat...</p>
+      ) : laporanList.length === 0 ? (
+        <p className={styles.emptyText} style={{ padding: 16 }}>Belum ada laporan pada periode ini.</p>
+      ) : (
+        <TabelRincian
+          grup={GRUP_TIMBULAN}
+          data={laporanList as unknown as BarisRincian[]}
+          tampilPelapor
+          labelTotal={totalHalaman > 1 ? 'Total (halaman ini)' : 'Total'}
+          onEdit={(baris) => setForm({ baris })}
+          onHapus={(baris) => void hapus(baris)}
+        />
+      )}
 
-      <PaginationBar
-        halaman={halaman}
-        totalHalaman={hitungTotalHalaman(totalLaporan, UKURAN_HALAMAN)}
-        onGanti={setHalaman}
-      />
+      <PaginationBar halaman={halaman} totalHalaman={totalHalaman} onGanti={setHalaman} />
 
-      {formOpen && (
-        <Modal title={editingId ? 'Ubah Laporan' : 'Tambah Laporan'} onClose={() => setFormOpen(false)}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, fontWeight: 700, color: '#34506f' }}>
-              Tanggal
-              <input
-                type="date"
-                value={form.tanggal}
-                onChange={(e) => setForm((cur) => ({ ...cur, tanggal: e.target.value }))}
-                style={{ padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12.5 }}
-              />
-            </label>
-
-            <FieldBerat label="Organik (kg)" value={form.beratOrganik} onChange={(v) => setForm((cur) => ({ ...cur, beratOrganik: v }))} />
-            <FieldBerat label="Guna Ulang / Reuse (kg)" value={form.beratReuse} onChange={(v) => setForm((cur) => ({ ...cur, beratReuse: v }))} />
-            <FieldBerat label="Daur Ulang / Recycle (kg)" value={form.beratRecycle} onChange={(v) => setForm((cur) => ({ ...cur, beratRecycle: v }))} />
-            <FieldBerat label="Residu (kg)" value={form.beratResidu} onChange={(v) => setForm((cur) => ({ ...cur, beratResidu: v }))} />
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setFormOpen(false)} disabled={submitting}>
-                Batal
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={simpan} disabled={submitting}>
-                {submitting ? 'Menyimpan...' : 'Simpan'}
-              </button>
-            </div>
-          </div>
-        </Modal>
+      {form && (
+        <FormRincian
+          judul={form.baris ? 'Ubah Laporan Timbulan' : 'Tambah Laporan Timbulan'}
+          grup={GRUP_TIMBULAN}
+          baris={form.baris}
+          onTutup={() => setForm(null)}
+          onSimpan={async (payload) => {
+            if (form.baris) await tps3rApi.ubah(form.baris.id, payload);
+            else await tps3rApi.buat(payload);
+            setForm(null);
+            muatUlang();
+          }}
+        />
       )}
     </div>
-  );
-}
-
-function FieldBerat({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, fontWeight: 700, color: '#34506f' }}>
-      {label}
-      <input
-        type="number"
-        min={0}
-        step="0.01"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        style={{ padding: '9px 11px', border: '1px solid #d8e4f2', borderRadius: 9, fontSize: 12.5 }}
-      />
-    </label>
   );
 }

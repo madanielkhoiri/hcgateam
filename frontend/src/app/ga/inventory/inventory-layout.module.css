@@ -172,6 +172,44 @@
   flex: 1;
 }
 
+/* Menu tanpa dropdown (mis. Dashboard, Deviasi Stok). */
+.groupLink {
+  box-sizing: border-box;
+}
+
+.groupLink + .groupLink {
+  margin-top: 4px;
+}
+
+.groupDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 13px 8px;
+  color: #98a6b9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.groupDivider::before,
+.groupDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e3eaf2;
+}
+
+.groupDivider::before {
+  flex: 0 0 0;
+}
+
+.groupDivider:has(span)::before {
+  display: none;
+}
+
 .groupChevron,
 .groupChevronOpen {
   flex-shrink: 0;

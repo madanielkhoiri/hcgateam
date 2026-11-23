@@ -146,11 +146,15 @@ export class PengaduanLayananService {
 
   async rekap(divisi: DivisiPengaduan, bulan?: number, tahun?: number, pengirimId?: number) {
     const sekarang = new Date();
-    const bulanDipilih = bulan ?? sekarang.getMonth() + 1;
+    // Bulan kosong = semua bulan pada tahun terpilih.
+    const bulanDipilih = bulan && bulan >= 1 && bulan <= 12 ? bulan : null;
     const tahunDipilih = tahun ?? sekarang.getFullYear();
 
-    const awalBulan = new Date(tahunDipilih, bulanDipilih - 1, 1);
-    const akhirBulan = new Date(tahunDipilih, bulanDipilih, 1);
+    const awalBulan = bulanDipilih ? new Date(tahunDipilih, bulanDipilih - 1, 1) : new Date(tahunDipilih, 0, 1);
+    const akhirBulan = bulanDipilih ? new Date(tahunDipilih, bulanDipilih, 1) : new Date(tahunDipilih + 1, 0, 1);
+    // Acuan tren 6 bulan: bulan terpilih; kalau semua bulan -> bulan berjalan (tahun ini) atau Desember.
+    const bulanAcuanTren =
+      bulanDipilih ?? (tahunDipilih === sekarang.getFullYear() ? sekarang.getMonth() + 1 : 12);
 
     const daftarBulanIni = await this.prisma.pengaduanLayanan.findMany({
       where: { divisi, ...(pengirimId ? { pengirimId } : {}), createdAt: { gte: awalBulan, lt: akhirBulan } },
@@ -185,7 +189,7 @@ export class PengaduanLayananService {
       }
     }
 
-    const tren = await this.hitungTrenBulanan(divisi, tahunDipilih, bulanDipilih);
+    const tren = await this.hitungTrenBulanan(divisi, tahunDipilih, bulanAcuanTren);
 
     return {
       divisi,

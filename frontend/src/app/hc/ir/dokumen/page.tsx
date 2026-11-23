@@ -35,6 +35,7 @@ import {
 } from '@/lib/ir-api';
 import styles from '../ir.module.css';
 
+import { formatTanggal as formatTanggalStandar } from '@/lib/format-tanggal';
 const TAB: { key: KategoriDokumenIr | 'SEMUA'; label: string }[] = [
   { key: 'SEMUA', label: 'Semua' },
   { key: 'SK', label: 'SK' },
@@ -50,11 +51,7 @@ function apakahGambar(namaFile: string) {
 }
 
 function formatTanggal(iso: string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(iso));
+  return formatTanggalStandar(new Date(iso));
 }
 
 export default function DokumenIrPage() {

@@ -12,6 +12,7 @@ import { Gauge, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { kwhApi, KwhApiError, type KwhMeter, type KwhPencatatan } from '@/lib/kwh-api';
 import styles from '@/components/transport/transport.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
@@ -297,14 +298,7 @@ export default function DataKwhPage() {
                     )}
                   </td>
                   <td>
-                    {new Date(item.tanggalCatat).toLocaleString('id-ID', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'Asia/Makassar',
-                    })}{' '}
+                    {formatTanggal(new Date(item.tanggalCatat), { waktu: true, timeZone: 'Asia/Makassar' })}{' '}
                     WITA
                   </td>
                   <td>

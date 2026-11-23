@@ -13,6 +13,7 @@ import {
 } from '@/lib/gudang-api';
 import styles from './gudang.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const ROLE_BOLEH_GUDANG = ['GUDANG', 'SECTION_HEAD', 'ADMIN', 'SUPER_ADMIN', 'ELEKTRIK', 'GRUP_LEADER_GA'];
 
 type Langkah = 'scope' | 'menu' | 'keranjang' | 'konfirmasi' | 'sukses';
@@ -936,7 +937,7 @@ function GudangPageInner() {
             <div className={styles.summaryLine}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#10244a' }}>Waktu</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#6f819d' }}>
-                {waktuTransaksi?.toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {formatTanggal(waktuTransaksi, { waktu: true })}
               </span>
             </div>
 

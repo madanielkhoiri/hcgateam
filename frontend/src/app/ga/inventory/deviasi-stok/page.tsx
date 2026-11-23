@@ -7,23 +7,18 @@ import { clearSession, getAccessToken, getStoredUser, type PortalUser } from '@/
 import { deviasiStokApi, DeviasiStokApiError, LABEL_AREA_DEVIASI, namaBulan, type RekapDeviasiStok } from '@/lib/deviasi-stok-api';
 import styles from './deviasi-stok.module.css';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const ROLE_BOLEH_LIHAT = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
 
 function formatTanggalJam(value: string): string {
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTanggal(new Date(value), { waktu: true });
 }
 
 export default function DeviasiStokPage() {
   const router = useRouter();
   const sekarang = useMemo(() => new Date(), []);
   const [user, setUser] = useState<PortalUser | null>(null);
-  const [bulan, setBulan] = useState<number | ''>(sekarang.getMonth() + 1);
+  const [bulan, setBulan] = useState<number | ''>('');
   const [tahun, setTahun] = useState(sekarang.getFullYear());
   const [rekap, setRekap] = useState<RekapDeviasiStok | null>(null);
   const [error, setError] = useState('');

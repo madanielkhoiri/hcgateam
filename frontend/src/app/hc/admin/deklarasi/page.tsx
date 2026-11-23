@@ -18,6 +18,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- halaman admin/FA untuk melihat deklarasi karyawan dan koreksi nota real time ---> */
 
 type DataPenggunaTersimpan = {
@@ -187,11 +188,7 @@ function HalamanAdminDeklarasiKonten() {
 
  if (Number.isNaN(hasil.getTime())) return "-";
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "short",
- year: "numeric",
- }).format(hasil);
+ return formatTanggalStandar(hasil);
  };
 
  const formatJam = (tanggal: string | null | undefined) => {

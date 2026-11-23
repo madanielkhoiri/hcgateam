@@ -24,7 +24,7 @@ type ChartRow = {
 
 type DashboardResponse = {
   scope: string;
-  month: number;
+  month: number | null;
   year: number;
   summary: {
     totalItems: number;
@@ -83,9 +83,11 @@ export default function InventoryDashboardPage({
 }: InventoryDashboardPageProps) {
   const today = new Date();
 
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  // 0 = semua bulan (satu tahun penuh).
+  const [month, setMonth] = useState(0);
 
   const [year, setYear] = useState(today.getFullYear());
+  const labelPeriode = month ? `${MONTHS[month - 1]} ${year}` : `Semua Bulan ${year}`;
 
   const [data, setData] = useState<DashboardResponse | null>(null);
 
@@ -107,7 +109,7 @@ export default function InventoryDashboardPage({
       const token = getToken();
 
       const response = await fetch(
-        `${API_URL}/inventory-dashboard/${scope}?month=${month}&year=${year}`,
+        `${API_URL}/inventory-dashboard/${scope}?month=${month || "all"}&year=${year}`,
         {
           credentials: "include",
           headers: token
@@ -317,6 +319,7 @@ export default function InventoryDashboardPage({
             borderRadius: 9,
           }}
         >
+          <option value={0}>Semua Bulan</option>
           {MONTHS.map((monthName, index) => (
             <option key={monthName} value={index + 1}>
               {monthName}
@@ -460,14 +463,14 @@ export default function InventoryDashboardPage({
       >
         <AnimatedLineChart
           title="Grafik Barang Masuk"
-          subtitle={`${MONTHS[month - 1]} ${year}`}
+          subtitle={labelPeriode}
           data={stockInChart}
           accent="green"
         />
 
         <AnimatedLineChart
           title="Grafik Barang Keluar"
-          subtitle={`${MONTHS[month - 1]} ${year}`}
+          subtitle={labelPeriode}
           data={stockOutChart}
           accent="orange"
         />
@@ -475,7 +478,7 @@ export default function InventoryDashboardPage({
 
       <AnimatedLineChart
         title="Grafik Stok Barang"
-        subtitle={`${MONTHS[month - 1]} ${year}`}
+        subtitle={labelPeriode}
         data={stockChart}
         accent="purple"
       />

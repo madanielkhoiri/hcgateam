@@ -51,6 +51,7 @@ import {
 import styles from './dashboard.module.css';
 import SeasonalBanner from './seasonal-banner';
 
+import { formatTanggal } from '@/lib/format-tanggal';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
@@ -90,11 +91,7 @@ const slides = [
 ];
 
 function formatTanggalPendek(iso: string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(iso));
+  return formatTanggal(new Date(iso));
 }
 
 // ==================================================

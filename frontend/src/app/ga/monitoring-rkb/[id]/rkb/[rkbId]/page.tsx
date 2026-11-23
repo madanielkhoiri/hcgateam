@@ -13,6 +13,7 @@ import {
 import styles from "../../../monitoring-rkb.module.css";
 import { urlUploads } from "@/lib/uploads-url";
 
+import { formatTanggal } from "@/lib/format-tanggal";
 type BarangForm = BarangRkb & { fotoFile?: File | null };
 const kosong = (): BarangForm => ({ namaBarang: "", qty: 1, satuan: "UNIT", keterangan: null, fotoFile: null });
 const label: Record<StatusRkb, string> = {
@@ -113,11 +114,7 @@ export default function DetailRkb() {
               <span className={styles.eyebrow}>{rkb.project?.namaProject}</span>
               <h1>{rkb.nomorRkb}</h1>
               <p>
-                {new Date(rkb.tanggal).toLocaleDateString("id-ID", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {formatTanggal(new Date(rkb.tanggal))}
               </p>
             </div>
             <button className={styles.primary} onClick={tambah}>

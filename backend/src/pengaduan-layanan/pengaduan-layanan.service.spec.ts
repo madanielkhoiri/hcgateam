@@ -277,15 +277,24 @@ describe('PengaduanLayananService.rekap', () => {
     expect(hasil.daftar).toEqual([]);
   });
 
-  it('default ke bulan & tahun berjalan kalau tidak diberikan', async () => {
+  it('tanpa bulan = semua bulan pada tahun berjalan (rentang satu tahun penuh)', async () => {
     const { service, findMany } = buatService();
     const sekarang = new Date();
 
     const hasil = await service.rekap(DivisiPengaduan.HC);
 
-    expect(hasil.bulan).toBe(sekarang.getMonth() + 1);
+    expect(hasil.bulan).toBeNull();
     expect(hasil.tahun).toBe(sekarang.getFullYear());
-    expect(findMany).toHaveBeenCalled();
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: {
+            gte: new Date(sekarang.getFullYear(), 0, 1),
+            lt: new Date(sekarang.getFullYear() + 1, 0, 1),
+          },
+        }),
+      }),
+    );
   });
 
   it('tren 6 bulan mencakup bulan acuan sebagai entri terakhir', async () => {

@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
+import { formatTanggal as formatTanggalStandar } from "@/lib/format-tanggal";
 /* <--- dashboard admin + akses koreksi deklarasi karyawan ---> */
 
 type DataPenggunaTersimpan = {
@@ -231,11 +232,7 @@ export default function HalamanAdmin() {
  return tanggal;
  }
 
- return new Intl.DateTimeFormat("id-ID", {
- day: "2-digit",
- month: "short",
- year: "numeric",
- }).format(hasil);
+ return formatTanggalStandar(hasil);
  };
 
  const formatRupiah = (nilai: string | number | unknown) => {

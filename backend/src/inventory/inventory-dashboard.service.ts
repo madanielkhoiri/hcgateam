@@ -32,9 +32,12 @@ export class InventoryDashboardService {
     return scope as InventoryScope;
   }
 
-  private parseMonth(value?: string): number {
-    const currentMonth = new Date().getMonth() + 1;
-    const month = Number(value || currentMonth);
+  /** Kosong / "all" = semua bulan (satu tahun penuh) -> null. */
+  private parseMonth(value?: string): number | null {
+    if (value === undefined || value === '' || value === 'all') {
+      return null;
+    }
+    const month = Number(value);
 
     if (!Number.isInteger(month) || month < 1 || month > 12) {
       throw new BadRequestException('Bulan tidak valid.');
@@ -71,8 +74,8 @@ export class InventoryDashboardService {
     const month = this.parseMonth(monthValue);
     const year = this.parseYear(yearValue);
 
-    const startDate = new Date(Date.UTC(year, month - 1, 1));
-    const endDate = new Date(Date.UTC(year, month, 1));
+    const startDate = month ? new Date(Date.UTC(year, month - 1, 1)) : new Date(Date.UTC(year, 0, 1));
+    const endDate = month ? new Date(Date.UTC(year, month, 1)) : new Date(Date.UTC(year + 1, 0, 1));
 
     const tomorrow = new Date();
     tomorrow.setUTCHours(0, 0, 0, 0);
