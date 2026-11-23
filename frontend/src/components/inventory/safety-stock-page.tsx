@@ -31,12 +31,18 @@ import s from "./safety-stock.module.css";
 const NAMA_SCOPE: Record<ScopeSafetyStock, string> = { GENERAL: "Infras", MESS: "Mess", ELECTRIC: "Electric" };
 const BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-const STATUS: Record<StatusSafetyStock, { label: string; kelas: string; urutan: number }> = {
-  KRITIS: { label: "Kritis", kelas: s.statusKritis, urutan: 0 },
-  PERLU_ORDER: { label: "Perlu Order", kelas: s.statusOrder, urutan: 1 },
-  AMAN: { label: "Aman", kelas: s.statusAman, urutan: 2 },
-  TIDAK_BERGERAK: { label: "Tidak Bergerak", kelas: s.statusDiam, urutan: 3 },
+const STATUS: Record<StatusSafetyStock, { label: string; kelas: string; baris: string; urutan: number }> = {
+  KRITIS: { label: "Kritis", kelas: s.statusKritis, baris: s.barisKritis, urutan: 0 },
+  PERLU_ORDER: { label: "Perlu Order", kelas: s.statusOrder, baris: s.barisOrder, urutan: 1 },
+  AMAN: { label: "Aman", kelas: s.statusAman, baris: s.barisAman, urutan: 2 },
+  TIDAK_BERGERAK: { label: "Tidak Bergerak", kelas: s.statusDiam, baris: s.barisDiam, urutan: 3 },
 };
+
+/** Isi meter stok: titik order berada di tengah meter. */
+function persenMeter(b: BarisSafetyStock) {
+  if (b.titikOrder <= 0) return b.stok > 0 ? 100 : 0;
+  return Math.min(100, (b.stok / (b.titikOrder * 2)) * 100);
+}
 
 type Filter = "SEMUA" | StatusSafetyStock | "DIORDER" | "RUTIN" | "JARANG" | "SANGAT_JARANG";
 
@@ -329,17 +335,21 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
         <table className={s.tabel}>
           <thead>
             <tr>
-              <th className={s.kolomBarang}>Barang</th>
-              <th>Stok</th>
-              <th>Pemakaian<small>/ bulan</small></th>
-              <th>Rata-rata<small>/ hari</small></th>
-              <th>Safety Stock</th>
-              <th>Titik Order</th>
-              <th>Stok Cukup<small>untuk</small></th>
-              <th>Terakhir Keluar</th>
-              <th className={s.kolomOrder}>Rekomendasi Order</th>
-              <th>Status</th>
-              <th aria-label="Rincian" />
+              <th rowSpan={2} className={s.kolomBarang}>Barang</th>
+              <th rowSpan={2} className={s.kolomStok}>Stok Saat Ini</th>
+              <th colSpan={2} className={s.thGrup}>Pemakaian</th>
+              <th colSpan={2} className={s.thGrup}>Batas Stok</th>
+              <th rowSpan={2}>Stok Cukup<small>untuk</small></th>
+              <th rowSpan={2}>Terakhir Keluar</th>
+              <th rowSpan={2} className={s.kolomOrder}>Rekomendasi<small>order bulan ini</small></th>
+              <th rowSpan={2}>Status</th>
+              <th rowSpan={2} aria-label="Rincian" />
+            </tr>
+            <tr>
+              <th className={s.thSub}>per bulan</th>
+              <th className={s.thSub}>per hari</th>
+              <th className={s.thSub}>Safety Stock</th>
+              <th className={s.thSub}>Titik Order</th>
             </tr>
           </thead>
           <tbody>
@@ -351,15 +361,24 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
               daftar.map((b) => (
                 <Fragment key={b.itemId}>
                   <tr
-                    className={`${s.baris} ${terbuka === b.itemId ? s.barisTerbuka : ""}`}
+                    className={`${s.baris} ${STATUS[b.status].baris} ${terbuka === b.itemId ? s.barisTerbuka : ""}`}
                     onClick={() => setTerbuka(terbuka === b.itemId ? null : b.itemId)}
                   >
                     <td className={s.kolomBarang}>
                       <b>{b.name}</b>
-                      <small>{b.code} · {b.unit}</small>
-                      <LabelPola baris={b} />
+                      <span className={s.meta}>
+                        <small>{b.code} · {b.unit}</small>
+                        <LabelPola baris={b} />
+                      </span>
                     </td>
-                    <td className={b.stok <= b.safetyStock && b.status !== "TIDAK_BERGERAK" ? s.angkaMerah : ""}>{angka(b.stok)}</td>
+                    <td className={s.kolomStok}>
+                      <span className={`${s.angkaStok} ${b.status === "KRITIS" ? s.angkaMerah : ""}`}>{angka(b.stok)}</span>
+                      {b.status !== "TIDAK_BERGERAK" && (
+                        <span className={s.meter} title={`Titik order ${angka(b.titikOrder)} (garis tengah)`}>
+                          <i className={STATUS[b.status].kelas} style={{ width: `${persenMeter(b)}%` }} />
+                        </span>
+                      )}
+                    </td>
                     <td>
                       {angka(b.kebutuhanBulanan)}
                       {(b.pola === "JARANG" || b.pola === "SANGAT_JARANG") && (
@@ -382,13 +401,19 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
                     </td>
                     <td className={s.kolomOrder}>
                       {b.rekomendasiOrder > 0 ? (
-                        <span className={s.order}>{angka(b.rekomendasiOrder)} <small>{b.unit}</small></span>
+                        <span className={s.order}>
+                          <ShoppingCart size={13} />
+                          {angka(b.rekomendasiOrder)} <small>{b.unit}</small>
+                        </span>
                       ) : (
-                        <span className={s.tidakOrder}>-</span>
+                        <span className={s.tidakOrder}>Tidak perlu</span>
                       )}
                     </td>
                     <td>
-                      <span className={`${s.status} ${STATUS[b.status].kelas}`}>{STATUS[b.status].label}</span>
+                      <span className={`${s.status} ${STATUS[b.status].kelas}`}>
+                        <i />
+                        {STATUS[b.status].label}
+                      </span>
                       {b.pola === "SANGAT_JARANG" && b.status === "PERLU_ORDER" && <small className={s.subAngka}>tidak mendesak</small>}
                     </td>
                     <td><ChevronDown size={16} className={`${s.panah} ${terbuka === b.itemId ? s.putar : ""}`} /></td>

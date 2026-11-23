@@ -113,38 +113,78 @@
 .error { margin: 0; padding: 10px 14px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 13px; }
 
 /* ---------- Tabel ---------- */
-.tabelWrap { overflow-x: auto; border: 1px solid #dce6f1; border-radius: 14px; background: #fff; box-shadow: 0 10px 30px rgba(32, 66, 105, 0.05); }
-.tabel { width: 100%; min-width: 1100px; border-collapse: collapse; font-size: 12.5px; }
-.tabel th, .tabel td { padding: 11px 12px; border-bottom: 1px solid #edf2f7; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tabel thead th {
-  background: #f4f8fb; color: #4a6380; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+.tabelWrap { overflow-x: auto; border: 1px solid #dce6f1; border-radius: 16px; background: #fff; box-shadow: 0 10px 30px rgba(32, 66, 105, 0.06); }
+.tabel { width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+.tabel th, .tabel td {
+  padding: 12px 12px;
+  border-bottom: 1px solid #edf2f7;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.tabel thead th small { display: block; font-size: 9.5px; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.8; }
+.tabel thead th {
+  background: #f6f9fc;
+  color: #4a6380;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom-color: #e3ebf3;
+}
+.tabel thead th small { display: block; margin-top: 2px; font-size: 9.5px; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.8; }
+.thGrup { padding-bottom: 6px !important; border-bottom: 2px solid #c7d7e8 !important; color: #17375f !important; }
+.thSub { padding-top: 6px !important; font-size: 10px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: 0 !important; color: #64748b !important; }
 .tabel td { color: #17375f; }
-.kolomBarang { text-align: left !important; white-space: normal !important; min-width: 220px; }
-.kolomBarang b { display: block; color: #10244a; font-size: 13px; }
-.kolomBarang small { color: #8294aa; font-size: 11px; }
-.kolomBarang .pola { display: table; }
-.pola { margin-top: 4px; padding: 1px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; }
+
+.kolomBarang { text-align: left !important; white-space: normal !important; min-width: 230px; max-width: 300px; }
+.kolomBarang b { display: block; color: #10244a; font-size: 13px; line-height: 1.3; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; }
+.meta small { color: #8294aa; font-size: 11px; }
+.pola { padding: 1px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
 .polaRutin { background: #e0f2fe; color: #0369a1; }
 .polaJarang { background: #f3e8ff; color: #7e22ce; }
 .polaSangatJarang { background: #fce7f3; color: #be185d; }
-.subAngka { display: block; color: #8294aa; font-size: 10.5px; }
-.kolomOrder { background: #fff7ed; }
+.subAngka { display: block; margin-top: 2px; color: #8294aa; font-size: 10.5px; }
+
+.kolomStok { min-width: 96px; }
+.angkaStok { display: block; color: #10244a; font-size: 15px; font-weight: 800; }
+.angkaMerah { color: #dc2626 !important; }
+.meter {
+  position: relative; display: block; width: 64px; height: 5px; margin: 6px auto 0; overflow: hidden;
+  border-radius: 99px; background: #e9eef4;
+}
+.meter::after { content: ""; position: absolute; inset: -2px auto -2px 50%; width: 1.5px; background: #94a3b8; }
+.meter i { display: block; height: 100%; border-radius: 99px; }
+.meter i.statusKritis { background: #ef4444; }
+.meter i.statusOrder { background: #f97316; }
+.meter i.statusAman { background: #22c55e; }
+
+.kolomOrder { min-width: 120px; background: #fffaf3; }
 .tabel thead .kolomOrder { background: #ffedd5; color: #c2410c; }
-.baris { cursor: pointer; }
-.baris:hover td { background: #f8fbfe; }
-.baris:hover .kolomOrder { background: #ffedd5; }
-.barisTerbuka td { background: #f1f7fd; border-bottom-color: transparent; }
-.order { color: #c2410c; font-size: 15px; font-weight: 800; }
+.order {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 10px;
+  background: #ffedd5; color: #c2410c; font-size: 14px; font-weight: 800;
+}
 .order small { color: #9a3412; font-size: 10.5px; font-weight: 700; }
-.tidakOrder { color: #b3c0cf; }
-.angkaMerah { color: #dc2626 !important; font-weight: 800; }
-.status { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 800; }
+.tidakOrder { color: #b3c0cf; font-size: 11.5px; }
+
+.status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 99px; font-size: 11px; font-weight: 800; }
+.status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .statusKritis { background: #fee2e2; color: #b91c1c; }
 .statusOrder { background: #ffedd5; color: #c2410c; }
 .statusAman { background: #dcfce7; color: #15803d; }
 .statusDiam { background: #f1f5f9; color: #64748b; }
+
+.baris { cursor: pointer; transition: background 0.12s; }
+.baris td:first-child { box-shadow: inset 4px 0 0 var(--aksen, transparent); }
+.barisKritis { --aksen: #ef4444; }
+.barisOrder { --aksen: #f97316; }
+.barisAman { --aksen: #22c55e; }
+.barisDiam { --aksen: #cbd5e1; }
+.baris:hover td { background: #f6f9fd; }
+.baris:hover .kolomOrder { background: #fff1e0; }
+.barisTerbuka td { background: #eff6fd; border-bottom-color: transparent; }
 .panah { color: #94a3b8; transition: transform 0.15s; }
 .kosong { padding: 28px !important; color: #8294aa; text-align: center !important; }
 
