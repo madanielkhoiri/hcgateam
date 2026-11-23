@@ -12,6 +12,8 @@ import { InventoryAksesService } from './inventory-akses.service';
 import { StockOpnameController } from './stock-opname.controller';
 import { StockOpnameService } from './stock-opname.service';
 import { DeviasiStokService } from './deviasi-stok.service';
+import { SafetyStockController } from './safety-stock.controller';
+import { SafetyStockService } from './safety-stock.service';
 
 @Module({
   controllers: [
@@ -20,6 +22,7 @@ import { DeviasiStokService } from './deviasi-stok.service';
     InventoryAreaController,
     ElectricStockOutController,
     StockOpnameController,
+    SafetyStockController,
   ],
   providers: [
     InventoryService,
@@ -29,6 +32,7 @@ import { DeviasiStokService } from './deviasi-stok.service';
     InventoryAksesService,
     DeviasiStokService,
     StockOpnameService,
+    SafetyStockService,
     PrismaService,
   ],
   exports: [InventoryAreaService],

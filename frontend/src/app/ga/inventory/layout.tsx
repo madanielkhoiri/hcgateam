@@ -111,6 +111,11 @@ const menuGroups: MenuGroup[] = [
         icon: ClipboardCheck,
       },
       {
+        label: "Safety Stock Order",
+        href: "/ga/inventory/safety-stock",
+        icon: ShieldCheck,
+      },
+      {
         label: "Ambil Barang (Self-Order)",
         href: "/gudang?scope=INFRAS",
         icon: ShoppingBag,
@@ -149,6 +154,11 @@ const menuGroups: MenuGroup[] = [
         icon: ClipboardCheck,
       },
       {
+        label: "Safety Stock Order",
+        href: "/ga/inventory/mess/safety-stock",
+        icon: ShieldCheck,
+      },
+      {
         label: "Ambil Barang (Self-Order)",
         href: "/gudang?scope=MESS",
         icon: ShoppingBag,
@@ -185,6 +195,11 @@ const menuGroups: MenuGroup[] = [
         label: "Stock Opname",
         href: "/ga/inventory/electric/stock-opname",
         icon: ClipboardCheck,
+      },
+      {
+        label: "Safety Stock Order",
+        href: "/ga/inventory/electric/safety-stock",
+        icon: ShieldCheck,
       },
       {
         label: "Ambil Barang (Self-Order)",
