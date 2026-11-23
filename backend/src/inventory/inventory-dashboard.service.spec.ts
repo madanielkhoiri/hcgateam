@@ -128,7 +128,7 @@ describe('InventoryDashboardService.getDashboard — rekonstruksi saldo & grafik
 });
 
 describe('InventoryDashboardService.getDashboard — Semua Bulan', () => {
-  it('mengelompokkan grafik per bulan (Jan-Des) untuk tahun lampau, bulan tanpa transaksi bernilai 0', async () => {
+  it('mengelompokkan grafik per bulan mulai bulan transaksi pertama, bulan kosong di tengah bernilai 0', async () => {
     const { service } = buatService({
       stocks: [{ quantity: 100 }],
       stockInsSelectedMonth: [
@@ -141,11 +141,22 @@ describe('InventoryDashboardService.getDashboard — Semua Bulan', () => {
     const hasil = await service.getDashboard('MESS', 'all', '2025');
 
     expect(hasil.month).toBeNull();
-    expect(hasil.chart).toHaveLength(12);
-    expect(hasil.chart[0]).toMatchObject({ date: '2025-01', stockIn: 0, stockOut: 0, hasTransaction: false });
-    expect(hasil.chart[1]).toMatchObject({ date: '2025-02', stockIn: 15, stockOut: 0, hasTransaction: true });
-    expect(hasil.chart[4]).toMatchObject({ date: '2025-05', stockIn: 0, stockOut: 4, hasTransaction: true });
-    expect(hasil.chart[11].date).toBe('2025-12');
+    // Mulai dari Februari (transaksi pertama), Januari tidak ditampilkan
+    expect(hasil.chart).toHaveLength(11);
+    expect(hasil.chart[0]).toMatchObject({ date: '2025-02', stockIn: 15, stockOut: 0, hasTransaction: true });
+    expect(hasil.chart[1]).toMatchObject({ date: '2025-03', stockIn: 0, stockOut: 0, hasTransaction: false });
+    expect(hasil.chart[3]).toMatchObject({ date: '2025-05', stockIn: 0, stockOut: 4, hasTransaction: true });
+    expect(hasil.chart[10].date).toBe('2025-12');
     expect(hasil.summary.transactionDays).toBe(2);
+  });
+});
+
+describe('InventoryDashboardService.getDashboard — Semua Bulan tanpa transaksi', () => {
+  it('grafik kosong kalau sepanjang tahun tidak ada transaksi', async () => {
+    const { service } = buatService({ stocks: [{ quantity: 10 }] });
+
+    const hasil = await service.getDashboard('MESS', 'all', '2025');
+
+    expect(hasil.chart).toEqual([]);
   });
 });

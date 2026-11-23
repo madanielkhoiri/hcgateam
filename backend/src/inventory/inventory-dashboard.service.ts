@@ -244,6 +244,16 @@ export class InventoryDashboardService {
 
     const sortedDates = Array.from(movementMap.keys()).sort();
 
+    // Semua Bulan: mulai dari bulan transaksi pertama, bukan Januari
+    // (bulan sebelum aplikasi dipakai tidak ditampilkan).
+    if (!month) {
+      const pertama = sortedDates.findIndex((key) => {
+        const gerak = movementMap.get(key);
+        return Boolean(gerak && (gerak.stockIn > 0 || gerak.stockOut > 0));
+      });
+      sortedDates.splice(0, pertama === -1 ? sortedDates.length : pertama);
+    }
+
     const chart: DailyMovement[] = sortedDates.map((date) => {
       const movement = movementMap.get(date) ?? {
         stockIn: 0,
