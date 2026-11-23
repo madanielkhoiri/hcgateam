@@ -48,6 +48,44 @@ describe('hitungSafetyStock', () => {
   });
 });
 
+describe('hitungSafetyStock — pola JARANG (keluar tidak menentu)', () => {
+  // 120 hari, keluar 2x: hari ke-10 sebanyak 6, hari ke-70 sebanyak 10 -> jarak rata-rata 60 hari
+  const deret = () => {
+    const d = new Array(120).fill(0);
+    d[10] = 6;
+    d[70] = 10;
+    return d;
+  };
+
+  it('dikenali JARANG; safety stock = titik order = pemakaian terbesar sekali keluar', () => {
+    const hasil = hitungSafetyStock({ keluarHarian: deret(), totalMasuk: 0, stok: 4, leadTime: 7, z: 1.65 });
+
+    expect(hasil.pola).toBe('JARANG');
+    expect(hasil.intervalHari).toBe(60);
+    expect(hasil.rataPerKeluar).toBe(8);
+    expect(hasil.safetyStock).toBe(10);
+    expect(hasil.titikOrder).toBe(10);
+    expect(hasil.rekomendasiOrder).toBe(6); // 10 - 4
+    expect(hasil.status).toBe('KRITIS'); // 4 < rata-rata sekali keluar (8)
+    expect(hasil.hariTahan).toBeNull();
+    expect(hasil.cukupUntukKali).toBe(0);
+  });
+
+  it('stok antara rata-rata dan terbesar -> PERLU_ORDER; stok >= terbesar -> AMAN tanpa order', () => {
+    expect(hitungSafetyStock({ keluarHarian: deret(), totalMasuk: 0, stok: 8, leadTime: 7, z: 1.65 }).status).toBe('PERLU_ORDER');
+
+    const aman = hitungSafetyStock({ keluarHarian: deret(), totalMasuk: 0, stok: 10, leadTime: 7, z: 1.65 });
+    expect(aman.status).toBe('AMAN');
+    expect(aman.rekomendasiOrder).toBe(0);
+    expect(aman.cukupUntukKali).toBe(1);
+  });
+
+  it('pemakaian tiap minggu tetap RUTIN (pakai rumus statistik)', () => {
+    const mingguan = Array.from({ length: 56 }, (_, i) => (i % 7 === 0 ? 5 : 0));
+    expect(hitungSafetyStock({ keluarHarian: mingguan, totalMasuk: 0, stok: 50, leadTime: 7, z: 1.65 }).pola).toBe('RUTIN');
+  });
+});
+
 describe('SafetyStockService.analisa', () => {
   function buat(data: {
     items?: unknown[];

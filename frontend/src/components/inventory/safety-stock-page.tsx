@@ -38,13 +38,26 @@ const STATUS: Record<StatusSafetyStock, { label: string; kelas: string; urutan: 
   TIDAK_BERGERAK: { label: "Tidak Bergerak", kelas: s.statusDiam, urutan: 3 },
 };
 
-type Filter = "SEMUA" | StatusSafetyStock | "DIORDER";
+type Filter = "SEMUA" | StatusSafetyStock | "DIORDER" | "RUTIN" | "JARANG";
+
+function LabelPola({ baris: b }: { baris: BarisSafetyStock }) {
+  if (b.pola === "RUTIN") return <span className={`${s.pola} ${s.polaRutin}`}>Rutin</span>;
+  if (b.pola === "JARANG") {
+    return (
+      <span className={`${s.pola} ${s.polaJarang}`} title="Keluar tidak menentu, dihitung siap untuk satu kali kebutuhan terbesar">
+        Jarang · ±{b.intervalHari} hari sekali
+      </span>
+    );
+  }
+  return null;
+}
 
 const angka = (n: number, digit = 0) => n.toLocaleString("id-ID", { maximumFractionDigits: digit });
 const labelBulan = (kunci: string) => `${BULAN_SINGKAT[Number(kunci.slice(5, 7)) - 1]} ${kunci.slice(2, 4)}`;
 
 export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) {
-  const [bulan, setBulan] = useState(3);
+  // 6 bulan: barang yang keluar 1-2 bulan sekali tetap punya beberapa riwayat pemakaian.
+  const [bulan, setBulan] = useState(6);
   const [leadTime, setLeadTime] = useState(7);
   const [leadTimeTeks, setLeadTimeTeks] = useState("7");
   const [serviceLevel, setServiceLevel] = useState(95);
@@ -84,6 +97,7 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
     return (data?.items ?? [])
       .filter((b) => {
         if (filter === "DIORDER") return b.rekomendasiOrder > 0;
+        if (filter === "RUTIN" || filter === "JARANG") return b.pola === filter;
         return filter === "SEMUA" || b.status === filter;
       })
       .filter((b) => !kata || b.name.toLowerCase().includes(kata) || b.code.toLowerCase().includes(kata))
@@ -97,17 +111,19 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
       Kode: b.code,
       "Nama Barang": b.name,
       Satuan: b.unit,
+      "Pola Pemakaian": b.pola === "RUTIN" ? "Rutin" : b.pola === "JARANG" ? `Jarang (±${b.intervalHari} hari sekali)` : "-",
       "Stok Saat Ini": b.stok,
       "Pemakaian / Bulan": b.kebutuhanBulanan,
-      "Rata-rata / Hari": b.rataHarian,
+      "Rata-rata / Hari": b.pola === "RUTIN" ? b.rataHarian : "-",
+      "Rata-rata Sekali Keluar": b.pola === "TIDAK_ADA" ? "-" : b.rataPerKeluar,
       "Safety Stock": b.safetyStock,
       "Titik Order (ROP)": b.titikOrder,
-      "Stok Tahan (hari)": b.hariTahan ?? "-",
+      "Stok Cukup Untuk": b.hariTahan !== null ? `${b.hariTahan} hari` : b.cukupUntukKali !== null ? `${b.cukupUntukKali}x kebutuhan` : "-",
       "Rekomendasi Order": b.rekomendasiOrder,
       Status: STATUS[b.status].label,
     }));
     const sheet = XLSX.utils.json_to_sheet(baris);
-    sheet["!cols"] = [10, 34, 9, 12, 16, 14, 12, 16, 15, 17, 14].map((wch) => ({ wch }));
+    sheet["!cols"] = [10, 34, 9, 26, 12, 16, 14, 20, 12, 16, 17, 17, 14].map((wch) => ({ wch }));
     const buku = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(buku, sheet, "Safety Stock");
     XLSX.writeFile(buku, `Safety Stock ${NAMA_SCOPE[scope]} ${data.periode.akhir}.xlsx`);
@@ -130,6 +146,8 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
     { kunci: "PERLU_ORDER", label: "Perlu Order", jumlah: r?.perluOrder ?? 0 },
     { kunci: "AMAN", label: "Aman", jumlah: r?.aman ?? 0 },
     { kunci: "TIDAK_BERGERAK", label: "Tidak Bergerak", jumlah: r?.tidakBergerak ?? 0 },
+    { kunci: "RUTIN", label: "Pemakaian rutin", jumlah: r?.polaRutin ?? 0 },
+    { kunci: "JARANG", label: "Jarang / tidak menentu", jumlah: r?.polaJarang ?? 0 },
   ];
 
   return (
@@ -152,7 +170,7 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
           <select value={bulan} onChange={(e) => setBulan(Number(e.target.value))}>
             <option value={1}>1 bulan terakhir</option>
             <option value={3}>3 bulan terakhir</option>
-            <option value={6}>6 bulan terakhir</option>
+            <option value={6}>6 bulan terakhir (disarankan)</option>
             <option value={12}>12 bulan terakhir</option>
           </select>
         </label>
@@ -203,8 +221,16 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
             <p>Jumlah yang dipesan bulan ini agar cukup sebulan ke depan + masa tunggu, dan tetap menyisakan safety stock.</p>
             <code>rata-rata harian × (30 + lead time) + safety stock − stok</code>
           </div>
+          <div className={s.penjelasanJarang}>
+            <b>Barang yang keluarnya jarang / tidak menentu</b>
+            <p>
+              Barang yang rata-rata keluar lebih dari 14 hari sekali (mis. 1–2 bulan sekali sesuai kebutuhan) tidak dihitung dengan
+              rata-rata harian, karena hasilnya jadi terlalu kecil. Aturannya: <b>stok selalu siap untuk satu kali kebutuhan terbesar</b>.
+            </p>
+            <code>Safety stock = titik order = pemakaian terbesar sekali keluar · Rekomendasi order = safety stock − stok</code>
+          </div>
           <small>
-            Z mengikuti tingkat layanan (90% = 1,28 · 95% = 1,65 · 98% = 2,05 · 99% = 2,33). Lead time = lama barang datang sejak dipesan.
+            Rumus di atas untuk barang yang <b>rutin</b> keluar (±2× sebulan atau lebih). Z mengikuti tingkat layanan (90% = 1,28 · 95% = 1,65 · 98% = 2,05 · 99% = 2,33). Lead time = lama barang datang sejak dipesan.
             Data diambil dari Barang Keluar (pemakaian) dan Barang Masuk.
           </small>
         </section>
@@ -272,7 +298,7 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
               <th>Rata-rata<small>/ hari</small></th>
               <th>Safety Stock</th>
               <th>Titik Order</th>
-              <th>Stok Tahan</th>
+              <th>Stok Cukup<small>untuk</small></th>
               <th className={s.kolomOrder}>Rekomendasi Order</th>
               <th>Status</th>
               <th aria-label="Rincian" />
@@ -293,13 +319,23 @@ export default function SafetyStockPage({ scope }: { scope: ScopeSafetyStock }) 
                     <td className={s.kolomBarang}>
                       <b>{b.name}</b>
                       <small>{b.code} · {b.unit}</small>
+                      <LabelPola baris={b} />
                     </td>
                     <td className={b.stok <= b.safetyStock && b.status !== "TIDAK_BERGERAK" ? s.angkaMerah : ""}>{angka(b.stok)}</td>
-                    <td>{angka(b.kebutuhanBulanan)}</td>
-                    <td>{angka(b.rataHarian, 2)}</td>
+                    <td>
+                      {angka(b.kebutuhanBulanan)}
+                      {b.pola === "JARANG" && <small className={s.subAngka}>{angka(b.rataPerKeluar, 1)} / sekali keluar</small>}
+                    </td>
+                    <td>{b.pola === "RUTIN" ? angka(b.rataHarian, 2) : <span className={s.tidakOrder}>-</span>}</td>
                     <td>{angka(b.safetyStock)}</td>
                     <td>{angka(b.titikOrder)}</td>
-                    <td>{b.hariTahan === null ? "-" : `${angka(b.hariTahan)} hari`}</td>
+                    <td>
+                      {b.hariTahan !== null
+                        ? `${angka(b.hariTahan)} hari`
+                        : b.cukupUntukKali !== null
+                          ? `${angka(b.cukupUntukKali)}× kebutuhan`
+                          : "-"}
+                    </td>
                     <td className={s.kolomOrder}>
                       {b.rekomendasiOrder > 0 ? (
                         <span className={s.order}>{angka(b.rekomendasiOrder)} <small>{b.unit}</small></span>
@@ -357,10 +393,29 @@ function Rincian({ baris: b, leadTime, z, hari }: { baris: BarisSafetyStock; lea
         <div><small>Total keluar</small><b>{angka(b.totalKeluar)} {b.unit}</b></div>
         <div><small>Total masuk</small><b>{angka(b.totalMasuk)} {b.unit}</b></div>
         <div><small>Hari ada pemakaian</small><b>{b.hariAdaKeluar} dari {hari} hari</b></div>
-        <div><small>Pemakaian terbanyak / hari</small><b>{angka(b.maksHarian)} {b.unit}</b></div>
+        <div><small>Jarak antar pemakaian</small><b>{b.intervalHari === null ? "-" : `±${b.intervalHari} hari sekali`}</b></div>
+        <div><small>Rata-rata sekali keluar</small><b>{angka(b.rataPerKeluar, 1)} {b.unit}</b></div>
+        <div><small>Terbesar sekali keluar</small><b>{angka(b.maksHarian)} {b.unit}</b></div>
       </div>
 
-      {b.status !== "TIDAK_BERGERAK" && (
+      {b.pola === "JARANG" && (
+        <div className={s.hitungan}>
+          <p className={s.hitunganInfo}>
+            <span>Pola jarang / tidak menentu</span>
+            <em>Rata-rata keluar ±{b.intervalHari} hari sekali, jadi stok disiapkan untuk satu kali kebutuhan terbesar.</em>
+          </p>
+          <p>
+            <span>Safety stock = titik order</span>
+            <em>terbesar sekali keluar = <b>{angka(b.safetyStock)}</b></em>
+          </p>
+          <p>
+            <span>Rekomendasi order</span>
+            <em>{angka(b.safetyStock)} − {angka(b.stok)} = <b>{angka(b.rekomendasiOrder)} {b.unit}</b></em>
+          </p>
+        </div>
+      )}
+
+      {b.pola === "RUTIN" && (
         <div className={s.hitungan}>
           <p>
             <span>Safety stock</span>
