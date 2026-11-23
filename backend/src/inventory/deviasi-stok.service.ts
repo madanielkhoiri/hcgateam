@@ -7,7 +7,7 @@
 // ==================================================
 
 import { Injectable } from '@nestjs/common';
-import { JenisDeviasiStok, Prisma } from '@prisma/client';
+import { InventoryScope, JenisDeviasiStok, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -40,8 +40,17 @@ export class DeviasiStokService {
     });
   }
 
-  /** Dashboard deviasi — bulan opsional (kosong = semua bulan dalam tahun terpilih). */
-  async rekap(bulan?: number, tahun?: number) {
+  /** Area: INFRAS/GENERAL, MESS, ELECTRIC; kosong/tidak dikenal = semua area. */
+  private parseArea(area?: string): InventoryScope | undefined {
+    const mentah = String(area ?? '').trim().toUpperCase();
+    const scope = mentah === 'INFRAS' ? InventoryScope.GENERAL : mentah;
+    return (Object.values(InventoryScope) as string[]).includes(scope) ? (scope as InventoryScope) : undefined;
+  }
+
+  /** Dashboard deviasi — bulan opsional (kosong = semua bulan dalam tahun terpilih), area opsional. */
+  async rekap(bulan?: number, tahun?: number, areaRaw?: string) {
+    const area = this.parseArea(areaRaw);
+    const filterArea = area ? { item: { inventoryScope: area } } : {};
     const sekarang = new Date();
     const tahunDipilih = tahun ?? sekarang.getFullYear();
 
@@ -50,18 +59,19 @@ export class DeviasiStokService {
 
     const [daftar, perBulan] = await Promise.all([
       this.prisma.deviasiStok.findMany({
-        where: { createdAt: { gte: rentangAwal, lt: rentangAkhir } },
+        where: { createdAt: { gte: rentangAwal, lt: rentangAkhir }, ...filterArea },
         include: {
           item: { select: { code: true, name: true, inventoryScope: true, unit: true, category: true } },
           pengubah: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
-      this.hitungPerBulan(tahunDipilih),
+      this.hitungPerBulan(tahunDipilih, area),
     ]);
 
     return {
       bulan: bulan ?? null,
+      area: area ?? null,
       tahun: tahunDipilih,
       totalDeviasi: daftar.length,
       totalKurang: daftar.filter((item) => item.jenis === JenisDeviasiStok.KURANG).length,
@@ -84,12 +94,12 @@ export class DeviasiStokService {
   }
 
   /** Breakdown 12 bulan untuk grafik dashboard — selalu satu tahun penuh, lepas dari filter bulan yang dipilih. */
-  private async hitungPerBulan(tahun: number) {
+  private async hitungPerBulan(tahun: number, area?: InventoryScope) {
     const awal = new Date(tahun, 0, 1);
     const akhir = new Date(tahun + 1, 0, 1);
 
     const data = await this.prisma.deviasiStok.findMany({
-      where: { createdAt: { gte: awal, lt: akhir } },
+      where: { createdAt: { gte: awal, lt: akhir }, ...(area ? { item: { inventoryScope: area } } : {}) },
       select: { jenis: true, createdAt: true },
     });
 

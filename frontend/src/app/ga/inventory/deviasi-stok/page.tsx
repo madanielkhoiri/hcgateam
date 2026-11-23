@@ -4,11 +4,26 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Gauge } from 'lucide-react';
 import { clearSession, getAccessToken, getStoredUser, type PortalUser } from '@/lib/access-control';
-import { deviasiStokApi, DeviasiStokApiError, LABEL_AREA_DEVIASI, namaBulan, type RekapDeviasiStok } from '@/lib/deviasi-stok-api';
+import {
+  deviasiStokApi,
+  DeviasiStokApiError,
+  LABEL_AREA_DEVIASI,
+  namaBulan,
+  type AreaDeviasi,
+  type RekapDeviasiStok,
+} from '@/lib/deviasi-stok-api';
+import { PaginationBar, hitungTotalHalaman } from '@/components/pagination/pagination-bar';
 import styles from './deviasi-stok.module.css';
 
 import { formatTanggal } from '@/lib/format-tanggal';
 const ROLE_BOLEH_LIHAT = ['ADMIN', 'SUPER_ADMIN', 'SECTION_HEAD'];
+const PILIHAN_AREA: { nilai: AreaDeviasi | ''; label: string }[] = [
+  { nilai: '', label: 'Semua Area' },
+  { nilai: 'GENERAL', label: 'Infras' },
+  { nilai: 'MESS', label: 'Mess' },
+  { nilai: 'ELECTRIC', label: 'Electric' },
+];
+const PILIHAN_BARIS = [10, 15, 20, 50];
 
 function formatTanggalJam(value: string): string {
   return formatTanggal(new Date(value), { waktu: true });
@@ -20,6 +35,9 @@ export default function DeviasiStokPage() {
   const [user, setUser] = useState<PortalUser | null>(null);
   const [bulan, setBulan] = useState<number | ''>('');
   const [tahun, setTahun] = useState(sekarang.getFullYear());
+  const [area, setArea] = useState<AreaDeviasi | ''>('');
+  const [jumlahBaris, setJumlahBaris] = useState(10);
+  const [halaman, setHalaman] = useState(1);
   const [rekap, setRekap] = useState<RekapDeviasiStok | null>(null);
   const [error, setError] = useState('');
   const [memuat, setMemuat] = useState(true);
@@ -50,9 +68,11 @@ export default function DeviasiStokPage() {
     setError('');
 
     deviasiStokApi
-      .rekap(bulan || null, tahun)
+      .rekap(bulan || null, tahun, area || null)
       .then((hasil) => {
-        if (aktif) setRekap(hasil);
+        if (!aktif) return;
+        setRekap(hasil);
+        setHalaman(1);
       })
       .catch((err: unknown) => {
         if (!aktif) return;
@@ -65,13 +85,18 @@ export default function DeviasiStokPage() {
     return () => {
       aktif = false;
     };
-  }, [user, bulan, tahun]);
+  }, [user, bulan, tahun, area]);
 
   if (!user) {
     return <div className={styles.page}>Memuat...</div>;
   }
 
   const tahunPilihan = Array.from({ length: 5 }, (_, index) => sekarang.getFullYear() - index);
+  const totalBaris = rekap?.daftar.length ?? 0;
+  const totalHalaman = hitungTotalHalaman(totalBaris, jumlahBaris);
+  const halamanAktif = Math.min(halaman, Math.max(1, totalHalaman));
+  const barisTampil = rekap?.daftar.slice((halamanAktif - 1) * jumlahBaris, halamanAktif * jumlahBaris) ?? [];
+  const labelArea = area ? ` · ${LABEL_AREA_DEVIASI[area]}` : '';
   const puncakTren = rekap
     ? Math.max(1, ...rekap.perBulan.map((item) => Math.max(item.kurang, item.lebih)))
     : 1;
@@ -84,6 +109,21 @@ export default function DeviasiStokPage() {
       </div>
 
       <div className={styles.filterRow}>
+        <div className={styles.tabArea} role="tablist" aria-label="Filter area inventory">
+          {PILIHAN_AREA.map((pilihan) => (
+            <button
+              key={pilihan.label}
+              type="button"
+              role="tab"
+              aria-selected={area === pilihan.nilai}
+              className={area === pilihan.nilai ? styles.tabAktif : ''}
+              onClick={() => setArea(pilihan.nilai)}
+            >
+              {pilihan.label}
+            </button>
+          ))}
+        </div>
+
         <select value={bulan} onChange={(event) => setBulan(event.target.value ? Number(event.target.value) : '')}>
           <option value="">Semua Bulan</option>
           {Array.from({ length: 12 }, (_, index) => index + 1).map((angka) => (
@@ -117,6 +157,7 @@ export default function DeviasiStokPage() {
               <strong className={styles.statAngka}>{rekap.totalDeviasi}</strong>
               <span style={{ color: '#8a9bb0', fontSize: 12 }}>
                 {rekap.bulan ? `${namaBulan(rekap.bulan)} ${rekap.tahun}` : `Sepanjang tahun ${rekap.tahun}`}
+                {labelArea}
               </span>
             </div>
 
@@ -140,7 +181,7 @@ export default function DeviasiStokPage() {
           </div>
 
           <div className={styles.trenCard}>
-            <span className={styles.statLabel}>Deviasi per Bulan — Tahun {rekap.tahun}</span>
+            <span className={styles.statLabel}>Deviasi per Bulan — Tahun {rekap.tahun}{labelArea}</span>
             <div className={styles.trenGrid}>
               {rekap.perBulan.map((item) => (
                 <div className={styles.trenBulan} key={item.bulan}>
@@ -173,6 +214,7 @@ export default function DeviasiStokPage() {
           <div className={styles.daftarCard}>
             <span className={styles.statLabel}>
               Riwayat Deviasi — {rekap.bulan ? `${namaBulan(rekap.bulan)} ${rekap.tahun}` : `Semua Bulan ${rekap.tahun}`}
+              {labelArea}
             </span>
 
             {rekap.daftar.length === 0 ? (
@@ -194,7 +236,7 @@ export default function DeviasiStokPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rekap.daftar.map((item) => (
+                    {barisTampil.map((item) => (
                       <tr key={item.id}>
                         <td>{formatTanggalJam(item.createdAt)}</td>
                         <td>
@@ -227,6 +269,30 @@ export default function DeviasiStokPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {totalBaris > 0 && (
+              <div className={styles.kakiTabel}>
+                <label className={styles.pilihBaris}>
+                  Tampilkan
+                  <select
+                    value={jumlahBaris}
+                    onChange={(event) => {
+                      setJumlahBaris(Number(event.target.value));
+                      setHalaman(1);
+                    }}
+                  >
+                    {PILIHAN_BARIS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                  baris
+                </label>
+                <span className={styles.infoBaris}>
+                  Menampilkan {(halamanAktif - 1) * jumlahBaris + 1}–{Math.min(halamanAktif * jumlahBaris, totalBaris)} dari {totalBaris} data
+                </span>
+                <PaginationBar halaman={halamanAktif} totalHalaman={totalHalaman} onGanti={setHalaman} />
               </div>
             )}
           </div>

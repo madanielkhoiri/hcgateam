@@ -222,3 +222,73 @@
     height: auto;
   }
 }
+
+/* Filter area: Semua / Infras / Mess / Electric */
+.tabArea {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #cbd9e8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.tabArea button {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #4a6380;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tabArea button:hover {
+  background: #f1f6fb;
+}
+
+.tabArea .tabAktif,
+.tabArea .tabAktif:hover {
+  background: #12355f;
+  color: #fff;
+}
+
+/* Kaki tabel: jumlah baris + halaman */
+.kakiTabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf2f7;
+}
+
+.pilihBaris {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #4a6380;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pilihBaris select {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #cbd9e8;
+  border-radius: 9px;
+  background: #fff;
+  color: #193b62;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.infoBaris {
+  margin-right: auto;
+  color: #71839d;
+  font-size: 12.5px;
+}

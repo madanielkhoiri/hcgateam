@@ -30,8 +30,12 @@ export type DeviasiPerBulan = {
   lebih: number;
 };
 
+export type AreaDeviasi = BarisDeviasiStok['area'];
+
 export type RekapDeviasiStok = {
   bulan: number | null;
+  /** null = semua area */
+  area: AreaDeviasi | null;
   tahun: number;
   totalDeviasi: number;
   totalKurang: number;
@@ -41,7 +45,7 @@ export type RekapDeviasiStok = {
 };
 
 export const LABEL_AREA_DEVIASI: Record<BarisDeviasiStok['area'], string> = {
-  GENERAL: 'Inventory',
+  GENERAL: 'Infras',
   MESS: 'Mess',
   ELECTRIC: 'Electric',
 };
@@ -71,9 +75,10 @@ async function bacaError(response: Response): Promise<string> {
 }
 
 export const deviasiStokApi = {
-  rekap: async (bulan: number | null, tahun: number): Promise<RekapDeviasiStok> => {
+  rekap: async (bulan: number | null, tahun: number, area?: AreaDeviasi | null): Promise<RekapDeviasiStok> => {
     const params = new URLSearchParams({ tahun: String(tahun) });
     if (bulan) params.set('bulan', String(bulan));
+    if (area) params.set('area', area);
 
     const response = await fetch(`${API_URL}/inventory/deviasi-stok?${params.toString()}`, {
       headers: headerAuth(),

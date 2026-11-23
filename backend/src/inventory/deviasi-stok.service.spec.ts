@@ -66,6 +66,25 @@ describe('DeviasiStokService.rekap', () => {
     expect(where.createdAt.lt).toEqual(new Date(2026, 3, 1));
   });
 
+  it('area INFRAS -> daftar & grafik per bulan hanya barang Infras (GENERAL)', async () => {
+    const { service, findMany } = buatService([]);
+
+    const hasil = await service.rekap(undefined, 2026, 'INFRAS');
+
+    expect(hasil.area).toBe('GENERAL');
+    expect(findMany.mock.calls[0][0].where.item).toEqual({ inventoryScope: 'GENERAL' });
+    expect(findMany.mock.calls[1][0].where.item).toEqual({ inventoryScope: 'GENERAL' });
+  });
+
+  it('area kosong / tidak dikenal -> semua area (tanpa filter item)', async () => {
+    const { service, findMany } = buatService([]);
+
+    const hasil = await service.rekap(undefined, 2026, 'SEMUA');
+
+    expect(hasil.area).toBeNull();
+    expect(findMany.mock.calls[0][0].where.item).toBeUndefined();
+  });
+
   it('menghitung totalKurang/totalLebih dan memetakan daftar dengan benar', async () => {
     const { service } = buatService([
       {

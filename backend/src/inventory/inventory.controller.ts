@@ -75,10 +75,11 @@ export class InventoryController {
   rekapDeviasiStok(
     @Query('bulan') bulan: string | undefined,
     @Query('tahun') tahun: string | undefined,
+    @Query('area') area: string | undefined,
     @Req() req: any,
   ) {
     this.akses.wajibBolehEditStok(req.user.role);
-    return this.deviasiStok.rekap(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined);
+    return this.deviasiStok.rekap(bulan ? Number(bulan) : undefined, tahun ? Number(tahun) : undefined, area);
   }
 
   @Post('stock-ins/batch')
