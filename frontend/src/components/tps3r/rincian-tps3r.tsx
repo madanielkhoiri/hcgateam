@@ -107,6 +107,11 @@ export const GRUP_PENANGANAN: GrupRincian[] = [
 const angka = (v: unknown): number | null => (v === null || v === undefined || v === '' ? null : Number(v));
 const kg = (n: number) => n.toLocaleString('id-ID', { maximumFractionDigits: 2 });
 const adaRincian = (g: GrupRincian, b: BarisRincian) => g.kolom.some((k) => angka(b[k.key]) !== null);
+/** Data lama: kategori punya total tapi rinciannya belum diisi. */
+const lamaGrup = (g: GrupRincian, b: BarisRincian) => !!g.totalLama && !adaRincian(g, b) && g.totalLama(b) > 0;
+/** Kategori tidak diisi sama sekali di baris ini -> tampil kosong ("-"), bukan 0. */
+const grupKosong = (g: GrupRincian, b: BarisRincian) =>
+  g.totalLama ? !adaRincian(g, b) && !lamaGrup(g, b) : !angka(b[g.kolom[0].key]);
 
 /** Total grup: jumlah rincian; data lama yang belum dirinci pakai total lama. */
 export function totalGrup(g: GrupRincian, b: BarisRincian): number {
@@ -135,7 +140,8 @@ export function TabelRincian({
   const jumlahKolom = (key: string) => data.reduce((n, b) => n + (angka(b[key]) ?? 0), 0);
   const kolomTerisi = (key: string) => data.some((b) => angka(b[key]) !== null);
   const jumlahGrup = (g: GrupRincian) => data.reduce((n, b) => n + totalGrup(g, b), 0);
-  const adaDataLama = data.some((b) => grup.some((g) => !!g.totalLama && !adaRincian(g, b)));
+  const adaDataLama = data.some((b) => grup.some((g) => lamaGrup(g, b)));
+  const grupTerisi = (g: GrupRincian) => data.some((b) => !grupKosong(g, b));
 
   return (
     <div>
@@ -181,17 +187,24 @@ export function TabelRincian({
             <tr key={b.id}>
               <td className={s.kolomTanggal}>{formatTanggal(b.tanggal, { timeZone: 'UTC' })}</td>
               {grup.flatMap((g) => {
-                const lama = !!g.totalLama && !adaRincian(g, b);
+                const lama = lamaGrup(g, b);
+                const kosong = grupKosong(g, b);
                 const sel = lama
                   ? [<td key={`${g.judul}-lama`} colSpan={g.kolom.length} className={s.selLama}>Belum dirinci</td>]
                   : g.kolom.map((k) => {
                       const v = angka(b[k.key]);
-                      return <td key={k.key} className={v === null ? s.kosong : ''}>{v === null ? '-' : kg(v)}</td>;
+                      // Kolom tunggal (Residu) tersimpan 0 bila tidak diisi -> tampil kosong.
+                      const tampilKosong = v === null || (!multi(g) && v === 0);
+                      return <td key={k.key} className={tampilKosong ? s.kosong : ''}>{tampilKosong ? '-' : kg(v)}</td>;
                     });
                 if (multi(g)) {
                   sel.push(
-                    <td key={`${g.judul}-total`} className={s.tdTotal} style={{ color: g.warna, background: `color-mix(in srgb, ${g.latar} 45%, #fff)` }}>
-                      {kg(totalGrup(g, b))}
+                    <td
+                      key={`${g.judul}-total`}
+                      className={`${s.tdTotal} ${kosong ? s.kosong : ''}`}
+                      style={kosong ? undefined : { color: g.warna, background: `color-mix(in srgb, ${g.latar} 45%, #fff)` }}
+                    >
+                      {kosong ? '-' : kg(totalGrup(g, b))}
                     </td>,
                   );
                 }
@@ -220,8 +233,13 @@ export function TabelRincian({
                 const sel = g.kolom.map((k) => (
                   <th key={k.key} className={kolomTerisi(k.key) ? '' : s.kosong}>{kolomTerisi(k.key) ? kg(jumlahKolom(k.key)) : '-'}</th>
                 ));
-                if (multi(g)) sel.push(<th key={`${g.judul}-total`} style={{ color: g.warna }}>{kg(jumlahGrup(g))}</th>);
-                if (!multi(g)) return [<th key={g.judul} style={{ color: g.warna }}>{kg(jumlahGrup(g))}</th>];
+                const totalTh = grupTerisi(g) ? (
+                  <th key={`${g.judul}-total`} style={{ color: g.warna }}>{kg(jumlahGrup(g))}</th>
+                ) : (
+                  <th key={`${g.judul}-total`} className={s.kosong}>-</th>
+                );
+                if (!multi(g)) return [totalTh];
+                sel.push(totalTh);
                 return sel;
               })}
               {tampilPelapor && <th />}
@@ -242,7 +260,8 @@ function isiAwal(grup: GrupRincian[], baris?: BarisRincian | null): IsiForm {
   const isi: IsiForm = { tanggal: baris ? baris.tanggal.slice(0, 10) : new Date().toISOString().slice(0, 10) };
   for (const g of grup) for (const k of g.kolom) {
     const v = baris ? angka(baris[k.key]) : null;
-    isi[k.key] = v === null ? '' : String(v);
+    // Kolom tunggal (Residu) tersimpan 0 bila dulu tidak diisi -> tampil kosong.
+    isi[k.key] = v === null || (g.kolom.length === 1 && v === 0) ? '' : String(v);
   }
   return isi;
 }
@@ -252,8 +271,8 @@ function susunPayload(grup: GrupRincian[], isi: IsiForm, baris?: BarisRincian | 
   const payload: LaporanTps3rInput = { tanggal: isi.tanggal };
   for (const g of grup) {
     const terisi = g.kolom.some((k) => isi[k.key].trim() !== '');
-    const dataLama = !!baris && !!g.totalLama && !adaRincian(g, baris);
-    if (g.totalLama && !terisi && dataLama) continue;
+    const dataLama = !!baris && lamaGrup(g, baris);
+    if (!terisi && dataLama) continue;
     for (const k of g.kolom) payload[k.key] = isi[k.key].trim() === '' ? null : Number(isi[k.key].replace(',', '.'));
   }
   return payload;
@@ -343,7 +362,7 @@ export function FormRincian({
 
           {grup.map((g) => {
             const sub = g.kolom.reduce((n, k) => n + nilai(k.key), 0);
-            const dataLama = !!baris && !!g.totalLama && !adaRincian(g, baris);
+            const dataLama = !!baris && lamaGrup(g, baris);
             return (
               <section key={g.judul} className={s.grupForm} style={{ borderColor: g.latar }}>
                 <header style={{ background: g.latar, color: g.warna }}>
