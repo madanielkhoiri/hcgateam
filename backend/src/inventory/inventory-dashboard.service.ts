@@ -2,11 +2,15 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InventoryScope } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+const WITA_MS = 8 * 60 * 60 * 1000;
+
 type DailyMovement = {
   date: string;
   stockIn: number;
   stockOut: number;
   stock: number;
+  /** Penyesuaian stok (Stock Opname / edit stok) pada periode ini; + lebih, - kurang. */
+  stockAdjust: number;
   hasTransaction: boolean;
 };
 
@@ -88,6 +92,7 @@ export class InventoryDashboardService {
       stockInsSelectedMonth,
       stockOutsSelectedMonth,
       totalItems,
+      deviasiFromPeriodStart,
     ] = await Promise.all([
       this.prisma.inventoryStock.findMany({
         where: {
@@ -177,6 +182,16 @@ export class InventoryDashboardService {
           isActive: true,
         },
       }),
+
+      // Penyesuaian stok di luar Barang Masuk/Keluar (Stock Opname, edit stok)
+      // tercatat di Deviasi Stok; ikut dihitung agar saldo per bulan akurat.
+      this.prisma.deviasiStok.findMany({
+        where: {
+          createdAt: { gte: new Date(startDate.getTime() - WITA_MS) },
+          item: { inventoryScope: scope },
+        },
+        select: { createdAt: true, selisih: true },
+      }),
     ]);
 
     const currentStock = stocks.reduce((total, row) => total + row.quantity, 0);
@@ -197,13 +212,20 @@ export class InventoryDashboardService {
      * stok awal = stok sekarang - seluruh barang masuk setelah awal periode
      *              + seluruh barang keluar setelah awal periode
      */
-    let runningStock = currentStock - stockInAfterStart + stockOutAfterStart;
+    // createdAt berupa waktu (UTC); digeser ke WITA agar masuk tanggal yang benar.
+    const deviasiWita = deviasiFromPeriodStart
+      .map((row) => ({ tanggal: new Date(row.createdAt.getTime() + WITA_MS), selisih: row.selisih }))
+      .filter((row) => row.tanggal >= startDate);
+    const deviasiAfterStart = deviasiWita.reduce((total, row) => total + row.selisih, 0);
+
+    let runningStock = currentStock - stockInAfterStart + stockOutAfterStart - deviasiAfterStart;
 
     const movementMap = new Map<
       string,
       {
         stockIn: number;
         stockOut: number;
+        adjust: number;
       }
     >();
 
@@ -216,7 +238,7 @@ export class InventoryDashboardService {
       const bulanTerakhir =
         year < sekarang.getUTCFullYear() ? 12 : year === sekarang.getUTCFullYear() ? sekarang.getUTCMonth() + 1 : 0;
       for (let m = 1; m <= bulanTerakhir; m += 1) {
-        movementMap.set(`${year}-${String(m).padStart(2, '0')}`, { stockIn: 0, stockOut: 0 });
+        movementMap.set(`${year}-${String(m).padStart(2, '0')}`, { stockIn: 0, stockOut: 0, adjust: 0 });
       }
     }
 
@@ -225,6 +247,7 @@ export class InventoryDashboardService {
       const current = movementMap.get(key) ?? {
         stockIn: 0,
         stockOut: 0,
+        adjust: 0,
       };
 
       current.stockIn += row.quantity;
@@ -236,21 +259,31 @@ export class InventoryDashboardService {
       const current = movementMap.get(key) ?? {
         stockIn: 0,
         stockOut: 0,
+        adjust: 0,
       };
 
       current.stockOut += row.quantity;
       movementMap.set(key, current);
     }
 
+    for (const row of deviasiWita) {
+      if (row.tanggal >= endDate) continue;
+      const key = kunci(row.tanggal);
+      const current = movementMap.get(key) ?? { stockIn: 0, stockOut: 0, adjust: 0 };
+
+      current.adjust += row.selisih;
+      movementMap.set(key, current);
+    }
+
+    const adaGerak = (gerak?: { stockIn: number; stockOut: number; adjust: number }) =>
+      Boolean(gerak && (gerak.stockIn > 0 || gerak.stockOut > 0 || gerak.adjust !== 0));
+
     const sortedDates = Array.from(movementMap.keys()).sort();
 
     // Semua Bulan: mulai dari bulan transaksi pertama, bukan Januari
     // (bulan sebelum aplikasi dipakai tidak ditampilkan).
     if (!month) {
-      const pertama = sortedDates.findIndex((key) => {
-        const gerak = movementMap.get(key);
-        return Boolean(gerak && (gerak.stockIn > 0 || gerak.stockOut > 0));
-      });
+      const pertama = sortedDates.findIndex((key) => adaGerak(movementMap.get(key)));
       sortedDates.splice(0, pertama === -1 ? sortedDates.length : pertama);
     }
 
@@ -258,16 +291,18 @@ export class InventoryDashboardService {
       const movement = movementMap.get(date) ?? {
         stockIn: 0,
         stockOut: 0,
+        adjust: 0,
       };
 
-      runningStock += movement.stockIn - movement.stockOut;
+      runningStock += movement.stockIn - movement.stockOut + movement.adjust;
 
       return {
         date,
         stockIn: movement.stockIn,
         stockOut: movement.stockOut,
         stock: Math.max(0, runningStock),
-        hasTransaction: movement.stockIn > 0 || movement.stockOut > 0,
+        stockAdjust: movement.adjust,
+        hasTransaction: adaGerak(movement),
       };
     });
 

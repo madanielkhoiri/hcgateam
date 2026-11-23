@@ -9,6 +9,7 @@ function buatService(overrides: {
   stockInsSelectedMonth?: { date: Date; quantity: number }[];
   stockOutsSelectedMonth?: { date: Date; quantity: number }[];
   totalItems?: number;
+  deviasi?: { createdAt: Date; selisih: number }[];
 } = {}) {
   const prisma = {
     inventoryStock: { findMany: jest.fn().mockResolvedValue(overrides.stocks ?? []) },
@@ -23,6 +24,7 @@ function buatService(overrides: {
         .mockResolvedValueOnce(overrides.stockOutsSelectedMonth ?? []),
     },
     item: { count: jest.fn().mockResolvedValue(overrides.totalItems ?? 0) },
+    deviasiStok: { findMany: jest.fn().mockResolvedValue(overrides.deviasi ?? []) },
   } as unknown as PrismaService;
 
   const service = new InventoryDashboardService(prisma);
@@ -76,8 +78,8 @@ describe('InventoryDashboardService.getDashboard — rekonstruksi saldo & grafik
 
     // runningStock awal periode = 80 - 20 + 10 = 70
     expect(hasil.chart).toEqual([
-      { date: '2026-01-05', stockIn: 5, stockOut: 3, stock: 72, hasTransaction: true },
-      { date: '2026-01-10', stockIn: 15, stockOut: 0, stock: 87, hasTransaction: true },
+      { date: '2026-01-05', stockIn: 5, stockOut: 3, stock: 72, stockAdjust: 0, hasTransaction: true },
+      { date: '2026-01-10', stockIn: 15, stockOut: 0, stock: 87, stockAdjust: 0, hasTransaction: true },
     ]);
   });
 
@@ -158,5 +160,49 @@ describe('InventoryDashboardService.getDashboard — Semua Bulan tanpa transaksi
     const hasil = await service.getDashboard('MESS', 'all', '2025');
 
     expect(hasil.chart).toEqual([]);
+  });
+});
+
+describe('InventoryDashboardService.getDashboard — penyesuaian stok (Deviasi)', () => {
+  it('penyesuaian Stock Opname ikut menggeser saldo di bulan terjadinya, bukan seluruh garis', async () => {
+    const { service } = buatService({
+      stocks: [{ quantity: 2443 }],
+      stockInsFromPeriodStart: [
+        { date: new Date('2025-10-10'), quantity: 255 },
+        { date: new Date('2025-11-10'), quantity: 458 },
+      ],
+      stockOutsFromPeriodStart: [
+        { date: new Date('2025-10-12'), quantity: 417 },
+        { date: new Date('2025-11-12'), quantity: 458 },
+      ],
+      stockInsSelectedMonth: [
+        { date: new Date('2025-10-10T00:00:00Z'), quantity: 255 },
+        { date: new Date('2025-11-10T00:00:00Z'), quantity: 458 },
+      ],
+      stockOutsSelectedMonth: [
+        { date: new Date('2025-10-12T00:00:00Z'), quantity: 417 },
+        { date: new Date('2025-11-12T00:00:00Z'), quantity: 458 },
+      ],
+      // Stock Opname 20 Nov: kurang 6
+      deviasi: [{ createdAt: new Date('2025-11-20T03:00:00Z'), selisih: -6 }],
+    });
+
+    const hasil = await service.getDashboard('INFRAS', 'all', '2025');
+
+    expect(hasil.chart.map((row) => row.date)).toEqual(['2025-10', '2025-11', '2025-12']);
+    expect(hasil.chart[0]).toMatchObject({ stock: 2449, stockAdjust: 0 });
+    expect(hasil.chart[1]).toMatchObject({ stock: 2443, stockAdjust: -6 });
+  });
+
+  it('penyesuaian jam 23.00 WITA tetap masuk tanggal WITA (bukan tanggal UTC)', async () => {
+    const { service } = buatService({
+      stocks: [{ quantity: 10 }],
+      // 31 Okt 16:00 UTC = 1 Nov 00:00 WITA
+      deviasi: [{ createdAt: new Date('2025-10-31T16:00:00Z'), selisih: 2 }],
+    });
+
+    const hasil = await service.getDashboard('MESS', 'all', '2025');
+
+    expect(hasil.chart[0]).toMatchObject({ date: '2025-11', stockAdjust: 2, stock: 10 });
   });
 });

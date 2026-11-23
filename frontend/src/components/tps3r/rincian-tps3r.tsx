@@ -133,9 +133,18 @@ export function TabelRincian({
 }) {
   const multi = (g: GrupRincian) => g.kolom.length > 1;
   const jumlahKolom = (key: string) => data.reduce((n, b) => n + (angka(b[key]) ?? 0), 0);
+  const kolomTerisi = (key: string) => data.some((b) => angka(b[key]) !== null);
   const jumlahGrup = (g: GrupRincian) => data.reduce((n, b) => n + totalGrup(g, b), 0);
+  const adaDataLama = data.some((b) => grup.some((g) => !!g.totalLama && !adaRincian(g, b)));
 
   return (
+    <div>
+    {adaDataLama && (
+      <p className={s.legenda}>
+        <span className={s.contohLama}>Belum dirinci</span>
+        Data lama yang hanya berisi total per kategori. Klik ubah untuk mengisi rinciannya.
+      </p>
+    )}
     <div className={s.tabelWrap}>
       <table className={s.tabel}>
         <thead>
@@ -153,7 +162,7 @@ export function TabelRincian({
               </th>
             ))}
             {tampilPelapor && <th rowSpan={2}>Dilaporkan Oleh</th>}
-            <th rowSpan={2}>Aksi</th>
+            <th rowSpan={2} className={s.kolomAksi}>Aksi</th>
           </tr>
           <tr>
             {grup.filter(multi).flatMap((g) => [
@@ -173,15 +182,16 @@ export function TabelRincian({
               <td className={s.kolomTanggal}>{formatTanggal(b.tanggal, { timeZone: 'UTC' })}</td>
               {grup.flatMap((g) => {
                 const lama = !!g.totalLama && !adaRincian(g, b);
-                const sel = g.kolom.map((k) => {
-                  const v = angka(b[k.key]);
-                  return <td key={k.key} className={v === null ? s.kosong : ''}>{v === null ? '-' : kg(v)}</td>;
-                });
+                const sel = lama
+                  ? [<td key={`${g.judul}-lama`} colSpan={g.kolom.length} className={s.selLama}>Belum dirinci</td>]
+                  : g.kolom.map((k) => {
+                      const v = angka(b[k.key]);
+                      return <td key={k.key} className={v === null ? s.kosong : ''}>{v === null ? '-' : kg(v)}</td>;
+                    });
                 if (multi(g)) {
                   sel.push(
-                    <td key={`${g.judul}-total`} className={s.tdTotal} title={lama ? 'Data lama (belum dirinci)' : undefined}>
+                    <td key={`${g.judul}-total`} className={s.tdTotal} style={{ color: g.warna, background: `color-mix(in srgb, ${g.latar} 45%, #fff)` }}>
                       {kg(totalGrup(g, b))}
-                      {lama && <i className={s.tandaLama}>lama</i>}
                     </td>,
                   );
                 }
@@ -193,7 +203,7 @@ export function TabelRincian({
                   {(b.createdBy as { nrp?: string | null } | undefined)?.nrp && <small>{(b.createdBy as { nrp: string }).nrp}</small>}
                 </td>
               )}
-              <td>
+              <td className={s.kolomAksi}>
                 <div className={s.aksi}>
                   <button type="button" className={s.tombolIkon} onClick={() => onEdit(b)} title="Ubah"><Pencil size={13} /></button>
                   <button type="button" className={`${s.tombolIkon} ${s.tombolHapus}`} onClick={() => onHapus(b)} title="Hapus"><Trash2 size={13} /></button>
@@ -207,17 +217,20 @@ export function TabelRincian({
             <tr>
               <th className={s.kolomTanggal}>{labelTotal}</th>
               {grup.flatMap((g) => {
-                const sel = g.kolom.map((k) => <th key={k.key}>{kg(jumlahKolom(k.key))}</th>);
+                const sel = g.kolom.map((k) => (
+                  <th key={k.key} className={kolomTerisi(k.key) ? '' : s.kosong}>{kolomTerisi(k.key) ? kg(jumlahKolom(k.key)) : '-'}</th>
+                ));
                 if (multi(g)) sel.push(<th key={`${g.judul}-total`} style={{ color: g.warna }}>{kg(jumlahGrup(g))}</th>);
                 if (!multi(g)) return [<th key={g.judul} style={{ color: g.warna }}>{kg(jumlahGrup(g))}</th>];
                 return sel;
               })}
               {tampilPelapor && <th />}
-              <th />
+              <th className={s.kolomAksi} />
             </tr>
           </tfoot>
         )}
       </table>
+    </div>
     </div>
   );
 }
@@ -319,10 +332,14 @@ export function FormRincian({
         </div>
 
         <div className={s.dialogIsi}>
-          <label className={s.fieldTanggal}>
-            <span>{labelTanggal}</span>
-            <input type="date" value={isi.tanggal} onChange={(e) => setIsi({ ...isi, tanggal: e.target.value })} />
-          </label>
+          <div className={s.barisTanggal}>
+            <label className={s.fieldTanggal}>
+              <span>{labelTanggal}</span>
+              <input type="date" value={isi.tanggal} onChange={(e) => setIsi({ ...isi, tanggal: e.target.value })} />
+            </label>
+            {isi.tanggal && <b className={s.tanggalBaca}>{formatTanggal(isi.tanggal, { hari: 'long', timeZone: 'UTC' })}</b>}
+            <p className={s.petunjuk}>Isi berat dalam kg. Kolom yang tidak ada sampahnya biarkan kosong.</p>
+          </div>
 
           {grup.map((g) => {
             const sub = g.kolom.reduce((n, k) => n + nilai(k.key), 0);
@@ -331,7 +348,7 @@ export function FormRincian({
               <section key={g.judul} className={s.grupForm} style={{ borderColor: g.latar }}>
                 <header style={{ background: g.latar, color: g.warna }}>
                   <b>{g.judul}</b>
-                  {g.kolom.length > 1 && <span>Subtotal <strong>{kg(sub)} kg</strong></span>}
+                  {g.kolom.length > 1 && <span className={s.subtotal}>Subtotal <strong>{kg(sub)} kg</strong></span>}
                 </header>
                 {dataLama && (
                   <p className={s.catatanLama}>
@@ -350,7 +367,14 @@ export function FormRincian({
         </div>
 
         <div className={s.dialogKaki}>
-          <span className={s.totalSemua}>Total diisi: <b>{kg(totalSemua)} kg</b></span>
+          <div className={s.ringkasKaki}>
+            {grup.map((g) => (
+              <span key={g.judul} className={s.chipGrup} style={{ background: g.latar, color: g.warna }}>
+                {g.judul.split(' / ')[0]} <b>{kg(g.kolom.reduce((n, k) => n + nilai(k.key), 0))}</b>
+              </span>
+            ))}
+            <span className={s.totalSemua}>Total <b>{kg(totalSemua)} kg</b></span>
+          </div>
           <button type="button" className={s.tombolNetral} onClick={onTutup} disabled={simpan}>Batal</button>
           <button type="button" className={s.tombolUtama} onClick={() => void kirim()} disabled={simpan}>
             {simpan ? 'Menyimpan...' : 'Simpan'}
@@ -370,7 +394,14 @@ function Isian({ kolom, warna, nilai, onUbah }: { kolom: KolomRincian; warna: st
         {kolom.ket && <small>{kolom.ket}</small>}
       </span>
       <div className={s.inputKg}>
-        <input type="text" inputMode="decimal" value={nilai} placeholder="—" onChange={(e) => onUbah(e.target.value)} />
+        <input
+          type="text"
+          inputMode="decimal"
+          value={nilai}
+          placeholder=""
+          onFocus={(e) => e.currentTarget.select()}
+          onChange={(e) => onUbah(e.target.value.replace(/[^0-9.,]/g, ''))}
+        />
         <em>kg</em>
       </div>
     </label>
