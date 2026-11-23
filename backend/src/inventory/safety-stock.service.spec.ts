@@ -86,6 +86,39 @@ describe('hitungSafetyStock — pola JARANG (keluar tidak menentu)', () => {
   });
 });
 
+describe('hitungSafetyStock — pola SANGAT_JARANG (> 90 hari sekali)', () => {
+  // 365 hari, keluar 2x (hari ke-20: 3, hari ke-250: 5) -> jarak rata-rata ±183 hari
+  const deret = () => {
+    const d = new Array(365).fill(0);
+    d[20] = 3;
+    d[250] = 5;
+    return d;
+  };
+
+  it('tanpa cadangan: titik order = rata-rata sekali keluar, tidak pernah Kritis', () => {
+    const habis = hitungSafetyStock({ keluarHarian: deret(), totalMasuk: 0, stok: 0, leadTime: 7, z: 1.65 });
+
+    expect(habis.pola).toBe('SANGAT_JARANG');
+    expect(habis.safetyStock).toBe(0);
+    expect(habis.titikOrder).toBe(4);
+    expect(habis.rekomendasiOrder).toBe(4);
+    expect(habis.status).toBe('PERLU_ORDER');
+    expect(habis.indeksTerakhir).toBe(250);
+
+    const cukup = hitungSafetyStock({ keluarHarian: deret(), totalMasuk: 0, stok: 4, leadTime: 7, z: 1.65 });
+    expect(cukup.status).toBe('AMAN');
+    expect(cukup.rekomendasiOrder).toBe(0);
+  });
+
+  it('baru 1x keluar -> jarak ditandai minimal', () => {
+    const d = new Array(200).fill(0);
+    d[5] = 2;
+    const hasil = hitungSafetyStock({ keluarHarian: d, totalMasuk: 0, stok: 1, leadTime: 7, z: 1.65 });
+    expect(hasil.pola).toBe('SANGAT_JARANG');
+    expect(hasil.intervalMinimal).toBe(true);
+  });
+});
+
 describe('SafetyStockService.analisa', () => {
   function buat(data: {
     items?: unknown[];
@@ -131,6 +164,38 @@ describe('SafetyStockService.analisa', () => {
       expect(hasil.items[0]).toMatchObject({ totalKeluar: 10, totalMasuk: 20, rataHarian: 1, stok: 3 });
       expect(hasil.items[0].perBulan).toEqual([{ bulan: '2026-11', masuk: 20, keluar: 10 }]);
       expect(hasil.ringkasan.totalBarang).toBe(1);
+      expect(hasil.items[0]).toMatchObject({ terakhirKeluar: '2026-11-20', hariSejakTerakhir: 3 });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('default periode = semua data sejak transaksi pertama + perkiraan keluar berikutnya', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-11-23T04:00:00Z'));
+    try {
+      const service = buat({
+        pertama: new Date('2025-11-24T00:00:00Z'),
+        items: [{ id: 1, code: 'B', name: 'Genset part', unit: 'PC', category: 'LAIN', lokasiGudang: null, stock: { quantity: 0 } }],
+        keluar: [
+          { itemId: 1, date: new Date('2026-01-10T00:00:00Z'), quantity: 2 },
+          { itemId: 1, date: new Date('2026-07-10T00:00:00Z'), quantity: 2 },
+        ],
+      });
+
+      const hasil = await service.analisa('MESS');
+
+      expect(hasil.parameter.periodeBulan).toBe(0);
+      expect(hasil.periode).toMatchObject({ awal: '2025-11-24', jumlahHari: 365 });
+      // 365 hari / 2x keluar = ±183 hari sekali -> sangat jarang
+      expect(hasil.items[0]).toMatchObject({
+        pola: 'SANGAT_JARANG',
+        intervalHari: 183,
+        terakhirKeluar: '2026-07-10',
+        perkiraanBerikutnya: '2027-01-09',
+        status: 'PERLU_ORDER',
+        rekomendasiOrder: 2,
+      });
+      expect(hasil.ringkasan.polaSangatJarang).toBe(1);
     } finally {
       jest.useRealTimers();
     }

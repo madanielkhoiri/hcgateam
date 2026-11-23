@@ -56,6 +56,10 @@
 .penjelasanJarang b { color: #6b21a8; }
 .penjelasanJarang p { color: #6b4a85; }
 .penjelasanJarang code { color: #7e22ce; }
+.penjelasanSangatJarang { grid-column: 1 / -1; padding: 10px 12px; border-radius: 10px; background: #fdf2f8; border: 1px solid #fbcfe8; }
+.penjelasanSangatJarang b { color: #9d174d; }
+.penjelasanSangatJarang p { color: #83405f; }
+.penjelasanSangatJarang code { color: #be185d; }
 .penjelasan small { grid-column: 1 / -1; color: #5b7a92; font-size: 11.5px; line-height: 1.45; }
 
 .catatanPeriode {
@@ -110,7 +114,7 @@
 
 /* ---------- Tabel ---------- */
 .tabelWrap { overflow-x: auto; border: 1px solid #dce6f1; border-radius: 14px; background: #fff; box-shadow: 0 10px 30px rgba(32, 66, 105, 0.05); }
-.tabel { width: 100%; min-width: 980px; border-collapse: collapse; font-size: 12.5px; }
+.tabel { width: 100%; min-width: 1100px; border-collapse: collapse; font-size: 12.5px; }
 .tabel th, .tabel td { padding: 11px 12px; border-bottom: 1px solid #edf2f7; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tabel thead th {
   background: #f4f8fb; color: #4a6380; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
@@ -124,6 +128,7 @@
 .pola { margin-top: 4px; padding: 1px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; }
 .polaRutin { background: #e0f2fe; color: #0369a1; }
 .polaJarang { background: #f3e8ff; color: #7e22ce; }
+.polaSangatJarang { background: #fce7f3; color: #be185d; }
 .subAngka { display: block; color: #8294aa; font-size: 10.5px; }
 .kolomOrder { background: #fff7ed; }
 .tabel thead .kolomOrder { background: #ffedd5; color: #c2410c; }
@@ -163,10 +168,11 @@
   color: #475569; font-size: 9.5px; font-weight: 700; white-space: nowrap;
 }
 .batangKolom small { color: #64748b; font-size: 10.5px; text-align: center; }
-.statistik { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-content: start; }
+.statistik { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; align-content: start; }
 .statistik div { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid #e3ebf3; border-radius: 10px; background: #fff; }
 .statistik small { color: #8294aa; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
 .statistik b { color: #17375f; font-size: 14px; }
+.lewat { color: #c2410c; font-size: 10.5px; font-style: normal; font-weight: 700; }
 .hitungan { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .hitungan p {
   display: grid; gap: 3px; margin: 0; padding: 10px 12px; border-radius: 10px; background: #f0f9ff; border: 1px solid #bae6fd;
@@ -176,6 +182,8 @@
 .hitungan em { font-style: normal; }
 .hitunganInfo { background: #faf5ff !important; border-color: #e9d5ff !important; }
 .hitunganInfo span { color: #7e22ce !important; }
+.hitunganInfoSangat { background: #fdf2f8 !important; border-color: #fbcfe8 !important; }
+.hitunganInfoSangat span { color: #be185d !important; }
 .hitungan b { color: #0c4a6e; }
 
 @media (max-width: 960px) {

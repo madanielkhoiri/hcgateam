@@ -4,8 +4,9 @@
 // dihitung dari riwayat Barang Keluar (pemakaian) & Barang Masuk harian.
 //
 // Pola pemakaian dikenali otomatis per barang:
-//   RUTIN  = rata-rata jarak antar pemakaian <= 14 hari (keluar ±2x sebulan atau lebih)
-//   JARANG = keluar tidak menentu (mis. 1-2 bulan sekali sesuai kebutuhan)
+//   RUTIN         = rata-rata jarak antar pemakaian <= 14 hari (keluar ±2x sebulan atau lebih)
+//   JARANG        = 15 - 90 hari sekali (mis. 1-3 bulan sekali sesuai kebutuhan)
+//   SANGAT_JARANG = lebih dari 90 hari sekali (barang yang tidak dibutuhkan cepat)
 //
 // RUTIN — rumus statistik (periodic review, order sebulan sekali):
 //   rata-rata harian (d)   = total keluar / jumlah hari periode
@@ -20,6 +21,10 @@
 //   Safety Stock = Titik Order = pemakaian terbesar dalam sekali keluar
 //   Rekomendasi Order          = Safety Stock − stok saat ini   (minimal 0)
 //   Kritis bila stok < rata-rata sekali keluar; Perlu Order bila stok < Safety Stock.
+//
+// SANGAT_JARANG — tidak mendesak, tidak perlu stok cadangan besar:
+//   Titik Order       = rata-rata sekali keluar (stok cukup untuk satu kebutuhan biasa)
+//   Rekomendasi Order = titik order − stok   (minimal 0); tidak pernah berstatus Kritis.
 // ==================================================
 
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -32,9 +37,13 @@ const WITA_MS = 8 * 60 * 60 * 1000;
 const HARI_MS = 24 * 60 * 60 * 1000;
 /** Rata-rata jarak antar pemakaian di atas ini = pola JARANG. */
 export const BATAS_HARI_JARANG = 14;
+/** Rata-rata jarak antar pemakaian di atas ini = pola SANGAT_JARANG. */
+export const BATAS_HARI_SANGAT_JARANG = 90;
+/** Pilihan periode analisa (bulan); 0 = semua data sejak transaksi pertama. */
+export const PILIHAN_PERIODE = [0, 1, 3, 6, 12, 24];
 
 export type StatusSafetyStock = 'KRITIS' | 'PERLU_ORDER' | 'AMAN' | 'TIDAK_BERGERAK';
-export type PolaPemakaian = 'RUTIN' | 'JARANG' | 'TIDAK_ADA';
+export type PolaPemakaian = 'RUTIN' | 'JARANG' | 'SANGAT_JARANG' | 'TIDAK_ADA';
 
 export type HasilHitung = {
   pola: PolaPemakaian;
@@ -43,6 +52,10 @@ export type HasilHitung = {
   hariAdaKeluar: number;
   /** Rata-rata jarak antar pemakaian (hari). null = tidak ada pemakaian. */
   intervalHari: number | null;
+  /** true = baru 1x keluar di periode ini, jarak sebenarnya minimal sepanjang periode. */
+  intervalMinimal: boolean;
+  /** Indeks hari (dari awal periode) pemakaian terakhir. null = tidak ada. */
+  indeksTerakhir: number | null;
   /** Rata-rata jumlah sekali keluar (per hari ada pemakaian). */
   rataPerKeluar: number;
   rataHarian: number;
@@ -82,11 +95,24 @@ export function hitungSafetyStock(params: {
   const hariAdaKeluar = keluarHarian.filter((n) => n > 0).length;
   const maksHarian = keluarHarian.reduce((m, n) => Math.max(m, n), 0);
   const intervalHari = hariAdaKeluar > 0 ? hari / hariAdaKeluar : null;
+  let indeksTerakhir: number | null = null;
+  for (let i = keluarHarian.length - 1; i >= 0; i -= 1) {
+    if (keluarHarian[i] > 0) {
+      indeksTerakhir = i;
+      break;
+    }
+  }
   const rataPerKeluar = hariAdaKeluar > 0 ? totalKeluar / hariAdaKeluar : 0;
   const kebutuhanBulanan = Math.ceil(rata * HARI_SIKLUS_ORDER);
 
   const pola: PolaPemakaian =
-    intervalHari === null ? 'TIDAK_ADA' : intervalHari > BATAS_HARI_JARANG ? 'JARANG' : 'RUTIN';
+    intervalHari === null
+      ? 'TIDAK_ADA'
+      : intervalHari > BATAS_HARI_SANGAT_JARANG
+        ? 'SANGAT_JARANG'
+        : intervalHari > BATAS_HARI_JARANG
+          ? 'JARANG'
+          : 'RUTIN';
 
   let safetyStock = 0;
   let titikOrder = 0;
@@ -105,6 +131,12 @@ export function hitungSafetyStock(params: {
     titikOrder = maksHarian;
     rekomendasiOrder = Math.max(0, maksHarian - stok);
     status = stok < Math.ceil(rataPerKeluar) ? 'KRITIS' : stok < maksHarian ? 'PERLU_ORDER' : 'AMAN';
+  } else if (pola === 'SANGAT_JARANG') {
+    // Tidak mendesak: cukup siap untuk satu kebutuhan biasa, tanpa cadangan tambahan.
+    safetyStock = 0;
+    titikOrder = Math.ceil(rataPerKeluar);
+    rekomendasiOrder = Math.max(0, titikOrder - stok);
+    status = stok < titikOrder ? 'PERLU_ORDER' : 'AMAN';
   }
 
   return {
@@ -113,6 +145,8 @@ export function hitungSafetyStock(params: {
     totalMasuk,
     hariAdaKeluar,
     intervalHari: intervalHari === null ? null : Math.round(intervalHari),
+    intervalMinimal: hariAdaKeluar === 1,
+    indeksTerakhir,
     rataPerKeluar: bulat2(rataPerKeluar),
     rataHarian: bulat2(rata),
     maksHarian,
@@ -122,7 +156,7 @@ export function hitungSafetyStock(params: {
     titikOrder,
     rekomendasiOrder,
     hariTahan: pola === 'RUTIN' && rata > 0 ? Math.floor(stok / rata) : null,
-    cukupUntukKali: pola === 'JARANG' && rataPerKeluar > 0 ? Math.floor(stok / rataPerKeluar) : null,
+    cukupUntukKali: (pola === 'JARANG' || pola === 'SANGAT_JARANG') && rataPerKeluar > 0 ? Math.floor(stok / rataPerKeluar) : null,
     status,
   };
 }
@@ -145,7 +179,8 @@ export class SafetyStockService {
   async analisa(scopeValue: string, bulanRaw?: string, leadTimeRaw?: string, serviceLevelRaw?: string) {
     const scope = this.parseScope(scopeValue);
 
-    const periodeBulan = [1, 3, 6, 12].includes(Number(bulanRaw)) ? Number(bulanRaw) : 6;
+    // Default "semua data": barang yang sangat jarang keluar butuh riwayat panjang.
+    const periodeBulan = bulanRaw !== undefined && PILIHAN_PERIODE.includes(Number(bulanRaw)) ? Number(bulanRaw) : 0;
     const leadTime = Number(leadTimeRaw ?? 7);
     if (!Number.isInteger(leadTime) || leadTime < 1 || leadTime > 90) {
       throw new BadRequestException('Lead time harus 1 - 90 hari');
@@ -156,7 +191,10 @@ export class SafetyStockService {
     // Hari ini (WITA) sebagai tanggal UTC 00:00, sama dengan kolom @db.Date.
     const sekarangWita = new Date(Date.now() + WITA_MS);
     const hariIni = new Date(Date.UTC(sekarangWita.getUTCFullYear(), sekarangWita.getUTCMonth(), sekarangWita.getUTCDate()));
-    const awalJendela = new Date(Date.UTC(hariIni.getUTCFullYear(), hariIni.getUTCMonth() - periodeBulan, hariIni.getUTCDate() + 1));
+    const awalJendela =
+      periodeBulan === 0
+        ? new Date(Date.UTC(2000, 0, 1))
+        : new Date(Date.UTC(hariIni.getUTCFullYear(), hariIni.getUTCMonth() - periodeBulan, hariIni.getUTCDate() + 1));
 
     const [items, transaksiPertama, keluar, masuk] = await Promise.all([
       this.prisma.item.findMany({
@@ -182,7 +220,7 @@ export class SafetyStockService {
     const pertama = [transaksiPertama[0]?.date, transaksiPertama[1]?.date]
       .filter((d): d is Date => !!d)
       .sort((a, b) => a.getTime() - b.getTime())[0];
-    const awal = pertama && pertama > awalJendela ? pertama : awalJendela;
+    const awal = pertama && pertama > awalJendela ? pertama : periodeBulan === 0 ? hariIni : awalJendela;
     const jumlahHari = Math.max(1, Math.round((hariIni.getTime() - awal.getTime()) / HARI_MS) + 1);
     const indeksHari = (d: Date) => Math.round((d.getTime() - awal.getTime()) / HARI_MS);
 
@@ -229,6 +267,15 @@ export class SafetyStockService {
         z,
       });
       const peta = perBulan.get(item.id);
+      const tanggalKe = (indeks: number) => new Date(awal.getTime() + indeks * HARI_MS);
+      const terakhir = hitung.indeksTerakhir === null ? null : tanggalKe(hitung.indeksTerakhir);
+      // Perkiraan keluar berikutnya = terakhir keluar + rata-rata jarak (butuh minimal 2x pemakaian).
+      const perkiraan =
+        terakhir && hitung.hariAdaKeluar >= 2 && hitung.intervalHari !== null && hitung.pola !== 'RUTIN'
+          ? new Date(terakhir.getTime() + hitung.intervalHari * HARI_MS)
+          : null;
+      const { indeksTerakhir: _indeks, ...hasilHitung } = hitung;
+      void _indeks;
       return {
         itemId: item.id,
         code: item.code,
@@ -237,7 +284,10 @@ export class SafetyStockService {
         category: item.category,
         lokasiGudang: item.lokasiGudang,
         stok,
-        ...hitung,
+        ...hasilHitung,
+        terakhirKeluar: terakhir ? kunciHari(terakhir) : null,
+        hariSejakTerakhir: terakhir ? Math.round((hariIni.getTime() - terakhir.getTime()) / HARI_MS) : null,
+        perkiraanBerikutnya: perkiraan ? kunciHari(perkiraan) : null,
         perBulan: daftarBulan.map((bulan) => ({ bulan, masuk: peta?.get(bulan)?.masuk ?? 0, keluar: peta?.get(bulan)?.keluar ?? 0 })),
       };
     });
@@ -257,6 +307,7 @@ export class SafetyStockService {
         barangDiorder: hasil.filter((h) => h.rekomendasiOrder > 0).length,
         polaRutin: hasil.filter((h) => h.pola === 'RUTIN').length,
         polaJarang: hasil.filter((h) => h.pola === 'JARANG').length,
+        polaSangatJarang: hasil.filter((h) => h.pola === 'SANGAT_JARANG').length,
       },
       items: hasil,
     };

@@ -4,8 +4,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export type ScopeSafetyStock = 'GENERAL' | 'MESS' | 'ELECTRIC';
 export type StatusSafetyStock = 'KRITIS' | 'PERLU_ORDER' | 'AMAN' | 'TIDAK_BERGERAK';
-/** RUTIN = keluar ±2x sebulan atau lebih; JARANG = tidak menentu (mis. 1-2 bulan sekali). */
-export type PolaPemakaian = 'RUTIN' | 'JARANG' | 'TIDAK_ADA';
+/** RUTIN <= 14 hari sekali; JARANG 15-90 hari sekali; SANGAT_JARANG > 90 hari sekali. */
+export type PolaPemakaian = 'RUTIN' | 'JARANG' | 'SANGAT_JARANG' | 'TIDAK_ADA';
 
 export type BarisSafetyStock = {
   itemId: number;
@@ -20,6 +20,8 @@ export type BarisSafetyStock = {
   totalMasuk: number;
   hariAdaKeluar: number;
   intervalHari: number | null;
+  /** true = baru 1x keluar, jarak sebenarnya minimal sepanjang periode. */
+  intervalMinimal: boolean;
   rataPerKeluar: number;
   rataHarian: number;
   maksHarian: number;
@@ -30,6 +32,9 @@ export type BarisSafetyStock = {
   rekomendasiOrder: number;
   hariTahan: number | null;
   cukupUntukKali: number | null;
+  terakhirKeluar: string | null;
+  hariSejakTerakhir: number | null;
+  perkiraanBerikutnya: string | null;
   status: StatusSafetyStock;
   perBulan: { bulan: string; masuk: number; keluar: number }[];
 };
@@ -47,6 +52,7 @@ export type HasilSafetyStock = {
     barangDiorder: number;
     polaRutin: number;
     polaJarang: number;
+    polaSangatJarang: number;
   };
   items: BarisSafetyStock[];
 };
