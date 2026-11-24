@@ -2058,23 +2058,29 @@
 }
 
 /* ---------- Serah Terima: PIC & foto di tabel ---------- */
+/* Sama dengan pilihan PIC di tabel Work Order (Infras hijau, Electric biru). */
 .picChip {
   display: inline-block;
-  padding: 3px 10px;
+  height: 29px;
+  padding: 0 12px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
+  line-height: 27px;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .picChipInfras {
-  background: #dcfce7;
-  color: #15803d;
+  color: #ffffff;
+  background-color: #22c55e;
+  border: 1px solid #16a34a;
 }
 
 .picChipElectric {
-  background: #dbeafe;
-  color: #1d4ed8;
+  color: #ffffff;
+  background-color: #3b82f6;
+  border: 1px solid #2563eb;
 }
 
 .fotoKosong {
