@@ -65,3 +65,6 @@ Desktop.ini
 *.txt
 # Local code backups
 code-backups/
+
+# Pengaturan lokal editor/asisten (tidak ikut repo)
+.claude/
