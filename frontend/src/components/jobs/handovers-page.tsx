@@ -24,7 +24,19 @@ type WorkOrder = {
   userDepartmentName: string;
   location: string | null;
   status: string;
+  pic?: "GA_INFRAS" | "GA_ELECTRIC";
 };
+
+const LABEL_PIC: Record<NonNullable<WorkOrder["pic"]>, string> = {
+  GA_INFRAS: "GA Infras",
+  GA_ELECTRIC: "GA Electric",
+};
+
+/** URL foto serah terima lewat /uploads + ?token= (<img> tidak bisa kirim header login). */
+function urlFotoSerahTerima(path: string): string {
+  const filename = path.split(/[\\/]/).pop() ?? path;
+  return urlUploads(`handovers/${encodeURIComponent(filename)}`);
+}
 
 type Handover = {
   id: number;
@@ -85,6 +97,8 @@ export default function HandoversPage() {
   const [search, setSearch] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
+  const [picFilter, setPicFilter] = useState("");
+  const [galeri, setGaleri] = useState<{ judul: string; foto: string[]; indeks: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -182,6 +196,10 @@ export default function HandoversPage() {
   // termuat, karena backend belum ada filter bulan/tahun untuk handover.
   const filteredRows = useMemo(() => {
     return rows.filter((row) => {
+      if (picFilter && row.workOrder.pic !== picFilter) {
+        return false;
+      }
+
       if (!month && !year) {
         return true;
       }
@@ -198,12 +216,31 @@ export default function HandoversPage() {
 
       return true;
     });
-  }, [rows, month, year]);
+  }, [rows, month, year, picFilter]);
+
+  // Galeri foto: Esc tutup, panah kiri/kanan pindah foto.
+  useEffect(() => {
+    if (!galeri) return;
+    const tekan = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGaleri(null);
+      if (event.key === "ArrowRight") geserGaleri(1);
+      if (event.key === "ArrowLeft") geserGaleri(-1);
+    };
+    window.addEventListener("keydown", tekan);
+    return () => window.removeEventListener("keydown", tekan);
+  }, [galeri]);
+
+  function geserGaleri(arah: number) {
+    setGaleri((saat) =>
+      saat ? { ...saat, indeks: (saat.indeks + arah + saat.foto.length) % saat.foto.length } : saat,
+    );
+  }
 
   function resetFilters() {
     setSearch("");
     setMonth("");
     setYear("");
+    setPicFilter("");
   }
 
   function openCreate() {
@@ -539,6 +576,16 @@ export default function HandoversPage() {
               ))}
             </select>
 
+            <select
+              value={picFilter}
+              onChange={(event) => setPicFilter(event.target.value)}
+              aria-label="Filter PIC"
+            >
+              <option value="">Semua PIC</option>
+              <option value="GA_INFRAS">GA Infras</option>
+              <option value="GA_ELECTRIC">GA Electric</option>
+            </select>
+
             <button
               type="button"
               className={styles.resetFilterButton}
@@ -560,8 +607,10 @@ export default function HandoversPage() {
                 <th>Nomor WO</th>
                 <th>Tanggal</th>
                 <th>Nama Pekerjaan</th>
+                <th>PIC</th>
                 <th>Penerima</th>
                 <th>Departemen</th>
+                <th>Foto</th>
 
                 <th>Aksi</th>
               </tr>
@@ -570,13 +619,13 @@ export default function HandoversPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={10}>
                     <div className={styles.emptyState}>Memuat data...</div>
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={10}>
                     <div className={styles.emptyState}>
                       Data Serah Terima belum ada.
                     </div>
@@ -592,8 +641,40 @@ export default function HandoversPage() {
                     <td className={styles.nameCell}>
                       {row.workOrder.workOrderName}
                     </td>
+                    <td>
+                      {row.workOrder.pic ? (
+                        <span
+                          className={`${styles.picChip} ${
+                            row.workOrder.pic === "GA_ELECTRIC" ? styles.picChipElectric : styles.picChipInfras
+                          }`}
+                        >
+                          {LABEL_PIC[row.workOrder.pic]}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td>{row.receiverName ?? "-"}</td>
                     <td>{row.receiverDepartment ?? "-"}</td>
+                    <td>
+                      {(row.documentationPaths ?? []).length === 0 ? (
+                        <span className={styles.fotoKosong}>Belum ada</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.fotoStack}
+                          onClick={() =>
+                            setGaleri({ judul: `${row.stpNumber} · ${row.workOrder.workOrderName}`, foto: row.documentationPaths, indeks: 0 })
+                          }
+                          title="Lihat foto"
+                        >
+                          {row.documentationPaths.slice(0, 3).map((path) => (
+                            <img key={path} loading="lazy" decoding="async" src={urlFotoSerahTerima(path)} alt="" />
+                          ))}
+                          {row.documentationPaths.length > 3 && <span>+{row.documentationPaths.length - 3}</span>}
+                        </button>
+                      )}
+                    </td>
 
                     <td>
                       <div className={styles.actionButtons}>
@@ -628,6 +709,76 @@ export default function HandoversPage() {
           </table>
         </div>
       </div>
+
+      {galeri && (
+        <div className={styles.imageViewer} onClick={() => setGaleri(null)} role="dialog" aria-modal="true" aria-label="Foto serah terima">
+          <div className={styles.galeriKepala} onClick={(event) => event.stopPropagation()}>
+            <b>{galeri.judul}</b>
+            <span>
+              Foto {galeri.indeks + 1} dari {galeri.foto.length}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className={styles.imageViewerClose}
+            onClick={() => setGaleri(null)}
+            aria-label="Tutup foto"
+          >
+            {"\u00D7"}
+          </button>
+
+          {galeri.foto.length > 1 && (
+            <>
+              <button
+                type="button"
+                className={`${styles.galeriPanah} ${styles.galeriKiri}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  geserGaleri(-1);
+                }}
+                aria-label="Foto sebelumnya"
+              >
+                {"\u2039"}
+              </button>
+              <button
+                type="button"
+                className={`${styles.galeriPanah} ${styles.galeriKanan}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  geserGaleri(1);
+                }}
+                aria-label="Foto berikutnya"
+              >
+                {"\u203A"}
+              </button>
+            </>
+          )}
+
+          <img
+            decoding="async"
+            src={urlFotoSerahTerima(galeri.foto[galeri.indeks])}
+            alt={`Foto ${galeri.indeks + 1}`}
+            onClick={(event) => event.stopPropagation()}
+          />
+
+          {galeri.foto.length > 1 && (
+            <div className={styles.galeriThumb} onClick={(event) => event.stopPropagation()}>
+              {galeri.foto.map((path, indeks) => (
+                <button
+                  type="button"
+                  key={path}
+                  className={indeks === galeri.indeks ? styles.galeriThumbAktif : ""}
+                  onClick={() => setGaleri({ ...galeri, indeks })}
+                  aria-label={`Foto ${indeks + 1}`}
+                >
+                  <img loading="lazy" decoding="async" src={urlFotoSerahTerima(path)} alt="" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {modalOpen && (
         <div className={styles.modalBackdrop}>
@@ -776,7 +927,7 @@ export default function HandoversPage() {
                           >
                             {/* Lewat /uploads + ?token= : <img> tidak bisa mengirim header Authorization. */}
                             <img loading="lazy" decoding="async"
-                              src={urlUploads(`handovers/${encodeURIComponent(filename)}`)}
+                              src={urlFotoSerahTerima(filename)}
                               alt="Foto serah terima"
                             />
 
