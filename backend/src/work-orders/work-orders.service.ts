@@ -404,6 +404,8 @@ export class WorkOrdersService {
     cari?: string;
     status?: WorkOrderStatus;
     priority?: WorkOrderPriority;
+    /** GA_INFRAS / GA_ELECTRIC; nilai lain diabaikan. */
+    pic?: string;
     bulan?: number;
     tahun?: number;
     halaman?: string;
@@ -457,6 +459,9 @@ export class WorkOrdersService {
         : {}),
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.priority ? { priority: filter.priority } : {}),
+      ...(filter.pic && (Object.values(WorkOrderPic) as string[]).includes(filter.pic)
+        ? { pic: filter.pic as WorkOrderPic }
+        : {}),
       ...(rentangTanggal ? { requestedAt: rentangTanggal } : {}),
       ...(kata
         ? {

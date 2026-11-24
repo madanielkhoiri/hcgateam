@@ -422,4 +422,14 @@ describe('WorkOrdersService.findAll — pencarian', () => {
 
     expect(kondisiCari(count)).toContainEqual({ pic: { in: ['GA_INFRAS'] } });
   });
+
+  it('filter PIC: hanya WO milik PIC terpilih; nilai tidak dikenal diabaikan', async () => {
+    const elektrik = buatServiceCari();
+    await elektrik.service.findAll({ pic: 'GA_ELECTRIC' });
+    expect(JSON.stringify(elektrik.count.mock.calls[0][0].where)).toContain('"pic":"GA_ELECTRIC"');
+
+    const ngawur = buatServiceCari();
+    await ngawur.service.findAll({ pic: 'KANTIN' });
+    expect(JSON.stringify(ngawur.count.mock.calls[0][0].where)).not.toContain('"pic"');
+  });
 });

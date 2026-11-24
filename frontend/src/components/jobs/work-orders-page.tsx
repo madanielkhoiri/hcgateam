@@ -250,6 +250,7 @@ export default function WorkOrdersPage() {
   const [year, setYear] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [picFilter, setPicFilter] = useState("");
   const [halaman, setHalaman] = useState(1);
   const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -323,6 +324,7 @@ export default function WorkOrdersPage() {
       if (year) parameter.set("tahun", year);
       if (statusFilter) parameter.set("status", statusFilter);
       if (priorityFilter) parameter.set("priority", priorityFilter);
+      if (picFilter) parameter.set("pic", picFilter);
 
       const result = await request(`work-orders?${parameter.toString()}`);
 
@@ -337,7 +339,7 @@ export default function WorkOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [request, searchDebounced, month, year, statusFilter, priorityFilter, halaman]);
+  }, [request, searchDebounced, month, year, statusFilter, priorityFilter, picFilter, halaman]);
 
   useEffect(() => {
     setUser(getCurrentUser());
@@ -363,7 +365,7 @@ export default function WorkOrdersPage() {
   // Balik ke halaman 1 tiap kali pencarian/filter berubah.
   useEffect(() => {
     setHalaman(1);
-  }, [searchDebounced, month, year, statusFilter, priorityFilter]);
+  }, [searchDebounced, month, year, statusFilter, priorityFilter, picFilter]);
 
   useEffect(() => {
     const urls = newFiles.map((file) => URL.createObjectURL(file));
@@ -387,6 +389,7 @@ export default function WorkOrdersPage() {
     setYear("");
     setStatusFilter("");
     setPriorityFilter("");
+    setPicFilter("");
   }
 
   function resetModalState() {
@@ -917,6 +920,16 @@ export default function WorkOrdersPage() {
               <option value="">Semua Prioritas</option>
               <option value="P1">P1 - Urgent</option>
               <option value="P2">P2 - Tidak Urgent</option>
+            </select>
+
+            <select
+              value={picFilter}
+              onChange={(event) => setPicFilter(event.target.value)}
+              aria-label="Filter PIC"
+            >
+              <option value="">Semua PIC</option>
+              <option value="GA_INFRAS">GA Infras</option>
+              <option value="GA_ELECTRIC">GA Electric</option>
             </select>
 
             <button

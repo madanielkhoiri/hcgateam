@@ -12,6 +12,7 @@ import { compressImages } from "@/utils/compress-image";
 import styles from "./jobs.module.css";
 
 import { formatTanggal } from "@/lib/format-tanggal";
+import { urlUploads } from "@/lib/uploads-url";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 type WorkOrder = {
@@ -773,11 +774,10 @@ export default function HandoversPage() {
                               removed ? styles.imageMarkedForRemoval : ""
                             }`}
                           >
+                            {/* Lewat /uploads + ?token= : <img> tidak bisa mengirim header Authorization. */}
                             <img loading="lazy" decoding="async"
-                              src={`${API_URL}/handovers/images/${encodeURIComponent(
-                                filename,
-                              )}`}
-                              alt={filename}
+                              src={urlUploads(`handovers/${encodeURIComponent(filename)}`)}
+                              alt="Foto serah terima"
                             />
 
                             {removed ? (
