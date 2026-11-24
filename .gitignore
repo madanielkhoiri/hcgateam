@@ -68,3 +68,5 @@ code-backups/
 
 # Pengaturan lokal editor/asisten (tidak ikut repo)
 .claude/
+# Alat sekali pakai (generate katalog inspeksi), disimpan lokal saja
+scripts/extract-construction-inspection-catalog.mjs
