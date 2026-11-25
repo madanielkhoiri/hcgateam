@@ -458,22 +458,6 @@ export default function WorkOrderDashboardPage() {
               <p>{periodDescription} - diperbarui otomatis tiap 10 detik.</p>
             </div>
 
-            <div className="legend">
-              <span>
-                <i className="legend-open" />
-                Open
-              </span>
-
-              <span>
-                <i className="legend-progress" />
-                On Progress
-              </span>
-
-              <span>
-                <i className="legend-close" />
-                Close
-              </span>
-            </div>
           </header>
 
           {loading ? (
@@ -498,6 +482,7 @@ export default function WorkOrderDashboardPage() {
                   { label: "Close", color: "#16a34a", values: chart.map((row) => row.close) },
                 ]}
                 satuan="WO"
+                legend
               />
             </div>
           )}

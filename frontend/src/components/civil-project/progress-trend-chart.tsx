@@ -97,7 +97,6 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
         sumbuMaks={sumbuMaks}
         formatNilai={persen}
         tooltipTambahan={tooltipTambahan}
-        area={series.length <= 2}
         legend
       />
     </div>

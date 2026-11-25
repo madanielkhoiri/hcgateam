@@ -27,7 +27,6 @@ export default function MultiLineChart({
       labels={labels}
       series={series}
       satuan={satuan}
-      area={series.length <= 2}
       legend
     />
   );

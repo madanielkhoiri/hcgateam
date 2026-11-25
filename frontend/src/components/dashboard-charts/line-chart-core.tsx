@@ -28,7 +28,7 @@ export default function LineChartCore({
   labels,
   series,
   satuan,
-  area = false,
+  area = true,
   labelData,
   legend = false,
   teksKosong = "Belum ada data pada periode ini.",
@@ -42,7 +42,7 @@ export default function LineChartCore({
   labels: string[];
   series: SeriGaris[];
   satuan?: string;
-  /** Area gradasi di bawah garis (bagus untuk satu seri). */
+  /** Area gradasi di bawah garis (default aktif; makin banyak seri makin tipis). */
   area?: boolean;
   /**
    * Angka selalu tampil tanpa hover (default: ya). Titik <= 12: angka di atas tiap
@@ -239,7 +239,7 @@ export default function LineChartCore({
             <defs>
               {tampil.map((s, i) => (
                 <linearGradient key={s.label} id={`gr-${id}-${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={s.color} stopOpacity="0.28" />
+                  <stop offset="0%" stopColor={s.color} stopOpacity={tampil.length === 1 ? 0.28 : tampil.length === 2 ? 0.2 : 0.12} />
                   <stop offset="100%" stopColor={s.color} stopOpacity="0.02" />
                 </linearGradient>
               ))}
