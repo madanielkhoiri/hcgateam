@@ -15,7 +15,9 @@ export type SeriGaris = { label: string; color: string; values: (number | null)[
 
 const H = 300;
 const KIRI = 58;
-const KANAN = 28;
+const KANAN_DASAR = 28;
+/** Ruang kanan untuk label nilai terakhir di ujung garis. */
+const KANAN_LABEL_AKHIR = 74;
 const ATAS = 26;
 const BAWAH = 42;
 const TINGGI = H - ATAS - BAWAH;
@@ -27,7 +29,7 @@ export default function LineChartCore({
   series,
   satuan,
   area = false,
-  labelData = false,
+  labelData,
   legend = false,
   teksKosong = "Belum ada data pada periode ini.",
   polos = false,
@@ -42,7 +44,10 @@ export default function LineChartCore({
   satuan?: string;
   /** Area gradasi di bawah garis (bagus untuk satu seri). */
   area?: boolean;
-  /** Tampilkan angka di atas titik bila titiknya tidak terlalu banyak. */
+  /**
+   * Angka selalu tampil tanpa hover (default: ya). Titik <= 12: angka di atas tiap
+   * titik; lebih banyak: label nilai terakhir di ujung tiap garis.
+   */
   labelData?: boolean;
   legend?: boolean;
   teksKosong?: string;
@@ -78,6 +83,9 @@ export default function LineChartCore({
   const banyakTitik = jumlah > 12;
   const lebarMin = Math.max(320, jumlah * (banyakTitik ? 22 : 44));
   const W = Math.max(lebarMin, lebarWadah || 900);
+  const tampilAngka = labelData !== false;
+  const modeLabelAkhir = tampilAngka && banyakTitik;
+  const KANAN = modeLabelAkhir ? KANAN_LABEL_AKHIR : KANAN_DASAR;
   const LEBAR = W - KIRI - KANAN;
 
   const semuaNilai = tampil.flatMap((s) => s.values).filter((v): v is number => typeof v === "number");
@@ -98,7 +106,71 @@ export default function LineChartCore({
     ATAS + TINGGI - ((Math.max(skala.min, v) - skala.min) / Math.max(1e-9, skala.maks - skala.min)) * TINGGI;
   const bawahGrafik = ATAS + TINGGI;
   const loncat = langkahLabel(jumlah, Math.max(4, Math.floor(LEBAR / 58)));
-  const tampilkanLabelData = labelData && !banyakTitik && tampil.length === 1;
+  const teksLabel = (n: number) => (formatNilai ? formatNilai(n) : angkaRingkas(n));
+
+  // Angka di atas titik (titik sedikit): per kolom, label antar seri didorong supaya tidak bertumpuk.
+  const labelTitik: { kunci: string; x: number; y: number; teks: string; warna: string }[] = [];
+  if (tampilAngka && !banyakTitik) {
+    for (let i = 0; i < jumlah; i += 1) {
+      const kolom = tampil
+        .map((s) => ({ s, v: s.values[i] }))
+        .filter((k): k is { s: SeriGaris; v: number } => typeof k.v === "number")
+        // Banyak garis: angka 0 tidak ditulis (menumpuk di dasar grafik); tetap ada di tooltip.
+        .filter((k) => tampil.length === 1 || k.v !== 0)
+        .map((k) => ({ ...k, y: yKe(k.v) - 11 }))
+        .sort((a, b) => b.y - a.y);
+      // Posisi titik semua seri di kolom ini: angka tidak boleh jatuh di atas titik garis lain.
+      const titikKolom = tampil
+        .map((s) => s.values[i])
+        .filter((v): v is number => typeof v === "number")
+        .map((v) => yKe(v));
+      // Dari bawah ke atas: label yang berdekatan / menimpa titik didorong naik.
+      for (let k = 0; k < kolom.length; k += 1) {
+        if (k > 0 && kolom[k - 1].y - kolom[k].y < 13) kolom[k].y = kolom[k - 1].y - 13;
+        let aman = false;
+        for (let coba = 0; coba < 6 && !aman; coba += 1) {
+          const tabrak = titikKolom.find((py) => Math.abs(kolom[k].y - 4 - py) < 9);
+          if (tabrak === undefined) aman = true;
+          else kolom[k].y = tabrak - 11;
+        }
+      }
+      for (const k of kolom) {
+        labelTitik.push({
+          kunci: `${k.s.label}-${i}`,
+          x: xKe(i),
+          y: k.y,
+          teks: teksLabel(k.v),
+          warna: tampil.length > 1 ? k.s.color : "#28476b",
+        });
+      }
+    }
+  }
+
+  // Label nilai terakhir di ujung garis (titik banyak), dirapikan supaya tidak bertabrakan.
+  const labelAkhir: { kunci: string; x: number; yTitik: number; y: number; teks: string; warna: string; lebar: number }[] = [];
+  if (modeLabelAkhir) {
+    const daftar = tampil
+      .map((s) => {
+        let i = s.values.length - 1;
+        while (i >= 0 && typeof s.values[i] !== "number") i -= 1;
+        if (i < 0) return null;
+        const v = s.values[i] as number;
+        const teks = teksLabel(v);
+        return { kunci: s.label, x: xKe(i), yTitik: yKe(v), y: yKe(v), teks, warna: s.color, lebar: Math.max(34, teks.length * 6.6 + 14) };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null)
+      .sort((a, b) => a.y - b.y);
+    const batasAtas = ATAS + 8;
+    const batasBawah = ATAS + TINGGI - 8;
+    for (let k = 0; k < daftar.length; k += 1) {
+      daftar[k].y = Math.max(daftar[k].y, k === 0 ? batasAtas : daftar[k - 1].y + 22);
+    }
+    const lebih = Math.max(0, (daftar.at(-1)?.y ?? 0) - batasBawah);
+    for (const d of daftar) {
+      d.y -= lebih;
+      labelAkhir.push(d);
+    }
+  }
   const tampilkanTitik = !banyakTitik;
 
   const kepala = (
@@ -237,15 +309,39 @@ export default function LineChartCore({
                       />
                     );
                   })}
-                  {tampilkanLabelData &&
-                    titik.map((t) => (
-                      <text key={`l${t.i}`} x={t.x} y={t.y - 12} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#28476b" className="lc-label">
-                        {formatNilai ? formatNilai(t.v) : angkaRingkas(t.v)}
-                      </text>
-                    ))}
                 </g>
               );
             })}
+
+            {/* angka di atas titik */}
+            {labelTitik.map((l) => (
+              <text
+                key={l.kunci}
+                x={l.x}
+                y={l.y}
+                textAnchor="middle"
+                fontSize={tampil.length > 1 ? 10.5 : 11.5}
+                fontWeight="700"
+                fill={l.warna}
+                stroke="#ffffff"
+                strokeWidth={3}
+                paintOrder="stroke"
+                className="lc-label"
+              >
+                {l.teks}
+              </text>
+            ))}
+
+            {/* label nilai terakhir di ujung garis */}
+            {labelAkhir.map((l) => (
+              <g key={l.kunci} className="lc-label">
+                <line x1={l.x + 4} y1={l.yTitik} x2={l.x + 10} y2={l.y} stroke={l.warna} strokeWidth={1.5} />
+                <rect x={l.x + 9} y={l.y - 10} width={l.lebar} height={20} rx={7} fill="#ffffff" stroke={l.warna} strokeWidth={1.5} />
+                <text x={l.x + 9 + l.lebar / 2} y={l.y + 4} textAnchor="middle" fontSize={11} fontWeight={800} fill={l.warna}>
+                  {l.teks}
+                </text>
+              </g>
+            ))}
 
             {/* area hover per kolom */}
             {labels.map((_, i) => {
