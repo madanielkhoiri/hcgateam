@@ -40,8 +40,8 @@ export const GRUP_TIMBULAN: GrupRincian[] = [
   },
   {
     judul: 'Guna Ulang / Reuse',
-    warna: '#b91c1c',
-    latar: '#fee2e2',
+    warna: '#a16207',
+    latar: '#fef9c3',
     totalLama: (b) => Number(b.beratReuse ?? 0),
     kolom: [
       { key: 'reuseKertas', label: 'Kardus, karton, kertas HVS', ket: 'Dan sejenisnya' },
@@ -51,8 +51,8 @@ export const GRUP_TIMBULAN: GrupRincian[] = [
   },
   {
     judul: 'Daur Ulang / Recycle',
-    warna: '#a16207',
-    latar: '#fef9c3',
+    warna: '#b91c1c',
+    latar: '#fee2e2',
     totalLama: (b) => Number(b.beratRecycle ?? 0),
     kolom: [
       { key: 'recycleKertas', label: 'Kardus, karton, kertas', ket: 'Terkontaminasi' },
