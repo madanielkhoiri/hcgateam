@@ -7,10 +7,11 @@
 // Dipakai AnimatedLineChart (satu seri) dan MultiLineChart (banyak seri).
 // ==================================================
 
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
-import { angkaLengkap, angkaRingkas, langkahLabel, pathSpline, skalaRentang } from "./chart-utils";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { angkaLengkap, angkaRingkas, langkahLabel, pathSpline, skalaRapi, skalaRentang } from "./chart-utils";
 
-export type SeriGaris = { label: string; color: string; values: number[] };
+/** values: null = tidak ada data di titik itu (garis menyambung titik yang ada). */
+export type SeriGaris = { label: string; color: string; values: (number | null)[] };
 
 const H = 300;
 const KIRI = 58;
@@ -29,6 +30,10 @@ export default function LineChartCore({
   labelData = false,
   legend = false,
   teksKosong = "Belum ada data pada periode ini.",
+  polos = false,
+  sumbuMaks,
+  formatNilai,
+  tooltipTambahan,
 }: {
   title: string;
   subtitle?: string;
@@ -41,6 +46,14 @@ export default function LineChartCore({
   labelData?: boolean;
   legend?: boolean;
   teksKosong?: string;
+  /** Tanpa kartu & judul (dipakai di dalam kartu milik halaman sendiri). */
+  polos?: boolean;
+  /** Batas atas sumbu Y tetap (mis. 100 untuk persen). */
+  sumbuMaks?: number;
+  /** Format angka sumbu & tooltip (mis. v => `${v}%`). */
+  formatNilai?: (nilai: number) => string;
+  /** Baris tambahan di tooltip untuk titik ke-i. */
+  tooltipTambahan?: (indeks: number) => ReactNode;
 }) {
   const id = useId().replace(/:/g, "");
   const [aktif, setAktif] = useState<number | null>(null);
@@ -67,10 +80,18 @@ export default function LineChartCore({
   const W = Math.max(lebarMin, lebarWadah || 900);
   const LEBAR = W - KIRI - KANAN;
 
-  const semuaNilai = tampil.flatMap((s) => s.values);
+  const semuaNilai = tampil.flatMap((s) => s.values).filter((v): v is number => typeof v === "number");
   const nilaiMin = semuaNilai.length ? Math.min(...semuaNilai) : 0;
   const nilaiMaks = semuaNilai.length ? Math.max(...semuaNilai) : 0;
-  const skala = useMemo(() => skalaRentang(nilaiMin, nilaiMaks), [nilaiMin, nilaiMaks]);
+  const skala = useMemo(() => {
+    if (sumbuMaks) {
+      const tetap = skalaRapi(sumbuMaks);
+      return { min: 0, maks: tetap.maks, garis: tetap.garis };
+    }
+    return skalaRentang(nilaiMin, nilaiMaks);
+  }, [nilaiMin, nilaiMaks, sumbuMaks]);
+  const teksSumbu = (n: number) => (formatNilai ? formatNilai(n) : angkaRingkas(n));
+  const teksNilai = (n: number) => (formatNilai ? formatNilai(n) : `${angkaLengkap(n)}${satuan ? ` ${satuan}` : ""}`);
 
   const xKe = (i: number) => (jumlah <= 1 ? KIRI + LEBAR / 2 : KIRI + (i / (jumlah - 1)) * LEBAR);
   const yKe = (v: number) =>
@@ -96,6 +117,13 @@ export default function LineChartCore({
   };
 
   if (kosong) {
+    if (polos) {
+      return (
+        <div style={{ minHeight: 240, display: "grid", placeItems: "center", color: "#6d83a0", padding: 24, textAlign: "center" }}>
+          {teksKosong}
+        </div>
+      );
+    }
     return (
       <section style={kartu}>
         {kepala}
@@ -107,14 +135,31 @@ export default function LineChartCore({
   }
 
   const xAktif = aktif === null ? 0 : xKe(aktif);
+  const nilaiDi = (s: SeriGaris, i: number) => {
+    const v = s.values[i];
+    return typeof v === "number" ? v : null;
+  };
   const yTooltip =
-    aktif === null ? 0 : Math.min(...tampil.map((s) => yKe(s.values[aktif] ?? 0)), bawahGrafik);
+    aktif === null
+      ? 0
+      : Math.min(
+          ...tampil.map((s) => {
+            const v = nilaiDi(s, aktif);
+            return v === null ? bawahGrafik : yKe(v);
+          }),
+          bawahGrafik,
+        );
   const persenX = (xAktif / W) * 100;
   const geserTooltip = persenX > 78 ? "-100%" : persenX < 22 ? "0%" : "-50%";
+  // Ruang di atas titik sempit (nilai tinggi) -> tooltip pindah ke bawah titik supaya tidak terpotong.
+  const jumlahBaris = tampil.length + (tooltipTambahan ? 1 : 0);
+  const tooltipDiBawah = yTooltip < 40 + jumlahBaris * 20;
+
+  const Bungkus = polos ? "div" : "section";
 
   return (
-    <section style={kartu}>
-      {kepala}
+    <Bungkus style={polos ? { minWidth: 0 } : kartu}>
+      {!polos && kepala}
 
       <div ref={wadah} style={{ overflowX: "auto", padding: "10px 12px 6px" }}>
         <div style={{ position: "relative", width: W }} onMouseLeave={() => setAktif(null)}>
@@ -135,7 +180,7 @@ export default function LineChartCore({
                 <g key={nilai}>
                   <line x1={KIRI} x2={W - KANAN} y1={y} y2={y} stroke={nilai === skala.min ? "#c9d6e4" : "#e8eef5"} strokeWidth="1" />
                   <text x={KIRI - 10} y={y + 4} textAnchor="end" fontSize="11" fill="#7b8fa8">
-                    {angkaRingkas(nilai)}
+                    {teksSumbu(nilai)}
                   </text>
                 </g>
               );
@@ -157,7 +202,9 @@ export default function LineChartCore({
 
             {/* seri */}
             {tampil.map((s, si) => {
-              const titik = s.values.map((v, i) => ({ x: xKe(i), y: yKe(v) }));
+              const titik = s.values.flatMap((v, i) =>
+                typeof v === "number" ? [{ x: xKe(i), y: yKe(v), i, v }] : [],
+              );
               const garis = pathSpline(titik);
               const isiArea =
                 titik.length > 1 ? `${garis} L ${titik[titik.length - 1].x} ${bawahGrafik} L ${titik[0].x} ${bawahGrafik} Z` : "";
@@ -174,12 +221,12 @@ export default function LineChartCore({
                     pathLength={1}
                     className="lc-garis"
                   />
-                  {titik.map((t, i) => {
-                    const disorot = aktif === i;
+                  {titik.map((t) => {
+                    const disorot = aktif === t.i;
                     if (!tampilkanTitik && !disorot) return null;
                     return (
                       <circle
-                        key={i}
+                        key={t.i}
                         cx={t.x}
                         cy={t.y}
                         r={disorot ? 6 : 4}
@@ -191,9 +238,9 @@ export default function LineChartCore({
                     );
                   })}
                   {tampilkanLabelData &&
-                    titik.map((t, i) => (
-                      <text key={`l${i}`} x={t.x} y={t.y - 12} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#28476b" className="lc-label">
-                        {angkaRingkas(s.values[i] ?? 0)}
+                    titik.map((t) => (
+                      <text key={`l${t.i}`} x={t.x} y={t.y - 12} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#28476b" className="lc-label">
+                        {formatNilai ? formatNilai(t.v) : angkaRingkas(t.v)}
                       </text>
                     ))}
                 </g>
@@ -225,7 +272,7 @@ export default function LineChartCore({
                 position: "absolute",
                 left: `${persenX}%`,
                 top: `${(yTooltip / H) * 100}%`,
-                transform: `translate(${geserTooltip}, calc(-100% - 14px))`,
+                transform: `translate(${geserTooltip}, ${tooltipDiBawah ? "14px" : "calc(-100% - 14px)"})`,
                 pointerEvents: "none",
                 minWidth: 130,
                 padding: "8px 11px",
@@ -240,16 +287,18 @@ export default function LineChartCore({
               }}
             >
               <div style={{ marginBottom: 4, color: "#7b8fa8", fontSize: 11, fontWeight: 700 }}>{labels[aktif]}</div>
-              {tampil.map((s) => (
-                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 2 }}>
-                  <i style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-                  {tampil.length > 1 && <span style={{ color: "#5d7491" }}>{s.label}</span>}
-                  <b style={{ marginLeft: "auto", color: "#0d315c" }}>
-                    {angkaLengkap(s.values[aktif] ?? 0)}
-                    {satuan ? ` ${satuan}` : ""}
-                  </b>
-                </div>
-              ))}
+              {tampil.map((s) => {
+                const v = nilaiDi(s, aktif);
+                if (v === null) return null;
+                return (
+                  <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 2 }}>
+                    <i style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+                    {tampil.length > 1 && <span style={{ color: "#5d7491" }}>{s.label}</span>}
+                    <b style={{ marginLeft: "auto", paddingLeft: 10, color: "#0d315c" }}>{teksNilai(v)}</b>
+                  </div>
+                );
+              })}
+              {tooltipTambahan?.(aktif)}
             </div>
           )}
         </div>
@@ -312,6 +361,6 @@ export default function LineChartCore({
           }
         }
       `}</style>
-    </section>
+    </Bungkus>
   );
 }

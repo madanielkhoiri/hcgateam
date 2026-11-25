@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import LineChartCore from "@/components/dashboard-charts/line-chart-core";
 
 type DashboardRow = {
   label: string;
@@ -85,68 +86,6 @@ function getToken() {
   );
 }
 
-function createLinePath(
-  points: Point[],
-  field: "openY" | "progressY" | "closeY",
-) {
-  const n = points.length;
-
-  if (n === 0) {
-    return "";
-  }
-
-  if (n === 1) {
-    return `M ${points[0].x.toFixed(2)} ${points[0][field].toFixed(2)}`;
-  }
-
-  // Interpolasi kubik monoton (Fritsch-Carlson): kurva halus tetapi tidak pernah
-  // "melompat" melewati nilai titik (mis. turun di bawah 0), jadi angka tetap jujur.
-  const xs = points.map((point) => point.x);
-  const ys = points.map((point) => point[field]);
-  const slopes: number[] = [];
-
-  for (let i = 0; i < n - 1; i += 1) {
-    slopes.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
-  }
-
-  const tangents: number[] = new Array(n).fill(0);
-  tangents[0] = slopes[0];
-  tangents[n - 1] = slopes[n - 2];
-
-  for (let i = 1; i < n - 1; i += 1) {
-    tangents[i] =
-      slopes[i - 1] * slopes[i] <= 0 ? 0 : (slopes[i - 1] + slopes[i]) / 2;
-  }
-
-  for (let i = 0; i < n - 1; i += 1) {
-    if (slopes[i] === 0) {
-      tangents[i] = 0;
-      tangents[i + 1] = 0;
-      continue;
-    }
-
-    const a = tangents[i] / slopes[i];
-    const b = tangents[i + 1] / slopes[i];
-    const sum = a * a + b * b;
-
-    if (sum > 9) {
-      const scale = 3 / Math.sqrt(sum);
-      tangents[i] = scale * a * slopes[i];
-      tangents[i + 1] = scale * b * slopes[i];
-    }
-  }
-
-  let path = `M ${xs[0].toFixed(2)} ${ys[0].toFixed(2)}`;
-
-  for (let i = 0; i < n - 1; i += 1) {
-    const dx = (xs[i + 1] - xs[i]) / 3;
-
-    path += ` C ${(xs[i] + dx).toFixed(2)} ${(ys[i] + tangents[i] * dx).toFixed(2)}, ${(xs[i + 1] - dx).toFixed(2)} ${(ys[i + 1] - tangents[i + 1] * dx).toFixed(2)}, ${xs[i + 1].toFixed(2)} ${ys[i + 1].toFixed(2)}`;
-  }
-
-  return path;
-}
-
 function closingRateColor(value: number) {
   if (value >= 80) {
     return "#079669";
@@ -173,7 +112,7 @@ export default function WorkOrderDashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [animationKey, setAnimationKey] = useState(0);
+  const [, setAnimationKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const loadDashboard = useCallback(
@@ -283,12 +222,6 @@ export default function WorkOrderDashboardPage() {
       };
     });
   }, [chart, maximum]);
-
-  const openPath = createLinePath(points, "openY");
-
-  const progressPath = createLinePath(points, "progressY");
-
-  const closePath = createLinePath(points, "closeY");
 
   const closingRate = data?.summary.closingRate ?? 0;
 
@@ -555,100 +488,17 @@ export default function WorkOrderDashboardPage() {
             </div>
           ) : (
             <div className="chart-scroll">
-              <svg
-                key={animationKey}
-                viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-                role="img"
-                aria-label="Grafik tren status Work Order"
-                className="chart-svg"
-              >
-                {Array.from({ length: 5 }, (_, index) => {
-                  const value = yStep * (4 - index);
-                  const drawableHeight = CHART_HEIGHT - TOP - BOTTOM;
-                  const y = TOP + (index / 4) * drawableHeight;
-
-                  return (
-                    <g key={`${value}-${index}`}>
-                      <line
-                        x1={LEFT}
-                        y1={y}
-                        x2={CHART_WIDTH - RIGHT}
-                        y2={y}
-                        className="grid-line"
-                      />
-
-                      <text
-                        x={LEFT - 12}
-                        y={y + 4}
-                        textAnchor="end"
-                        className="axis-text"
-                      >
-                        {value}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                <line
-                  x1={LEFT}
-                  y1={CHART_HEIGHT - BOTTOM}
-                  x2={CHART_WIDTH - RIGHT}
-                  y2={CHART_HEIGHT - BOTTOM}
-                  className="axis-line"
-                />
-
-                <path d={openPath} className="animated-line line-open" />
-
-                <path d={progressPath} className="animated-line line-progress" />
-
-                <path d={closePath} className="animated-line line-close" />
-
-                {points.map((point, index) => (
-                  <g key={`${point.label}-${index}`}>
-                    <circle
-                      cx={point.x}
-                      cy={point.openY}
-                      r="4.5"
-                      className="chart-point point-open"
-                    >
-                      <title>
-                        {point.label} - Open: {point.open}
-                      </title>
-                    </circle>
-
-                    <circle
-                      cx={point.x}
-                      cy={point.progressY}
-                      r="4.5"
-                      className="chart-point point-progress"
-                    >
-                      <title>
-                        {point.label} - On Progress: {point.onProgress}
-                      </title>
-                    </circle>
-
-                    <circle
-                      cx={point.x}
-                      cy={point.closeY}
-                      r="4.5"
-                      className="chart-point point-close"
-                    >
-                      <title>
-                        {point.label} - Close: {point.close}
-                      </title>
-                    </circle>
-
-                    <text
-                      x={point.x}
-                      y={CHART_HEIGHT - BOTTOM + 24}
-                      textAnchor="middle"
-                      className="date-text"
-                    >
-                      {point.label}
-                    </text>
-                  </g>
-                ))}
-              </svg>
+              <LineChartCore
+                polos
+                title="Grafik tren status Work Order"
+                labels={chart.map((row) => row.label)}
+                series={[
+                  { label: "Open", color: "#ef4444", values: chart.map((row) => row.open) },
+                  { label: "On Progress", color: "#eab308", values: chart.map((row) => row.onProgress) },
+                  { label: "Close", color: "#16a34a", values: chart.map((row) => row.close) },
+                ]}
+                satuan="WO"
+              />
             </div>
           )}
 
