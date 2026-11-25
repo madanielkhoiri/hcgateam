@@ -171,7 +171,8 @@ export default function LineChartCore({
       labelAkhir.push(d);
     }
   }
-  const tampilkanTitik = !banyakTitik;
+  // Titik tidak ditampilkan (seragam di semua grafik); hanya muncul di posisi yang disorot kursor.
+  const tampilkanTitik = false;
 
   const kepala = (
     <header style={{ padding: "16px 18px", borderBottom: "1px solid #e3ebf5" }}>
