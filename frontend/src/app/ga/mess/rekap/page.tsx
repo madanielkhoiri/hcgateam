@@ -78,7 +78,7 @@ export default function RekapKebersihan() {
 
   useEffect(() => {
     const role = getStoredUser()?.role ?? '';
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) { router.replace(role === 'HOUSE_MAN' ? '/ga/mess/operasional' : '/ga/mess/dashboard'); return; }
+    if (!['ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(role)) { router.replace(role === 'HOUSE_MAN' ? '/ga/mess/operasional' : '/ga/mess/dashboard'); return; }
     void load(todayWita(-6), todayWita());
   }, [router, load]);
 

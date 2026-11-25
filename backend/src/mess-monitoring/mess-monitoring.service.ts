@@ -5,8 +5,9 @@ import type { AktorPostingan } from '../postingan/postingan-aktor';
 import type { CreateMessRoomDto, MessOccupantDto, UpdateMessOccupantDto } from './dto/mess-monitoring.dto';
 import { MESS_ROOM_CATALOG } from './mess-room-catalog';
 
-const VIEWERS: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.PJO];
-const ADMINS: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+const VIEWERS: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECTION_HEAD, UserRole.PJO, UserRole.GRUP_LEADER_GA];
+// Group Leader GA = approver seluruh modul GA, jadi akses penuh Mess setara Admin.
+const ADMINS: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.GRUP_LEADER_GA];
 const OPERATORS: UserRole[] = [...VIEWERS, UserRole.HOUSE_MAN];
 
 @Injectable()

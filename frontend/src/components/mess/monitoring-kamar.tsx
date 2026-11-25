@@ -39,7 +39,7 @@ export function MonitoringKamar({ hideHeader = false }: { hideHeader?: boolean }
   const [filterBuilding, setFilterBuilding] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterShift, setFilterShift] = useState('ALL');
-  const admin = ['ADMIN', 'SUPER_ADMIN'].includes(getStoredUser()?.role ?? '');
+  const admin = ['ADMIN', 'SUPER_ADMIN', 'GRUP_LEADER_GA'].includes(getStoredUser()?.role ?? '');
   const load = () => messApi.rooms().then(setRows).catch((e) => setError(e.message));
 
   useEffect(() => { void load(); }, []);
