@@ -5,6 +5,7 @@
 
 import { getAccessToken, isEpromAksesPenuh, type PortalUser } from './access-control';
 import { urlUploads } from './uploads-url';
+import { compressImage } from './compress-image';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
@@ -663,6 +664,31 @@ async function bacaError(response: Response): Promise<string> {
   }
 }
 
+/**
+ * Foto untuk PDF dikonversi di browser dulu (JPG/WebP, maks 1920px).
+ * iPhone/iPad sering mengirim HEIC yang tidak bisa dibaca server, sehingga
+ * dokumentasi di PDF tampil "Gambar gagal dibaca". Safari bisa membuka HEIC,
+ * jadi hasil konversinya aman. File non-gambar dibiarkan apa adanya.
+ */
+async function siapkanFotoUpload(files: File[]): Promise<File[]> {
+  const hasil: File[] = [];
+  for (const file of files) {
+    const heic = /\.(heic|heif)$/i.test(file.name) || /^image\/hei[cf]/i.test(file.type);
+    const gambar = file.type.startsWith('image/') || heic;
+    if (!gambar || file.type === 'image/gif' || file.type === 'image/svg+xml') {
+      hasil.push(file);
+      continue;
+    }
+    try {
+      const sumber = file.type ? file : new File([file], file.name, { type: 'image/heic' });
+      hasil.push(await compressImage(sumber));
+    } catch {
+      hasil.push(file);
+    }
+  }
+  return hasil;
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}/eprom${path}`, {
     ...init,
@@ -999,11 +1025,13 @@ export const epromApi = {
   engineer: {
     daftar: (tipe: TipeEngineer, projectId: number) =>
       request<EngineerItem[]>(`/engineer/${tipe}?projectId=${projectId}`),
-    buat: (tipe: TipeEngineer, projectId: number, nama: string | undefined, file: File | File[] | null, formData?: unknown) => {
+    buat: async (tipe: TipeEngineer, projectId: number, nama: string | undefined, file: File | File[] | null, formData?: unknown) => {
       const form = new FormData();
       form.append('projectId', String(projectId));
       if (nama) form.append('nama', nama);
-      for (const item of (Array.isArray(file) ? file : file ? [file] : [])) form.append('file', item);
+      const daftarFile = Array.isArray(file) ? file : file ? [file] : [];
+      // Form checklist (formData) membuat PDF berisi foto; unggahan dokumen biasa tidak diubah.
+      for (const item of formData ? await siapkanFotoUpload(daftarFile) : daftarFile) form.append('file', item);
       if (formData) form.append('formData', JSON.stringify(formData));
       return request<EngineerItem>(`/engineer/${tipe}`, { method: 'POST', body: form });
     },
@@ -1099,18 +1127,18 @@ export const epromApi = {
         body: form,
       });
     },
-    buatForm: (tipe: 'inspeksi-area' | 'progress-harian' | 'tta' | 'kta', projectId: number, data: unknown, files: File[] = []) => {
+    buatForm: async (tipe: 'inspeksi-area' | 'progress-harian' | 'tta' | 'kta', projectId: number, data: unknown, files: File[] = []) => {
       const form = new FormData();
       form.append('formData', JSON.stringify(data));
-      files.forEach((file) => form.append('file', file));
+      (await siapkanFotoUpload(files)).forEach((file) => form.append('file', file));
       return request<ProgressItem>(`/progress/${tipe}/form?projectId=${projectId}`, { method: 'POST', body: form });
     },
     hapus: (tipe: TipeProgress, id: number) =>
       request<{ message: string }>(`/progress/${tipe}/${id}`, { method: 'DELETE' }),
-    ubahStatusTindakLanjut: (tipe: 'tta' | 'kta', id: number, status: 'Open' | 'Closed', files: File[] = []) => {
+    ubahStatusTindakLanjut: async (tipe: 'tta' | 'kta', id: number, status: 'Open' | 'Closed', files: File[] = []) => {
       const form = new FormData();
       form.append('status', status);
-      files.forEach((file) => form.append('file', file));
+      (await siapkanFotoUpload(files)).forEach((file) => form.append('file', file));
       return request<ProgressItem>(`/progress/${tipe}/${id}/status-tindak-lanjut`, { method: 'PATCH', body: form });
     },
     ubah: (
@@ -1270,18 +1298,18 @@ export const epromApi = {
         body: form,
       });
     },
-    buatP5mForm: (projectId: number, data: unknown, files: File[]) => {
+    buatP5mForm: async (projectId: number, data: unknown, files: File[]) => {
       const form = new FormData();
       form.append('projectId', String(projectId));
       form.append('formData', JSON.stringify(data));
-      files.forEach((file) => form.append('file', file));
+      (await siapkanFotoUpload(files)).forEach((file) => form.append('file', file));
       return request<SafetyMeetingFileItem>('/safety-meeting/p5m/form/create', { method: 'POST', body: form });
     },
-    perbaikiP5mForm: (id: number, projectId: number, data: unknown, files: File[]) => {
+    perbaikiP5mForm: async (id: number, projectId: number, data: unknown, files: File[]) => {
       const form = new FormData();
       form.append('projectId', String(projectId));
       form.append('formData', JSON.stringify(data));
-      files.forEach((file) => form.append('file', file));
+      (await siapkanFotoUpload(files)).forEach((file) => form.append('file', file));
       return request<SafetyMeetingFileItem>(`/safety-meeting/p5m/form/${id}`, { method: 'PATCH', body: form });
     },
     hapus: (tipe: TipeSafetyMeeting, id: number) =>

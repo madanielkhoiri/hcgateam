@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { PDFDocument as TemplateDocument, StandardFonts, rgb } from 'pdf-lib';
 import { existsSync, readFileSync } from 'node:fs';
@@ -450,6 +450,15 @@ export class EpromReportPdfService {
     const preparedPhotos = await Promise.all(photos.slice(0, 4).map(async photo => {
       try { return await siapkanBufferGambarUntukPdfKit(photo.buffer); } catch { return null; }
     }));
+    // Foto yang tidak terbaca (mis. HEIC iPhone/iPad) ditolak dengan pesan jelas,
+    // bukan menghasilkan PDF berisi kotak "Gambar gagal dibaca".
+    const gagal = preparedPhotos.map((photo, index) => (photo ? 0 : index + 1)).filter(Boolean);
+    if (gagal.length) {
+      const nama = gagal.map((nomor) => photos[nomor - 1]?.originalname || `Foto ${nomor}`).join(', ');
+      throw new BadRequestException(
+        `Foto dokumentasi tidak dapat dibaca: ${nama}. Gunakan foto JPG/PNG (foto HEIC dari iPhone/iPad belum didukung), lalu coba lagi.`,
+      );
+    }
     return this.document((doc) => {
       const margin = 22; const contentWidth = doc.page.width - margin * 2;
       const fit = (text: unknown, x: number, y: number, width: number, height: number, options: { bold?: boolean; size?: number; color?: string; align?: 'left'|'center'|'right' } = {}) => {
