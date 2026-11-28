@@ -15,9 +15,10 @@ export type SeriGaris = { label: string; color: string; values: (number | null)[
 
 const H = 300;
 const KIRI = 58;
-const KANAN_DASAR = 28;
-/** Ruang kanan untuk label nilai terakhir di ujung garis. */
-const KANAN_LABEL_AKHIR = 74;
+/** Ruang kanan supaya angka di titik terakhir tidak terpotong. */
+const KANAN_DASAR = 30;
+/** Jarak minimum (px) antar kolom angka; lebih rapat dari ini angka dijarangkan. */
+const JARAK_MIN_ANGKA = 46;
 const ATAS = 26;
 const BAWAH = 42;
 const TINGGI = H - ATAS - BAWAH;
@@ -36,6 +37,7 @@ export default function LineChartCore({
   sumbuMaks,
   formatNilai,
   tooltipTambahan,
+  labelEkstra,
 }: {
   title: string;
   subtitle?: string;
@@ -45,8 +47,9 @@ export default function LineChartCore({
   /** Area gradasi di bawah garis (default aktif; makin banyak seri makin tipis). */
   area?: boolean;
   /**
-   * Angka selalu tampil tanpa hover (default: ya). Titik <= 12: angka di atas tiap
-   * titik; lebih banyak: label nilai terakhir di ujung tiap garis.
+   * Angka selalu tampil tanpa hover (default: ya), di atas titik per tanggal.
+   * Tanggal terlalu rapat: angka dijarangkan dihitung dari ujung, sehingga
+   * nilai terakhir tiap garis selalu tampil.
    */
   labelData?: boolean;
   legend?: boolean;
@@ -59,6 +62,8 @@ export default function LineChartCore({
   formatNilai?: (nilai: number) => string;
   /** Baris tambahan di tooltip untuk titik ke-i. */
   tooltipTambahan?: (indeks: number) => ReactNode;
+  /** Angka tambahan di atas kolom ke-i (mis. deviasi e-ProM), ikut aturan penjarangan. */
+  labelEkstra?: (indeks: number) => { teks: string; warna: string } | null;
 }) {
   const id = useId().replace(/:/g, "");
   const [aktif, setAktif] = useState<number | null>(null);
@@ -84,8 +89,7 @@ export default function LineChartCore({
   const lebarMin = Math.max(320, jumlah * (banyakTitik ? 22 : 44));
   const W = Math.max(lebarMin, lebarWadah || 900);
   const tampilAngka = labelData !== false;
-  const modeLabelAkhir = tampilAngka && banyakTitik;
-  const KANAN = modeLabelAkhir ? KANAN_LABEL_AKHIR : KANAN_DASAR;
+  const KANAN = KANAN_DASAR;
   const LEBAR = W - KIRI - KANAN;
 
   const semuaNilai = tampil.flatMap((s) => s.values).filter((v): v is number => typeof v === "number");
@@ -108,11 +112,33 @@ export default function LineChartCore({
   const loncat = langkahLabel(jumlah, Math.max(4, Math.floor(LEBAR / 58)));
   const teksLabel = (n: number) => (formatNilai ? formatNilai(n) : angkaRingkas(n));
 
-  // Angka di atas titik (titik sedikit): per kolom, label antar seri didorong supaya tidak bertumpuk.
-  const labelTitik: { kunci: string; x: number; y: number; teks: string; warna: string }[] = [];
-  if (tampilAngka && !banyakTitik) {
+  // Kolom yang diberi angka: semua tanggal bila muat; bila terlalu rapat, tiap
+  // `langkahAngka` kolom dihitung mundur dari ujung (kolom terakhir selalu ikut).
+  const jarakKolom = jumlah <= 1 ? LEBAR : LEBAR / (jumlah - 1);
+  const langkahAngka = Math.max(1, Math.ceil(JARAK_MIN_ANGKA / jarakKolom));
+  const kolomBerangka = (i: number) => (jumlah - 1 - i) % langkahAngka === 0;
+  // Nilai terakhir tiap garis selalu tampil walau bukan kolom terakhir grafik (mis. data project berhenti lebih awal).
+  const indeksAkhir = new Map(
+    tampil.map((s) => {
+      let i = s.values.length - 1;
+      while (i >= 0 && typeof s.values[i] !== "number") i -= 1;
+      return [s.label, i] as const;
+    }),
+  );
+  const tampilkanAngkaDi = (s: SeriGaris, i: number) => {
+    const akhirSeri = indeksAkhir.get(s.label) ?? -1;
+    if (i === akhirSeri) return true;
+    if (i > akhirSeri || !kolomBerangka(i)) return false;
+    // Jangan bertumpuk dengan angka terakhir seri yang posisinya di luar pola penjarangan.
+    return kolomBerangka(akhirSeri) || akhirSeri - i >= langkahAngka;
+  };
+
+  // Angka di atas titik: per kolom, label antar seri didorong supaya tidak bertumpuk.
+  const labelTitik: { kunci: string; x: number; y: number; teks: string; warna: string; tebal?: boolean }[] = [];
+  if (tampilAngka) {
     for (let i = 0; i < jumlah; i += 1) {
       const kolom = tampil
+        .filter((s) => tampilkanAngkaDi(s, i))
         .map((s) => ({ s, v: s.values[i] }))
         .filter((k): k is { s: SeriGaris; v: number } => typeof k.v === "number")
         // Banyak garis: angka 0 tidak ditulis (menumpuk di dasar grafik); tetap ada di tooltip.
@@ -143,34 +169,15 @@ export default function LineChartCore({
           warna: tampil.length > 1 ? k.s.color : "#28476b",
         });
       }
+      // Angka tambahan (mis. deviasi) di atas angka teratas kolom ini.
+      const ekstra = kolom.length && kolomBerangka(i) ? labelEkstra?.(i) : null;
+      if (ekstra) {
+        const teratas = Math.min(...kolom.map((k) => k.y));
+        labelTitik.push({ kunci: `ekstra-${i}`, x: xKe(i), y: Math.max(ATAS - 6, teratas - 14), teks: ekstra.teks, warna: ekstra.warna, tebal: true });
+      }
     }
   }
 
-  // Label nilai terakhir di ujung garis (titik banyak), dirapikan supaya tidak bertabrakan.
-  const labelAkhir: { kunci: string; x: number; yTitik: number; y: number; teks: string; warna: string; lebar: number }[] = [];
-  if (modeLabelAkhir) {
-    const daftar = tampil
-      .map((s) => {
-        let i = s.values.length - 1;
-        while (i >= 0 && typeof s.values[i] !== "number") i -= 1;
-        if (i < 0) return null;
-        const v = s.values[i] as number;
-        const teks = teksLabel(v);
-        return { kunci: s.label, x: xKe(i), yTitik: yKe(v), y: yKe(v), teks, warna: s.color, lebar: Math.max(34, teks.length * 6.6 + 14) };
-      })
-      .filter((d): d is NonNullable<typeof d> => d !== null)
-      .sort((a, b) => a.y - b.y);
-    const batasAtas = ATAS + 8;
-    const batasBawah = ATAS + TINGGI - 8;
-    for (let k = 0; k < daftar.length; k += 1) {
-      daftar[k].y = Math.max(daftar[k].y, k === 0 ? batasAtas : daftar[k - 1].y + 22);
-    }
-    const lebih = Math.max(0, (daftar.at(-1)?.y ?? 0) - batasBawah);
-    for (const d of daftar) {
-      d.y -= lebih;
-      labelAkhir.push(d);
-    }
-  }
   // Titik tidak ditampilkan (seragam di semua grafik); hanya muncul di posisi yang disorot kursor.
   const tampilkanTitik = false;
 
@@ -322,7 +329,7 @@ export default function LineChartCore({
                 y={l.y}
                 textAnchor="middle"
                 fontSize={tampil.length > 1 ? 10.5 : 11.5}
-                fontWeight="700"
+                fontWeight={l.tebal ? 800 : 700}
                 fill={l.warna}
                 stroke="#ffffff"
                 strokeWidth={3}
@@ -333,16 +340,6 @@ export default function LineChartCore({
               </text>
             ))}
 
-            {/* label nilai terakhir di ujung garis */}
-            {labelAkhir.map((l) => (
-              <g key={l.kunci} className="lc-label">
-                <line x1={l.x + 4} y1={l.yTitik} x2={l.x + 10} y2={l.y} stroke={l.warna} strokeWidth={1.5} />
-                <rect x={l.x + 9} y={l.y - 10} width={l.lebar} height={20} rx={7} fill="#ffffff" stroke={l.warna} strokeWidth={1.5} />
-                <text x={l.x + 9 + l.lebar / 2} y={l.y + 4} textAnchor="middle" fontSize={11} fontWeight={800} fill={l.warna}>
-                  {l.teks}
-                </text>
-              </g>
-            ))}
 
             {/* area hover per kolom */}
             {labels.map((_, i) => {

@@ -45,6 +45,7 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
 
   let series: SeriGaris[];
   let tooltipTambahan: ((i: number) => ReactNode) | undefined;
+  let labelEkstra: ((i: number) => { teks: string; warna: string } | null) | undefined;
 
   if (detail) {
     const project = seri[0];
@@ -52,6 +53,13 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
       { label: "Planned", color: ORANYE, values: tanggal.map((t) => cari(project, t)?.planned ?? null) },
       { label: "Actual", color: BIRU, values: tanggal.map((t) => cari(project, t)?.actual ?? null) },
     ];
+    // Deviasi (Actual - Planned) tampil langsung di atas tiap tanggal: hijau = lebih cepat, merah = terlambat.
+    labelEkstra = (i) => {
+      const titik = cari(project, tanggal[i]);
+      if (!titik) return null;
+      const positif = titik.deviasi >= 0;
+      return { teks: `${positif ? "+" : ""}${persen(titik.deviasi)}`, warna: positif ? "#078b49" : "#d53535" };
+    };
     tooltipTambahan = (i) => {
       const titik = cari(project, tanggal[i]);
       if (!titik) return null;
@@ -97,6 +105,7 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
         sumbuMaks={sumbuMaks}
         formatNilai={persen}
         tooltipTambahan={tooltipTambahan}
+        labelEkstra={labelEkstra}
         legend
       />
     </div>
