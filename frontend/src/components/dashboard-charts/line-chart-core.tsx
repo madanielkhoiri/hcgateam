@@ -38,6 +38,7 @@ export default function LineChartCore({
   formatNilai,
   tooltipTambahan,
   labelEkstra,
+  angkaUjungSaja = false,
 }: {
   title: string;
   subtitle?: string;
@@ -64,6 +65,8 @@ export default function LineChartCore({
   tooltipTambahan?: (indeks: number) => ReactNode;
   /** Angka tambahan di atas kolom ke-i (mis. deviasi e-ProM), ikut aturan penjarangan. */
   labelEkstra?: (indeks: number) => { teks: string; warna: string } | null;
+  /** Angka hanya di titik terakhir tiap garis (mis. perbandingan semua project). */
+  angkaUjungSaja?: boolean;
 }) {
   const id = useId().replace(/:/g, "");
   const [aktif, setAktif] = useState<number | null>(null);
@@ -128,7 +131,7 @@ export default function LineChartCore({
   const tampilkanAngkaDi = (s: SeriGaris, i: number) => {
     const akhirSeri = indeksAkhir.get(s.label) ?? -1;
     if (i === akhirSeri) return true;
-    if (i > akhirSeri || !kolomBerangka(i)) return false;
+    if (angkaUjungSaja || i > akhirSeri || !kolomBerangka(i)) return false;
     // Jangan bertumpuk dengan angka terakhir seri yang posisinya di luar pola penjarangan.
     return kolomBerangka(akhirSeri) || akhirSeri - i >= langkahAngka;
   };
@@ -268,7 +271,8 @@ export default function LineChartCore({
 
             {/* label sumbu X */}
             {labels.map((label, i) =>
-              i % loncat === 0 || (i === jumlah - 1 && (jumlah - 1) % loncat >= loncat * 0.6) ? (
+              // Dihitung mundur dari ujung: label terakhir selalu tampil; label pertama ikut bila tidak terlalu dekat.
+              (jumlah - 1 - i) % loncat === 0 || (i === 0 && ((jumlah - 1) % loncat >= loncat * 0.6 || !labels[(jumlah - 1) % loncat])) ? (
                 <text key={`${label}-${i}`} x={xKe(i)} y={H - 14} textAnchor="middle" fontSize="11.5" fill={aktif === i ? "#0d315c" : "#7b8fa8"} fontWeight={aktif === i ? 700 : 400}>
                   {label}
                 </text>
@@ -380,7 +384,7 @@ export default function LineChartCore({
                 zIndex: 2,
               }}
             >
-              <div style={{ marginBottom: 4, color: "#7b8fa8", fontSize: 11, fontWeight: 700 }}>{labels[aktif]}</div>
+              {labels[aktif] && <div style={{ marginBottom: 4, color: "#7b8fa8", fontSize: 11, fontWeight: 700 }}>{labels[aktif]}</div>}
               {tampil.map((s) => {
                 const v = nilaiDi(s, aktif);
                 if (v === null) return null;

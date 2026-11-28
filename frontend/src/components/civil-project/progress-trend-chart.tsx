@@ -28,11 +28,12 @@ const persen = (n: number) => `${n.toLocaleString("id-ID", { maximumFractionDigi
 
 export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; detail?: boolean }) {
   const kunciX = (titik: Titik) => (detail ? titik.bulan : (titik.week ?? titik.bulan));
-  const tanggal = Array.from(new Set(seri.flatMap((s) => s.data.map(kunciX)))).sort((a, b) => {
+  const urutKunci = (a: string, b: string) => {
     const wa = Number(a.match(/\d+/)?.[0] ?? 0);
     const wb = Number(b.match(/\d+/)?.[0] ?? 0);
     return wa - wb || a.localeCompare(b);
-  });
+  };
+  const tanggal = Array.from(new Set(seri.flatMap((s) => s.data.map(kunciX)))).sort(urutKunci);
   if (!tanggal.length) return null;
 
   const cari = (s: Seri, kunci: string) => s.data.find((d) => kunciX(d) === kunci) ?? null;
@@ -41,7 +42,7 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
   const maxNilai = Math.max(...nilai, 1);
   const sumbuMaks = maxNilai <= 25 ? 25 : Math.min(100, Math.ceil((maxNilai * 1.2) / 5) * 5);
 
-  const labels = tanggal.map((t) => (/^week\s+\d+$/i.test(t) ? t : formatBulanSingkat(t)));
+  let labels = tanggal.map((t) => (/^week\s+\d+$/i.test(t) ? t : formatBulanSingkat(t)));
 
   let series: SeriGaris[];
   let tooltipTambahan: ((i: number) => ReactNode) | undefined;
@@ -85,11 +86,38 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
       );
     };
   } else {
+    // Semua project: tiap garis direntangkan dari "Mulai" sampai "Terakhir" (panjang sama
+    // walau jumlah minggu laporannya berbeda), yang dibandingkan hanya persennya.
+    const urut = seri.map((s) => [...s.data].sort((a, b) => urutKunci(kunciX(a), kunciX(b))));
+    const kolom = Math.max(2, ...urut.map((d) => d.length));
+    const posisi = (j: number, n: number) => (n <= 1 ? kolom - 1 : Math.round((j * (kolom - 1)) / (n - 1)));
+    const mingguDi = urut.map((data) => {
+      const peta = new Map<number, Titik>();
+      data.forEach((d, j) => peta.set(posisi(j, data.length), d));
+      return peta;
+    });
+    labels = Array.from({ length: kolom }, (_, i) => (i === 0 ? "Mulai" : i === kolom - 1 ? "Terakhir" : ""));
     series = seri.map((s, i) => ({
       label: s.namaProject,
       color: WARNA[i % WARNA.length],
-      values: tanggal.map((t) => cari(s, t)?.actual ?? null),
+      values: labels.map((_, k) => mingguDi[i].get(k)?.actual ?? null),
     }));
+    tooltipTambahan = (k) => {
+      const baris = seri
+        .map((s, i) => ({ s, d: mingguDi[i].get(k), warna: WARNA[i % WARNA.length] }))
+        .filter((b): b is { s: Seri; d: Titik; warna: string } => !!b.d);
+      if (!baris.length) return null;
+      return (
+        <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #edf2f7", color: "#5d7491", fontSize: 11 }}>
+          {baris.map((b) => (
+            <div key={b.s.id} style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span style={{ color: b.warna }}>{b.s.namaProject}</span>
+              <span>{kunciX(b.d).replace(/^week/i, "Week")}</span>
+            </div>
+          ))}
+        </div>
+      );
+    };
   }
 
   return (
@@ -106,6 +134,7 @@ export function ProgressTrendChart({ seri, detail = false }: { seri: Seri[]; det
         formatNilai={persen}
         tooltipTambahan={tooltipTambahan}
         labelEkstra={labelEkstra}
+        angkaUjungSaja={!detail}
         legend
       />
     </div>
