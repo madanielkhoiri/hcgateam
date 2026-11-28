@@ -114,15 +114,24 @@ export class McuKaryawanService {
         const row = await tx.departemen.upsert({ where: { namaDepartemen: name }, update: { aktif: true }, create: { namaDepartemen: name, aktif: true } });
         map.set(name, row.id);
       }
-      const nikTerdaftar = new Set(
-        (await tx.karyawan.findMany({ select: { nik: true } })).map((item) => item.nik.trim()),
+      // NRP yang sudah ada tidak dibuat ulang (tidak double), tetapi datanya diperbarui
+      // mengikuti Excel terbaru. Sel kosong di Excel tidak menghapus data lama.
+      const terdaftar = new Map(
+        (
+          await tx.karyawan.findMany({
+            select: { id: true, nik: true, nama: true, gender: true, departemenId: true, jabatan: true, email: true, noTelepon: true, statusKerja: true, akunId: true },
+          })
+        ).map((item) => [item.nik.trim(), item]),
       );
       const nikDiproses = new Set<string>();
       let inserted = 0;
+      let updated = 0;
+      let unchanged = 0;
       let skipped = 0;
       for (const r of data) {
         const nik = clean(at(r, 'NRP'));
-        if (nikTerdaftar.has(nik) || nikDiproses.has(nik)) {
+        if (nikDiproses.has(nik)) {
+          // NRP yang sama muncul lagi di file yang sama: baris pertama yang dipakai.
           skipped++;
           continue;
         }
@@ -132,6 +141,42 @@ export class McuKaryawanService {
         const email = clean(at(r, 'EMAIL')) || null;
         const noTelepon = clean(at(r, 'NO HP')) || null;
         const statusKerja = status(at(r, 'STATUS'));
+        const lama = terdaftar.get(nik);
+        if (lama) {
+          const ubah: Prisma.KaryawanUncheckedUpdateInput = {};
+          if (nama && nama !== lama.nama) ubah.nama = nama;
+          if (jabatan && jabatan !== (lama.jabatan ?? '').trim()) ubah.jabatan = jabatan;
+          if (email && email !== (lama.email ?? '').trim()) ubah.email = email;
+          if (noTelepon && noTelepon !== (lama.noTelepon ?? '').trim()) {
+            ubah.noTelepon = noTelepon;
+            // Nomor berganti: status WhatsApp harus dicek ulang.
+            ubah.waTerdaftar = null;
+            ubah.waDicekPada = null;
+          }
+          const g = gender(at(r, 'GENDER'));
+          if (g && g !== lama.gender) ubah.gender = g;
+          const d = dept(at(r, 'DEPT.'));
+          const idDept = d ? map.get(d) : undefined;
+          if (idDept && idDept !== lama.departemenId) ubah.departemenId = idDept;
+          if (clean(at(r, 'STATUS')) && statusKerja !== lama.statusKerja) ubah.statusKerja = statusKerja;
+          if (!Object.keys(ubah).length) {
+            unchanged++;
+            continue;
+          }
+          await tx.karyawan.update({ where: { id: lama.id }, data: ubah });
+          if (lama.akunId) {
+            // Akun login ikut diperbarui; nomor/email yang sudah dipakai akun lain tidak ditimpa.
+            const akunUbah: Prisma.UserUpdateInput = {};
+            if (ubah.nama) akunUbah.name = nama;
+            if (ubah.jabatan) akunUbah.jabatan = jabatan;
+            if (ubah.statusKerja) akunUbah.isActive = statusKerja !== StatusKerja.RESIGN;
+            if (ubah.email && !(await tx.user.findFirst({ where: { email, NOT: { id: lama.akunId } }, select: { id: true } }))) akunUbah.email = email;
+            if (ubah.noTelepon && !(await tx.user.findFirst({ where: { phoneNumber: noTelepon, NOT: { id: lama.akunId } }, select: { id: true } }))) akunUbah.phoneNumber = noTelepon;
+            if (Object.keys(akunUbah).length) await tx.user.update({ where: { id: lama.akunId }, data: akunUbah });
+          }
+          updated++;
+          continue;
+        }
         const aksesDasar = sanitizeAccessKeys(['HC_MCU', 'HC_DEKLARASI']);
         const akunLama = await tx.user.findFirst({ where: { OR: [{ nrp: nik }, { username: nik }] }, select: { id: true, accessKeys: true } });
         const nomorDipakai = noTelepon ? await tx.user.findFirst({ where: { phoneNumber: noTelepon, ...(akunLama ? { NOT: { id: akunLama.id } } : {}) }, select: { id: true } }) : null;
@@ -141,10 +186,9 @@ export class McuKaryawanService {
           : await tx.user.create({ data: { name: nama, username: nik, nrp: nik, passwordHash: await bcrypt.hash(nik, 12), role: UserRole.KARYAWAN, accessKeys: aksesDasar, email: emailDipakai ? null : email, phoneNumber: nomorDipakai ? null : noTelepon, jabatan, isActive: statusKerja !== StatusKerja.RESIGN } });
         const payload = { nik, nama, gender: gender(at(r, 'GENDER')), departemenId: map.get(dept(at(r, 'DEPT.'))!)!, jabatan, email, noTelepon, statusKerja, akunId: akun.id };
         await tx.karyawan.create({ data: payload });
-        nikTerdaftar.add(nik);
         inserted++;
       }
-      return { inserted, skipped, totalRows: data.length, departments: names };
+      return { inserted, updated, unchanged, skipped, totalRows: data.length, departments: names };
     }, { maxWait: 30000, timeout: 600000 });
     return result;
   }

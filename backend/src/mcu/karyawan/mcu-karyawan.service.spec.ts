@@ -486,3 +486,51 @@ describe('McuKaryawanService.karyawanSisaSatuBulan / jalankanReminderSisaSatuBul
     expect(hasil).toEqual({ dikirim: 0, karyawan: 1 });
   });
 });
+
+describe('McuKaryawanService.importMasterExcel — NRP sama diperbarui, tidak dobel', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const XLSX = require('xlsx') as typeof import('xlsx');
+  function excel(rows: unknown[][]) {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'PPA ADW');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
+  it('memperbarui no HP & email karyawan lama, menambah NRP baru, melewati baris dobel', async () => {
+    const karyawanUpdate = jest.fn();
+    const karyawanCreate = jest.fn();
+    const userUpdate = jest.fn();
+    const tx = {
+      departemen: { upsert: jest.fn(({ where }) => ({ id: where.namaDepartemen === 'HCGA' ? 2 : 9 })) },
+      karyawan: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 1, nik: '100', nama: 'Andi', gender: null, departemenId: 2, jabatan: 'Staff', email: 'lama@x.com', noTelepon: '0811', statusKerja: StatusKerja.AKTIF, akunId: 50 },
+          { id: 2, nik: '200', nama: 'Bela', gender: null, departemenId: 2, jabatan: 'Staff', email: 'b@x.com', noTelepon: '0822', statusKerja: StatusKerja.AKTIF, akunId: null },
+        ]),
+        update: karyawanUpdate,
+        create: karyawanCreate,
+      },
+      user: { findFirst: jest.fn().mockResolvedValue(null), update: userUpdate, create: jest.fn().mockResolvedValue({ id: 77 }) },
+    };
+    const prisma = { $transaction: jest.fn((cb) => cb(tx)) } as unknown as PrismaService;
+    const service = new McuKaryawanService(prisma, {} as McuNotifikasiService, {} as WhatsappService);
+
+    const hasil = await service.importMasterExcel(excel([
+      ['NRP', 'NAMA', 'DEPT.', 'JABATAN', 'EMAIL', 'NO HP', 'STATUS'],
+      ['100', 'Andi', 'HCGA', 'Staff', 'baru@x.com', '0899', ''],
+      ['200', 'Bela', 'HCGA', 'Staff', '', '', ''],
+      ['300', 'Cici', 'HCGA', 'Staff', 'c@x.com', '0833', ''],
+      ['100', 'Andi', 'HCGA', 'Staff', 'lain@x.com', '0800', ''],
+    ]));
+
+    expect(hasil).toMatchObject({ inserted: 1, updated: 1, unchanged: 1, skipped: 1 });
+    expect(karyawanUpdate).toHaveBeenCalledTimes(1);
+    expect(karyawanUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { email: 'baru@x.com', noTelepon: '0899', waTerdaftar: null, waDicekPada: null },
+    });
+    expect(userUpdate).toHaveBeenCalledWith({ where: { id: 50 }, data: { email: 'baru@x.com', phoneNumber: '0899' } });
+    expect(karyawanCreate).toHaveBeenCalledTimes(1);
+    expect(karyawanCreate.mock.calls[0][0].data.nik).toBe('300');
+  });
+});
