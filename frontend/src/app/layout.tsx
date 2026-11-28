@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Nunito } from 'next/font/google';
 import './globals.css';
 import { GlobalRouteTransition } from '@/components/global-route-transition/global-route-transition';
+import { KonversiHeicGlobal } from '@/components/konversi-heic-global';
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="id" className={nunito.variable}>
       <body>
         <GlobalRouteTransition />
+        <KonversiHeicGlobal />
         {children}
       </body>
     </html>

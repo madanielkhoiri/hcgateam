@@ -34,6 +34,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 import InlineSignatureCanvas from "../signatures/inline-signature-canvas";
 
 import { formatTanggal } from "@/lib/format-tanggal";
+import { urlFileApi } from "@/lib/uploads-url";
 type Creator = {
   id: number;
   name: string;
@@ -197,8 +198,8 @@ function fileUrl(path: string): string {
     return path;
   }
 
-  const backendRoot = API_URL;
-  return `${backendRoot}${path.startsWith("/") ? path : `/${path}`}`;
+  // File di /uploads wajib login: token ditempel lewat urlFileApi supaya <img> bisa membukanya.
+  return urlFileApi(API_URL, path.startsWith("/") ? path : `/${path}`);
 }
 
 function normalizePreActivityCheck(

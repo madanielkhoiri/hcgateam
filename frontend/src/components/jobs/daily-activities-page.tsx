@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { compressImage, compressImages } from "@/utils/compress-image";
+import { urlFileApi } from "@/lib/uploads-url";
 import { PaginationBar, hitungTotalHalaman } from "../pagination/pagination-bar";
 import styles from "./daily-activities.module.css";
 
@@ -372,7 +373,7 @@ export default function DailyActivitiesPage({ activityType }: PageProps) {
     }
 
     if (parts[0] !== "uploads" || !parts[1] || !parts[2] || !parts[3]) {
-      return `${API_URL}${normalized.startsWith("/") ? "" : "/"}${normalized}`;
+      return urlFileApi(API_URL, normalized.startsWith("/") ? normalized : `/${normalized}`);
     }
 
     return `${API_URL}/daily-activity-images/${parts[1]}/${parts[2]}/${parts[3]}`;

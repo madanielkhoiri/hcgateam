@@ -24,6 +24,7 @@ import { compressImages } from "@/lib/compress-image";
 import styles from "./post-activities.module.css";
 
 import { formatTanggal } from "@/lib/format-tanggal";
+import { urlFileApi } from "@/lib/uploads-url";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 const WEATHER_OPTIONS = ["CERAH", "HUJAN", "MENDUNG"];
@@ -108,9 +109,8 @@ function imageUrl(path: string) {
     return path;
   }
 
-  const backendRoot = API_URL;
-
-  return `${backendRoot}${path.startsWith("/") ? "" : "/"}${path}`;
+  // File di /uploads wajib login: token ditempel lewat urlFileApi supaya <img> bisa membukanya.
+  return urlFileApi(API_URL, path.startsWith("/") ? path : `/${path}`);
 }
 
 function formatDate(value: string) {

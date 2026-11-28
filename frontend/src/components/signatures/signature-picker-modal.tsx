@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import styles from "./signature-picker-modal.module.css";
+import { urlFileApi } from "@/lib/uploads-url";
 
 type SignatureItem = {
   name: string;
@@ -49,7 +50,8 @@ function fileUrl(apiUrl: string, path: string) {
     return path;
   }
 
-  return `${apiUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+  // File di /uploads wajib login: token ditempel lewat urlFileApi supaya <img> bisa membukanya.
+  return urlFileApi(apiUrl, path.startsWith("/") ? path : `/${path}`);
 }
 
 async function readError(response: Response) {

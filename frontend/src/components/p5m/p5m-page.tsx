@@ -26,6 +26,7 @@ import { compressImages } from "@/lib/compress-image";
 import styles from "./p5m.module.css";
 
 import { formatTanggal } from "@/lib/format-tanggal";
+import { urlFileApi } from "@/lib/uploads-url";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 type P5mRow = {
@@ -218,7 +219,8 @@ function fileUrl(path: string) {
     return path;
   }
 
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  // File di /uploads wajib login: token ditempel lewat urlFileApi supaya <img> bisa membukanya.
+  return urlFileApi(API_URL, path.startsWith("/") ? path : `/${path}`);
 }
 
 async function readError(response: Response) {
